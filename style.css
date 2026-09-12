@@ -329,6 +329,15 @@ body::before {
   animation: blinkDanger 1.2s steps(2) infinite;
 }
 .joker-tile .jt-damga.spent { opacity: .45; cursor: default; }
+/* PLAYTEST 30 · GRUP G — İpotek düğmesi (jt-damga ile aynı hap).
+   Borçlu / ödeniyor hâlleri kırmızımsı: oyuncu borcu bir bakışta görsün. */
+.joker-tile .jt-ipotek.owed,
+.joker-tile .jt-ipotek.paying {
+  background: #F6E3E3;
+  border-color: #C98080;
+  color: #8A2A2A;
+}
+.joker-tile .jt-ipotek:disabled { cursor: default; }
 
 /* rarity kimlikleri — Common mat, Rare glow, Epic pulse,
    Legendary shimmer, Mythic animasyonlu gradyan (GDD 7.1) */

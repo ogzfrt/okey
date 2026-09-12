@@ -1253,6 +1253,29 @@
     const fusedLines = (j.fused || []).map(f =>
       `<div class="tip-fused"><div class="tip-head">⚗ ${T.name(f)}</div>` +
       `<div class="tip-desc">${emphNums(T.desc(f), f.key)}</div></div>`).join('');
+    /* P30 · Grup F — VASİYET'İN TAŞIDIĞI EFEKTLER. Füzyon satırlarıyla
+       aynı dil; depo boşsa bunu da açıkça söyler. Yalnız gerçek kartta
+       (id'si olan) çizilir — koleksiyon/store tanımında miras olmaz. */
+    const heirRec = j.id != null && [j, ...(j.fused || [])].find(r => r.key === 'vasiyet');
+    const vcap = window.VASIYET_CAP || 2;
+    const legacyLines = !heirRec ? ''
+      : ((heirRec.legacy || []).length
+        ? heirRec.legacy.map((r, i) =>
+          `<div class="tip-fused tip-legacy"><div class="tip-head">📜 ${t('tipLegacyItem', i + 1, vcap)} ${T.name(r)}</div>` +
+          `<div class="tip-desc">${emphNums(T.desc(r), r.key)}</div></div>`).join('')
+        : `<div class="tip-fused tip-legacy"><div class="tip-head">📜 ${t('tipLegacyEmpty')}</div></div>`);
+    /* P30 · Grup G — İpotek borç durumu (kartın düğmesiyle aynı üç hâl) */
+    let ipotekLine = '';
+    if (j.id != null && Game._recsOf && Game.ipotekState && Game._recsOf(j).some(r => r.key === 'ipotek')) {
+      const ip = Game.ipotekState();
+      ipotekLine = `<div class="tip-uses">${t('ipotekState_' + (ip.paying ? 'paying' : (ip.owed ? 'owed' : 'ready')))}</div>`;
+    }
+    /* P30 · Grup I — KOLEKSİYONDA PANDORA'NIN ÜÇ OLASI VARYANTI. Füzyon'un
+       "içerdiği efektler" satırlarının aynısı: oyuncu kutunun neye
+       dönüşebileceğini satın almadan inceleyebilsin. */
+    const variantLines = (j.variants || []).map(v =>
+      `<div class="tip-fused"><div class="tip-head">${v.icon} ${T.ev(v.name)}</div>` +
+      `<div class="tip-desc">${emphNums(T.ev(v.desc), 'truva')}</div></div>`).join('');
     /* PİKSEL-ART AÇIKLAMA KARTI (kullanıcı isteği 2026-09-07).
        Yapı: nadirlik renginde ŞERİT + büyük başlık → küçük harfli kategori
        satırı → açıklama → süre / füzyon / eylemler. Çerçevenin ve şeridin
@@ -1268,7 +1291,7 @@
       `<div class="tip-in">` +
       `<div class="tip-head">${j.key ? T.name(j) : j.name}</div>` + rarityLine +
       `<div class="tip-desc">${emphNums(j.key ? T.desc(j) : T.ev(j.desc), j.key)}</div>` +
-      fusedLines + usesLine +
+      fusedLines + legacyLines + variantLines + ipotekLine + usesLine +
       `</div>`;
     const inner = tip.firstElementChild;
     // Eylem butonları (Grup G2): store açıkken slot jokerlerine Sat / →Ana / Birleştir
@@ -1359,8 +1382,8 @@
     /* legendary */
     sisyphus: '🪨', midas: '👑', kaptan: '⚓', ucuncuTeker: '🛞', truva: '📦',
     kaioken: '🔥', ankaKusu: '🐦‍🔥', theWorld: '🕰️', medusa: '🐍',
-    robinHood: '🏹', newton: '🍎', truva: '🐴', kasimaga: '🤝',
-    prometheus: '🔥', frankenstein: '🧟‍♂️',
+    vasiyet: '📜', ipotek: '🏦', truva: '🐴', atesTuccari: '🔥',
+    frankenstein: '🧟‍♂️',
     /* mythic */
     seytan: '😈', pinky: '🩷', kiyamet: '☄️', aynaKirigi: '💔', ejderha: '🐉',
     karaDelik: '🕳️', crimson: '🩸', nostradamus: '🔮', ademHavva: '🍏',
@@ -1546,21 +1569,44 @@
       b.title = t('hipnoBadge', Game.state.hipnoNumber);
       tile2.appendChild(b);
     }
-    /* PLAYTEST 26 · GRUP H — NEWTON'UN İVMESİ KARTTA CANLI DURUR.
-       İvme artık raundlar boyunca taşındığı için oyuncunun onu GÖREBİLMESİ
-       şart: ivmenin kaçıncı kademede olduğu hiçbir yerde yazmıyordu, kart
-       sessizce çalışıyor ya da sessizce sönüyordu. Godzilla/Hipnotizör ile
-       aynı rozet kalıbı kullanılır — yeni bir UI dili icat edilmez.
-       Rozetteki çarpan motorun `newtonFactor()` fonksiyonundan okunur;
-       puanlamayla ayrışamaz. */
-    if (!opts.backup
-        && (j.key === 'newton' || (j.fused || []).some(f => f.key === 'newton'))) {
-      const st = Game.state.newtonStreak || 0;
-      const f = window.newtonFactor ? window.newtonFactor(st) : 1 + 0.2 * st;
-      const b = document.createElement('span');
-      b.className = 'jt-charge' + (st > 0 ? ' on' : '');
-      b.textContent = st > 0 ? `🍎×${f.toFixed(1)}` : '🍎—';
-      b.title = st > 0 ? t('newtonBadgeOn', st, f.toFixed(1)) : t('newtonBadgeOff');
+    /* PLAYTEST 30 · GRUP F — VASİYET'İN MİRAS DEPOSU KARTTA CANLI DURUR.
+       Rozet kaç efekt taşıdığını gösterir (📜1/2); efektlerin adı ve
+       açıklaması ipucunda "Miras" satırlarında listelenir. Godzilla /
+       Hipnotizör rozetiyle aynı kalıp — yeni bir UI dili icat edilmez. */
+    if (!opts.backup) {
+      const heir = [j, ...(j.fused || [])].find(r => r.key === 'vasiyet');
+      if (heir) {
+        const leg = heir.legacy || [];
+        const b = document.createElement('span');
+        b.className = 'jt-charge' + (leg.length ? ' on' : '');
+        b.textContent = `📜${leg.length}/${window.VASIYET_CAP || 2}`;
+        b.title = leg.length ? t('vasiyetBadge', leg.map(r => T.name(r)).join(' · '))
+          : t('vasiyetBadgeEmpty');
+        tile2.appendChild(b);
+      }
+    }
+    /* PLAYTEST 30 · GRUP G — İPOTEK DÜĞMESİ KARTIN ÜSTÜNDE.
+       Damga düğmesiyle aynı yer ve dil (jt-damga, sol alt köşe). Borç
+       durumu düğmenin kendi yazısıdır: HAZIR (+2 TUR) · BORÇLU (sonraki
+       raund -2) · ÖDENİYOR (bu raund -2, kullanılamaz). Kilitliyken
+       nedeni düğmenin ipucunda yazar. */
+    if (!opts.backup && Game.ipotekState
+        && Game._recsOf && Game._recsOf(j).some(r => r.key === 'ipotek')) {
+      const ip = Game.ipotekState();
+      const mode = ip.paying ? 'paying' : (ip.owed ? 'owed' : 'ready');
+      const b = document.createElement('button');
+      b.className = 'jt-damga jt-ipotek ' + mode;
+      b.textContent = t('ipotekBtn_' + mode);
+      b.disabled = !ip.canUse;
+      b.title = ip.canUse ? t('ipotekTip') : T.ev(ip.reason || '');
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideTip();
+        const res = Game.useIpotek();
+        if (!res.ok) { toast(T.ev(res.error)); return; }
+        toast(T.ev(res.note), true);
+        render();
+      });
       tile2.appendChild(b);
     }
     /* PLAYTEST 28 · GRUP B — DAMGA DÜĞMESİ KARTIN ÜSTÜNDE.
@@ -4954,32 +5000,34 @@
         // Satın alma anında hedef seçimi: Ana Slot / Backup (Grup G1)
         btn.addEventListener('click', () => pickBuyDest(i, item));
         card.appendChild(btn);
-        // Kasım Ağa — pazarlık (store başına 1 kez)
-        if (Game.hasActive('kasimaga') && !s.store.haggleUsed) {
+        /* ATEŞ TÜCCARI (P30 · Grup K) — iki adımlı pazarlık.
+           1) "Pazarlık" düğmesi store başına bir kez görünür.
+           2) Pazarlığı TUTMUŞ üründe "Ateşi Çal" düğmesi çıkar (isteğe
+              bağlı, ürün başına bir kez). Oyuncu indirimde durabilir. */
+        if (Game.hasActive('atesTuccari') && !s.store.haggleUsed) {
           const hb = document.createElement('button');
           hb.className = 'o-sell s-extra';
           hb.textContent = t('haggleBtn');
           hb.addEventListener('click', () => {
             const r = Game.haggleItem(i);
-            if (!r.ok) { toast(r.error); return; }
+            if (!r.ok) { toast(T.ev(r.error)); return; }
             toast(r.success ? t('haggleWin', T.ev(r.name), r.price) : t('haggleLose', T.ev(r.name)), r.success);
             renderStore();
           });
           card.appendChild(hb);
         }
-        // Prometheus — bedava alım (store başına 1 kez)
-        if (Game.hasActive('prometheus') && !s.store.promUsed) {
-          const pb = document.createElement('button');
-          pb.className = 'o-sell s-extra';
-          pb.textContent = t('freeBtn');
-          pb.addEventListener('click', () => {
-            const r = Game.freeBuy(i);
-            if (!r.ok) { toast(r.error); return; }
-            toast(t('freeToast', T.ev(r.name)), true);
+        if (Game.hasActive('atesTuccari') && item.haggled && !item.fireTried) {
+          const fb = document.createElement('button');
+          fb.className = 'o-sell s-extra';
+          fb.textContent = t('stealBtn');
+          fb.addEventListener('click', () => {
+            const r = Game.stealFire(i);
+            if (!r.ok) { toast(T.ev(r.error)); return; }
+            toast(r.success ? t('stealWin', T.ev(r.name)) : t('stealLose', T.ev(r.name)), r.success);
             renderStore();
-            onJokerGained(r.key, r.jokerId);
+            if (r.success) onJokerGained(r.key, r.jokerId);
           });
-          card.appendChild(pb);
+          card.appendChild(fb);
         }
       }
       el.storeRowJokers.appendChild(card);
@@ -5495,7 +5543,10 @@
             `<div class="jt-name">${T.name({ key: def.key, name: def.name })}</div>`;
         }
         attachTip(tile2, { key: def.key, name: def.name, desc: def.desc,
-          rarity: def.rarity, usesLeft: def.uses ?? RARITY[def.rarity].uses }, {});
+          rarity: def.rarity, usesLeft: def.uses ?? RARITY[def.rarity].uses,
+          /* P30 · Grup I — Pandora'nın kutusundan çıkabilecek üç kart */
+          variants: def.key === 'truva' && Game.PANDORA_INFO
+            ? Object.values(Game.PANDORA_INFO) : undefined }, {});
         grid.appendChild(tile2);
       }
       el.colBody.appendChild(grid);

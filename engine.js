@@ -868,11 +868,16 @@ const BOSS_CHEAT_TR = {
   deck: 'DESTENDEN 2 TAŞ ÇALMAYA çalışacak',
 };
 const BOSS_CHEAT_DECK_N = 2;   // desteden çalınan taş sayısı
-/* Grup E/19 — Robin Hood: uçurum kaç bölünerek çarpana çevrilir.
-   5 seçildi çünkü elde görülebilecek en büyük fark 12'dir (1 ↔ 13) ve
-   12/5 = +2.4x, Legendary bandının üst ucuna denk düşer; tipik fark
-   (7-9) ise +1.4x…+1.8x verir. */
-const ROBIN_DIV = 5;
+/* PLAYTEST 30 · GRUP F — Robin Hood KALDIRILDI, yerine VASİYET geldi.
+   Vasiyet süresi dolan jokerlerin efektini `j.legacy` deposunda taşır;
+   depo FIFO'dur, kapasite aşılınca en eski miras düşer. */
+const VASIYET_CAP = 2;
+/* PLAYTEST 30 · GRUP G — Newton KALDIRILDI, yerine İPOTEK geldi.
+   Oyuncu raund içinde ELLE tetikler: o raund +N tur, borç sonraki
+   raundun başında -N tur olarak tahsil edilir (en az 1 tur kalır).
+   Borç kartın değil DURUMUN üstünde durur (s.ipotekDebt): kullanıp
+   store'da satmak ya da kartın kırılması borcu silmez. */
+const IPOTEK_TURNS = 2;
 
 /* Grup E/21 — Ahtapot: kol başına çarpan ve feda edilen kolun anlık çarpanı.
    Eski sabit puan değerlerinin (20 / 60) birbirine oranı korundu: feda,
@@ -882,17 +887,17 @@ const AHTAPOT_BURST_MULT = 1.5;
 
 /* PLAYTEST 11 · GRUP D — Sisyphus "Kaya": üst üste açılım yapılan turlara
    göre çarpan. Bir tur açılım yapılmazsa kaya dibe düşer (sıfırlanır). */
-const SISYPHUS_STEPS = [1.0, 2.5, 4.5];
+const SISYPHUS_STEPS = [2.0, 4.0, 8.0];   // P30 · Grup A: 1.0/2.5/4.5 → 2/4/8
 
 /* PLAYTEST 11 · GRUP F — Pandora'nın üç gizli varyantı. Kutu ele ilk
    geldiğinde EŞİT OLASILIKLA birine dönüşür. */
 const PANDORA_VARIANTS = ['umut', 'salgin', 'armagan'];
-const PANDORA_UMUT_FLAT = 8;        // açılımdaki taş başına puan
+const PANDORA_UMUT_FLAT = 50;       // açılımdaki taş başına puan (P30 · Grup H: 8 → 50)
 const PANDORA_SALGIN_TILES = 2;     // her tur dertlenen taş sayısı
-const PANDORA_SALGIN_MULT = 1.2;    // dertli taş açılımda
-const PANDORA_SALGIN_BURN = 20;     // dertli taş elde beklerse tur başına
+const PANDORA_SALGIN_MULT = 2.5;    // dertli taş açılımda (P30 · Grup H: 1.2 → 2.5)
+const PANDORA_SALGIN_BURN = 30;     // dertli taş elde beklerse tur başına (P30 · Grup H: 20 → 30)
 const PANDORA_ARMAGAN_TILES = 3;    // raund başında 13'e çıkan taş sayısı
-const PANDORA_ARMAGAN_BONUS = 0.25; // armağan taşlı kombinasyonun puan artışı
+const PANDORA_ARMAGAN_BONUS = 0.30; // armağan taşlı kombinasyonun puan artışı (P30 · Grup H: %25 → %30)
 
 /* DR. FRANKENSTEIN — TEK MASA, İKİ AMELİYAT (kullanıcı kararı 2026-09-03).
    Playtest 10 · Grup B'de üç varyasyon trainer-only olarak denendi; kullanıcı
@@ -906,8 +911,24 @@ const PANDORA_ARMAGAN_BONUS = 0.25; // armağan taşlı kombinasyonun puan artı
      Diriliş  : mezarlıktan kalkan taşa +ADD değer, açılımda +FLAT puan
      Ameliyat : en düşük 2 taş toplanır (tavan 13), açılımda +MULT çarpan */
 const FRANK_REVIVE_ADD = 3;
-const FRANK_REVIVE_FLAT = 40;
-const FRANK_STITCH_MULT = 0.8;
+const FRANK_REVIVE_FLAT = 80;   // P30 · Grup L: 40 → 80
+const FRANK_STITCH_MULT = 2.0;  // P30 · Grup L: 0.8 → 2.0
+/* PLAYTEST 30 · LEGENDARY DENGE TURU (kullanıcı kararı 2026-09-13).
+   Sayılar tanımların ve puanlamanın TEK kaynağıdır; açıklama metinleri
+   ve olay notları da bunlardan okunur. */
+const MIDAS_COIN = 3;        // Grup B — açılımdaki taş başına coin (+1 → +3)
+const TEKER_MULT = 3.0;      // Grup C — karışık açılımda iki tabloya da (+1.0 → +3.0)
+const KAIOKEN_MULT_2 = 2.5;  // Grup D — 2 tur açmazsan (+1.5 → +2.5)
+const KAIOKEN_MULT_3 = 7.0;  // Grup D — 3+ tur açmazsan (+4.5 → +7.0)
+const MEDUSA_MULT = 3.0;     // Grup E — taşlaşmış taş açılımda (+1.2 → +3.0)
+const MEDUSA_FLAT = 80;      // Grup E — yanına sabit puan (yeni)
+const NOSTRA_MULT = 2.5;     // Grup J — kehanet tutunca kalıcı çarpan (+1.5 → +2.5)
+const TEKER_FLAT = 200;      // Grup C — karışık açılıma bir kez +200 puan (kullanıcı onayı)
+/* Grup K — ATEŞ TÜCCARI (Kasım Ağa + Prometheus birleşimi) */
+const ATES_HAGGLE_WIN = 0.6;   // 1. adım: pazarlık tutma şansı
+const ATES_DISCOUNT = 0.4;     // pazarlık tutunca indirim
+const ATES_STEAL_WIN = 0.5;    // 2. adım: ateşi çalma (bedava) şansı
+const ATES_STEAL_ISLEK = 0.10; // bedava alımın sonraki raunda işlek borcu
 const MAX_BACKUP = 2;   // GDD 7.4 — Backup Slot
 
 /* ---------- Tüketilebilirler v2 (Grup K, 2026-07-09) ----------
@@ -1629,7 +1650,7 @@ const JOKER_DEFS = {
      yukarı çıkar, bir tur duraksarsan en dibe düşer. Kaioken'in tam
      tersidir (o beklemeyi, bu durmamayı ödüllendirir). */
   sisyphus: { key: 'sisyphus', name: 'Sisyphus', rarity: 'legendary', uses: 3,
-    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +1.0x, 3. tur +2.5x, 4. tur +4.5x. Bir tur açmazsan kaya en dibe düşer.',
+    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +2.0x, 3. tur +4.0x, 4. tur +8.0x. Bir tur açmazsan kaya en dibe düşer.',
     effect: (c) => {
       const i = Math.min(c.consecMelds, SISYPHUS_STEPS.length) - 1;
       return i >= 0 ? { mult: SISYPHUS_STEPS[i], flat: 0 } : null;
@@ -1637,39 +1658,44 @@ const JOKER_DEFS = {
   /* v3: +2 coin/taş raund başına ~30 coin üretiyordu (temel raund
      gelirinin üstü) — ekonomiyi kırdığı için +1'e indirildi */
   midas: { key: 'midas', name: 'Midas', rarity: 'legendary', uses: 3,
-    desc: 'Açılımda kullandığın her taş +1 coin. Raund sonunda ödenir.' },
+    /* P30 · Grup B (kullanıcı kararı): +1 → +3 coin (MIDAS_COIN). */
+    desc: 'Açılımda kullandığın her taş +3 coin. Raund sonunda ödenir.' },
   kaptan: { key: 'kaptan', name: 'Lanetli Kaptan', rarity: 'legendary', uses: 3,
     desc: 'Game Over’ı 1 kez önler. Bedeli: satılamaz olur, hedefler %20 yükselir.' },
   /* v3 double-dip denetimi: kural açma + çarpan + flat üçlü ödüldü;
      flat kaldırıldı (kuralın kendisi + 0.5x yeterince güçlü) */
   ucuncuTeker: { key: 'ucuncuTeker', name: 'Üçüncü Teker', rarity: 'legendary', uses: 3,
-    desc: 'Çift ile Per/Sıralı aynı turda açılabilir. İkisine de +1.0x.' },
+    /* P30 · Grup C: çarpan +1.0x → +3.0x (TEKER_MULT). */
+    desc: 'Çift ile Per/Sıralı aynı turda açılabilir. İkisine de +3.0x, ayrıca +200 puan.' },
   /* v3 double-dip denetimi: aynı koşula çarpan+flat ikilisi tek eksene
      (çarpan) indirildi; kademeler netleşti */
   kaioken: { key: 'kaioken', name: 'Kaioken', rarity: 'legendary', uses: 3,
-    desc: '2 tur açmazsan sonraki açılım +1.5x. 3 tur açmazsan +4.5x.',
-    effect: (c) => c.skipStreak >= 3 ? { mult: 4.5, flat: 0 }
-      : c.skipStreak === 2 ? { mult: 1.5, flat: 0 } : null },
+    /* P30 · Grup D: kademeler +1.5x/+4.5x → +2.5x/+7.0x, yalnız çarpan. */
+    desc: '2 tur açmazsan sonraki açılım +2.5x. 3 tur açmazsan +7.0x.',
+    effect: (c) => c.skipStreak >= 3 ? { mult: KAIOKEN_MULT_3, flat: 0 }
+      : c.skipStreak === 2 ? { mult: KAIOKEN_MULT_2, flat: 0 } : null },
   ankaKusu: { key: 'ankaKusu', name: 'Anka Kuşu', rarity: 'legendary', uses: 2,
     desc: 'Süresi dolunca ölmez: 1 raundluk rastgele bir Mythic’e dönüşür.' },
   medusa: { key: 'medusa', name: 'Medusa', rarity: 'legendary', uses: 2,
-    desc: 'Her tur bir taşın taşlaşır: rengi serbest olur, işlek ona işlemez, açılımda +1.2x verir.' },
-  /* PLAYTEST 17 · GRUP E/19 — YENİDEN TASARLANDI (kullanıcı onayı 2026-08-28).
-     ESKİ HÂLİ: "en yüksek taşın yarısını en düşüğe aktarır." Toplam değer
-     SABİT kaldığı için ham puana katkısı SIFIRDI; yalnız kombinasyon
-     kurmayı biraz kolaylaştırıyordu. 22 coinlik, 3 raundluk bir Legendary
-     için bu hiçbir şeydi.
-     YENİ HÂLİ temayı ("zenginden al, fakire ver") koruyup ödülü UÇURUMA
-     bağlar: aradaki fark ne kadar büyükse çarpan o kadar büyük. Hem iki
-     taş 13 olur (kombinasyon gücü) hem çarpan gelir (puan gücü) — ve
-     uçurum her turda kapandığı için joker kendi kendini dengeler. */
-  robinHood: { key: 'robinHood', name: 'Robin Hood', rarity: 'legendary', uses: 3,
-    desc: 'Her tur en yüksek ve en düşük taşını 13 yapar. Aralarındaki fark ÷5 kadar çarpan verir.' },
-  /* PLAYTEST 26 · GRUP H — ivme raundlar boyunca yaşar, düşüşte bir
-     kademe geri gider (eskiden sıfırlanıyordu). Bkz. NEWTON_STEP. */
-  newton: { key: 'newton', name: 'Newton', rarity: 'legendary', uses: 3,
-    desc: 'Puanın her arttığında +%20 ivme biriktirir (en çok ×2.2). '
-      + 'Puan düşerse ivme sıfırlanmaz, 1 kademe geri gider.' },
+    /* P30 · Grup E: +1.2x → +3.0x ve +80 puan (MEDUSA_MULT / MEDUSA_FLAT). */
+    desc: 'Her tur bir taşın taşlaşır: rengi serbest olur, işlek ona işlemez, açılımda +3.0x ve +80 puan verir.' },
+  /* PLAYTEST 30 · GRUP F (kullanıcı kararı 2026-09-13) — ROBIN HOOD → VASİYET.
+     Robin Hood tamamen kaldırıldı. Vasiyet süresi dolup KIRILAN her
+     jokerin efektini devralır: kırılan kaydın bir kopyası `j.legacy`
+     deposuna girer ve slotRecs() onu Füzyon alt kaydı gibi okur — yani
+     efekt, durum alanlarıyla (Bukalemun rengi, Pandora varyantı…) birlikte
+     çalışmaya devam eder. Depo en fazla VASIYET_CAP efekt taşır; yenisi
+     gelince en eskisi düşer. Vasiyet kırılınca mirası da onunla gider.
+     Ayrıntılı kurallar: bkz. _ageJokers içindeki VASİYET bloğu. */
+  vasiyet: { key: 'vasiyet', name: 'Vasiyet', rarity: 'legendary', uses: 3,
+    desc: 'Süresi dolup kırılan her jokerin efekti bu karta miras kalır (en fazla 2, yenisi en eskisini düşürür). Vasiyet kırılınca taşıdığı her şey birlikte gider.' },
+  /* PLAYTEST 30 · GRUP G (kullanıcı kararı 2026-09-13) — NEWTON → İPOTEK.
+     Newton tamamen kaldırıldı. İpotek oyuncunun ELLE tetiklediği bir
+     karttır (kartın üstündeki düğme, bkz. useIpotek): o raund +2 tur,
+     bedeli sonraki raundun başında -2 tur. Borç ödenmeden (yani kullanıldığı
+     raund ve ceza raundu boyunca) yeniden kullanılamaz. */
+  ipotek: { key: 'ipotek', name: 'İpotek', rarity: 'legendary', uses: 3,
+    desc: 'Raundda 1 kez elle kullan: o raund +2 tur. Bedeli sonraki raund -2 tur; borç ödenmeden tekrar kullanılamaz.' },
   /* PLAYTEST 11 · GRUP F (kullanıcı kararı) — TRUVA ATI → PANDORA.
      Eski "Pandora" (her raund iyi/kötü kutu) TAMAMEN KALDIRILDI; ismi ve
      teması bu karta geçti. Store'da gizemli bir KUTU olarak satılır ve
@@ -1682,10 +1708,14 @@ const JOKER_DEFS = {
      açılışta değişir. */
   truva: { key: 'truva', name: 'Pandora', rarity: 'legendary', uses: 2,
     desc: 'Kapalı bir kutu. Eline ilk geldiğinde açılır ve üç jokerden birine dönüşür.' },
-  kasimaga: { key: 'kasimaga', name: 'Kasım Ağa', rarity: 'legendary', uses: 3,
-    desc: 'Her store’da bir ürüne pazarlık: %60 ihtimalle %40 indirim, tutmazsa ürün kaçar.' },
-  prometheus: { key: 'prometheus', name: 'Prometheus', rarity: 'legendary', uses: 3,
-    desc: 'Her store’da 1 ürün bedava. Her bedava alım sonraki raundun işlek riskini %10 artırır.' },
+  /* PLAYTEST 30 · GRUP K (kullanıcı onayı 2026-09-13) — KASIM AĞA +
+     PROMETHEUS → ATEŞ TÜCCARI. İki kart da "store'da ürünü ucuza kapmak"
+     kartıydı; tek kartta iki ADIM olarak birleşti: Kasım Ağa'nın pazarlığı
+     aynen durur, Prometheus'un bedava alımı pazarlığı tutmuş üründe
+     isteğe bağlı ikinci bir risk olur ("indirimde dur mu, zorla mı").
+     Eski anahtarlar silindi; restore() onları kayıtlardan düşürür. */
+  atesTuccari: { key: 'atesTuccari', name: 'Ateş Tüccarı', rarity: 'legendary', uses: 3,
+    desc: 'Her store’da 1 ürüne pazarlık: %60 ihtimalle %40 indirim, tutmazsa ürün kaçar. Tutarsa ateşi çal: %50 bedava (sonraki raund işlek +%10), tutmazsa ürün kaçar.' },
   /* PLAYTEST 10 · GRUP E (kullanıcı kararı) — NOSTRADAMUS MYTHIC'TEN
      LEGENDARY'E İNDİ. Gerekçe: The World Legendary'den Mythic'e taşınırken
      (Grup C) iki bandın dolgusu bozulmuştu; bu, dengeleyici ters yönlü
@@ -1697,7 +1727,8 @@ const JOKER_DEFS = {
      Süre mythic tabanı 1'den Legendary tabanı 3'e çıktı: kehanet tek
      raundda tutmazsa kart hiç iz bırakmadan ölüyordu. EFEKT DEĞİŞMEDİ. */
   nostradamus: { key: 'nostradamus', name: 'Nostradamus', rarity: 'legendary', uses: 3,
-    desc: 'Bu raundu 2 turda bitirirsen +1.5x kalıcı. Bitiremezsen ödül yok.' },
+    /* P30 · Grup J: kalıcı ödül +1.5x → +2.5x (NOSTRA_MULT). */
+    desc: 'Bu raundu 2 turda bitirirsen +2.5x kalıcı. Bitiremezsen ödül yok.' },
 
   /* ============================================================
      DOKTOR FRANKENSTEIN (PLAYTEST 10 · GRUP B → 2026-09-03 BİRLEŞİM)
@@ -1712,7 +1743,7 @@ const JOKER_DEFS = {
      ============================================================ */
   frankenstein: { key: 'frankenstein', name: 'Dr. Frankenstein',
     rarity: 'legendary', uses: 2,
-    desc: 'Her tur başında attığın en yüksek taş +3 değerle dirilir: açılımda +40 puan. En düşük 2 taşın tek taşta birleşir (en çok 13): açılımda +0.8x.' },
+    desc: 'Her tur başında attığın en yüksek taş +3 değerle dirilir: açılımda +80 puan. En düşük 2 taşın tek taşta birleşir (en çok 13): açılımda +2.0x.' },
 
   /* ===== MYTHIC (10) ===== */
   /* PLAYTEST 10 · GRUP C (kullanıcı kararı) — THE WORLD LEGENDARY'DEN
@@ -2091,17 +2122,6 @@ const GODZILLA_LEVELS = [
    açıklama metni hem de rozet (`stats`) buradan okur. Arayüzde artık
    hiçbir güçlendirme sayısı yazılı DEĞİLDİR.
    ============================================================ */
-/* ============================================================
-   NEWTON (Legendary) — İVME SABİTLERİ · PLAYTEST 26 · GRUP H
-   Kademe başına +%20 (değişmedi). Tavan 6 kademe = ×2.2: ivme artık
-   raundlar boyunca taşındığı için üst sınır şart — tavansız bırakılsaydı
-   3 raundluk ömür boyunca sınırsız tırmanırdı.
-   Değerler TEK YERDE durur; hem puanlama hem de kartın canlı rozeti
-   buradan okur, ayrışamazlar.
-   ============================================================ */
-const NEWTON_STEP = 0.20;
-const NEWTON_MAX_STEP = 6;                       // tavan: ×2.2
-const newtonFactor = (step) => 1 + NEWTON_STEP * Math.min(step, NEWTON_MAX_STEP);
 
 /* YANKEE (Rare) — BİRİKİM SABİTLERİ
    PLAYTEST 26 · GRUP I: Çift açmak birikimi SİLMEZ, YARIYA indirir
@@ -2287,7 +2307,7 @@ function IS_BASE_TILE(t) {
    yoksa Sir.by'da olduğu gibi işaretsiz bir dönüşüm sızar. */
 const TILE_ORIGIN_TR = {
   kirby: 'Sir.by', kirbyBoss: 'Sir.by (boss)', karaKedi: 'Kara Kedi',
-  karaKediBoss: 'Kara Kedi (boss)', robinHood: 'Robin Hood',
+  karaKediBoss: 'Kara Kedi (boss)',
   ademHavva: 'Adem ile Havva', kagitJokeri: 'Kağıt Jokeri',
   pandoraArmagan: 'Pandora — Armağan', cheating: 'The Cheating',
   tuccar: 'Tüccar takası', upgrade: 'Takas (13 yükseltmesi)',
@@ -2787,9 +2807,11 @@ const Game = {
       /* GRUP D (P20) — Trade Jokeri "Borsa" */
       borsa: null,          // { up: 'per'|'sirali'|'cift', down: ..., flat: ... }
       borsaMelds: 0,        // (eski alan — P29 · Grup H'den beri kullanılmıyor, kayıt uyumu)
-      robinMult: 0,         // Grup E/19 — Robin Hood'un uçurum çarpanı (tur bazlı)
+      umutRunUsed: false,   // P30 · Grup H — Pandora·Umut kurtarması RUN boyunca 1 kez
+      ipotekDebt: false,    // P30 · Grup G — İpotek: sonraki raundun başında -2 tur borcu
+      ipotekPayRound: null, // P30 · Grup G — borcun ödendiği raund (o raund kullanılamaz)
       graveTiles: [],       // Frankenstein — bu raund atılan taşlar (mezarlık)
-      promDebt: 0,          // Prometheus — sonraki raundun işlek borcu
+      promDebt: 0,          // Ateş Tüccarı (eski Prometheus alanı) — sonraki raundun işlek borcu
       store: null,
       pendingLocks: null,   // kilitli store ürünleri sonraki store'a taşınır
       lastExpired: [],
@@ -3018,9 +3040,20 @@ const Game = {
      efektini de (durum alanları dahil: terzi.color, truva.revealed vb.) taşır. */
   slotRecs() {
     const out = [];
-    for (const j of this.state.jokers) {
-      out.push(j);
-      if (j.fused) out.push(...j.fused);
+    for (const j of this.state.jokers) out.push(...this._recsOf(j));
+    return out;
+  },
+
+  /* Bir slot kaydının taşıdığı TÜM efekt kayıtları: kendisi + Vasiyet
+     mirası (j.legacy, P30 · Grup F) + Füzyon alt kayıtları (j.fused) ve
+     onların mirası (Vasiyet başka bir jokere eritildiyse miras alt kayıtta
+     durur). */
+  _recsOf(j) {
+    const out = [j];
+    if (j.legacy) out.push(...j.legacy);
+    for (const f of (j.fused || [])) {
+      out.push(f);
+      if (f.legacy) out.push(...f.legacy);
     }
     return out;
   },
@@ -3188,7 +3221,7 @@ const Game = {
       || j.key === 'theWorld'
       || j.key === 'misunderstood'
       || (j.key === 'kaptan' && !j.saveUsed)
-      || (j.key === 'truva' && j.pandora === 'umut' && !j.umutUsed));
+      || (j.key === 'truva' && j.pandora === 'umut' && !j.umutUsed && !s.umutRunUsed));
   },
 
   /* Bu raundun destesindeki TOPLAM taş sayısı — UI'daki "kalan/toplam"
@@ -3984,17 +4017,6 @@ const Game = {
     s.misuActive = false;     // The Misunderstood — bu raund aktif mi
     s.cellatMotive = 0;       // Cellat — idam başına +2 birikimi
     s.katalizorMult = 0;      // (eski alan — P29 · Grup I'den beri kullanılmıyor, kayıt uyumu)
-    /* PLAYTEST 26 · GRUP H — NEWTON'UN İVMESİ RAUND ARASINDA YAŞAR.
-       Eskiden ikisi de burada sıfırlanıyordu; ölçüm (2026-09-09) şunu
-       gösterdi: raund en fazla 4 tur olduğu ve ilk açılım her zaman
-       ivmesiz başladığı için tavan pratikte ×1.6'da kalıyor, üstelik
-       oyuncunun doğal oynayışında (önce en güçlü açılım) ivme hiç
-       birikmiyordu — Legendary bir kart doğal oyunda ≈0 katkı veriyordu.
-       Artık ivme JOKER YAŞADIĞI SÜRECE taşınır; sıfırlama Newton'un
-       kendi kuralına (puan düşünce kademe iner) bırakıldı.
-       `newtonLast` de taşınır: sıfırlansaydı her raundun ilk açılımı
-       otomatik "artış" sayılıp kademeyi bedavaya yükseltirdi. */
-    if (!this.hasActive('newton')) { s.newtonStreak = 0; s.newtonLast = 0; }
     s.gumusPending = 0;       // Gümüş Taş — raund sonu coin
     s.bonusDraw = 0;          // (eski Yıldız Taşı alanı — kayıt uyumu)
     /* Grup H: Kuzey Yıldızı seçim kuyruğu raundu aşmaz. */
@@ -4166,10 +4188,10 @@ const Game = {
         `📈 Piyasa açıldı: ${TYPE_TR[up]} YÜKSELİŞTE (hisseleri temettü öder) · `
         + `📉 ${TYPE_TR[down]} DÜŞÜŞTE (hisselerinin yarısı yanar)`);
     }
-    // Prometheus — bedava alım borcu işlek riskine yansır
+    // Ateş Tüccarı (P30 · Grup K) — çalınan ateşin borcu işlek riskine yansır
     if (s.promDebt > 0) {
       s.islekRateBonus += s.promDebt;
-      s.roundStartNotes.push(`Prometheus borcu: bu raund işlek riski +%${Math.round(s.promDebt * 100)}`);
+      s.roundStartNotes.push(`Ateş Tüccarı borcu: bu raund işlek riski +%${Math.round(s.promDebt * 100)}`);
       s.promDebt = 0;
     }
     /* Void (GDD 12) — GRUP L (P20): ELİN YARISI + TELAFİ ÇEKİŞİ.
@@ -4225,6 +4247,18 @@ const Game = {
         }
       s.roundStartNotes.push('Adem ile Havva: dünya yeniden kuruldu — tüm taşların değeri +2');
     }
+    /* İPOTEK (P30 · Grup G) — BORÇ TAHSİLATI. Boss kurulumundan (Godzilla
+       tur sayısını 3'e çeker) SONRA çalışır ki kesinti gerçek tur sayısından
+       düşülsün; en az 1 tur kalır. Kart satılmış ya da kırılmış olsa da
+       borç ödenir — yoksa "kullan, sonra sat" bedelsiz olurdu. */
+    s.ipotekPayRound = null;
+    if (s.ipotekDebt) {
+      const before = s.maxTurns;
+      s.maxTurns = Math.max(1, s.maxTurns - IPOTEK_TURNS);
+      s.ipotekDebt = false;
+      s.ipotekPayRound = `${s.stage}-${s.roundInStage}`;
+      s.roundStartNotes.push(`🏦 İpotek borcu tahsil edildi: bu raund ${before - s.maxTurns} tur eksik (${s.maxTurns} tur) — bu raund İpotek kullanılamaz`);
+    }
     /* Nostradamus — kehanet ilan edilir (GDD 12).
        GRUP F/3 (2026-09-06): ilan bayrağı da RUN bazlıydı (`!j.prophecy`),
        yani 2. raundtan itibaren kehanet SESSİZCE yürürlükteydi — ödül
@@ -4237,7 +4271,7 @@ const Game = {
     if (nosJ) {
       nosJ.prophecyRound = nosRoundKey;
       nosJ.prophecy = true;
-      s.roundStartNotes.push('Nostradamus kehaneti: bu raundu ilk 2 turda geç → +1.5x KALICI çarpan');
+      s.roundStartNotes.push(`Nostradamus kehaneti: bu raundu ilk 2 turda geç → +${NOSTRA_MULT.toFixed(1)}x KALICI çarpan`);
     }
     /* Kağıt Jokeri (GDD 12) — GRUP Q (P20): HER RAUND çalışır (eskiden
        `applied` bayrağı yüzünden run boyunca yalnız bir kez tetikleniyordu,
@@ -4904,7 +4938,6 @@ const Game = {
     s.teraziMult = 0;
     s.teraziTurnGain = null;  // P29 · Grup J — bu turda kazanılan feda bonusu
     s.paratonerBait = null;   // P29 · Grup F — yem her tur yeniden seçilir
-    s.robinMult = 0;   // Grup E/19 — Robin Hood çarpanı da turu aşmaz
     /* Pandora · SALGIN (Grup F) — her tur 2 taş dertlenir; elde bekleyen her
        dertli taş tur başına puan yakar. "Kullan yoksa acıtır" baskısı. */
     const salJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'truva'
@@ -4933,32 +4966,7 @@ const Game = {
       if (cand.length) {
         const t = cand[Math.floor(this.rng() * cand.length)];
         t.stoned = true;
-        events.push(`Medusa: ${COLOR_TR[t.color]} ${t.number} taşlaştı (işlekten korunur, açılımda +1.2x)`);
-      }
-    }
-    /* Robin Hood (GDD 11) — PLAYTEST 17 · GRUP E/19'da yeniden tasarlandı.
-       Uçurumu ÖDÜLLENDİRİR: en yüksek ile en düşük taş arasındaki fark
-       kadar çarpan verir (fark/5), sonra İKİSİNİ DE 13'e çıkarır. Okey ve
-       sahte okey dokunulmazdır (kimlikleri raunda yazılıdır). Değeri
-       değişen taşlar `retuned` işaretlenir — taş kimliği kuralı gereği. */
-    s.robinMult = 0;
-    if (this.hasActive('robinHood')) {
-      const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey
-        && !this.isOkeyTile(t) && !t.special);   /* Grup D: joker dönüşümü özel taşa dokunmaz */
-      if (cand.length >= 2) {
-        const hi = cand.reduce((a, b) => (b.number > a.number ? b : a));
-        const lo = cand.reduce((a, b) => (b.number < a.number ? b : a));
-        const gap = hi.number - lo.number;
-        if (gap > 0) {
-          s.robinMult = round2(gap / ROBIN_DIV);
-          const from = `${COLOR_TR[lo.color]} ${lo.number} / ${COLOR_TR[hi.color]} ${hi.number}`;
-          hi.number = 13; lo.number = 13;
-          retune(hi, 'robinHood'); retune(lo, 'robinHood');
-          events.push(`🏹 Robin Hood: ${from} → ikisi de 13 oldu; ${gap} farklık uçurum `
-            + `+${s.robinMult.toFixed(1)}x çarpan getirdi`);
-        } else {
-          events.push('🏹 Robin Hood: elinde uçurum yok — bu tur aktarım olmadı');
-        }
+        events.push(`Medusa: ${COLOR_TR[t.color]} ${t.number} taşlaştı (işlekten korunur, açılımda +${MEDUSA_MULT.toFixed(1)}x ve +${MEDUSA_FLAT} puan)`);
       }
     }
     /* ZOMBIE — PLAYTEST 10 · GRUP A (bug + yeniden tasarım).
@@ -5391,8 +5399,10 @@ const Game = {
       // Medusa — taşlaşmış taş açılımda
       const mdj = this.slotRecs().find(j => j.key === 'medusa');
       if (mdj && ctx.tiles.some(t => t.stoned)) {
-        mult += 1.2;
-        triggered.push({ id: mdj.id, name: mdj.name, text: '+1.2x (taşlaşmış taş)' });
+        mult += MEDUSA_MULT;
+        flat += MEDUSA_FLAT;
+        triggered.push({ id: mdj.id, name: mdj.name,
+          text: `+${MEDUSA_MULT.toFixed(1)}x +${MEDUSA_FLAT} puan (taşlaşmış taş)` });
       }
       /* Pandora (Grup F) — açılan varyanta göre açılım etkisi.
          Umut  : açılımdaki her taş sabit puan
@@ -5476,13 +5486,6 @@ const Game = {
         mult += FRANK_STITCH_MULT * stN;
         triggered.push({ id: 'frankStitch', name: 'Dr. Frankenstein',
           text: `+${(FRANK_STITCH_MULT * stN).toFixed(1)}x (${stN} dikilmiş taş)` });
-      }
-      /* Robin Hood (Grup E/19) — bu turdaki uçurumun kazandırdığı çarpan */
-      if (s.robinMult > 0) {
-        const rhj = this.slotRecs().find(j => j.key === 'robinHood');
-        mult += s.robinMult;
-        triggered.push({ id: rhj ? rhj.id : 'robinHood', name: 'Robin Hood',
-          text: `+${s.robinMult.toFixed(1)}x (uçurum)` });
       }
       /* Terazi — GRUP A (P20): hafif taş fedalarından RAUND boyu biriken
          çarpan. Eski `teraziMult` (tur bazlı) alanı eski kayıtlar için
@@ -5659,8 +5662,8 @@ const Game = {
     if (mixed && teker) {
       const ciftCombos = ctx.combos.filter(c => c.type === 'cift');
       const perCombos = ctx.combos.filter(c => c.type !== 'cift');
-      let cCar = round2(getCarpan('cift', step(ciftCombos.length), s.permMult) + mult + 1.0);
-      let pCar = round2(getCarpan('per', step(perCombos.length), s.permMult) + mult + 1.0);
+      let cCar = round2(getCarpan('cift', step(ciftCombos.length), s.permMult) + mult + TEKER_MULT);
+      let pCar = round2(getCarpan('per', step(perCombos.length), s.permMult) + mult + TEKER_MULT);
       if (s.kumarbazRoll) { cCar = round2(cCar * s.kumarbazRoll); pCar = round2(pCar * s.kumarbazRoll); }
       const cRaw = ciftCombos.reduce((a, c) => a + this.comboSum(c), 0);
       const pRaw = perCombos.reduce((a, c) => a + this.comboSum(c), 0) + islemeSum;
@@ -5672,7 +5675,9 @@ const Game = {
         { key: 'cift', label: 'Çift', raw: cRaw, carpan: cCar, score: ceilMul(cRaw, cCar) },
         { key: 'per', label: 'Per/Sıralı', raw: pRaw, carpan: pCar, score: ceilMul(pRaw, pCar) },
       ].filter(x => x.raw > 0);
-      triggered.push({ id: teker.id, name: teker.name, text: '+1.0x (iki tablo)' });
+      flat += TEKER_FLAT;   // P30 · Grup C — karışık açılım başına bir kez
+      triggered.push({ id: teker.id, name: teker.name,
+        text: `+${TEKER_MULT.toFixed(1)}x +${TEKER_FLAT} puan (iki tablo)` });
     } else {
       // yalnız işleme varsa per tablosu tek-açılım çarpanı esas alınır (tasarım kararı)
       const mode = ctx.count === 0 ? 'per' : s.turnMode;
@@ -5696,16 +5701,6 @@ const Game = {
       baseScore = Math.ceil(baseScore * (1 + s.permRawBonus));
       triggered.push({ id: 'up-altinDamar', name: 'Altın Damar',
         text: `ham puan +%${Math.round(s.permRawBonus * 100)} (+${baseScore - before})` });
-    }
-
-    // Newton — üst üste artan puan ivmesi (GDD 11)
-    if (!s.jokersDisabled && s.newtonStreak > 0) {
-      const nwj = this.slotRecs().find(j => j.key === 'newton');
-      if (nwj) {
-        const f = newtonFactor(s.newtonStreak);
-        baseScore = Math.ceil(baseScore * f);
-        triggered.push({ id: nwj.id, name: nwj.name, text: `ivme ×${f.toFixed(1)}` });
-      }
     }
 
     // Gökyüzü Ejderhası — en yüksek taş değeri 3 katına (değeri iki kez daha ekle)
@@ -6574,7 +6569,7 @@ const Game = {
     if (r.kelebekCoin) gainCoins(s, r.kelebekCoin);
     s.prevMeld = { turn: s.turn, mode: r.curMode };
     if (this.hasActive('midas'))
-      s.midasCoins += r.ctx.tiles.length + r.islemeCount;
+      s.midasCoins += MIDAS_COIN * (r.ctx.tiles.length + r.islemeCount);
     /* Vampir — P29 · Grup D. Son turda banka (bu turun emişi dahil)
        açılım puanına ödendi, bu yüzden sıfırlanır ve yeniden yazılmaz.
        Diğer turlarda emiş normal şekilde birikir. */
@@ -6586,20 +6581,6 @@ const Game = {
       s.godzillaLevel = 0;
     // Ayna Kral — yansıma biriktir
     if (this.hasActive('aynaKral')) s.aynaKralBank = r.final;
-    /* Newton ivme güncellemesi (bonus bir SONRAKİ açılıma uygulanır).
-       PLAYTEST 26 · GRUP H — İVME SÖNER, YOK OLMAZ.
-       Eski kural: puan bir kez bile düşerse kademe DOĞRUDAN 0'a iniyordu.
-       Ölçümde bunun iki sonucu görüldü: (a) oyuncunun doğal oynayışında
-       (önce en güçlü açılım) ivme hiç birikmiyor, (b) Newton'un kendi
-       bonusu bile düşüşü telafi etmeye yetmeyip zinciri kendi kendine
-       kırabiliyordu (72 → ×1.2 ile 65). Artık düşüş kademeyi BİR basamak
-       geri alır; tavan NEWTON_MAX_STEP'tir ki ivme kaçmasın. */
-    if (this.hasActive('newton')) {
-      s.newtonStreak = r.final > s.newtonLast
-        ? Math.min(NEWTON_MAX_STEP, s.newtonStreak + 1)
-        : Math.max(0, s.newtonStreak - 1);
-      s.newtonLast = r.final;
-    }
     // Gümüş Taş — kullanılan her gümüş raund sonunda +1 coin (GDD 6.5c)
     const usedTiles = [...r.ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)];
     s.gumusPending += usedTiles.filter(t => t.special === 'gumus').length;
@@ -7132,7 +7113,7 @@ const Game = {
            (tam kurtarma) SONRA denenir ve tek başına yetmeyebilir; yetmezse
            zincir normal şekilde devam eder. */
         const umutJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'truva'
-          && j.pandora === 'umut' && !j.umutUsed && s.score >= s.target / 2);
+          && j.pandora === 'umut' && !j.umutUsed && !s.umutRunUsed && s.score >= s.target / 2);
         if (!pinkyJ && umutJ) {
           /* PLAYTEST 17 · GRUP E/20 (kullanıcı kararı 2026-08-28) —
              UMUT ARTIK EKSİĞİN TAMAMINI KAPATIR.
@@ -7149,6 +7130,10 @@ const Game = {
              korunur. Jokerin diğer özellikleri (taş başına +8 puan)
              aynen durur. */
           umutJ.umutUsed = true;
+          /* P30 · Grup H — hak artık RUN boyunca TEK: yeni bir Pandora'nın
+             Umut'a dönüşmesi kurtarmayı yenilemez. Taş başına puan pasif
+             kalır ve bu sınırdan etkilenmez. */
+          s.umutRunUsed = true;
           const need = s.target - s.score;
           s.score += need;
           events.push(`🕊 Pandora (Umut): eksik puanın TAMAMI (+${need}) tamamlandı`);
@@ -7413,13 +7398,39 @@ const Game = {
 
     // Anka Kuşu — küllerinden Mythic doğar (GDD 11)
     // Füzyonla birleşmiş alt kayıtların ölüm efektleri de tetiklenir
-    for (const j of expired.flatMap(x => x.fused ? [x, ...x.fused] : [x])) {
+    for (const j of expired.flatMap(x => this._recsOf(x))) {
       if (j.key === 'ankaKusu' && s.jokers.length < this.slotCap()) {
         const mythics = this.jokerPool(d => d.rarity === 'mythic');
         const def = mythics[Math.floor(this.rng() * mythics.length)];
         s.jokers.push({ id: ++_jokerId, key: def.key, name: def.name, desc: def.desc,
           rarity: 'mythic', usesLeft: 1, fresh: true });
         notes.push(`Anka Kuşu küllerinden doğdu → ${def.name} (1 raund)`);
+      }
+    }
+    /* VASİYET (P30 · Grup F) — süresi dolup kırılan jokerlerin efekti
+       hayatta kalan Vasiyet'e miras kalır. Kurallar:
+         · yalnız ANA SLOTTAN süresi dolanlar (backup yaşlanmaz; deste
+           jokerleri efektini desteden okuduğu için slota taşınamaz)
+         · Füzyonlu bir kartın her alt efekti ayrı bir miras sayılır
+         · kırılan bir Vasiyet'in kendi mirası devredilmez: "birlikte gider"
+         · Anka Kuşu devredilmez: efekti ölümün kendisidir, az önce çalıştı
+         · depo FIFO — VASIYET_CAP dolunca en eski miras düşer
+       Kayıt kopyalanır (durum alanlarıyla), `inherited` işaretlenir. */
+    const heir = this.slotRecs().find(j => j.key === 'vasiyet' && !j.inherited);
+    if (heir && expired.length) {
+      const dying = expired.flatMap(x => [x, ...(x.fused || [])])
+        .filter(r => r.key !== 'vasiyet' && r.key !== 'ankaKusu' && r.key !== 'fuzyon'
+          && JOKER_DEFS[r.key] && JOKER_DEFS[r.key].mech !== 'deck');
+      for (const d of dying) {
+        const rec = JSON.parse(JSON.stringify(d));
+        delete rec.fused; delete rec.legacy; delete rec.protected; delete rec.fresh;
+        rec.inherited = true;
+        heir.legacy = [...(heir.legacy || []), rec];
+        notes.push(`📜 Vasiyet: ${d.name} kırıldı — efekti mirasa geçti (${Math.min(heir.legacy.length, VASIYET_CAP)}/${VASIYET_CAP})`);
+        while (heir.legacy.length > VASIYET_CAP) {
+          const old = heir.legacy.shift();
+          notes.push(`📜 Vasiyet: en eski miras ${old.name} düştü`);
+        }
       }
     }
     // MADDE D3 — run sonu özeti: süresi dolarak kaybedilen joker sayısı
@@ -7562,8 +7573,8 @@ const Game = {
     // Nostradamus kehaneti (GDD 12)
     if (!s.jokersDisabled && this.slotRecs().some(j => j.key === 'nostradamus' && j.prophecy)
         && s.wonOnTurn <= 2) {
-      s.permMult = round2(s.permMult + 1.5);
-      extraNotes.push('🔮 Nostradamus kehaneti GERÇEKLEŞTİ: +1.5x KALICI çarpan!');
+      s.permMult = round2(s.permMult + NOSTRA_MULT);
+      extraNotes.push(`🔮 Nostradamus kehaneti GERÇEKLEŞTİ: +${NOSTRA_MULT.toFixed(1)}x KALICI çarpan!`);
     }
     // The Misunderstood — kazanınca +0.3x kalıcı bırakıp gider (GDD 10)
     if (s.misuActive && s.deckJokers.some(j => j.key === 'misunderstood')) {
@@ -8412,16 +8423,50 @@ const Game = {
     return strip;
   },
 
-  /* Kasım Ağa (GDD 11) — store'da 1 ürüne pazarlık: %60 indirim şansı, %40 ürün kaçar */
+  /* İPOTEK (P30 · Grup G) — kartın düğmesi bu iki fonksiyonu kullanır.
+     Durum üç hâllidir: HAZIR · BORÇLU (bu raund kullanıldı, sonraki raund
+     -2) · ÖDENİYOR (bu raund -2 tahsil edildi). Son ikisinde kullanılamaz. */
+  ipotekState() {
+    const s = this.state;
+    if (!s) return null;
+    const j = this.slotRecs().find(x => x.key === 'ipotek');
+    const owed = !!s.ipotekDebt;
+    const paying = s.ipotekPayRound === `${s.stage}-${s.roundInStage}` && s.status === 'playing';
+    let reason = null;
+    if (!j) reason = 'İpotek slotta değil.';
+    else if (s.jokersDisabled) reason = 'Jokerler bu raund susturuldu.';
+    else if (owed) reason = 'Borcun var: sonraki raund -2 tur ödenmeden tekrar kullanılamaz.';
+    else if (paying) reason = 'Bu raund borç ödeniyor — İpotek kullanılamaz.';
+    else if (s.status !== 'playing') reason = 'İpotek yalnız raund içinde kullanılır.';
+    return { id: j ? j.id : null, owed, paying, canUse: !reason, reason };
+  },
+
+  useIpotek() {
+    const s = this.state;
+    const st = this.ipotekState();
+    if (!st || !st.canUse) return { ok: false, error: st ? st.reason : 'İpotek slotta değil.' };
+    s.maxTurns += IPOTEK_TURNS;
+    s.ipotekDebt = true;
+    return { ok: true, maxTurns: s.maxTurns,
+      note: `🏦 İpotek: bu raunda +${IPOTEK_TURNS} tur (${s.maxTurns} tur). Borç: sonraki raund -${IPOTEK_TURNS} tur` };
+  },
+
+  /* ATEŞ TÜCCARI (P30 · Grup K) — iki adımlı pazarlık, store başına tek hak.
+       1) haggleItem — %60: ürün %40 indirimli · %40: ürün kaçar
+       2) stealFire  — YALNIZ pazarlığı tutmuş üründe, isteğe bağlı ve ürün
+                       başına bir kez: %50 bedava (sonraki raund işlek
+                       +%10) · %50 ürün kaçar (indirim de gider)
+     Ateş denemesi zar atmadan ÖNCE yer kontrolü yapar: raf doluysa hak
+     yanmaz. Borç alanı eski Prometheus'unkiyle aynıdır (s.promDebt). */
   haggleItem(index) {
     const s = this.state;
-    if (!this.hasActive('kasimaga')) return { ok: false, error: 'Kasım Ağa slotta değil.' };
-    if (s.store.haggleUsed) return { ok: false, error: 'Bu store\'da pazarlık hakkını kullandın.' };
+    if (!this.hasActive('atesTuccari')) return { ok: false, error: 'Ateş Tüccarı slotta değil.' };
+    if (s.store.haggleUsed) return { ok: false, error: "Bu store'da pazarlık hakkını kullandın." };
     const it = s.store.items[index];
     if (!it || it.sold) return { ok: false, error: 'Ürün mevcut değil.' };
     s.store.haggleUsed = true;
-    if (this.rng() < 0.6) {
-      it.price = Math.max(1, Math.round(it.price * 0.6));
+    if (this.rng() < ATES_HAGGLE_WIN) {
+      it.price = Math.max(1, Math.round(it.price * (1 - ATES_DISCOUNT)));
       it.haggled = true;
       return { ok: true, success: true, price: it.price, name: it.name };
     }
@@ -8430,40 +8475,36 @@ const Game = {
     return { ok: true, success: false, name: it.name };
   },
 
-  /* Prometheus (GDD 11) — store'da 1 ürünü bedava al; sonraki raund işlek +%10 */
-  freeBuy(index) {
+  stealFire(index) {
     const s = this.state;
-    if (!this.hasActive('prometheus')) return { ok: false, error: 'Prometheus slotta değil.' };
-    if (s.store.promUsed) return { ok: false, error: 'Bu store\'da bedava alım hakkını kullandın.' };
+    if (!this.hasActive('atesTuccari')) return { ok: false, error: 'Ateş Tüccarı slotta değil.' };
     const item = s.store.items[index];
     if (!item || item.sold) return { ok: false, error: 'Ürün mevcut değil.' };
+    if (!item.haggled) return { ok: false, error: 'Ateşi çalmak için önce bu üründe pazarlık tutmalı.' };
+    if (item.fireTried) return { ok: false, error: 'Bu üründe ateşi zaten denedin.' };
     const def = JOKER_DEFS[item.key];
+    if (!def) return { ok: false, error: 'Ürün mevcut değil.' };
+    const needsSlot = def.mech !== 'deck' && item.key !== 'fuzyon';
+    if (needsSlot && s.jokers.length >= this.slotCap() && s.backup.length >= MAX_BACKUP)
+      return { ok: false, error: 'Ana Slot ve Backup dolu — önce bir joker sat.' };
+    item.fireTried = true;
+    if (this.rng() >= ATES_STEAL_WIN) {
+      item.sold = true;
+      item.fled = true;
+      return { ok: true, success: false, name: item.name };
+    }
     const j = this._initJoker({
       id: ++_jokerId, key: item.key, name: item.name, desc: item.desc,
       rarity: item.rarity, usesLeft: this._usesFor(def, item.rarity), fresh: true,
     });
-    if (def.mech === 'deck') {
-      s.deckJokers.push(j); // Grup G — deste jokeri desteye karışır, slot işgal etmez
-      s.store.promUsed = true;
-      s.promDebt = round2(s.promDebt + 0.10);
-      item.sold = true;
-      return { ok: true, name: item.name, placed: 'deck', jokerId: j.id, key: item.key };
-    }
-    // Grup F/23 — Füzyon slot işgal etmez, bekleyen eylem olarak durur
-    if (item.key === 'fuzyon') {
-      s.fuzyonPending = j;
-      s.store.promUsed = true;
-      s.promDebt = round2(s.promDebt + 0.10);
-      item.sold = true;
-      return { ok: true, name: item.name, placed: 'pending', jokerId: j.id, key: item.key };
-    }
-    if (s.jokers.length < this.slotCap()) s.jokers.push(j);
-    else if (s.backup.length < MAX_BACKUP) { j.waitLeft = j.usesLeft === 1 ? 1 : 3; s.backup.push(j); }
-    else return { ok: false, error: 'Ana Slot ve Backup dolu — önce bir joker sat.' };
-    s.store.promUsed = true;
-    s.promDebt = round2(s.promDebt + 0.10);
+    let placed;
+    if (def.mech === 'deck') { s.deckJokers.push(j); placed = 'deck'; }   // Grup G — slot işgal etmez
+    else if (item.key === 'fuzyon') { s.fuzyonPending = j; placed = 'pending'; }   // Grup F/23
+    else if (s.jokers.length < this.slotCap()) { s.jokers.push(j); placed = 'slot'; }
+    else { j.waitLeft = j.usesLeft === 1 ? 1 : 3; s.backup.push(j); placed = 'backup'; }
+    s.promDebt = round2(s.promDebt + ATES_STEAL_ISLEK);
     item.sold = true;
-    return { ok: true, name: item.name, placed: s.jokers.includes(j) ? 'slot' : 'backup', jokerId: j.id, key: item.key };
+    return { ok: true, success: true, name: item.name, placed, jokerId: j.id, key: item.key };
   },
 
   /* Store kilitleme — ücretsiz planlama aracı; kilitli ürün reroll'da
@@ -8955,11 +8996,11 @@ const Game = {
      ============================================================ */
   PANDORA_INFO: {
     umut: { name: 'Pandora — Umut', icon: '🕊',
-      desc: 'Kutunun dibinde kalan: açılımdaki her taş +8 puan. Ayrıca raundu kaybedecek olursan bir kez eksik puanının TAMAMINI tamamlar.' },
+      desc: 'Kutunun dibinde kalan: açılımdaki her taş +50 puan. Ayrıca raundu kaybedecek olursan eksik puanının TAMAMINI tamamlar — run boyunca yalnız 1 kez.' },
     salgin: { name: 'Pandora — Salgın', icon: '🦠',
-      desc: 'Kutudan çıkan dertler: her tur 2 taşın dertlenir. Dertli taş açılımda +1.2x verir ama elde beklerse tur başına -20 puan yakar.' },
+      desc: 'Kutudan çıkan dertler: her tur 2 taşın dertlenir. Dertli taş açılımda +2.5x verir ama elde beklerse tur başına -30 puan yakar.' },
     armagan: { name: 'Pandora — Armağan', icon: '🎁',
-      desc: 'Kutu boşalır: her raund başında 3 taşının değeri 13 olur ve altın işaretlenir. İşaretli taşı kullandığın kombinasyonun puanı %25 artar.' },
+      desc: 'Kutu boşalır: her raund başında 3 taşının değeri 13 olur ve altın işaretlenir. İşaretli taşı kullandığın kombinasyonun puanı %30 artar.' },
   },
 
   _revealPandora(j, notes) {
@@ -10033,6 +10074,17 @@ const Game = {
     for (const f of ['jokers', 'backup', 'deckJokers'])
       st[f] = (st[f] || []).filter(j => j && JOKER_DEFS[j.key]);
     if (st.fuzyonPending && !JOKER_DEFS[st.fuzyonPending.key]) st.fuzyonPending = null;
+    /* P30 göçü — Robin Hood ve Newton silindi. Füzyon alt kayıtlarında ve
+       Vasiyet mirasında da kalmış olabilirler; aynı süzgeçten geçerler. */
+    for (const f of ['jokers', 'backup'])
+      for (const j of st[f]) {
+        if (j.fused) j.fused = j.fused.filter(r => r && JOKER_DEFS[r.key]);
+        for (const r of [j, ...(j.fused || [])])
+          if (r.legacy) r.legacy = r.legacy.filter(x => x && JOKER_DEFS[x.key]);
+      }
+    if (st.umutRunUsed == null) st.umutRunUsed = false;
+    if (st.ipotekDebt == null) st.ipotekDebt = false;
+    if (st.ipotekPayRound === undefined) st.ipotekPayRound = null;
     /* GRUP D göçü (P22): taban 3→2, tavan 5→4. Eski kayıtlarda hem
        `consumSlotBonus` hem de envanterin kendisi yeni tavanı aşabilir;
        ikisi de burada kırpılır, yoksa UI kapasiteden fazla kart çizer. */
@@ -10199,8 +10251,8 @@ if (typeof window !== 'undefined') {
     UPGRADE_DEFS, MAX_CONSUMABLES, TOTAL_STAGES, PACK_DEFS,
     PACK_CHOICES, CONSUM_SLOT_MAX, TUCCAR_MAX_REFUSE, SPECIAL_RARITY_W, FERMAN_MAX,
     MAGNET_MAX,
-    /* PLAYTEST 26 — kart rozetleri motorun sabitlerinden okunur */
-    NEWTON_STEP, NEWTON_MAX_STEP, newtonFactor, YANKEE_STEP, YANKEE_RESET_KEEP, YANKEE_CAP,
+    /* PLAYTEST 26/30 — kart rozetleri motorun sabitlerinden okunur */
+    VASIYET_CAP, IPOTEK_TURNS, YANKEE_STEP, YANKEE_RESET_KEEP, YANKEE_CAP,
     /* P29 sabitleri — testler ve denge araçları buradan okur */
     ZINCIR_START, ZINCIR_STEP, ZINCIR_DECAY, ZINCIR_CAP, VAMPIR_MULT,
     PARATONER_MULT, KATALIZOR_STEP, KATALIZOR_CAP, BUNGIE_SNAP, STORE_TILE_PICKS,
@@ -10229,8 +10281,12 @@ if (typeof module !== 'undefined') {
     SHOP_JOKER_BASE, SHOP_JOKER_MAX, SHOP_EXTRA_BASE, SHOP_EXTRA_MAX, UP_VAL,
     CONSUM_SELL_RATE, CONSUM_SLOT_MAX, KD_TASI_BASE, KD_TASI_STEP, KD_TASI_MAX,
     YILDIZ_SHOW, SPECIAL_RARITY_W, SHOP_EXTRA_FIXED, FERMAN_MAX, MAGNET_MAX,
-    /* PLAYTEST 26 — Newton ivmesi ve Yankee birikimi */
-    NEWTON_STEP, NEWTON_MAX_STEP, newtonFactor, YANKEE_STEP, YANKEE_RESET_KEEP, YANKEE_CAP,
+    /* PLAYTEST 26 — Yankee birikimi · PLAYTEST 30 — Legendary denge sabitleri */
+    VASIYET_CAP, IPOTEK_TURNS, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
+    MEDUSA_MULT, MEDUSA_FLAT, NOSTRA_MULT, TEKER_FLAT, ATES_HAGGLE_WIN, ATES_DISCOUNT,
+    ATES_STEAL_WIN, ATES_STEAL_ISLEK, SISYPHUS_STEPS, FRANK_REVIVE_FLAT, FRANK_STITCH_MULT,
+    PANDORA_UMUT_FLAT, PANDORA_SALGIN_MULT, PANDORA_SALGIN_BURN, PANDORA_ARMAGAN_BONUS,
+    YANKEE_STEP, YANKEE_RESET_KEEP, YANKEE_CAP,
     /* P29 sabitleri — testler ve denge araçları buradan okur */
     ZINCIR_START, ZINCIR_STEP, ZINCIR_DECAY, ZINCIR_CAP, VAMPIR_MULT,
     PARATONER_MULT, KATALIZOR_STEP, KATALIZOR_CAP, BUNGIE_SNAP, STORE_TILE_PICKS,
