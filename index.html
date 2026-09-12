@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OKEY Roguelike — Prototip</title>
+<link rel="stylesheet" href="style.css">
+<script>
+/* RENK TEMASI — İLK BOYAMADAN ÖNCE UYGULANIR.
+   Tema `html[data-theme]` ile sürülüyor. Bu satır ui.js'e bırakılsaydı
+   sayfa bir kare boyunca Klasik (yeşil) çizilir, sonra Mor/Amber'e
+   atlardı; küçük ama her açılışta görülen bir sıçrama olurdu.
+   localStorage bazı ortamlarda (gizli sekme, dosya:// kısıtı) throw
+   eder — tema kozmetik olduğu için sessizce Klasik'e düşeriz. */
+(function () {
+  try {
+    var t = localStorage.getItem('okeyTheme');
+    if (t === 'mor' || t === 'amber') document.documentElement.dataset.theme = t;
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div id="app">
+
+  <!-- ==================== ANA MENÜ ====================
+       Figma "OKEY-101 / yeni test" (node 74:3, 1920×1080) — 2026-08-10
+       güncel sürümünden SIFIRDAN kuruldu (assets/menu3/).
+
+       .fm-stage sabit 1920×1080 tuvaldir ve COVER ölçeklenir; tüm
+       çocukların konumu Figma koordinatıyla birebir aynıdır (px = Figma px).
+
+       Buton id'leri DEĞİŞMEZ — ui.js'teki `el` haritası ve tüm click
+       handler'ları olduğu gibi çalışır. DOM sırası tasarımın görsel
+       sırasına çekildi (play · tutorial · trainer · collection · settings ·
+       quit) ki sekme sırası da ekrandaki sırayla aynı olsun.
+       Etiketleri applyStaticTexts() i18n'den yazar; tasarımdaki İngilizce
+       yazılar gerçek metin katmanı olduğu için tipografi birebir alındı,
+       içerik ise oyunun kendi diline bağlı kalır. -->
+  <div id="menuScreen" class="screen">
+    <div class="fm-stage">
+      <img class="fm-bg" src="assets/menu3/bg.png" alt="">
+      <!-- Figma'nın GERÇEK maskot katmanı (YENİ_ANA_MENÜ 248:1668 →
+           MAIN_MASKOT 248:1667) — placeholder DEĞİL, tasarımın kendi
+           vektörü. -->
+      <img class="fm-mascot" src="assets/menu3/mascot.svg" alt="">
+      <div id="menuLogo" class="fm-banner"></div>
+      <nav class="fm-buttons">
+        <button id="btnPlay" class="fm-btn fm-play">play</button>
+        <button id="btnTutorial" class="fm-btn">tutorial</button>
+        <button id="btnTrainer" class="fm-btn">trainer</button>
+        <button id="btnCollection" class="fm-btn">collection</button>
+        <button id="btnSettings" class="fm-btn">settings</button>
+        <button id="btnQuit" class="fm-btn">quit</button>
+      </nav>
+      <div class="menu-note"></div>
+    </div>
+  </div>
+
+  <!-- ==================== RAUND HARİTASI ====================
+       Figma "OKEY-101" · 221:127 (UI_GÜNCEL_MAP_V1) ve 279:10922
+       (aynı ekranın kartlar kapalıyken hâli). Oyun ekranıyla AYNI
+       1920×1080 tuvalinde yaşar ve üst şeridi (duraklat · i · $ ·
+       joker paneli · deste/atılan) ve sol sütunu (Raund Score ·
+       STAGE · RAUND) onunla BİREBİR aynı yerde/ölçüde paylaşır —
+       bu yüzden CSS kuralları kopyalanmadı, seçicilere haritanın
+       ID'leri eklendi (bkz. style.css `:is(#gameScreen, #mapScreen)`).
+
+       Tasarımda OLMAYAN hiçbir şey eklenmedi (kullanıcı kararı
+       2026-09-07): eski haritadaki maskot rozeti, "Ana Menü" düğmesi,
+       kalıcı çarpan satırı ve "0/5 · yedek 0/2" joker sayacı KALDIRILDI.
+       Kalıcı çarpan zaten "i" (run bilgisi) penceresinde duruyor; joker
+       sayısı sağdaki joker panelinde slotların kendisinden okunuyor. -->
+  <div id="mapScreen" class="screen hidden">
+    <div class="gm-stage">
+
+      <!-- üst sol: duraklat + run bilgisi (Figma 231:83 / 231:86, 80×80) -->
+      <div class="brand">
+        <button id="btnMapPause" class="gm-icon gm-pause" title="Menü"></button>
+        <button id="btnMapInfo" class="gm-icon gm-info" title="Run bilgisi">i</button>
+        <div id="mapMenuPop" class="hidden">
+          <button id="btnMapGoMenu" class="btn ghost">Ana Menüye Dön</button>
+          <button id="btnMapSettings" class="btn ghost">⚙ Ayarlar</button>
+          <button id="btnMapSfx" class="btn ghost">🔊 Ses</button>
+        </div>
+      </div>
+
+      <!-- sol sütun (Figma x41 y137, 350 geniş, 16px boşlukla akar):
+           başlık 150 → Raund Score 60 → STAGE|RAUND 90 → STAGE OKEY 144
+           137 +150+16 = 303 · +60+16 = 379 · +90+16 = 485  (tasarımla birebir) -->
+      <div class="gm-left">
+        <div id="mapTitle" class="gm-map-title">
+          <span id="lblMapTitle1">CHOOSE YOUR</span>
+          <span id="lblMapTitle2" class="mt-hi">NEXT RAUND</span>
+        </div>
+        <div id="mapScorePanel" class="gm-score">
+          <div class="gm-score-lbl" id="lblMapScoreBox">Raund<br>Score</div>
+          <div class="gm-score-body">
+            <div class="gm-score-val"><span id="mapScoreVal">0</span></div>
+          </div>
+        </div>
+        <div class="gm-statrow">
+          <div class="gm-stat">
+            <div class="gm-stat-h" id="lblMapStageBox">STAGE</div>
+            <div class="gm-stat-v" id="mapStage">1/8</div>
+          </div>
+          <div class="gm-stat">
+            <div class="gm-stat-h" id="lblMapRoundBox">RAUND</div>
+            <div class="gm-stat-v" id="mapRound">1/3</div>
+          </div>
+        </div>
+        <!-- STAGE OKEY kutusu (Figma 288:396, 350×144) -->
+        <div class="gm-map-okey">
+          <div class="mo-lbl" id="lblMapOkeyBox">STAGE<br>OKEY</div>
+          <div id="mapOkey" class="mo-tile"></div>
+        </div>
+      </div>
+
+      <!-- üst sağ: coin (Figma 221:454, 1709,41, 170×80) -->
+      <div id="mapCoin" class="gm-coin"><span class="gm-cur">$</span><span id="mapCoinVal">0</span></div>
+
+      <!-- sağ: joker ızgarası (Figma 221:445, 1638,161, 211×388) -->
+      <aside id="mapJokerPanel" class="gm-jokers">
+        <div id="mapJokerSlots"></div>
+      </aside>
+
+      <!-- sağ alt: deste + atılan (Figma 237:618 / 237:616 / 237:617) -->
+      <div id="mapPileCol">
+        <div class="deck-pile"></div>
+        <div id="mapDeckCount" class="gm-deck-count"></div>
+        <div id="mapDiscardSlot" class="discard-slot"></div>
+      </div>
+
+      <!-- merkez: üç raund kartı (Figma 424 / 829 / 1234, y309, 370×718) -->
+      <main id="mapCards"></main>
+    </div>
+  </div>
+
+  <!-- ==================== OYUN EKRANI ====================
+       Figma "OKEY-101" UI_GÜNCEL frame'leri (2026-08-23):
+         · 210:3625 Raund 1 · 210:5139 Raund 2 · 210:4002 Boss Raund
+         · 210:5514 / 210:5889 / 210:6264 varyasyonlar (aynı sistemin
+           farklı OYUN DURUMLARI: tur sayısı, Meld dolu/boş,
+           backup+Değnek kapalı/açık) → tek tutarlı sistem olarak kuruldu.
+       `.gm-stage` sabit 1920×1080 tasarım tuvalidir; tüm çocukların
+       konumu Figma px'iyle birebir aynıdır. Ölçek ui.js `fitGameScale()`
+       (--gm-scale, CONTAIN) ile verilir — ana menüdeki `.fm-stage`
+       deseninin aynısı.
+       TÜM element id'leri ve handler'ları DEĞİŞMEDİ; yalnız kapsayıcılar
+       ve konumlar tasarıma çekildi. -->
+  <div id="gameScreen" class="screen hidden">
+    <div class="gm-stage">
+
+      <!-- ---- üst sol: duraklat + RUN INFO ----
+           Figma'da bu iki butondan ikincisi ("i", node 210:3805) RUN
+           BİLGİSİ butonudur. Ses aç/kapa duraklat menüsündedir — tasarımda
+           ekranda ses butonu YOKTUR. -->
+      <div class="brand">
+        <button id="btnMenu" class="gm-icon gm-pause" title="Menü"></button>
+        <button id="btnRunInfo" class="gm-icon gm-info" title="Run bilgisi">i</button>
+        <div id="menuPop" class="hidden">
+          <button id="btnGoMenu" class="btn ghost">Ana Menüye Dön</button>
+          <button id="btnPauseSettings" class="btn ghost">⚙ Ayarlar</button>
+          <button id="btnSfx" class="btn ghost">🔊 Ses</button>
+        </div>
+      </div>
+
+      <!-- ---- sol istatistik sütunu (Figma x41, y137'den akış) ---- -->
+      <!-- PLAYTEST 20 · GRUP E — SIRA DEĞİŞTİ (kullanıcı kararı 2026-08-30).
+           ESKİ SIRA: çip → BOSS KUTUSU → puan → STAGE → RAUND. Boss kutusu
+           akışın ORTASINDA olduğu için uzun boss metinlerinde altındaki
+           her şeyi aşağı itiyordu; itilmesin diye kutuya 170px tavan
+           konmuş, sığmayan metin de kutunun İÇİNDE kaydırılıyordu.
+           YENİ SIRA: çip → puan → [STAGE | RAUND yan yana] → piyasa →
+           BOSS KUTUSU (en altta). Böylece:
+             · STAGE ve RAUND tek satırda, yan yana ve HER ZAMAN aynı
+               yerde (y=289) durur — boss metni ne kadar uzarsa uzasın,
+             · boss kutusu en son eleman olduğu için AŞAĞIYA serbestçe
+               uzar ve kendi içinde KAYDIRMA YAPMAZ.
+           Alt sınır OKEY kutusudur (y=781) → kutuya ~380px yer kalır;
+           en uzun boss metni (165 karakter, ~5 satır) bunun yarısını bile
+           doldurmaz. -->
+      <div class="gm-left">
+        <div id="roundChip" class="gm-chip-round">Raund 1</div>
+        <div id="scorePanel" class="gm-score">
+          <div class="gm-score-lbl" id="lblScoreBox">Raund<br>Score</div>
+          <!-- Grup L: Figma'da bu kutuda İLERLEME BARI YOKTUR — yalnız
+               düz "mevcut/hedef" metni vardır. Bar tamamen kaldırıldı. -->
+          <div class="gm-score-body">
+            <div class="gm-score-val"><span id="scoreNow">0</span>/<span id="scoreTarget">200</span></div>
+          </div>
+        </div>
+        <!-- STAGE ve RAUND tek satırda: 155 + 16 + 155 = 326 ≤ 350 -->
+        <div class="gm-statrow">
+          <div class="gm-stat">
+            <div class="gm-stat-h" id="lblStageBox">STAGE</div>
+            <div class="gm-stat-v" id="stageVal">1/8</div>
+          </div>
+          <div class="gm-stat">
+            <div class="gm-stat-h" id="lblRoundBox">RAUND</div>
+            <div class="gm-stat-v" id="roundVal">1/3</div>
+          </div>
+        </div>
+        <div id="permMult" class="perm-mult hidden"></div>
+        <div id="bossChip" class="chip boss-chip hidden"></div>
+        <!-- Boss raund kural kutusu (GDD 13.3) — SADECE boss raundunda.
+             Sütunun EN SON elemanı: aşağıya serbestçe uzar. -->
+        <div id="bossBanner" class="gm-boss-cond hidden"></div>
+      </div>
+
+      <!-- ---- üst orta/sağ: tur göstergesi + coin ---- -->
+      <!-- PLAYTEST 20 · GRUP B/1 — FATALITY SINIRI ÜST ŞERİTTE.
+           Eskiden ekranın ORTASINDA, açılım alanının üstünde büyük bir
+           kırmızı kutu olarak duruyordu; oyun alanını bölüyor ve her turda
+           göze çarpan tek şey o oluyordu. Artık TUR ve $ ile AYNI ŞERİTTE,
+           aynı görsel dilde, kompakt bir çip: "☠ Sınır: 115". Tam açıklama
+           hover tooltip'inde durur (ui.js attachTip). -->
+      <div id="fatalityChip" class="gm-fatchip hidden"></div>
+      <!-- GRUP D (P20) — Trade Jokeri piyasa göstergesi. Sol sütunda değil
+           ÜST ŞERİTTE: ölçüm, sol sütunun boss kutusuna 690px'e kadar
+           (backup omzunun üst kenarı) yer bıraktığını gösterdi; çip orada
+           dursaydı 96px yiyip en uzun boss metnini omzun altına itiyordu.
+           Fatality çipiyle aynı görsel dilde, onun solunda. -->
+      <div id="borsaChip" class="gm-borsa hidden"></div>
+      <div id="turnIndicator" class="gm-turn"></div>
+      <!-- Figma 210:3740: "$" (Edit Undo BRK 48px) + sayı (36px), ikon YOK -->
+      <div id="coinChip" class="gm-coin"><span class="gm-cur">$</span><span id="coinVal">0</span></div>
+
+      <!-- ---- SAĞ ÜST: MELD / İŞLEME ALANI (Grup D) ----
+           Önceki turların açık kombinasyonları ve onlara yapılan
+           işlemeler burada durur (Figma 210:3927 "Meld"). -->
+      <div id="meldArea" class="gm-meld">
+        <div class="gm-meld-h" id="lblMeld">Meld</div>
+        <div id="meldRow" class="gm-meld-rows"></div>
+      </div>
+
+      <!-- ---- sağ: joker ızgarası (Figma 210:3732, 5 slot) ---- -->
+      <aside id="jokerPanel" class="gm-jokers">
+        <div class="gm-jk-head"><span id="lblJokers">JOKERLER</span> <span id="slotCount">0/5</span></div>
+        <div id="jokerSlots"></div>
+      </aside>
+
+      <!-- ---- merkez: ipucu · tepsi · önizleme · aksiyonlar ---- -->
+      <main id="stage">
+        <!-- Figma'da ipucu/mod metni YOK. Bu kutu yalnız pop-up'ı kapatılmış
+             Tüccar teklifini geri çağıran düğmeyi taşır; başka zaman boştur. -->
+        <div id="openAreaHint"></div>
+      </main>
+      <div id="crimsonPeek" class="hidden"></div>
+      <div id="combosRow" class="gm-trays"></div>
+      <div id="previewBar" class="gm-preview hidden"></div>
+      <!-- Figma 210:3746: bar 4 slot — [birincil] · Sort Hand (Rank · Suit) · Pass.
+           Birincil slot TEK butondur: duruma göre Open Hand / Confirm / taş atma.
+           Aynı anda yalnız biri görünür. -->
+      <div class="gm-actions">
+        <button id="btnAddCombo" class="gm-btn gm-btn-open">Open<br>Hand</button>
+        <button id="btnConfirm" class="gm-btn gm-btn-open hidden">Confirm</button>
+        <button id="btnDiscard" class="gm-btn gm-btn-open hidden">At</button>
+        <!-- PLAYTEST 20 · GRUP A — Terazi "Taş Feda Et".
+             Eskiden ui.js bu düğmeyi çalışma anında ÜRETİP bara sokuyordu;
+             ızgaranın gerçek bir üyesi olmadığı için uzun etiketlerde
+             (TR "Taş Feda Et", EN "Sacrifice") kutudan taşıyordu. Artık
+             barın kendi çocuğu: fitActionLabels() onu da ölçekler. -->
+        <button id="btnTerazi" class="gm-btn gm-btn-terazi hidden">Taş Feda Et</button>
+        <!-- PLAYTEST 29 · GRUP F — Paratoner "Yem Seç". Terazi düğmesiyle
+             aynı ızgara üyeliği ve aynı stil ailesi; ikisi aynı anda
+             görünebilir (iki kart birden slotta olabilir). -->
+        <button id="btnParatoner" class="gm-btn gm-btn-terazi hidden">Yem Seç</button>
+        <div class="gm-sort">
+          <span id="sortLabel" class="gm-sortlbl">Sort Hand</span>
+          <div class="gm-sortbtns">
+            <button id="btnSortRank" class="gm-btn">Rank</button>
+            <button id="btnSortSuit" class="gm-btn">Suit</button>
+          </div>
+        </div>
+        <button id="btnSkip" class="gm-btn">Pass</button>
+      </div>
+
+      <!-- ---- sol alt: bu stage'in okeyi (Figma 210:3784) ---- -->
+      <div class="gm-okeyblock">
+        <div class="gm-okey-lbl" id="lblOkeyBox">OKEY</div>
+        <div id="okeyChip" class="gm-okey-tile"></div>
+      </div>
+
+      <!-- ---- ıstaka + açılır omuzlar (Grup C) ----
+           GRUP H (kullanıcı kararı 2026-09-07): Değnek omzu SOLDA,
+           backup omzu SAĞDA. Figma oyun ekranında ters duruyordu;
+           kullanıcı yerlerini değiştirtti. Konum YALNIZ .gm-sh-left /
+           .gm-sh-right sınıflarından gelir, DOM sırası değişmedi
+           (sekme/aria testleri ve JS kimlikleri aynen çalışır). -->
+      <section id="rackArea">
+        <div id="backupShoulder" class="gm-shoulder gm-sh-right collapsed">
+          <button class="gm-sh-tab" id="btnBackupToggle" aria-expanded="false">
+            <span id="lblBackup">backup</span>
+            <span id="backupCount" class="gm-sh-count">0/2</span>
+            <span class="gm-chev" aria-hidden="true"></span>
+          </button>
+          <div class="gm-sh-body"><div id="backupSlots"></div></div>
+        </div>
+        <div id="totemShoulder" class="gm-shoulder gm-sh-left collapsed">
+          <button class="gm-sh-tab" id="btnTotemToggle" aria-expanded="false">
+            <span id="lblConsum">Değnek</span>
+            <span id="consumCount" class="gm-sh-count">0/3</span>
+            <span class="gm-chev" aria-hidden="true"></span>
+          </button>
+          <div class="gm-sh-body"><div id="consumRow"></div></div>
+        </div>
+        <div id="rack">
+          <div class="rack-row" id="rackRow1"></div>
+          <div class="rack-row" id="rackRow2"></div>
+        </div>
+      </section>
+
+      <!-- ---- sağ alt: deste + atılan (Figma 210:3704 / 3698) ----
+           Tasarımda METİN ETİKETİ YOK: deste kartı, altında kalan/toplam
+           sayacı ve boş atılan slotu. -->
+      <div id="pileCol">
+        <div class="deck-pile"></div>
+        <div id="deckCount" class="gm-deck-count"></div>
+        <div id="discardSlot" class="discard-slot"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== ORTAK KATMANLAR ==================== -->
+  <div id="toast" class="hidden"></div>
+
+  <div id="overlay" class="hidden">
+    <div id="modal">
+      <div class="mascot-wrap"><img src="maskot.png" alt="maskot"></div>
+      <h2 id="modalTitle"></h2>
+      <div id="modalBody"></div>
+      <button id="modalBtn" class="btn primary"></button>
+    </div>
+  </div>
+
+  <!-- ==================== STORE SAHNESİ (Grup B) ====================
+       Artık pop-up değil: kendi arka planı ve düzeni olan TAM EKRAN sahne.
+       Sol: dükkan tabelası + run istatistikleri + slotların (hover→Sat).
+       Sağ: ürün rafları + aksiyonlar. Referans: Balatro SHOP / Gambonanza. -->
+  <div id="storeOverlay" class="hidden">
+    <div id="storeScene">
+      <aside id="storeSide">
+        <div id="storeSign">
+          <h2 id="storeTitle">STORE</h2>
+          <div id="storeSub" class="store-sub">Raund arası alışveriş</div>
+        </div>
+        <div class="ss-block">
+          <div id="ssRoundLbl" class="ss-label">STAGE · RAUND</div>
+          <div id="ssRound" class="ss-value"></div>
+        </div>
+        <div class="ss-block">
+          <div id="ssCoinLbl" class="ss-label">COİN</div>
+          <div id="storeCoins" class="ss-value gold"><span class="coin-ico"></span> 0</div>
+        </div>
+        <div class="ss-block">
+          <div id="ssPermLbl" class="ss-label">KALICI ÇARPAN</div>
+          <div id="ssPerm" class="ss-value">+0.0x</div>
+        </div>
+        <div class="panel-title"><span id="ssSlotsTitle">SLOTLARIN</span> <span id="ssSlotsCount" class="pt-count">0/5</span></div>
+        <div id="storeSlotsRow" class="store-slots"></div>
+        <div class="panel-title"><span id="ssBackupTitle">BACKUP</span> <span id="ssBackupCount" class="pt-count">0/2</span></div>
+        <div id="storeBackupRow" class="store-slots"></div>
+        <div id="storeDeckRow"></div>
+        <div class="panel-title"><span id="ssConsumTitle">DEĞNEK</span> <span id="ssConsumCount" class="pt-count">0/3</span></div>
+        <div id="storeConsumRow"></div>
+      </aside>
+      <main id="storeMain">
+        <!-- Grup D: üst satır JOKERLER, alt satır TÜKETİLEBİLİR + GİZLİ PAKETLER -->
+        <div id="storeItems">
+          <div class="store-row">
+            <div class="sr-head" id="srJokersLbl">JOKERLER</div>
+            <div class="sr-grid" id="storeRowJokers"></div>
+          </div>
+          <div class="store-row">
+            <div class="sr-head" id="srExtrasLbl">TÜKETİLEBİLİR &amp; GİZLİ PAKETLER</div>
+            <div class="sr-grid" id="storeRowExtras"></div>
+          </div>
+        </div>
+        <div class="store-actions">
+          <button id="btnReroll" class="btn ghost">🎲 Yenile — 3 <span class="coin-ico"></span></button>
+          <button id="btnStoreContinue" class="btn confirm">Haritaya Dön →</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ STAGE SONU GÜÇLENDİRME SAHNESİ (Grup H) ============
+       Boss zafer ekranı kapandıktan SONRA ayrı adım (referans: Gambonanza
+       "Upgrade Your Run"). 4 seçenek, 1 seçim; 5 coin'e bir kez yenileme. -->
+  <div id="upgradeOverlay" class="hidden">
+    <div id="upgradeScene">
+      <h2 id="upTitle">🏆 STAGE TAMAMLANDI!</h2>
+      <!-- Playtest 10: seçim yok — iki çark dönüp iki rastgele ödül verir -->
+      <div id="upSub" class="store-sub">İki ödül çarkı dönüyor…</div>
+      <div id="upCoins" class="ss-value gold"></div>
+      <div id="upOptions" class="up-duo"></div>
+      <div class="store-actions" style="justify-content:center">
+        <button id="btnUpContinue" class="btn primary"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== KOLEKSİYON (Grup K) ====================
+       Tüm jokerler rarity gruplu ızgarada; prototipte gizleme yok. -->
+  <div id="collectionOverlay" class="hidden">
+    <div id="collectionScene">
+      <div class="col-head">
+        <div>
+          <h2 id="colTitle">🀄 KOLEKSİYON</h2>
+          <div id="colSub" class="store-sub"></div>
+        </div>
+        <button id="btnColBack" class="btn ghost">← Geri</button>
+      </div>
+      <div id="colBody"></div>
+    </div>
+  </div>
+
+</div>
+<script src="engine.js"></script>
+<script src="i18n.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>
