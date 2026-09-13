@@ -6826,6 +6826,11 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   transition: opacity .12s ease, transform .12s ease;
 }
 .consum-card.art-only:hover { z-index: 40; }
+/* P40: omuz (z 1) ıstakanın (#rack, z 2) arkasında durur; kartın z-index'i
+   omzun katmanından dışarı çıkamadığı için rozetin alt kenarı ıstakanın altında
+   kalıyordu. Rozet açıkken omuz ıstakanın üstüne alınır — açık omuz ıstakayla
+   yalnız rozet kadar örtüşür, fare çekilince eski sırasına döner. */
+.gm-stage .gm-shoulder.open:has(.consum-card.art-only:hover) { z-index: 3; }
 .consum-card.art-only:hover .c-hover { opacity: 1; transform: none; }
 /* sağ üstte piksel fare: sağ tuş yanıyor */
 .consum-card.art-only .c-hover .ch-ico {
