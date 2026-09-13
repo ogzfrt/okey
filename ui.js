@@ -1616,30 +1616,11 @@
       const fuseAct = j.key === 'fuzyon'
         ? [{ label: t('fuseBtn'), fn: () => pickFuzyon(j.id) }] : [];
       if (!storeOpen()) return fuseAct;
-      // Grup B: satış kilitli jokerler (Lanetli Kaptan kurtardıktan sonra)
-      const acts = j.noSell ? [{ label: t('sellLocked'), disabled: true, fn: () => {} }] : [{
-        label: t('sellBtn', sellPrice(j.rarity, j.key), COIN),
-        fn: () => sellJokerNow(j),
-      }];
-      /* MADDE E7 (2026-09-09) — TAKAS: kartı ver, farkı öde, bir üst
-         nadirlikten rastgele kart al. Satışın hemen altında durur çünkü
-         ikisi de "bu karttan kurtulma" eylemidir; takas onun ödeyerek
-         yukarı çıkan hâlidir. Motor uygun değilse (Epic, Mythic, kilitli)
-         eylem kilitli görünür — düğmeyi gizlemek yerine NEDEN yapılamadığı
-         gösterilsin diye. */
-      {
-        const ti = Game.tradeUpInfo(j.id);
-        acts.push(ti.ok ? {
-          label: t('tradeBtn', ti.cost, COIN),
-          disabled: (Game.state?.coins ?? 0) < ti.cost,
-          fn: () => {
-            const res = Game.tradeUpJoker(j.id);
-            if (!res.ok) { toast(res.error || t('sellFail')); return; }
-            toast(t('tradeToast', T.ev(res.gave), T.ev(res.got)), true);
-            SFX.coin(); renderStore(); render();
-          },
-        } : { label: t('tradeLocked'), disabled: true, fn: () => {} });
-      }
+      /* P43 (kullanıcı isteği 2026-09-14) — tooltip'teki "Sat" ve "Takas"
+         düğmeleri KALKTI: satış kartın üstünde SAĞ TIKLA (P41 eylem rozeti),
+         takas satın alırken hedef seçiminde (pickBuyDest) yapılıyor; tooltip
+         düğmeleri aynı işin işlevsiz kopyasıydı. "→ Ana" ve "Birleştir" kalır. */
+      const acts = [];
       if (backup) acts.push({
         label: t('moveMain'),
         fn: () => {
@@ -1757,48 +1738,12 @@
       b.title = t('crownBadge');
       tile2.appendChild(b);
     }
-    /* PLAYTEST 30 · GRUP G — İPOTEK DÜĞMESİ KARTIN ÜSTÜNDE.
-       Damga düğmesiyle aynı yer ve dil (jt-damga, sol alt köşe). Borç
-       durumu düğmenin kendi yazısıdır: HAZIR (+2 TUR) · BORÇLU (sonraki
-       raund -2) · ÖDENİYOR (bu raund -2, kullanılamaz). Kilitliyken
-       nedeni düğmenin ipucunda yazar. */
-    if (!opts.backup && Game.ipotekState
-        && Game._recsOf && Game._recsOf(j).some(r => r.key === 'ipotek')) {
-      const ip = Game.ipotekState();
-      const mode = ip.paying ? 'paying' : (ip.owed ? 'owed' : 'ready');
-      const b = document.createElement('button');
-      b.className = 'jt-damga jt-ipotek ' + mode;
-      b.textContent = t('ipotekBtn_' + mode);
-      b.disabled = !ip.canUse;
-      b.title = ip.canUse ? t('ipotekTip') : T.ev(ip.reason || '');
-      b.addEventListener('click', (e) => { e.stopPropagation(); hideTip(); useIpotekCard(); });
-      tile2.appendChild(b);
-    }
-    /* PLAYTEST 28 · GRUP B — DAMGA DÜĞMESİ KARTIN ÜSTÜNDE.
-       Damga'nın tek kararı "bu açılıma mı basayım", yani karar açılım
-       anında verilir. Düğmeyi aksiyon barına koyamayız: bar Figma'nın
-       424px'lik 3 sütunlu ızgarasıdır (bkz. style.css .gm-actions) ve
-       dördüncü bir slot tasarımı bozar. Bu yüzden düğme Godzilla /
-       Hipnotizör / Newton rozetleriyle AYNI yerde — jokerin kendi
-       kartında — durur; yeni bir UI dili icat edilmez. `jt-move`
-       (Ana Slota Al) kartın içinde zaten bir <button> barındırıyor ve
-       enableJokerDrag `e.target.closest('button')` ile onu atlıyor,
-       dolayısıyla sürükleme ile çakışmaz.
-       Rozet basılıyken hesap kutusu 2 katı gösterir (aynı puanlama
-       fonksiyonu), yani oyuncu ONAYLAMADAN önce sonucu görür. */
-    if (!opts.backup
-        && (j.key === 'ayna' || (j.fused || []).some(f => f.key === 'ayna'))) {
-      const dm = Game.damgaState && Game.damgaState();
-      if (dm && dm.id === j.id) {
-        const b = document.createElement('button');
-        b.className = 'jt-damga' + (dm.armed ? ' on' : '') + (dm.used ? ' spent' : '');
-        b.textContent = dm.used ? t('damgaSpent') : (dm.armed ? t('damgaOn') : t('damgaOff'));
-        b.disabled = !!dm.used;
-        b.title = dm.used ? t('damgaTipSpent') : t('damgaTip');
-        b.addEventListener('click', (e) => { e.stopPropagation(); hideTip(); useDamga(); });
-        tile2.appendChild(b);
-      }
-    }
+    /* P43 (kullanıcı isteği 2026-09-14) — DAMGALA / İPOTEK DÜĞMELERİ KALKTI.
+       Elle kullanılan jokerler P41'den beri kartın üstüne gelip SOL TIKLA
+       kullanılıyor (jokerActs → useDamga / useIpotekCard); kartın köşesindeki
+       hap düğme aynı işin ikinci kopyasıydı. Durum bilgisi yerinde kalır:
+       Damga basılıyken rozet "Kaldır:" der ve hesap kutusu altın 2 katı
+       gösterir; İpotek'in borç hâli tooltip'in ipotekLine satırında yazar. */
     if (opts.backup) {
       const btn = document.createElement('button');
       btn.className = 'jt-move';
@@ -5558,8 +5503,8 @@
       const shown = Hints.show('store');
       if (!shown && s.store.items.some(i => i.catchUp)) Hints.show('catchUp');
       else if (!shown && s.store.bond && !s.store.bond.sold) Hints.show('bond');
-      else if (!shown && [...s.jokers, ...s.backup].some(j => Game.tradeUpInfo(j.id).ok))
-        Hints.show('tradeUp');
+      /* P43: "TAKAS: jokerine tıkla, farkı öde" ipucu kalktı — tooltip'teki Takas
+         düğmesi kullanıcı kararıyla silindi, ipucu artık olmayan bir düğmeyi tarif ederdi. */
     }
     clampBadges(); // şeritlerdeki süre rozetleri kenardan taşmasın (Grup F)
     if (!TUT.active && storeOpen()) saveGame('inStore'); // Grup C

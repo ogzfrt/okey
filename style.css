@@ -301,43 +301,8 @@ body::before {
 }
 .joker-tile .jt-move:hover { border-color: #2b2b45; }
 
-/* ---------- DAMGA dugmesi (PLAYTEST 28 · GRUP B) ----------
-   Godzilla/Hipnotizor/Newton rozetiyle AYNI dil (kartin dis kosesinde
-   duran kucuk hap), farki tiklanabilir olmasi: bu yuzden `cursor`,
-   hover ve `:disabled` durumlari `jt-move` dugmesinden alinir.
-   Konum SOL alt: sag alt kosede `jt-charge` durabiliyor (fuzyonla iki
-   efekt ayni karta binebilir), ikisi ust uste gelmesin. */
-.joker-tile .jt-damga {
-  position: absolute;
-  bottom: -6px;
-  left: -6px;
-  border-radius: 999px;
-  background: #EDF2F6;
-  border: 1px solid #B9C6D4;
-  color: #5B6B7E;
-  font-size: 9px;
-  font-weight: 800;
-  padding: 1px 6px;
-  cursor: pointer;
-  z-index: 3;
-}
-.joker-tile .jt-damga:hover:not(:disabled) { border-color: #2b2b45; color: #2b2b45; }
-.joker-tile .jt-damga.on {
-  background: var(--gold);
-  border-color: var(--gold-ink, #C98A0C);
-  color: #3a2a00;
-  animation: blinkDanger 1.2s steps(2) infinite;
-}
-.joker-tile .jt-damga.spent { opacity: .45; cursor: default; }
-/* PLAYTEST 30 · GRUP G — İpotek düğmesi (jt-damga ile aynı hap).
-   Borçlu / ödeniyor hâlleri kırmızımsı: oyuncu borcu bir bakışta görsün. */
-.joker-tile .jt-ipotek.owed,
-.joker-tile .jt-ipotek.paying {
-  background: #F6E3E3;
-  border-color: #C98080;
-  color: #8A2A2A;
-}
-.joker-tile .jt-ipotek:disabled { cursor: default; }
+/* (P43: kartın köşesindeki DAMGALA / İPOTEK hap düğmeleri kaldırıldı —
+   elle kullanılan jokerler kartın üstüne gelip sol tıkla kullanılır.) */
 /* PLAYTEST 31 · GRUP H — Crimson King tacı (kartın sol üst köşesi) */
 .joker-tile .jt-crown {
   position: absolute;
