@@ -239,6 +239,8 @@
       kahinChip: (x) => `Kehanet: ${x}`,
       kahinCoin: 'coin',
       kahinPts: 'puan',
+      consumRightClick: 'Sağ tık: kullan',
+      consumRightCancel: 'Sağ tık: seçimi iptal et',
       /* PLAYTEST 28 · GRUP B — Damga (eski Ayna) */
       damgaOff: '🔖 DAMGALA',
       damgaOn: '🔖 BASILI',
@@ -902,6 +904,8 @@
       kahinChip: (x) => `Prophecy: ${x}`,
       kahinCoin: 'coins',
       kahinPts: 'pts',
+      consumRightClick: 'Right-click: use',
+      consumRightCancel: 'Right-click: cancel the pick',
       damgaOff: '🔖 STAMP',
       damgaOn: '🔖 STAMPED',
       damgaSpent: '🔖 SPENT',
@@ -1463,7 +1467,7 @@
     tacirMektubu: { name: 'Merchant Letter', desc: 'Your main joker slots permanently become 6. Once per run.' },
     ferman: { name: 'Edict', desc: 'The next boss round loses its condition entirely. Twice per run.' },
     klonSisesi: { name: 'Clone Flask', desc: 'Pick a slot joker: a copy joins you with the same rounds left.' },
-    altinCanak: { name: 'Breath Elixir', desc: 'Every target drops 10% permanently for the rest of the run.' },
+    altinCanak: { name: 'Deep Breath', desc: 'Every target drops 10% permanently for the rest of the run.' },
   };
 
   const SPECIAL_EN = {
@@ -1483,7 +1487,7 @@
   /* PLAYTEST 20 · GRUP I — havuz 7 → 16; dördü buff'landı, dokuzu yeni. */
   const UPGRADE_EN = {
     carpan:  { name: 'Permanent Mult', desc: 'Permanent +0.8x on all melds.' },
-    cekis:   { name: 'Deep Breath', desc: 'Permanently draw +1 extra tile every turn.' },
+    cekis:   { name: 'Extra Draw', desc: 'Permanently draw +1 extra tile every turn.' },
     el:      { name: 'Wide Rack', desc: 'Permanently start rounds with +2 tiles.' },
     zanaat:  { name: 'Artisan', desc: 'All your jokers gain +3 rounds of remaining time.' },
     raf:     { name: 'Extra Shelf', desc: 'A permanent extra joker shelf opens in the store. This store included.' },
@@ -1742,7 +1746,7 @@
     [/^🀄 ×2 basamak$/, '🀄 ×2 steps'],
     /* stage sonu güçlendirme notları (Grup H) */
     [/^✖️ Kalıcı Çarpan: tüm açılımlara kalıcı \+0\.5x$/, '✖️ Permanent Mult: permanent +0.5x on all melds'],
-    [/^🎴 Derin Nefes: tur başına artık (\d+) taş çekiyorsun$/, '🎴 Deep Breath: you now draw $1 tiles per turn'],
+    [/^🎴 Bol Çekiş: tur başına artık (\d+) taş çekiyorsun$/, '🎴 Extra Draw: you now draw $1 tiles per turn'],
     [/^🖐️ Istakan büyüdü: raundlara artık (\d+) taşla başlıyorsun$/, (m) => `🖐️ Your rack grew: rounds now start with ${m[1]} tiles`],
     [/^🔧 Zanaatkâr: (\d+) jokerin süresi \+2 raund uzadı$/, '🔧 Artisan: $1 jokers gained +2 rounds'],
     [/^🏪 Eskici Rafı: store'da kalıcı \+1 joker rafı$/, '🏪 Extra Shelf: permanent +1 joker shelf in the store'],
@@ -1806,7 +1810,7 @@
     [/^Zaten yazılı bir ferman var — sıradaki boss raundunda işleyecek\.$/, 'An edict is already written — it applies to the next boss round.'],
     [/^Ferman boss raundundan ÖNCE yazılır; bu raund çoktan başladı\.$/, 'An edict is written BEFORE the boss round; this round has already begun.'],
     [/^📜 Tacir Mektubu: Ana Slot kalıcı büyüdü — artık (\d+) joker taşıyabilirsin$/, '📜 Merchant Letter: Main Slots permanently grew — you can now hold $1 jokers'],
-    [/^🏆 Nefes İksiri: tüm hedef puanlar kalıcı -%(\d+)$/, '🏆 Breath Elixir: every target score permanently -$1%'],
+    [/^🏆 Derin Nefes: tüm hedef puanlar kalıcı -%(\d+)$/, '🏆 Deep Breath: every target score permanently -$1%'],
     [/^🧬 Klon Şişesi: (.+?) kopyalandı \((.+?), (\d+) raund\)$/, '🧬 Clone Flask: $1 cloned ($2, $3 rounds)'],
     [/^🥈 Gümüş Vernik: (.+?) kalıcı olarak Gümüş Taş oldu$/, '🥈 Silver Varnish: $1 permanently became a Silver Tile'],
     [/^🥇 Altın Vernik: (.+?) kalıcı olarak Altın Taş oldu$/, '🥇 Gold Varnish: $1 permanently became a Gold Tile'],

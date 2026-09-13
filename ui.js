@@ -2527,17 +2527,23 @@
        kartında da Figma varlığıyla görünür (CONSUM_ART → .cs-<key>, yol
        style.css'te). Çizimi henüz gelmemiş olan emoji ikonuyla kalır. */
     const art = CONSUM_ART.has(key);
-    d.innerHTML =
-      `<span class="c-icon${art ? ' cs-art cs-' + key : ''}">${art ? '' : def.icon}</span>` +
-      `<div class="c-body"><b>${T.consumName(key, def.name)}</b><span>${T.consumDesc(key, def.desc)}</span></div>`;
+    const picking = !!(consumPick && consumPick.index === index);
+    /* P38 (kullanıcı kararı 2026-09-14) — ÇİZİMLİ DEĞNEK YALNIZ ÇİZİMİN KENDİSİ.
+       Slotta ad, açıklama ve "Kullan" düğmesi YOK; kart kabuğu da yok.
+       Kullanmak için çizime SAĞ TIK (raund içinde de store'da da); taş seçen
+       değnekte seçim sürerken ikinci sağ tık iptal eder. Ad + açıklama +
+       "Sağ tık" ipucu tooltip'te. Çizimi olmayan (ileride eklenecek) bir
+       değnek eski kart düzeninde, düğmeyle kalır. */
+    if (art) d.classList.add('art-only');
+    d.innerHTML = art
+      ? `<span class="c-icon cs-art cs-${key}"></span>`
+      : `<span class="c-icon">${def.icon}</span>` +
+        `<div class="c-body"><b>${T.consumName(key, def.name)}</b><span>${T.consumDesc(key, def.desc)}</span></div>`;
     attachTip(d, { name: T.consumName(key, def.name),
       rarityText: `${T.rarity(def.rarity || 'common')} · ${t('consumTag')}`,
       accent: def.rarity || 'common',
-      desc: T.consumDesc(key, def.desc) }, {});
-    const btn = document.createElement('button');
-    btn.className = 'c-use';
-    btn.textContent = consumPick && consumPick.index === index ? t('cancel') : t('useBtn');
-    btn.addEventListener('click', () => {
+      desc: T.consumDesc(key, def.desc) + (art ? ` — ${t(picking ? 'consumRightCancel' : 'consumRightClick')}` : '') }, {});
+    const useIt = () => {
       if (consumPick && consumPick.index === index) { consumPick = null; render(); return; }
       if (def.target === 'joker') { pickConsumJoker(index, def); return; }
       if (def.target === 'tile' || def.target === 'tileColor') {
@@ -2551,8 +2557,16 @@
         return;
       }
       finishConsum(Game.useConsumable(index));
-    });
-    d.appendChild(btn);
+    };
+    if (art) {
+      d.addEventListener('contextmenu', (e) => { e.preventDefault(); hideTip(); useIt(); });
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'c-use';
+      btn.textContent = picking ? t('cancel') : t('useBtn');
+      btn.addEventListener('click', useIt);
+      d.appendChild(btn);
+    }
     /* GRUP C (P22) — DEĞNEK SATIŞI.
        Yalnız STORE panelinde çizilir: satış joker tarafında da store'a bağlı
        bir işlem ve raund ortasında coin basmak dengeyi bozardı. */
@@ -5652,7 +5666,7 @@
      çizim gelince buraya anahtar, style.css'e bir `--cs-art` satırı. */
   /* P37 (2026-09-13) — Figma 295:176 güncellendi: 20 değneğin 20'si çizimli.
      Boya Kabı yeni frame'de yok, eski çizimi kalır; Figma'daki "DERİN_NEFES"
-     çizimi Nefes İksiri'dir (`altinCanak`). */
+     çizimi Derin Nefes'tir (`altinCanak`, eski adı Nefes İksiri). */
   const CONSUM_ART = new Set(['zimpara', 'cekic', 'boya', 'muska', 'kumbara',
     'yildizTozu', 'gumusVernik', 'zamanKumu', 'tac',
     'balKupu', 'kopyaci', 'miknatis', 'altinCanak', 'altinOran', 'tacirMektubu',

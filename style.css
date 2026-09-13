@@ -6787,6 +6787,23 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .gm-stage .gm-sh-body .consum-card .c-use { font-size: calc(var(--slot-w) * .124); padding: 1px 5px; }
 .gm-stage .gm-sh-body .joker-tile .jt-name { font-size: calc(var(--slot-w) * .136); }
 
+/* P38 (kullanıcı kararı 2026-09-14) — ÇİZİMLİ DEĞNEK KARTI = YALNIZ ÇİZİM.
+   Kabuk (zemin/kenarlık/dolgu) yok; çizim slotu tümüyle doldurur. Kullanım
+   sağ tıkla (ui.js consumCard). Taş seçimi sürerken çizimin çevresinde yeşil
+   çerçeve nabız atar. Store rafında "Sat" düğmesi çizimin altında kalır. */
+.consum-card.art-only { cursor: context-menu; }
+.gm-stage .gm-sh-body .consum-card.art-only {
+  background: none; border: 0; padding: 0; gap: 0; overflow: visible;
+  justify-content: center;
+}
+.gm-stage .gm-sh-body .consum-card.art-only .c-icon.cs-art { width: 100%; height: 100%; }
+#storeSide #storeConsumRow .consum-card.art-only {
+  background: none; border: 0; border-left: 0; padding: 0; gap: 4px;
+  align-items: center; box-shadow: none;
+}
+#storeSide #storeConsumRow .consum-card.art-only .c-icon.cs-art { width: 60px; height: 81px; margin: 0 auto; }
+.consum-card.art-only.picking { outline: 3px solid #2ecc71; outline-offset: 2px; }
+
 
 /* ==========================================================================
    PLAYTEST 17 — GRUP F/22: KUMARBAZ YAZI-TURA SEKANSI
@@ -7094,7 +7111,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .cs-balKupu      { --cs-art: url('assets/game/totem/bal-kupu.svg'); }
 .cs-kopyaci      { --cs-art: url('assets/game/totem/kopya-murekkebi.svg'); }
 .cs-miknatis     { --cs-art: url('assets/game/totem/miknatis.svg'); }
-.cs-altinCanak   { --cs-art: url('assets/game/totem/nefes-iksiri.svg'); }
+.cs-altinCanak   { --cs-art: url('assets/game/totem/derin-nefes.svg'); }
 .cs-altinOran    { --cs-art: url('assets/game/totem/kivilcim.svg'); }
 .cs-tacirMektubu { --cs-art: url('assets/game/totem/tacir-mektubu.svg'); }
 .cs-klonSisesi   { --cs-art: url('assets/game/totem/klon-sisesi.svg'); }

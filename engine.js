@@ -250,7 +250,7 @@ const MAX_HAND = 21;
      S2_güçlü C1 %79→%65 · C2 %60→%43 · C3 %60→%38 · C4 %53→%26
    R1'ler nefes payını koruyor (S1/S2'de C1-C4 arası %93-100).
    Çok sert gelirse hazır geri adım: C5-C8'i ×0.90. Oyuncunun elindeki
-   yeni denge valfi: Nefes İksiri değneği (hedefler kalıcı -%10). */
+   yeni denge valfi: Derin Nefes değneği (eski Nefes İksiri) (hedefler kalıcı -%10). */
 /* v7 (Playtest 9, Grup A) — TABAN 300'E YÜKSELDİ, TAVAN NEREDEYSE AYNI.
    Kullanıcı kararı: "Stage 1'in ilk raund hedefi 300'den başlasın."
    145 → 300 (×2.07) bir zemin değişikliği; eğer tüm tablo aynı oranla
@@ -1176,7 +1176,10 @@ const CONSUMABLES = {
      anahtarlı MYTHIC kartın adıydı; o kart Grup F'te yeniden
      tasarlanıp YENİ BİR AD alacak. İki kart aynı adı taşıdığı
      ara durum GRUP F TAMAMLANINCA kapanır. */
-  altinCanak: { key: 'altinCanak', name: 'Nefes İksiri', icon: '🏆', price: 22, rarity: 'mythic', target: null,
+  /* P38 (kullanıcı kararı 2026-09-14) — ad "Nefes İksiri" → "DERİN NEFES"
+     (EN "Deep Breath"). Ad çakışmasın diye +1 çekiş YÜKSELTMESİ "Derin
+     Nefes" → "Bol Çekiş" oldu. ANAHTARLAR (altinCanak / cekis) DEĞİŞMEDİ. */
+  altinCanak: { key: 'altinCanak', name: 'Derin Nefes', icon: '🏆', price: 22, rarity: 'mythic', target: null,
     desc: 'Run’ın kalanında tüm hedefler kalıcı %10 düşer.' },
 };
 
@@ -2302,7 +2305,7 @@ const UPGRADE_DEFS = {
   carpan:  { key: 'carpan',  icon: '✖️', name: 'Kalıcı Çarpan', cat: 'mult',
     stats: [`+${UP_VAL.carpan}x`],
     desc: `Tüm açılımlara kalıcı +${UP_VAL.carpan}x.` },
-  cekis:   { key: 'cekis',   icon: '🎴', name: 'Derin Nefes', cat: 'cap',
+  cekis:   { key: 'cekis',   icon: '🎴', name: 'Bol Çekiş',   /* P38: eski ad Derin Nefes (değneğe geçti) */ cat: 'cap',
     stats: [`+${UP_VAL.cekis} 🎴/tur`],
     desc: `Her tur kalıcı +${UP_VAL.cekis} fazla taş çekersin.` },
   /* 'el' (Geniş Istaka) KALDIRILDI — Grup H (2026-07-09): başlangıç el
@@ -2873,7 +2876,7 @@ const Game = {
       altinOranCount: 0,    // Grup B (P18) — Altın Oran kaç kez kullanıldı (tavan ALTIN_ORAN_MAX)
       carpanScale: 0,       // Grup E — Usta Eli (kombinasyon sayısı 2 kat sayılır)
       consumSlotBonus: 0,   // Grup D (P8) — Heybe: tüketilebilir envanteri büyütür
-      permTargetCut: 0,     // Grup D (P8) — Nefes İksiri: hedef puanlar kalıcı düşer
+      permTargetCut: 0,     // Grup D (P8) — Derin Nefes (altinCanak): hedef puanlar kalıcı düşer
       /* FERMAN (P28 · Grup F) — `fermanUsed` RUN boyunca sayar (tavan
          FERMAN_MAX), `fermanPending` yazılmış ama henüz işlememiş fermanı
          taşır, `bossVoided` ise YALNIZ o raundluktur (raund başında
@@ -3199,7 +3202,7 @@ const Game = {
       const scale = Math.pow(TARGET_GROWTH, stage - last);
       base = Math.round(tbl[last - 1][ric - 1] * scale / 10) * 10;
     }
-    // Nefes İksiri (değnek) — run'ın kalanında tüm hedefler kalıcı düşer
+    // Derin Nefes (değnek, altinCanak) — run'ın kalanında tüm hedefler kalıcı düşer
     const cut = this.state?.permTargetCut || 0;
     if (cut) base = Math.max(10, Math.round(base * (1 - cut) / 5) * 5);
     /* The World (P31 · Grup A) — tetiklendiği andan run sonuna kadar tüm
@@ -6366,7 +6369,7 @@ const Game = {
      tüketilebilir varsa pes ediyordu; Kumbara ya da Heybe gibi raundla
      hiç ilgisi olmayan bir kart bile oyuncuya kaybedilmiş raundu elle
      kapattırıyordu. Üç sınıf var:
-       'win'  → kendi başına raundu kazandırabilir (Nefes İksiri: hedefi
+       'win'  → kendi başına raundu kazandırabilir (Derin Nefes: hedefi
                 kalıcı %10 indirir; anında yeniden hesaplanır)
        'turn' → raundu uzatır, yeni bir şans verir (şu an ÜYESİ YOK —
                 eski Nefes İksiri P28'de kaldırıldı; sınıf duruyor ki
@@ -6416,7 +6419,7 @@ const Game = {
   },
 
   /* Grup I — hedefi indirerek raundu kazandırabilecek tüketilebilirleri
-     otomatik kullan. Şu an tek üye: Nefes İksiri (hedefler kalıcı -%10,
+     otomatik kullan. Şu an tek üye: Derin Nefes (hedefler kalıcı -%10,
      tavan %40). Birden fazla kopya varsa hedefe yetene kadar kullanılır;
      hedefe yine ulaşılamıyorsa HİÇBİRİ harcanmaz (boşa gitmesin). */
   _autoRescueTarget(events) {
@@ -7499,7 +7502,7 @@ const Game = {
     }
 
     // çekiş — Grup A: el üst sınırına (MAX_HAND=21) kırpılır; Kara Kedi dönüşümü
-    const wantN = 5 + (s.permDraw || 0) // kalıcı çekiş yükseltmesi (madde 24 · Derin Nefes)
+    const wantN = 5 + (s.permDraw || 0) // kalıcı çekiş yükseltmesi (madde 24 · Bol Çekiş, eski adı Derin Nefes)
       + (s.tuccarDraw || 0)  // Tüccar takası: bu raund +1 taş
       + (s.bonusDraw || 0)   // Grup E — Yıldız Taşı: açılımda kazanılan ekstra çekiş
       - (s.appleEaten ? APPLE_DRAW_CUT : 0);   // P31 · Grup I — cennetten kovulma
@@ -8152,7 +8155,7 @@ const Game = {
       }
     } else if (key === 'cekis') {
       s.permDraw = (s.permDraw || 0) + UP_VAL.cekis;
-      notes.push(`🎴 Derin Nefes: tur başına artık ${5 + s.permDraw} taş çekiyorsun`);
+      notes.push(`🎴 Bol Çekiş: tur başına artık ${5 + s.permDraw} taş çekiyorsun`);
     } else if (key === 'zanaat') {
       let n = 0;   // GRUP I (P20): +2 → +3
       for (const j of [...s.jokers, ...s.backup, ...s.deckJokers]) { j.usesLeft += UP_VAL.zanaat; n++; }
@@ -8984,7 +8987,7 @@ const Game = {
         if (s.status === 'playing')
           s.target = Math.ceil(this.targetFor(s.stage, s.roundInStage) * (s.nextTargetMult || 1));
         consume();
-        return { ok: true, note: `🏆 Nefes İksiri: tüm hedef puanlar kalıcı -%${Math.round(s.permTargetCut * 100)}` };
+        return { ok: true, note: `🏆 Derin Nefes: tüm hedef puanlar kalıcı -%${Math.round(s.permTargetCut * 100)}` };
       case 'klonSisesi': {
         const src = s.jokers.find(x => x.id === target?.jokerId);
         if (!src) return { ok: false, error: 'Kopyalanacak bir ANA SLOT jokeri seç.', needsTarget: 'joker' };
