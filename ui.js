@@ -1381,8 +1381,13 @@
        kutusuyla çizilemediği için satır içi SVG: dış sekizgen = çerçeve
        (--gm-light), bir çerçeve kalınlığı içeride pano (--gm-dark) + çizgi
        deseni; iki yolda da kart deliği evenodd ile boş bırakılır. */
-    const b = Math.max(3, Math.round(W * .045));    // çerçeve kalınlığı
-    const px = b + W * .06, py = b + H * .045;      // çerçeve → kart boşluğu
+    /* P44b (kullanıcı çizimi, ikinci düzeltme): çerçeve kartı SIKI sarar —
+       kartla çerçeve arasında yalnız ince bir pano payı kalır, çerçevenin pahı
+       kartın kendi pahıyla PARALEL ilerler (ilk sürümde geniş boşluk ve daha
+       büyük, kartla hizasız bir pah vardı). */
+    const b = Math.max(3, Math.round(W * .035));    // çerçeve kalınlığı
+    const g = Math.max(1.5, W * .02);               // çerçeve iç kenarı → kart payı
+    const px = b + g, py = b + g;                   // dış kenar → kart
     const st = actBadge.style;
     st.fontSize = (W * .17) + 'px';
     /* Yazı panelinin genişliği İÇERİKTEN ölçülür: store kenar çubuğundaki
@@ -1403,8 +1408,11 @@
     st.height = bh + 'px';
     const wand = card.classList.contains('consum-card');
     const kx = wand ? W * 20 / 81 : 0, ky = wand ? H * 21 / 110 : 0;   // kartın kendi pahı
-    const c = Math.max(ky, H * .12) + py * .7;                        // dış pah
-    const ci = Math.max(0, c - b * .414);                             // iç pah (çerçeve kalınlığı kadar)
+    /* Dış pah = kartın pahı, kart ile dış kenar arasındaki mesafe kadar dışa
+       ötelenmiş (45°'lik bir kenarı d kadar ötelemek pahı d·tan22.5° ≈ 0.414·d
+       uzatır). Dikdörtgen joker kartında köşeyi kesmeyecek küçük bir pah. */
+    const cox = wand ? kx + px * .414 : px * 2, coy = wand ? ky + py * .414 : py * 2;
+    const cix = Math.max(0, cox - b * .414), ciy = Math.max(0, coy - b * .414);
     const f = (n) => Math.round(n * 100) / 100;
     const oct = (x, y, w, h, cx, cy) =>
       `M${f(x + cx)} ${f(y)}H${f(x + w - cx)}L${f(x + w)} ${f(y + cy)}V${f(y + h - cy)}` +
@@ -1415,11 +1423,11 @@
       svg.setAttribute('width', f(bw));
       svg.setAttribute('height', f(bh));
       svg.setAttribute('viewBox', `0 0 ${f(bw)} ${f(bh)}`);
-      const inner = oct(b, b, bw - 2 * b, bh - 2 * b, ci, ci) + hole;
+      const inner = oct(b, b, bw - 2 * b, bh - 2 * b, cix, ciy) + hole;
       svg.innerHTML =
         '<defs><pattern id="abStripe" width="5" height="5" patternUnits="userSpaceOnUse">' +
         '<rect class="ab-s" width="5" height="2"/></pattern></defs>' +
-        `<path class="ab-o" fill-rule="evenodd" d="${oct(0, 0, bw, bh, c, c) + hole}"/>` +
+        `<path class="ab-o" fill-rule="evenodd" d="${oct(0, 0, bw, bh, cox, coy) + hole}"/>` +
         `<path class="ab-p" fill-rule="evenodd" d="${inner}"/>` +
         `<path fill="url(#abStripe)" fill-rule="evenodd" d="${inner}"/>`;
     }
