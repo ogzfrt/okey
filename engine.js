@@ -1044,7 +1044,7 @@ const CONSUMABLES = {
   /* YENİ (Grup D) — "enhancement" ailesinin ucuz basamağı: normal bir taşı
      kalıcı olarak Gümüş Taş'a çevirir (özel taş havuzuyla köprü). */
   gumusVernik: { key: 'gumusVernik', name: 'Gümüş Vernik', icon: '🥈', price: 7, rarity: 'common', target: 'tile',
-    desc: 'Bir taş seç: kalıcı Gümüş Taş olur (açılımda +1 coin).' },
+    desc: 'Bir taş seç: kalıcı Gümüş Taş olur (açılımda +5 coin).' },   // P42: GUMUS_TASI_COIN (sabit burada henüz tanımlı değil)
   /* RARE — kalıcı küçük güçler */
   kopyaci: { key: 'kopyaci', name: 'Kopya Mürekkebi', icon: '🖋', price: 8, rarity: 'rare', target: 'tile',
     desc: 'Bir taş seç: kopyası desteye kalıcı eklenir.' },
@@ -1216,9 +1216,16 @@ const SPECIAL_MAX_COPIES = 5;
 /* GRUP H — Kuzey Yıldızı: açılımda kaç taş gösterilir (biri seçilir). */
 const YILDIZ_SHOW = 3;
 
-const KD_TASI_BASE = 25;    // açılımda taban puan
-const KD_TASI_STEP = 20;    // her kullanımda kalıcı artış
-const KD_TASI_MAX  = 185;   // tek taşın ulaşabileceği tavan (8 kullanım)
+/* P42 (kullanıcı kararı 2026-09-14) — özel taş güç turu: Kara Delik 25/20/185
+   → 80/25/300, Gümüş +1 → +5 coin, Bakır +0.3x → +0.5x, Zümrüt +0.8x → +1.5x,
+   Ayna en yüksek taşı 2 kez → 3 kez sayar. */
+const KD_TASI_BASE = 80;    // açılımda taban puan
+const KD_TASI_STEP = 25;    // her kullanımda kalıcı artış
+const KD_TASI_MAX  = 300;   // tek taşın ulaşabileceği tavan (9. kullanımda kırpılır)
+const GUMUS_TASI_COIN = 5;     // kullanılan her Gümüş Taş → raund sonu coin
+const BAKIR_TASI_MULT = 0.5;
+const ZUMRUT_TASI_MULT = 1.5;
+const AYNA_TASI_TIMES = 3;     // kombinasyonun en yüksek taşı toplam kaç kez sayılır
 
 /* GRUP G (kullanıcı kararı 2026-09-07) — ÖZEL TAŞ NADİRLİĞİ.
    Özel taşlar bugüne kadar store rafından TEK TEK satılıyordu; artık
@@ -1241,7 +1248,7 @@ const SPECIAL_TILES = {
   altin: { key: 'altin', name: 'Altın Taş', icon: '🥇', price: 12, rarity: 'epic', maxCopies: SPECIAL_MAX_COPIES,
     desc: 'Destene kalıcı girer. Açılımda +60 puan.' },
   gumus: { key: 'gumus', name: 'Gümüş Taş', icon: '🥈', price: 8, rarity: 'common', maxCopies: SPECIAL_MAX_COPIES,
-    desc: 'Destene kalıcı girer. Açılımda kullanınca raund sonunda +1 coin.' },
+    desc: `Destene kalıcı girer. Açılımda kullanınca raund sonunda +${GUMUS_TASI_COIN} coin.` },
   yankiTasi: { key: 'yankiTasi', name: 'Su Taşı', icon: '💧', price: 10, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
     desc: 'Destene kalıcı girer. Girdiği kombinasyonda rengi umursanmaz; sayısı aynen geçerlidir.' },
 
@@ -1253,9 +1260,9 @@ const SPECIAL_TILES = {
      Üç eksen: PUAN (altın/çelik), ÇARPAN (bakır/zümrüt/ayna), KAYNAK
      (gümüş/yıldız/zaman) — ateş ise risk/ödül. */
   bakir: { key: 'bakir', name: 'Bakır Taş', icon: '🟤', price: 6, rarity: 'common', maxCopies: SPECIAL_MAX_COPIES,
-    desc: 'Destene kalıcı girer. Açılımda +0.3x.' },
+    desc: `Destene kalıcı girer. Açılımda +${BAKIR_TASI_MULT.toFixed(1)}x.` },
   zumrut: { key: 'zumrut', name: 'Zümrüt Taş', icon: '💚', price: 15, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
-    desc: 'Destene kalıcı girer. Açılımda +0.8x.' },
+    desc: `Destene kalıcı girer. Açılımda +${ZUMRUT_TASI_MULT.toFixed(1)}x.` },
   /* PLAYTEST 22 · GRUP F (kullanıcı kararı 2026-09-06) — "Çelik Taş"
      KARA DELİK TAŞI oldu. Eski hâli düz +25 puandı: havuzun en ucuz ve en
      olaysız kartı, alındığı andan run sonuna kadar aynı sayıyı veriyordu.
@@ -1270,7 +1277,7 @@ const SPECIAL_TILES = {
   karaDelikTasi: { key: 'karaDelikTasi', name: 'Kara Delik Taşı', icon: '🕳', price: 9, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
     desc: `Destene kalıcı girer. Açılımda +${KD_TASI_BASE} puan — her kullanımda kalıcı +${KD_TASI_STEP} yoğunlaşır (en çok +${KD_TASI_MAX}). Atarsan işlek işlemez.` },
   aynaTasi: { key: 'aynaTasi', name: 'Ayna Taşı', icon: '🪞', price: 13, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
-    desc: 'Destene kalıcı girer. Girdiği kombinasyonun en yüksek taşı iki kez sayılır.' },
+    desc: `Destene kalıcı girer. Girdiği kombinasyonun en yüksek taşı ${AYNA_TASI_TIMES} kat puan sayılır.` },
   /* PLAYTEST 24 · GRUP H (kullanıcı seçimi 2026-09-06) — "KUZEY YILDIZI".
      Eski hâli açılımda +2 RASTGELE taş çektiriyordu; el zaten MAX_HAND'de
      tavanlı olduğu için çoğu raundda hiç hissedilmiyor ve kart bir KARAR
@@ -2284,19 +2291,21 @@ const PARATONER_MULT = 10;
 const KATALIZOR_STEP = 0.2;
 const KATALIZOR_CAP = 10;
 
+/* P42 (kullanıcı kararı 2026-09-14): Kalıcı Çarpan 0.8 → 1.5x, Zanaatkâr
+   +3 → +2 raund, Nazar Boncuğu %8 → %10, Bileme Taşı 1.0 → 2.0x.
+   GENİŞ KEMER ve TACİR KARTI SİLİNDİ: aynı işi değnekler yapıyor (Kese /
+   `heybe` değnek slotu, Tacir Mektubu ana joker slotu). */
 const UP_VAL = {
-  carpan: 0.8,          // kalıcı çarpan
+  carpan: 1.5,          // kalıcı çarpan
   cekis: 1,             // tur başına ekstra taş
-  zanaat: 3,            // jokerlere eklenen raund
+  zanaat: 2,            // jokerlere eklenen raund
   raf: 1,               // store'da ekstra joker rafı
   kasaNow: 40,          // anında coin
   kasaPer: 2,           // raund sonu kalıcı coin
-  tilsim: 0.08,         // işlek riski düşüşü
+  tilsim: 0.10,         // işlek riski düşüşü
   altinDamar: 0.15,     // ham puan artışı
-  bileme: 1.0,          // çok kombinasyonlu turda çarpan
+  bileme: 2.0,          // çok kombinasyonlu turda çarpan
   uzunSoluk: 1,         // raund başına ekstra tur
-  genisKemer: 1,        // değnek envanteri slotu
-  tacirKarti: 1,        // ana joker slotu
   kayipSandik: 15,      // sandıkla gelen coin
 };
 const UP_PCT = (v) => Math.round(v * 100);
@@ -2337,12 +2346,6 @@ const UPGRADE_DEFS = {
   uzunSoluk: { key: 'uzunSoluk', icon: '⏱', name: 'Uzun Soluk', cat: 'cap',
     stats: [`⏱ +${UP_VAL.uzunSoluk} tur`],
     desc: `Her raunda kalıcı +${UP_VAL.uzunSoluk} tur.` },
-  genisKemer: { key: 'genisKemer', icon: '🎒', name: 'Geniş Kemer', cat: 'cap',
-    stats: [`🎒 +${UP_VAL.genisKemer} slot`],
-    desc: `Değnek envanterin kalıcı +${UP_VAL.genisKemer} slot büyür.` },
-  tacirKarti: { key: 'tacirKarti', icon: '📜', name: 'Tacir Kartı', cat: 'cap',
-    stats: [`📜 +${UP_VAL.tacirKarti} slot`],
-    desc: `Ana joker slotun kalıcı +${UP_VAL.tacirKarti} büyür.` },
   /* --- YENİ — ekonomi --- */
   sigorta: { key: 'sigorta', icon: '🛡', name: 'Sigorta Poliçesi', cat: 'econ',
     stats: ['🛡 tam iade'],
@@ -3553,6 +3556,22 @@ const Game = {
     }
     for (const key of cfg.consumables || [])
       if (CONSUMABLES[key] && s.consumables.length < this.consumCap()) s.consumables.push(key);
+    /* P42 (kullanıcı isteği 2026-09-14) — DESTE İÇERİĞİ (yalnız Trainer).
+       Seçilen özel taş türleri destenin TAMAMINA sırayla dağıtılır: her
+       (renk, sayı, kopya) yüzü gerçek bir özel taş KAYDI olur (sid'li — Kara
+       Delik yoğunlaşması gibi kopyaya özel durum da çalışsın). Okey yüzleri
+       normal kalır (bkz. _deckFaces), yoksa stage'in okeyi desteden kaybolurdu.
+       Joker taşları kapsam dışı: onlar joker seçimiyle zaten alınıyor. */
+    s.trainerDeckSpecials = null;
+    const spKinds = (cfg.deckSpecials || []).filter(k => SPECIAL_TILES[k]);
+    if (spKinds.length) {
+      s.trainerDeckSpecials = spKinds;
+      let i = 0;
+      for (const color of COLORS)
+        for (let n = 1; n <= 13; n++)
+          for (let copy = 0; copy < DECK_MAX_COPIES; copy++)
+            this._addSpecialTile(spKinds[i++ % spKinds.length], color, n);
+    }
     s.trainerStoreFilter = null;
     /* PLAYTEST 20 · GRUP J — EL DÜZENİ (yalnız Trainer, deneysel).
        'classic' → 2×15 sabit hücreli ızgara (ana oyunun düzeni, varsayılan)
@@ -4033,6 +4052,21 @@ const Game = {
     // okey Kırmızı 5 ise sahte okey = sıradan bir Kırmızı 5 (joker değil)
     for (const t of s.deck)
       if (t.fakeOkey) { t.color = s.okey.color; t.number = s.okey.number; }
+    /* P42 — TRAINER DESTE İÇERİĞİ: normal taşlar çıkar, yerlerini aşağıda
+       eklenen özel taş kayıtları alır. O stage'in okey yüzü ve sahte okeyler
+       kalır — okeysiz deste okey mekaniğini test edilemez hâle getirirdi. */
+    const trSpDeck = !!(this.trainerMode && s.trainerDeckSpecials && s.trainerDeckSpecials.length);
+    if (trSpDeck) {
+      s.deck = s.deck.filter(t => t.fakeOkey || (t.color === s.okey.color && t.number === s.okey.number));
+      /* Özel taşlar normalde el dağıtıldıktan SONRA desteye karışır (aşağıda,
+         "Özel Normal Taşlar desteye karışır"); burada dağıtımdan ÖNCE girer ki
+         ilk el de seçilen taşlardan oluşsun. Okey yüzündeki kayıt atlanır. */
+      for (const sp of s.specialTiles) {
+        if (sp.color === s.okey.color && sp.number === s.okey.number) continue;
+        s.deck.splice(Math.floor(this.rng() * (s.deck.length + 1)), 0,
+          { id: nextTileId(s), color: sp.color, number: sp.number, special: sp.kind, sid: sp.sid, origin: 'vernik' });
+      }
+    }
     // Grup K — tüketilebilirlerin kalıcı deste değişiklikleri, el dağıtılmadan
     // ÖNCE sırayla uygulanır (remove bir kopya siler; add/okeyClone ekler)
     /* PLAYTEST 18 · GRUP B — DÖNÜŞÜM MODLARI ARTIK ATOMİK.
@@ -4286,7 +4320,8 @@ const Game = {
     }
 
     // Özel Normal Taşlar desteye karışır (GDD 6.5c)
-    for (const sp of s.specialTiles) {
+    // P42: trainer deste içeriği açıksa bunlar dağıtımdan önce zaten eklendi (bkz. trSpDeck)
+    if (!trSpDeck) for (const sp of s.specialTiles) {
       // Grup F (P22): `sid` taşı kendi kalıcı kaydına bağlar (yoğunluk okuması)
       const t = { id: nextTileId(s), color: sp.color, number: sp.number,
         special: sp.kind, sid: sp.sid, origin: 'vernik' };
@@ -5755,13 +5790,13 @@ const Game = {
     }
     const bakirN = spN('bakir');
     if (bakirN) {
-      mult += round2(0.3 * bakirN);
-      triggered.push({ id: 'bakir', name: 'Bakır Taş', text: `+${round2(0.3 * bakirN).toFixed(1)}x` });
+      mult += round2(BAKIR_TASI_MULT * bakirN);
+      triggered.push({ id: 'bakir', name: 'Bakır Taş', text: `+${round2(BAKIR_TASI_MULT * bakirN).toFixed(1)}x` });
     }
     const zumrutN = spN('zumrut');
     if (zumrutN) {
-      mult += round2(0.8 * zumrutN);
-      triggered.push({ id: 'zumrut', name: 'Zümrüt Taş', text: `+${round2(0.8 * zumrutN).toFixed(1)}x` });
+      mult += round2(ZUMRUT_TASI_MULT * zumrutN);
+      triggered.push({ id: 'zumrut', name: 'Zümrüt Taş', text: `+${round2(ZUMRUT_TASI_MULT * zumrutN).toFixed(1)}x` });
     }
     for (const c of ctx.combos) {
       /* Su Taşı'nın ESKİ efekti (kombinasyon puanı +%20) 2026-09-06'da
@@ -5776,12 +5811,15 @@ const Game = {
         triggered.push({ id: 'pandoraGift', name: 'Pandora (Armağan)',
           text: `kombinasyon +%${Math.round(PANDORA_ARMAGAN_BONUS * 100)} (+${b})` });
       }
-      // Ayna Taşı — kombinasyonun en yüksek taşı bir kez daha sayılır
+      /* Ayna Taşı — kombinasyonun en yüksek taşı toplam AYNA_TASI_TIMES kez
+         sayılır (P42: 2 → 3): taş zaten bir kez sayıldığı için ek puan
+         (kat − 1) × değer. */
       if (c.tiles.some(t => t.special === 'aynaTasi')) {
         const top = Math.max(...c.tiles.map(t => this.tileValue(t, c) || 0));
         if (top > 0) {
-          flat += top;
-          triggered.push({ id: 'aynaT', name: 'Ayna Taşı', text: `en yüksek taş 2 kez (+${top})` });
+          const add = top * (AYNA_TASI_TIMES - 1);
+          flat += add;
+          triggered.push({ id: 'aynaT', name: 'Ayna Taşı', text: `en yüksek taş ${AYNA_TASI_TIMES} kat (+${add})` });
         }
       }
     }
@@ -6787,9 +6825,9 @@ const Game = {
         s.aynaKralMelds = (s.aynaKralMelds || 0) + 1;
       }
     }
-    // Gümüş Taş — kullanılan her gümüş raund sonunda +1 coin (GDD 6.5c)
+    // Gümüş Taş — kullanılan her gümüş raund sonunda +GUMUS_TASI_COIN coin (GDD 6.5c, P42: 1 → 5)
     const usedTiles = [...r.ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)];
-    s.gumusPending += usedTiles.filter(t => t.special === 'gumus').length;
+    s.gumusPending += GUMUS_TASI_COIN * usedTiles.filter(t => t.special === 'gumus').length;
     /* Grup E — kaynak ekseninde çalışan özel taşlar açılım ONAYINDA ödenir
        (puan/çarpan ekseni _calcOpening'de, bkz. spN). */
     /* GRUP H — KUZEY YILDIZI. Kullanılan her Yıldız Taşı bir SEÇİM turu
@@ -8056,8 +8094,6 @@ const Game = {
          hiç girmez; oyuncuya "hiçbir şey yapmayan" bir ödül düşemez. */
       if (u.key === 'bileme' && (s.permComboBonus || 0) >= 1) return false;
       if (u.key === 'uzunSoluk' && (s.permTurns || 0) >= 2) return false;
-      if (u.key === 'genisKemer' && this.consumCap() >= CONSUM_SLOT_MAX) return false;
-      if (u.key === 'tacirKarti' && (s.slotBonus || 0) >= SLOT_BONUS_MAX) return false;
       if (u.key === 'sigorta' && s.sellFull) return false;
       /* GRUP E (P22) — İkinci Şans iki ek kapıdan geçer:
          · run boyunca bir kez teklif edilir (`secondChanceTaken`);
@@ -8103,7 +8139,7 @@ const Game = {
     const s = this.state;
     const notes = [];
     if (key === 'carpan') {
-      s.permMult = round2(s.permMult + UP_VAL.carpan);   // GRUP I (P20): 0.5 → 0.8
+      s.permMult = round2(s.permMult + UP_VAL.carpan);   // GRUP I (P20): 0.5 → 0.8 · P42: 0.8 → 1.5
       notes.push(`✖️ Kalıcı Çarpan: tüm açılımlara kalıcı +${UP_VAL.carpan}x`);
     } else if (key === 'altinDamar') {
       s.permRawBonus = round2((s.permRawBonus || 0) + UP_VAL.altinDamar);
@@ -8115,12 +8151,6 @@ const Game = {
       s.permTurns = (s.permTurns || 0) + UP_VAL.uzunSoluk;
       if (s.status === 'playing') s.maxTurns = 4 + s.permTurns;
       notes.push(`⏱ Uzun Soluk: her raund artık ${4 + s.permTurns} tur`);
-    } else if (key === 'genisKemer') {
-      s.consumSlotBonus = (s.consumSlotBonus || 0) + UP_VAL.genisKemer;
-      notes.push(`🎒 Geniş Kemer: değnek envanteri artık ${this.consumCap()} slot`);
-    } else if (key === 'tacirKarti') {
-      s.slotBonus = (s.slotBonus || 0) + UP_VAL.tacirKarti;
-      notes.push(`📜 Tacir Kartı: Ana Slot artık ${this.slotCap()} joker taşıyor`);
     } else if (key === 'sigorta') {
       s.sellFull = true;
       notes.push('🛡 Sigorta Poliçesi: bundan sonra jokerler TAM alış fiyatına satılır');
@@ -8157,7 +8187,7 @@ const Game = {
       s.permDraw = (s.permDraw || 0) + UP_VAL.cekis;
       notes.push(`🎴 Bol Çekiş: tur başına artık ${5 + s.permDraw} taş çekiyorsun`);
     } else if (key === 'zanaat') {
-      let n = 0;   // GRUP I (P20): +2 → +3
+      let n = 0;   // GRUP I (P20): +2 → +3 · P42: +3 → +2
       for (const j of [...s.jokers, ...s.backup, ...s.deckJokers]) { j.usesLeft += UP_VAL.zanaat; n++; }
       notes.push(`🔧 Zanaatkâr: ${n} jokerin süresi +${UP_VAL.zanaat} raund uzadı`);
     } else if (key === 'raf') {
@@ -8181,7 +8211,7 @@ const Game = {
       s.permCoin = (s.permCoin || 0) + UP_VAL.kasaPer;
       notes.push(`💰 Coin Kasası: +${UP_VAL.kasaNow} coin ve her raund sonunda kalıcı +${UP_VAL.kasaPer} coin`);
     } else if (key === 'tilsimU') {
-      s.permIslekReduce = round2((s.permIslekReduce || 0) + UP_VAL.tilsim);   // GRUP I: %5 → %8
+      s.permIslekReduce = round2((s.permIslekReduce || 0) + UP_VAL.tilsim);   // GRUP I: %5 → %8 · P42: %8 → %10
       notes.push(`🧿 Nazar Boncuğu: işlek riski kalıcı -%${Math.round(s.permIslekReduce * 100)}`);
     } else if (key === 'usta') {
       s.carpanScale = 1;
@@ -8817,9 +8847,15 @@ const Game = {
     const s = this.state;
     if (!s) return [];
     const faces = [];
+    /* P42 — Trainer "deste içeriği": normal yüzlerin yerini özel taş kayıtları
+       alır; yalnız o stage'in OKEY yüzü normal kalır (kayıtlardaki okey yüzü
+       atlanır, okey değişince bu kural kendiliğinden yeni okeye geçer). */
+    const spDeck = !!(this.trainerMode && s.trainerDeckSpecials && s.trainerDeckSpecials.length);
+    const okeyFace = (f) => !!s.okey && f.color === s.okey.color && f.number === s.okey.number;
     for (const color of COLORS)
       for (let n = 1; n <= 13; n++)
-        for (let copy = 0; copy < DECK_MAX_COPIES; copy++) faces.push({ color, number: n });
+        for (let copy = 0; copy < DECK_MAX_COPIES; copy++)
+          if (!spDeck || okeyFace({ color, number: n })) faces.push({ color, number: n });
     // sahte okeyler: o stage'in okeyinin SIRADAN kopyaları
     if (s.okey)
       for (let copy = 0; copy < 2; copy++)
@@ -8840,8 +8876,10 @@ const Game = {
         faces.push({ color: s.okey.color, number: s.okey.number, copied: true, isOkeyReal: true });
       }
     }
-    for (const sp of (s.specialTiles || []))
+    for (const sp of (s.specialTiles || [])) {
+      if (spDeck && okeyFace(sp)) continue;
       faces.push({ color: sp.color, number: sp.number, special: sp.kind, sid: sp.sid });
+    }
     return faces;
   },
 
@@ -10452,6 +10490,14 @@ const Game = {
     let _sq = st.spSeq || 0;
     for (const x of st.specialTiles) if (x.sid == null) x.sid = ++_sq;
     st.spSeq = _sq;
+    /* P42 göçü: Geniş Kemer ve Tacir Kartı yükseltmeleri silindi. Kayıtta
+       bekleyen ödül çarkı onlardan birini taşıyorsa anahtar düşülür — yoksa
+       ödül ekranı olmayan bir tanımı çizmeye çalışırdı. Daha önce alınmış
+       olanların kalıcı etkisi (consumSlotBonus / slotBonus) aynen kalır. */
+    if (st.upgradeOffer) {
+      for (const f of ['rolled', 'options'])
+        if (Array.isArray(st.upgradeOffer[f])) st.upgradeOffer[f] = st.upgradeOffer[f].filter(k => UPGRADE_DEFS[k]);
+    }
     {
       const zones = [st.deck, st.hand, st.discardPile, st.gossipTable, st.bungiePending];
       for (const list of [st.opened, st.prevOpen, st.staged, st.islemeler])

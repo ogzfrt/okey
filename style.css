@@ -5135,7 +5135,7 @@ body.game-open #overlay { align-items: center; justify-content: center; }
 .gm-stage #kahinChip.gm-kahin {
   position: absolute; left: 960px; top: 20px; width: 640px; margin-left: -320px;
   box-sizing: border-box; justify-content: center; text-align: center;
-  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 16px;
   background: var(--gm-dark); border: 2px solid var(--gm-turn-on); border-radius: 0;
   box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
   font: 700 16px/1.3 var(--gm-font); color: var(--gm-turn-on); letter-spacing: -1px;
@@ -5144,6 +5144,9 @@ body.game-open #overlay { align-items: center; justify-content: center; }
 .gm-stage #kahinChip.gm-kahin.hidden { display: none; }
 .gm-stage #kahinChip.gm-kahin.done { border-color: var(--gm-turn-on); }
 .gm-stage #kahinChip .kc-ok { color: #2E7D32; font-size: 18px; }
+/* P42 — kutu satır satır: Kahin kehaneti + boss'un tur notları (ui.js bossTurnNotes) */
+.gm-stage #kahinChip .kc-line { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.gm-stage #kahinChip .kc-line + .kc-line { border-top: 2px dashed rgba(254, 167, 39, .35); padding-top: 4px; width: 100%; }
 
 /* ---------- Üst sağ: coin (Figma 210:3626, 170×80) ---------- */
 .gm-stage :is(#coinChip, #mapCoin).gm-coin {
@@ -6815,9 +6818,11 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 #actBadge {
   position: fixed; z-index: 1150; pointer-events: none;
   box-sizing: border-box;
-  border: 4px solid #1B1B1B; border-radius: 12px;
+  /* P42: pano temanın vurgu tonunda (JS şeritleri var(--gm-dark)), çerçeve temanın
+     açık tonu, köşeler oyunun diğer kutuları gibi keskin (Kahin kutusu kalıbı) */
+  border: 3px solid var(--gm-light); border-radius: 0;
   background-repeat: no-repeat; background-origin: border-box; background-clip: border-box;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
   font-family: var(--gm-font, 'Pixel Operator Mono 8', 'Pixelify Sans', 'Courier New', monospace);
   animation: abIn .12s ease-out;
 }
@@ -6827,19 +6832,34 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   display: flex; flex-direction: column; justify-content: center; gap: .5em;
 }
 #actBadge .ab-row { display: flex; align-items: center; gap: .4em; }
+/* P42 (kullanıcı kararı 2026-09-14) — fare ikonu oyunun piksel diliyle ve TEMA
+   renkleriyle yeniden çizildi (11×14 ızgara): dış hat temanın açık tonu, gövde
+   vurgu tonu, basılacak tuş TUR pipinin turuncusu. Üç katman maske — renkler
+   CSS değişkeninden geldiği için tema değişince ikon da değişir. */
 #actBadge .ab-ico {
-  flex: 0 0 auto; width: 1.1em; height: 1.55em;
-  background: no-repeat center / contain; image-rendering: pixelated;
+  position: relative; flex: 0 0 auto; width: 1.1em; height: 1.4em;
+  background: var(--gm-light);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14' shape-rendering='crispEdges'%3E%3Cpath d='M2 0H9V1H10V2H11V12H10V13H9V14H2V13H1V12H0V2H1V1H2Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14' shape-rendering='crispEdges'%3E%3Cpath d='M2 0H9V1H10V2H11V12H10V13H9V14H2V13H1V12H0V2H1V1H2Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
-#actBadge .ab-left  { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14' shape-rendering='crispEdges'%3E%3Crect x='1' y='0' width='8' height='14' fill='%231B1B1B'/%3E%3Crect x='2' y='1' width='6' height='12' fill='%232F5597'/%3E%3Crect x='2' y='1' width='6' height='1' fill='%234A74BD'/%3E%3Crect x='2' y='1' width='3' height='5' fill='%238EC8FF'/%3E%3Crect x='5' y='1' width='1' height='5' fill='%231B1B1B'/%3E%3Crect x='2' y='6' width='6' height='1' fill='%231B1B1B'/%3E%3C/svg%3E"); }
-#actBadge .ab-right { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14' shape-rendering='crispEdges'%3E%3Crect x='1' y='0' width='8' height='14' fill='%231B1B1B'/%3E%3Crect x='2' y='1' width='6' height='12' fill='%232F5597'/%3E%3Crect x='2' y='1' width='6' height='1' fill='%234A74BD'/%3E%3Crect x='6' y='1' width='2' height='5' fill='%238EC8FF'/%3E%3Crect x='5' y='1' width='1' height='5' fill='%231B1B1B'/%3E%3Crect x='2' y='6' width='6' height='1' fill='%231B1B1B'/%3E%3C/svg%3E"); }
+#actBadge .ab-ico::before, #actBadge .ab-ico::after { content: ''; position: absolute; inset: 0; }
+#actBadge .ab-ico::before { background: var(--gm-dark); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14' shape-rendering='crispEdges'%3E%3Cpath d='M2 1H5V6H1V2H2Z M6 1H9V2H10V6H6Z M1 7H10V12H9V13H2V12H1Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14' shape-rendering='crispEdges'%3E%3Cpath d='M2 1H5V6H1V2H2Z M6 1H9V2H10V6H6Z M1 7H10V12H9V13H2V12H1Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+#actBadge .ab-ico::after  { background: var(--gm-turn-on); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14' shape-rendering='crispEdges'%3E%3Cpath d='M2 1H5V6H1V2H2Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14' shape-rendering='crispEdges'%3E%3Cpath d='M2 1H5V6H1V2H2Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+#actBadge .ab-right::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14' shape-rendering='crispEdges'%3E%3Cpath d='M6 1H9V2H10V6H6Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14' shape-rendering='crispEdges'%3E%3Cpath d='M6 1H9V2H10V6H6Z'/%3E%3C/svg%3E"); }
 #actBadge .ab-txt {
   display: flex; flex-direction: column; gap: .18em;
   white-space: nowrap; font-weight: 700; line-height: 1;
-  letter-spacing: -.06em; text-shadow: 2px 2px 0 #1B1B1B;
+  letter-spacing: -.06em; text-shadow: 2px 2px 0 rgba(0, 0, 0, .35);
 }
-#actBadge .ab-txt b { font-size: .9em; color: #F2F1E4; }
-#actBadge .ab-txt em { font-style: normal; font-size: 1.05em; color: #F7A92C; }
+#actBadge .ab-txt b { font-size: .9em; color: var(--gm-light); }
+#actBadge .ab-txt em { font-style: normal; font-size: 1.05em; color: var(--gm-turn-on); }
+
+/* P42 (kullanıcı isteği 2026-09-14) — store joker kartı YALNIZ görsel (ui.js renderStore):
+   çizimi olan joker çiziminin kendisiyle, olmayan büyük ikonuyla; ad/nadirlik/çip tooltip'te. */
+.store-item.art-card:not(.r-consum) .s-ico { width: 96px; height: 96px; font-size: 56px; margin: auto; }
+.store-item.art-card .s-ico.s-jk-art {
+  width: 81px; height: 110px; border-radius: 0; box-shadow: none;
+  background: var(--jk-art) no-repeat center / 100% 100%; image-rendering: pixelated;
+}
 
 /* P41 — çizimi olan değnek store'da YALNIZ çizimiyle (ui.js renderStore):
    kart boyunda çizim, altta Satın Al. */

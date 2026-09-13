@@ -1388,8 +1388,9 @@
     const flip = r.left - px + bw > window.innerWidth - 4;
     const hx = flip ? bw - px - W : px;             // kart deliğinin rozet içindeki x'i
     const sx = flip ? 0 : hx + W;                   // yazı panelinin x'i
-    const G = 'linear-gradient(#4F9E5D, #4F9E5D)';
-    const S = 'repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 2px, rgba(0,0,0,0) 2px 5px)';
+    // P42: pano temanın vurgu tonunda (Balatro yeşili yerine) — tema değişince rozet de değişir
+    const G = 'linear-gradient(var(--gm-dark), var(--gm-dark))';
+    const S = 'repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 2px, rgba(0,0,0,0) 2px 5px)';
     st.left = (r.left - hx) + 'px';
     st.top = (r.top - py) + 'px';
     st.width = bw + 'px';
@@ -2732,6 +2733,39 @@
     return d;
   }
 
+  /* P42 (kullanıcı isteği 2026-09-14) — BOSS'UN TUR TUR DEĞİŞEN NOTLARI.
+     Eskiden boss kutusunun altına `bb-extra` satırı olarak ekleniyordu; kutu
+     uzadıkça okunmuyordu. Kahin kehanetiyle aynı yere, üst ortadaki kalıcı
+     kutuya (#kahinChip) taşındı. Ferman iptali kutuda kalır (kuralın durumu). */
+  function bossTurnNotes(s) {
+    if (!s || !s.boss || s.bossVoided || !(Game.bossOn && Game.bossOn())) return [];
+    const n = [];
+    const k = s.boss.key;
+    if (k === 'kelebek' && s.bossBan) n.push(t('bossBanExtra', T.typeName(s.bossBan)));
+    if (k === 'cheating') {
+      if (s.bossCheatPlan) n.push(t('bossCheatPlan', t('bossCheatKind_' + s.bossCheatPlan.kind),
+        Math.round((s.bossCheatPlan.chance || 0.5) * 100)));
+      if (s.bossCheatStats && s.bossCheatStats.tries)
+        n.push(t('bossCheatStats', s.bossCheatStats.hits, s.bossCheatStats.tries));
+      if (s.bossCheatTook) n.push(t('bossCheatTook', s.bossCheatTook));   // GRUP G (P20): çalınan taş sayacı
+    }
+    if (k === 'avukat' && s.bossMutedJoker) {
+      const mj = Game.slotRecs().find(j => j.key === s.bossMutedJoker);
+      n.push(t('bossMutedExtra', mj ? T.name(mj) : s.bossMutedJoker));
+    }
+    if (k === 'aynaKral' && (s.bossMirrorDebt || 0) > 0) n.push(t('bossMirrorExtra', s.bossMirrorDebt));
+    if (k === 'corporates' && s.corpTask)
+      n.push(`${T.ev(s.corpTask.name)}: ${T.ev(s.corpTask.text)}${s.corpTask.failed ? ' — ' + t('bossTaskFailed') : ''}`);
+    if (k === 'freedom' && (s.bossFreedomMarks || []).length) {
+      const owed = [...s.hand, ...s.discardPile].filter(x => x.ffMarkedTile && !x.ffUsedInMeld).length;
+      n.push(t('bossFreedomExtra', s.bossFreedomMarks.map(m => `${T.color(m.color)} ${m.number}`).join(', '), owed));
+    }
+    /* Grup H — Sinsi Bulaşma: hangi taşların uzaylı olduğu GİZLİ, kaç tane
+       olduğu canlı görünür (sürpriz taşın kimliğinde, sayısında değil). */
+    if (k === 'uzayli') n.push(t('bossAlienExtra', s.hand.filter(x => x.hiddenAlien).length));
+    return n;
+  }
+
   function render() {
     const s = Game.state;
     hideTip(); // hover'daki eleman yeniden çizimde kaybolabilir
@@ -2770,51 +2804,16 @@
       el.bossChip.title = bd;
       el.bossChip.classList.remove('hidden');
       let bossHtml = `<span class="bb-name">${t('bossBanner', bn)}</span><span class="bb-desc">${bd}</span>`;
-      if (s.boss.key === 'kelebek' && s.bossBan)
-        bossHtml += `<span class="bb-extra">${t('bossBanExtra', T.typeName(s.bossBan))}</span>`;
+      // P42: tur tur değişen boss notları (Kelebek yasağı dahil) üstteki #kahinChip'te — bkz. bossTurnNotes
       /* GRUP B/1 (P20): sınır artık üst şeritteki #fatalityChip'te yazar —
          burada ikinci kez yazılmaz. */
       /* Grup G (P19) — The Cheating artık "telegraflı" bir tehdit: bu tur ne
          DENEYECEĞİ ve şimdiye kadar kaç denemesinin tuttuğu banner'da canlı
          durur, yani oyuncu turu ona göre planlayabilir. */
-      if (s.boss.key === 'cheating') {
-        if (s.bossCheatPlan)
-          bossHtml += `<span class="bb-extra bb-cheat">${t('bossCheatPlan',
-            t('bossCheatKind_' + s.bossCheatPlan.kind),
-            Math.round((s.bossCheatPlan.chance || 0.5) * 100))}</span>`;
-        if (s.bossCheatStats && s.bossCheatStats.tries)
-          bossHtml += `<span class="bb-extra">${t('bossCheatStats',
-            s.bossCheatStats.hits, s.bossCheatStats.tries)}</span>`;
-        /* GRUP G (P20) — kaç taş çaldığı somut sayaç olarak yazar */
-        if (s.bossCheatTook)
-          bossHtml += `<span class="bb-extra">${t('bossCheatTook', s.bossCheatTook)}</span>`;
-      }
-      /* Grup F — tur tur değişen boss durumları banner'da CANLI görünsün;
-         yoksa oyuncu neden ceza yediğini banner'daki sabit metinden anlayamaz. */
-      /* P36 · Grup C (kullanıcı kararı 2026-09-13) — Kahin'in O TURKİ kehaneti
-         burada artık TEKRARLANMAZ: tek yeri TUR göstergesinin altındaki
-         #kahinChip. Boss kutusu yalnız kuralın kendisini (bd) gösterir. */
-      if (s.boss.key === 'avukat' && s.bossMutedJoker) {
-        const mj = Game.slotRecs().find(j => j.key === s.bossMutedJoker);
-        bossHtml += `<span class="bb-extra">${t('bossMutedExtra', mj ? T.name(mj) : s.bossMutedJoker)}</span>`;
-      }
-      if (s.boss.key === 'aynaKral' && (s.bossMirrorDebt || 0) > 0)
-        bossHtml += `<span class="bb-extra">${t('bossMirrorExtra', s.bossMirrorDebt)}</span>`;
-      if (s.boss.key === 'corporates' && s.corpTask)
-        bossHtml += `<span class="bb-extra">${T.ev(s.corpTask.name)}: ${T.ev(s.corpTask.text)}` +
-          `${s.corpTask.failed ? ' — ' + t('bossTaskFailed') : ''}</span>`;
-      if (s.boss.key === 'freedom' && (s.bossFreedomMarks || []).length) {
-        const owed = [...s.hand, ...s.discardPile].filter(x => x.ffMarkedTile && !x.ffUsedInMeld).length;
-        bossHtml += `<span class="bb-extra">${t('bossFreedomExtra',
-          s.bossFreedomMarks.map(m => `${T.color(m.color)} ${m.number}`).join(', '), owed)}</span>`;
-      }
-      /* Grup H — Sinsi Bulaşma: hangi taşların uzaylı olduğu GİZLİ, ama
-         kaç tane olduğu banner'da canlı görünür (tehdidin okunabilir olması
-         için; sürpriz taşın kimliğinde, sayısında değil). */
-      if (s.boss.key === 'uzayli') {
-        const n = s.hand.filter(x => x.hiddenAlien).length;
-        bossHtml += `<span class="bb-extra">${t('bossAlienExtra', n)}</span>`;
-      }
+      /* P36 · Grup C / P42 — Kahin kehaneti ve boss'un TUR TUR değişen
+         notları (susturulan joker, yasak, borç, görev…) boss kutusunda
+         TEKRARLANMAZ: tek yerleri üst ortadaki #kahinChip (bossTurnNotes).
+         Boss kutusu yalnız kuralın kendisini (bd) gösterir. */
       /* PLAYTEST 16 · GRUP G — kutu sol menünün SAĞINDA, kendi sütununda
          durur (CSS'te absolute): metnin TAMAMI görünür, alttaki
          STAGE / RAUND / ÇARPAN kutuları hiç kaymaz.
@@ -3202,16 +3201,26 @@
     {
       const g = s.kahinGoal;
       const bo = s.boss && s.boss.key === 'kahin' && s.bossOracle ? s.bossOracle : null;
-      const show = s.status === 'playing' && !!(g || bo);
+      /* P42 (kullanıcı isteği 2026-09-14) — boss'tan gelen tur notları da
+         (ör. "Bu tur susturulan joker: İki Yüzlü") Kahin kehanetiyle AYNI
+         kutuda, satır satır. */
+      const notes = s.status === 'playing' ? bossTurnNotes(s) : [];
+      const show = s.status === 'playing' && !!(g || bo || notes.length);
       el.kahinChip.classList.toggle('hidden', !show);
       if (show) {
-        const done = g ? !!g.done : !!bo.met;
-        const reward = g ? ` → +${g.amount} ${g.reward === 'coin' ? t('kahinCoin') : t('kahinPts')}` : '';
-        const txt = t('kahinChip', T.ev(g ? g.text : bo.text) + reward);
+        const lines = [];
+        let done = false;
+        if (g || bo) {
+          done = g ? !!g.done : !!bo.met;
+          const reward = g ? ` → +${g.amount} ${g.reward === 'coin' ? t('kahinCoin') : t('kahinPts')}` : '';
+          const txt = t('kahinChip', T.ev(g ? g.text : bo.text) + reward);
+          lines.push(`<div class="kc-line"><span class="kc-ico">🔮</span><span class="kc-val">${txt}</span>`
+            + (done ? '<span class="kc-ok">✓</span>' : '') + '</div>');
+        }
+        for (const x of notes) lines.push(`<div class="kc-line kc-boss"><span class="kc-val">${x}</span></div>`);
         el.kahinChip.classList.toggle('done', done);
-        el.kahinChip.innerHTML = `<span class="kc-ico">🔮</span><span class="kc-val">${txt}</span>`
-          + (done ? '<span class="kc-ok">✓</span>' : '');
-        el.kahinChip.title = txt;
+        el.kahinChip.innerHTML = lines.join('');
+        el.kahinChip.title = el.kahinChip.textContent;
       }
     }
     if (s.tuccarOffer && meldPhase) {
@@ -5301,14 +5310,22 @@
       card.className = `store-item viz r-${item.rarity}` + (item.sold ? ' sold-out' : '') + (item.locked ? ' locked' : '');
       // Truva kılık değiştirmişse gerçek ikonu sızdırma
       const disguised = JOKER_DEFS[item.key] && item.name !== JOKER_DEFS[item.key].name;
+      /* P42 (kullanıcı isteği 2026-09-14) — STORE JOKER KARTI YALNIZ GÖRSEL.
+         Değnek kartıyla (P41) aynı kural: ad, nadirlik satırı ve etki çipleri
+         kartta yok; üstüne gelince tooltip'te. Çizimi olan joker çizimiyle,
+         olmayan büyük ikonuyla görünür (kullanıcı seçimi). Nadirlik satırının
+         etiketleri (indirim, ACİL RAF, sızdırıldı, kilit, Kara Pazar) tooltip'in
+         kategori satırına geçti; YENİ rozeti ve kilit düğmesi kartta kalır. */
+      const tags = `${item.discounted ? ' · ' + t('discounted') : ''}${item.catchUp ? ' · ' + t('catchUpTag') : ''}` +
+        `${item.leaked ? ' · 🗣' : ''}${item.locked ? ' · 🔒' : ''}${s.store.anarchist ? ' · ⚡' : ''}`;
+      const jArt = !disguised && JOKER_ART.has(item.key);
+      card.classList.add('art-card');
       card.innerHTML =
-        // MADDE E2 — catch-up kalemi ayrıca "ACİL RAF" diye işaretlenir
-        `<div class="s-rarity">${T.rarity(item.rarity)}${item.discounted ? ' · ' + t('discounted') : ''}${item.catchUp ? ' · ' + t('catchUpTag') : ''}${item.leaked ? ' · 🗣' : ''}${item.locked ? ' · 🔒' : ''}${s.store.anarchist ? ' · ⚡' : ''}</div>` +
-        `<div class="s-ico ico-${item.rarity}">${disguised ? '🀫' : jokerIcon(item.key)}</div>` +
-        `<div class="s-name">${T.name(item)}</div>` +
-        chipsHtml(T.desc(item)) +
+        (jArt ? `<div class="s-ico s-jk-art jk-${item.key}"></div>`
+          : `<div class="s-ico ico-${item.rarity}">${disguised ? '🀫' : jokerIcon(item.key)}</div>`) +
         (!item.sold && !ownedEver.has(item.key) ? `<span class="badge-new">${t('newBadge')}</span>` : '');
-      attachTip(card, { name: T.name(item), desc: T.desc(item), rarity: item.rarity,
+      attachTip(card, { name: T.name(item), desc: T.desc(item), accent: item.rarity,
+        rarityText: `${T.rarity(item.rarity)}${JOKER_DEFS[item.key]?.mech === 'deck' ? ' · ' + t('deckJokerTag') : ''}${tags}`,
         usesLeft: JOKER_DEFS[item.key]?.uses ?? RARITY[item.rarity].uses, key: item.key }, {});
       if (item.sold) {
         card.innerHTML += `<div class="s-sold">${item.fled ? t('fled') : t('sold')}</div>`;
@@ -6382,6 +6399,38 @@
     }
     body.appendChild(cg);
 
+    /* P42 (kullanıcı isteği 2026-09-14) — DESTE İÇERİĞİ: seçilen özel taş
+       türleri destenin TAMAMINA dağıtılır (okey yüzü hariç), test edilecek
+       taş her çekişte ele gelir. Hiç seçilmezse deste normaldir. Joker
+       taşları burada yok — onlar yukarıdaki joker seçimiyle alınır. */
+    const selS = new Set();
+    const sh = document.createElement('h3');
+    const updSh = () => { sh.textContent = `${t('trDeckSp')} — ${t('trPicked', selS.size)}`; };
+    updSh();
+    /* açıklama başlığın ipucunda: ayrı paragraf pop-up'ı kaydırmaya zorluyordu
+       (P20 · Grup K kuralı: kurulum ekranı 1920×1080'de kaydırmasız sığar) */
+    sh.title = t('trDeckSpHint');
+    body.appendChild(sh);
+    const sg = document.createElement('div');
+    sg.className = 'tr-grid tr-deck-sp';
+    for (const d of Object.values(SPECIAL_TILES)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tr-pick';
+      b.dataset.sp = d.key;
+      b.innerHTML = `<span class="tp-ico">${d.icon}</span>` +
+        `<span class="tp-name">${T.specialName(d.key, d.name)}</span>`;
+      attachTip(b, { name: T.specialName(d.key, d.name), rarityText: t('specialTag'),
+        desc: T.specialDesc(d.key, d.desc) }, {});
+      b.addEventListener('click', () => {
+        selS.has(d.key) ? selS.delete(d.key) : selS.add(d.key);
+        b.classList.toggle('on', selS.has(d.key));
+        updSh();
+      });
+      sg.appendChild(b);
+    }
+    body.appendChild(sg);
+
     // GRUP K (P20): seçenekler ve düğmeler sabit alt barda
     const foot = document.createElement('div');
     foot.className = 'tr-foot';
@@ -6436,6 +6485,7 @@
         stages: chSel === 'inf' ? Infinity : parseInt(chSel, 10),
         jokers: [...selJ],
         consumables: [...selC],
+        deckSpecials: [...selS],   // P42: deste içeriği (özel taşlar)
         coins: parseInt(panel.querySelector('#trCoins').value, 10) || 0,
         handSize: parseInt(panel.querySelector('#trHand').value, 10) || undefined,
         jokerUses: usesCfg(panel.querySelector('#trUses').value),
