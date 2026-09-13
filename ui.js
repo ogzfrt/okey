@@ -1328,11 +1328,11 @@
     tip.classList.remove('hidden');
     // kenarlara taşma kontrolü: önce sağa aç, sığmazsa sola; dikeyde kelepçele
     const r = target.getBoundingClientRect();
-    /* P38b — değnek kartının üstüne gelince çıkan kullanım rozeti (.c-hover)
-       kartın sağına taşar; tooltip kartın değil ROZETİN kenarından açılır ki
-       "Kullan: Sağ Tık" yazısının üstüne binmesin. */
-    const hv = target.querySelector && target.querySelector('.c-hover');
-    const hr = hv ? hv.getBoundingClientRect() : null;
+    /* P38b/P41 — kartın eylem rozeti (#actBadge) kartın yanına taşar;
+       tooltip kartın değil ROZETİN kenarından açılır ki "Kullan: Sol Tık"
+       yazısının üstüne binmesin. */
+    const hr = actBadgeFor === target && !actBadge.classList.contains('hidden')
+      ? actBadge.getBoundingClientRect() : null;
     const rightEdge = hr ? Math.max(r.right, hr.right) : r.right;
     const leftEdge = hr ? Math.min(r.left, hr.left) : r.left;
     const tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -1345,9 +1345,110 @@
     tip.style.top = y + 'px';
   }
 
+  /* P41 (kullanıcı isteği 2026-09-14) — ÜSTÜNE GELİNCE EYLEM ROZETİ.
+     Balatro "Sell: $1" kalıbı: kartı saran yeşil çizgili pano; her eylem
+     için fare ikonu + beyaz etiket + altın tuş ("Kullan: Sol Tık",
+     "Sat +2: Sağ Tık"). Sol tık = kullan (değnek, elle kullanılan joker),
+     sağ tık = sat (yalnız store açıkken — kullanıcı kararı).
+     KÖK NEDEN (P38b/P40 hatası): rozet kartın İÇİNDEYDİ, kartın kapları onu
+     kesiyordu — omuzda ıstakanın z sırası, store'da kaydırmalı kenar çubuğu
+     (overflow-y:auto yatay taşmayı da kırpar, kaydırma çubuğu çıkar). Her
+     yeni kap için istisna yazmak yerine rozet <body>'de TEK sabit elemandır;
+     konumu kartın ekran dikdörtgeninden hesaplanır. Yeşil zemin kart
+     dikdörtgeni boş bırakılarak şeritler hâlinde boyanır, kart o delikten
+     görünür; rozet pointer-events:none, tıklar gerçek karta düşer. */
+  const actBadge = document.createElement('div');
+  actBadge.id = 'actBadge';
+  actBadge.className = 'hidden';
+  actBadge.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(actBadge);
+  let actBadgeFor = null;
+  window.addEventListener('scroll', () => hideActBadge(), true);
+
+  function hideActBadge() {
+    actBadgeFor = null;
+    actBadge.classList.add('hidden');
+  }
+
+  function placeActBadge(card) {
+    const r = card.getBoundingClientRect();
+    if (!r.width) { hideActBadge(); return; }
+    const W = r.width, H = r.height, px = W * .1, py = H * .09;
+    const st = actBadge.style;
+    st.fontSize = (W * .17) + 'px';
+    /* Yazı panelinin genişliği İÇERİKTEN ölçülür: store kenar çubuğundaki
+       joker kutusu neredeyse kare (65 × 64) ve sabit "kartın 2.7 katı"
+       genişlikte "Sağ Tık" panodan taşıyordu. Panel en az kartın 1.6 katı. */
+    const body = actBadge.firstElementChild;
+    if (body) { body.style.left = '0px'; body.style.width = 'max-content'; }
+    const cw = body ? body.getBoundingClientRect().width : 0;
+    const sw = Math.max(W * 1.6, cw + W * .17 + 8);
+    const bw = W + px + sw, bh = H + py * 2;
+    // sağ kenara taşacaksa ayna: kart panonun SAĞINDA, yazı solunda
+    const flip = r.left - px + bw > window.innerWidth - 4;
+    const hx = flip ? bw - px - W : px;             // kart deliğinin rozet içindeki x'i
+    const sx = flip ? 0 : hx + W;                   // yazı panelinin x'i
+    const G = 'linear-gradient(#4F9E5D, #4F9E5D)';
+    const S = 'repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 2px, rgba(0,0,0,0) 2px 5px)';
+    st.left = (r.left - hx) + 'px';
+    st.top = (r.top - py) + 'px';
+    st.width = bw + 'px';
+    st.height = bh + 'px';
+    /* katmanlar: çizgi + yazı paneli, üst şerit, alt şerit, dar yan şerit.
+       Üst/alt şerit 1 px içeri taşar — yan yana iki şeridin ortak kenarında
+       yumuşatma dikişi kalmasın (bkz. P40 SVG dikişi). */
+    st.backgroundImage = [S, G, G, G, G].join(', ');
+    st.backgroundSize = [`${sw}px ${H}px`, `${sw}px ${H}px`, `${bw}px ${py + 1}px`,
+      `${bw}px ${py + 1}px`, `${px}px ${H}px`].join(', ');
+    st.backgroundPosition = [`${sx}px ${py}px`, `${sx}px ${py}px`, '0px 0px',
+      `0px ${py + H - 1}px`, `${flip ? hx + W : 0}px ${py}px`].join(', ');
+    if (body) {
+      body.style.left = (flip ? 4 + W * .05 : sx + W * .06) + 'px';
+      body.style.width = '';
+    }
+  }
+
+  function showActBadge(card, a) {
+    if (!a || (!a.left && !a.right)) { hideActBadge(); return; }
+    const row = (x, side) => !x ? '' :
+      `<div class="ab-row"><i class="ab-ico ab-${side}"></i>` +
+      `<span class="ab-txt"><b>${x.lbl}</b><em>${t(side === 'left' ? 'abLeft' : 'abRight')}</em></span></div>`;
+    actBadge.innerHTML = `<div class="ab-body">${row(a.left, 'left')}${row(a.right, 'right')}</div>`;
+    actBadgeFor = card;
+    actBadge.classList.remove('hidden');   // önce görünür: placeActBadge içeriği ölçer
+    placeActBadge(card);
+  }
+
+  /* Karta sol/sağ tık eylemlerini bağlar. `getActs()` her olayda yeniden
+     okunur (store açık mı, damga basılı mı… anlık durum). attachTip'ten
+     ÖNCE çağrılmalı: tooltip rozetin kenarından açılmak için rozeti okur.
+     Haritadaki joker paneli yalnız bilgi amaçlı — orada eylem yok. */
+  function attachActs(card, getActs) {
+    const acts = () => (card.closest('#mapScreen') ? { left: null, right: null } : getActs());
+    card.addEventListener('mouseenter', () => showActBadge(card, acts()));
+    card.addEventListener('mouseleave', () => { if (actBadgeFor === card) hideActBadge(); });
+    card.addEventListener('transitionend', () => { if (actBadgeFor === card) placeActBadge(card); });
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;           // kartın kendi düğmeleri (Damga, →Ana)
+      if (card.dataset.dragged) { delete card.dataset.dragged; return; }
+      const a = acts().left;
+      if (!a) return;
+      hideTip();
+      a.fn();
+    });
+    card.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const a = acts().right;
+      if (!a) return;
+      hideTip();
+      a.fn();
+    });
+  }
+
   function hideTip() {
     clearTimeout(tipHideTimer);
     tip.classList.add('hidden');
+    hideActBadge();
   }
 
   function attachTip(elm, j, opts = {}) {
@@ -1456,6 +1557,50 @@
 
   /* ---------- Joker "taşı" — kompakt, rarity kimlikli ---------- */
 
+  /* P41 — joker eylemleri. Sat: store açıkken, satış kilidi yoksa.
+     Kullan: yalnız ELLE kullanılan jokerlerde ve kartın düğmesi/aksiyon
+     barındaki düğmesiyle AYNI yoldan (aynı fonksiyon, aynı motor kapısı).
+     Füzyon her raftan ve her an birleşir (P26 · E2); diğerleri ana slotta,
+     raund oynanırken ve o anki aşamada kullanılabiliyorsa. */
+  function sellJokerNow(j) {
+    const res = Game.sellJoker(j.id);
+    if (!res.ok) { toast(res.error || t('sellFail')); return; }
+    toast(t('sellToast', T.name(res), res.gain), true); SFX.coin(); renderStore(); render();
+  }
+
+  function useDamga() {
+    const res = Game.toggleDamga();
+    if (!res.ok) { toast(res.error); return; }
+    toast(res.armed ? t('damgaArmed') : t('damgaDisarmed'), res.armed);
+    render();
+  }
+
+  function useIpotekCard() {
+    const res = Game.useIpotek();
+    if (!res.ok) { toast(T.ev(res.error)); return; }
+    toast(T.ev(res.note), true);
+    render();
+  }
+
+  function jokerActs(j, opts = {}) {
+    const s = Game.state;
+    const has = (k) => j.key === k || (j.fused || []).some(f => f.key === k);
+    let left = null;
+    if (has('fuzyon')) left = { lbl: t('abUse'), fn: () => pickFuzyon(j.id) };
+    else if (!opts.backup && s && s.status === 'playing' && !storeOpen()) {
+      const dm = has('ayna') && Game.damgaState && Game.damgaState();
+      if (dm && dm.id === j.id && !dm.used) left = { lbl: t(dm.armed ? 'abUndo' : 'abUse'), fn: useDamga };
+      else if (has('ipotek') && Game.ipotekState && Game.ipotekState().canUse) left = { lbl: t('abUse'), fn: useIpotekCard };
+      else if (has('rusvet') && Game.canRusvet && Game.canRusvet()) left = { lbl: t('abUse'), fn: doRusvet };
+      else if (has('terazi') && Game.canTeraziSacrifice && Game.canTeraziSacrifice()) left = { lbl: t('abUse'), fn: doTerazi };
+      else if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
+        left = { lbl: t(s.paratonerBait != null ? 'abUndo' : 'abUse'), fn: doParatoner };
+    }
+    const right = storeOpen() && !j.noSell && j.id != null
+      ? { lbl: t('abSell', sellPrice(j.rarity, j.key)), fn: () => sellJokerNow(j) } : null;
+    return { left, right };
+  }
+
   function jokerActions(j, backup) {
     // Store açıkken tooltip üzerinden satış (ve Füzyon/→Ana) — Grup G2
     return () => {
@@ -1473,11 +1618,7 @@
       // Grup B: satış kilitli jokerler (Lanetli Kaptan kurtardıktan sonra)
       const acts = j.noSell ? [{ label: t('sellLocked'), disabled: true, fn: () => {} }] : [{
         label: t('sellBtn', sellPrice(j.rarity, j.key), COIN),
-        fn: () => {
-          const res = Game.sellJoker(j.id);
-          if (!res.ok) { toast(res.error || t('sellFail')); return; }
-          toast(t('sellToast', T.name(res), res.gain), true); SFX.coin(); renderStore(); render();
-        },
+        fn: () => sellJokerNow(j),
       }];
       /* MADDE E7 (2026-09-09) — TAKAS: kartı ver, farkı öde, bir üst
          nadirlikten rastgele kart al. Satışın hemen altında durur çünkü
@@ -1629,14 +1770,7 @@
       b.textContent = t('ipotekBtn_' + mode);
       b.disabled = !ip.canUse;
       b.title = ip.canUse ? t('ipotekTip') : T.ev(ip.reason || '');
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        hideTip();
-        const res = Game.useIpotek();
-        if (!res.ok) { toast(T.ev(res.error)); return; }
-        toast(T.ev(res.note), true);
-        render();
-      });
+      b.addEventListener('click', (e) => { e.stopPropagation(); hideTip(); useIpotekCard(); });
       tile2.appendChild(b);
     }
     /* PLAYTEST 28 · GRUP B — DAMGA DÜĞMESİ KARTIN ÜSTÜNDE.
@@ -1660,14 +1794,7 @@
         b.textContent = dm.used ? t('damgaSpent') : (dm.armed ? t('damgaOn') : t('damgaOff'));
         b.disabled = !!dm.used;
         b.title = dm.used ? t('damgaTipSpent') : t('damgaTip');
-        b.addEventListener('click', (e) => {
-          e.stopPropagation();
-          hideTip();
-          const res = Game.toggleDamga();
-          if (!res.ok) { toast(res.error); return; }
-          toast(res.armed ? t('damgaArmed') : t('damgaDisarmed'), res.armed);
-          render();
-        });
+        b.addEventListener('click', (e) => { e.stopPropagation(); hideTip(); useDamga(); });
         tile2.appendChild(b);
       }
     }
@@ -1689,6 +1816,7 @@
       });
       tile2.appendChild(btn);
     }
+    attachActs(tile2, () => jokerActs(j, opts));   // P41: sol tık kullan / sağ tık sat
     attachTip(tile2, j, { ...opts, actions: jokerActions(j, !!opts.backup) });
     enableJokerDrag(tile2, j, opts.backup ? 'backup' : 'main');
     return tile2;
@@ -1714,6 +1842,7 @@
         if (!started) {
           if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 6) return;
           started = true;
+          card.dataset.dragged = '1';   // P41: bırakınca gelen click "kullan" sayılmasın
           hideTip();
           card.classList.add('jk-dragging');
           const r = card.getBoundingClientRect();
@@ -2542,21 +2671,14 @@
        "Sağ tık" ipucu tooltip'te. Çizimi olmayan (ileride eklenecek) bir
        değnek eski kart düzeninde, düğmeyle kalır. */
     if (art) d.classList.add('art-only');
-    /* P38b (kullanıcı isteği 2026-09-14) — ÜSTÜNE GELİNCE KULLANIM ROZETİ.
-       Balatro'nun "Sell: $1" rozetinin birebir kalıbı: kartı saran yeşil
-       çizgili pano, sağ üstte ikon (sağ tuşu yanan fare), beyaz etiket +
-       altın satır. Satış yerine kullanım yazar; seçim sürerken "İptal". */
+    /* P41 (kullanıcı isteği 2026-09-14) — SOL TIK KULLAN, SAĞ TIK SAT.
+       Çizimli değnek kartının içinde yazı/düğme yok; eylemler üstüne gelince
+       açılan ortak rozette (#actBadge, bkz. attachActs) yazar. Satış yalnız
+       store rafında (opts.sell) — kullanıcı kararı: raund içinde satış yok. */
     d.innerHTML = art
-      ? `<span class="c-hover" aria-hidden="true"><i class="ch-ico"></i>` +
-        `<b class="ch-lbl">${t(picking ? 'consumHoverCancel' : 'consumHoverUse')}</b>` +
-        `<em class="ch-val">${t('consumHoverHint')}</em></span>` +
-        `<span class="c-icon cs-art cs-${key}"></span>`
+      ? `<span class="c-icon cs-art cs-${key}"></span>`
       : `<span class="c-icon">${def.icon}</span>` +
         `<div class="c-body"><b>${T.consumName(key, def.name)}</b><span>${T.consumDesc(key, def.desc)}</span></div>`;
-    attachTip(d, { name: T.consumName(key, def.name),
-      rarityText: `${T.rarity(def.rarity || 'common')} · ${t('consumTag')}`,
-      accent: def.rarity || 'common',
-      desc: T.consumDesc(key, def.desc) + (art ? ` — ${t(picking ? 'consumRightCancel' : 'consumRightClick')}` : '') }, {});
     const useIt = () => {
       if (consumPick && consumPick.index === index) { consumPick = null; render(); return; }
       if (def.target === 'joker') { pickConsumJoker(index, def); return; }
@@ -2572,29 +2694,40 @@
       }
       finishConsum(Game.useConsumable(index));
     };
-    if (art) {
-      d.addEventListener('contextmenu', (e) => { e.preventDefault(); hideTip(); useIt(); });
-    } else {
+    /* GRUP C (P22) — DEĞNEK SATIŞI.
+       Yalnız STORE panelinde: satış joker tarafında da store'a bağlı bir
+       işlem ve raund ortasında coin basmak dengeyi bozardı. */
+    const sellIt = () => {
+      const res = Game.sellConsumable(index);
+      if (!res.ok) { toast(res.error || t('sellConsumFail')); return; }
+      toast(t('sellToast', T.consumName(res.key, res.name), res.gain), true);
+      SFX.coin(); renderStore(); render();
+    };
+    if (art) attachActs(d, () => ({
+      left: { lbl: t(picking ? 'abCancel' : 'abUse'), fn: useIt },
+      right: opts.sell ? { lbl: t('abSell', Game.consumSellPrice(key)), fn: sellIt } : null,
+    }));
+    const hint = art
+      ? ` — ${t(picking ? 'consumLeftCancel' : 'consumLeftUse')}${opts.sell ? ' · ' + t('consumRightSell') : ''}`
+      : '';
+    attachTip(d, { name: T.consumName(key, def.name),
+      rarityText: `${T.rarity(def.rarity || 'common')} · ${t('consumTag')}`,
+      accent: def.rarity || 'common',
+      desc: T.consumDesc(key, def.desc) + hint }, {});
+    if (!art) {
+      // çizimi henüz gelmemiş değnek eski kart düzeninde, düğmelerle kalır
       const btn = document.createElement('button');
       btn.className = 'c-use';
       btn.textContent = picking ? t('cancel') : t('useBtn');
       btn.addEventListener('click', useIt);
       d.appendChild(btn);
-    }
-    /* GRUP C (P22) — DEĞNEK SATIŞI.
-       Yalnız STORE panelinde çizilir: satış joker tarafında da store'a bağlı
-       bir işlem ve raund ortasında coin basmak dengeyi bozardı. */
-    if (opts.sell) {
-      const sb = document.createElement('button');
-      sb.className = 'c-sell';
-      sb.innerHTML = t('sellConsumBtn', Game.consumSellPrice(key), COIN);
-      sb.addEventListener('click', () => {
-        const res = Game.sellConsumable(index);
-        if (!res.ok) { toast(res.error || t('sellConsumFail')); return; }
-        toast(t('sellToast', T.consumName(res.key, res.name), res.gain), true);
-        SFX.coin(); renderStore(); render();
-      });
-      d.appendChild(sb);
+      if (opts.sell) {
+        const sb = document.createElement('button');
+        sb.className = 'c-sell';
+        sb.innerHTML = t('sellConsumBtn', Game.consumSellPrice(key), COIN);
+        sb.addEventListener('click', sellIt);
+        d.appendChild(sb);
+      }
     }
     return d;
   }
@@ -3582,17 +3715,19 @@
      Seçili TEK taşı feda eder; normal atış hakkı durur, yani oyuncu
      fedadan sonra yine bir taş atar. Feda edilen taş atılan yığınına
      GİRMEZ (motor kuralı) — o taş için işlek zarı da atılmaz. */
-  el.btnParatoner.addEventListener('click', () => {
+  /* P41 — üç düğmenin işi adlı fonksiyonda: aynı iş jokerin kartına sol
+     tıkla da yapılır (jokerActs), iki ayrı kopya yazılmaz. */
+  function doParatoner() {
     const set = Game.state && Game.state.paratonerBait != null;
     if (!set && paratonerSel == null) { toast(t('paratonerNeedOne')); return; }
     const r = Game.setParatonerBait(set ? null : paratonerSel);
     if (!r.ok) { toast(r.error); render(); return; }
     toast(r.note, true);
     render();
-  });
+  }
 
   /* P34 — "Rüşvet": seçili taşları desteye yollar, yerine yenilerini çeker. */
-  el.btnRusvet.addEventListener('click', () => {
+  function doRusvet() {
     if (!selection.size) { toast(t('rusvetNeedOne')); return; }
     const r = Game.useRusvet([...selection]);
     if (!r.ok) { toast(r.error); render(); return; }
@@ -3600,9 +3735,9 @@
     toast(r.note, true);
     SFX.coin();
     render();
-  });
+  }
 
-  el.btnTerazi.addEventListener('click', () => {
+  function doTerazi() {
     if (teraziSel == null) { toast(t('teraziNeedOne')); return; }
     const id = teraziSel;
     const r = Game.teraziSacrifice(id);
@@ -3611,7 +3746,11 @@
     toast(r.note, true);
     SFX.crack();
     render();
-  });
+  }
+
+  el.btnParatoner.addEventListener('click', doParatoner);
+  el.btnRusvet.addEventListener('click', doRusvet);
+  el.btnTerazi.addEventListener('click', doTerazi);
 
   el.discardSlot.addEventListener('click', () => showPilePopup('discard'));
 
@@ -5233,20 +5372,24 @@
     const c = s.store.consumable;
     if (c) {
       const card = document.createElement('div');
-      card.className = `store-item viz r-consum r-${c.rarity || 'common'}` + (c.sold ? ' sold-out' : '');
-      card.innerHTML =
-        `<div class="s-rarity">${T.rarity(c.rarity || 'common')} · ${t('consumRarity')}${s.store.anarchist ? ' · ⚡' : ''}</div>` +
-        /* Değnek çizimi (2026-09-09): özel taş kartıyla aynı kural — yuvarlak
-           emoji rozeti yerine çizimin kendisi (42.7 × 58, .s-ico.cs-art). */
-        (CONSUM_ART.has(c.key)
-          ? `<div class="s-ico ico-consum cs-art cs-${c.key}"></div>`
-          : `<div class="s-ico ico-consum">${c.icon}</div>`) +
-        `<div class="s-name">${T.consumName(c.key, c.name)}</div>` +
-        chipsHtml(T.consumDesc(c.key, c.desc));
+      const cArt = CONSUM_ART.has(c.key);
+      card.className = `store-item viz r-consum r-${c.rarity || 'common'}` + (cArt ? ' art-card' : '') + (c.sold ? ' sold-out' : '');
+      /* P41 (kullanıcı isteği 2026-09-14) — ÇİZİMİ OLAN DEĞNEK STORE'DA YALNIZ
+         ÇİZİMİYLE: nadirlik satırı, ad ve etki çipi yok — üstüne gelince
+         tooltip'te zaten yazıyor. Altta Satın Al kalır; Anarşist işareti
+         (⚡) tooltip'in kategori satırına geçti. Çizimi olmayan değnek eski
+         kart düzeninde kalır. */
+      card.innerHTML = cArt
+        ? `<div class="s-ico ico-consum cs-art cs-${c.key}"></div>`
+        : `<div class="s-rarity">${T.rarity(c.rarity || 'common')} · ${t('consumRarity')}${s.store.anarchist ? ' · ⚡' : ''}</div>` +
+          `<div class="s-ico ico-consum">${c.icon}</div>` +
+          `<div class="s-name">${T.consumName(c.key, c.name)}</div>` +
+          chipsHtml(T.consumDesc(c.key, c.desc));
       /* PLAYTEST 9 · GRUP M: "envanterde en fazla 3 taşınır" cümlesi
          KALDIRILDI — aynı bilgi zaten TÜKETİLEBİLİR başlığının yanındaki
          sayaçta (0/3) duruyor, açıklamada tekrar etmesi gürültüydü. */
-      attachTip(card, { name: T.consumName(c.key, c.name), rarityText: `${T.rarity(c.rarity || 'common')} · ${t('consumTag')}`,
+      attachTip(card, { name: T.consumName(c.key, c.name),
+        rarityText: `${T.rarity(c.rarity || 'common')} · ${t('consumTag')}${s.store.anarchist ? ' · ⚡' : ''}`,
         accent: c.rarity || 'common',
         desc: T.consumDesc(c.key, c.desc) }, {});
       if (c.sold) {
