@@ -769,6 +769,8 @@
     }
     d.className = `tile ${tile.color}`;
     if (Game.isOkeyTile(tile)) d.classList.add('okey');
+    if (tile.apple) d.classList.add('apple-tile');        // P31 · Grup I — Yasak Elma
+    if (tile.pinkyOkey) d.classList.add('pinky-okey');    // P31 · Grup C — Pinky Warrior
     if (tile.special) d.classList.add('sp-' + tile.special);
     if (tile.stoned) d.classList.add('stoned');
     if (tile.bungie) d.classList.add('bungie-back');   // Grup Q: sakızdan geri dönen taş
@@ -1385,9 +1387,9 @@
     vasiyet: '📜', ipotek: '🏦', truva: '🐴', atesTuccari: '🔥',
     frankenstein: '🧟‍♂️',
     /* mythic */
-    seytan: '😈', pinky: '🩷', kiyamet: '☄️', aynaKirigi: '💔', ejderha: '🐉',
-    karaDelik: '🕳️', crimson: '🩸', nostradamus: '🔮', ademHavva: '🍏',
-    kagitJokeri: '📃',
+    seytan: '😈', pinkyWarrior: '🩷', kiyamet: '☄️', tanrininEli: '🤲', ejderha: '🐉',
+    karaDelik: '🕳️', crimsonTac: '👑', nostradamus: '🔮', yasakElma: '🍎',
+    kagit: '📃',
     /* epic */
     kirby: '🌸', cellat: '🪓', dervish: '🌀', misunderstood: '🎭', zombie: '🧟',
     uzayli: '👽', ahtapot: '🐙', cheating: '🃏', terziIgne: '📍', freedom: '🗽',
@@ -1584,6 +1586,14 @@
           : t('vasiyetBadgeEmpty');
         tile2.appendChild(b);
       }
+    }
+    /* PLAYTEST 31 · GRUP H — CRIMSON KING'İN TACI kartın sol üst köşesinde. */
+    if (!opts.backup && Game.state.crownId === j.id && Game.hasActive('crimsonTac')) {
+      const b = document.createElement('span');
+      b.className = 'jt-crown';
+      b.textContent = '👑';
+      b.title = t('crownBadge');
+      tile2.appendChild(b);
     }
     /* PLAYTEST 30 · GRUP G — İPOTEK DÜĞMESİ KARTIN ÜSTÜNDE.
        Damga düğmesiyle aynı yer ve dil (jt-damga, sol alt köşe). Borç
@@ -2771,14 +2781,13 @@
 
     el.discardSlot.classList.remove('takeable');
 
-    // Crimson King — sıradaki 5 çekişin önizlemesi (GDD 12)
-    if (Game.hasActive('crimson') && s.status === 'playing' && s.deck.length) {
-      el.crimsonPeek.innerHTML = `<span class="cp-label">${t('crimsonLbl')}</span>`;
-      s.deck.slice(0, 5).forEach(t2 => el.crimsonPeek.appendChild(tileEl(t2, false)));
-      el.crimsonPeek.classList.remove('hidden');
-    } else {
-      el.crimsonPeek.classList.add('hidden');
-    }
+    /* P31 · Grup H — Crimson King artık çekiş önizlemesi göstermiyor
+       (Kanlı Taç). Kutu DOM'da duruyor ama hep gizli. */
+    el.crimsonPeek.classList.add('hidden');
+    /* P31 · Grup E — Tanrının Eli: bekleyen seçim varsa (ör. kayıttan
+       dönüşte) seçim penceresi yeniden açılır. */
+    if (s && s.godPick && s.status === 'playing' && !document.getElementById('godPickPop'))
+      setTimeout(showGodPick, 0);
 
     /* Kombinasyon alanları — GRUP D (2026-08-23):
        ÖNCEKİ turların açık kombinasyonları ve onlara yapılan İŞLEMELER
@@ -3284,6 +3293,66 @@
     if (Game.state.status !== 'playing') setTimeout(showRoundEnd, 900);
   };
 
+  /* TANRININ ELİ (P31 · Grup E) — desteden seçimli çekiş penceresi.
+     Deste açılır pop-up'ının (#pilePopup) kabuğu ve renk gruplaması
+     kullanılır; taşlar tıklanınca seçilir, hak dolunca "Çek" onaylar.
+     Pencere kapatılamaz: seçim bitmeden açılım ve atış motor tarafında
+     da kilitlidir. */
+  function showGodPick(after) {
+    const s = Game.state;
+    if (!s || !s.godPick || document.getElementById('godPickPop')) return;
+    const n = s.godPick.n;
+    const chosen = new Set();
+    const ov = document.createElement('div');
+    ov.id = 'pilePopup';
+    const wrap = document.createElement('div');
+    wrap.id = 'godPickPop';
+    const box = document.createElement('div');
+    box.className = 'pp-box gp-box';
+    box.innerHTML = `<h3>${t('godPickTitle')}</h3><p>${t('godPickSub', n)}</p>`;
+    const groups = COLORS.map(c => ({ label: T.color(c),
+      tiles: s.deck.filter(t2 => !t2.jokerTile && t2.color === c).sort((a, b) => a.number - b.number) }));
+    for (const g of groups) {
+      if (!g.tiles.length) continue;
+      const lbl = document.createElement('div');
+      lbl.className = 'pp-group-label';
+      lbl.textContent = `${g.label} · ${g.tiles.length}`;
+      box.appendChild(lbl);
+      const row = document.createElement('div');
+      row.className = 'pp-tiles';
+      for (const t2 of g.tiles) {
+        const te = tileEl(t2, false);
+        te.classList.add('gp-opt');
+        te.addEventListener('click', () => {
+          if (chosen.has(t2.id)) chosen.delete(t2.id);
+          else if (chosen.size < n) chosen.add(t2.id);
+          te.classList.toggle('gp-sel', chosen.has(t2.id));
+          btn.textContent = t('godPickBtn', chosen.size, n);
+        });
+        row.appendChild(te);
+      }
+      box.appendChild(row);
+    }
+    const btn = document.createElement('button');
+    btn.className = 'gp-take';
+    btn.textContent = t('godPickBtn', 0, n);
+    btn.addEventListener('click', () => {
+      const r = Game.godPickTake([...chosen]);
+      if (!r.ok) { toast(T.ev(r.error)); return; }
+      ov.remove();
+      newTileIds = new Set(r.drawn || []);
+      SFX.draw();
+      if (r.events && r.events.length) notify(r.events, true, { quiet: true });
+      render();
+      setTimeout(() => newTileIds.clear(), 600);
+      if (typeof after === 'function') after();
+    });
+    box.appendChild(btn);
+    wrap.appendChild(box);
+    ov.appendChild(wrap);
+    document.body.appendChild(ov);
+  }
+
   /* Kuzey Yıldızı seçim penceresi — gizli paket "seçimli açılış"ıyla aynı
      desen (pk-* kabuğu): üç taş yan yana, biri tıklanır, kalanlar desteye
      karışır. Kuyrukta başka seçim varsa pencere yeniden kurulur. */
@@ -3384,6 +3453,8 @@
       setTimeout(() => newTileIds.clear(), 600);
       if (res.worldRestart) return; // raund baştan — oyun ekranında kal
       if (res.roundOver) setTimeout(showRoundEnd, 400);
+      // P31 · Grup E — Tanrının Eli: önce desteden seçim, sonra yazı-tura
+      else if (Game.state.godPick) showGodPick(maybeCoinFlip);
       // Grup F/22 — yeni turun yazı-turası (Kumarbaz slottaysa)
       else maybeCoinFlip();
       /* GRUP K (kullanıcı isteği 2026-09-06) — TÜCCAR TEKLİFİ OTOMATİK.

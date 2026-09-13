@@ -338,6 +338,43 @@ body::before {
   color: #8A2A2A;
 }
 .joker-tile .jt-ipotek:disabled { cursor: default; }
+/* PLAYTEST 31 · GRUP H — Crimson King tacı (kartın sol üst köşesi) */
+.joker-tile .jt-crown {
+  position: absolute;
+  top: -10px;
+  left: -6px;
+  font-size: 16px;
+  line-height: 1;
+  z-index: 3;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.35));
+  pointer-events: none;
+}
+/* PLAYTEST 31 · GRUP I / C — Yasak Elma ve Pinky Warrior okeyleri */
+.tile.apple-tile::after,
+.tile.pinky-okey::after {
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  font-size: 13px;
+  line-height: 1;
+  pointer-events: none;
+}
+.tile.apple-tile::after { content: '🍎'; }
+.tile.pinky-okey::after { content: '🩷'; }
+/* PLAYTEST 31 · GRUP E — Tanrının Eli seçim penceresi (#pilePopup kabuğu) */
+#godPickPop .gp-opt { cursor: pointer; }
+#godPickPop .gp-sel { outline: 3px solid var(--gold, #E8B530); outline-offset: 1px; transform: translateY(-4px); }
+#godPickPop .gp-take {
+  display: block;
+  margin: 14px auto 0;
+  padding: 8px 22px;
+  font-weight: 800;
+  border-radius: 8px;
+  border: 2px solid var(--gold-ink, #C98A0C);
+  background: var(--gold, #E8B530);
+  color: #3a2a00;
+  cursor: pointer;
+}
 
 /* rarity kimlikleri — Common mat, Rare glow, Epic pulse,
    Legendary shimmer, Mythic animasyonlu gradyan (GDD 7.1) */

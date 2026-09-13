@@ -634,7 +634,7 @@ const RARITY = {
    Bu yüzden E10 diğer 8 Mythic'e uygulanır, bu ikisi 30 coinde kalır.
    Tek bir tabloda durur ki geri alması bir satır olsun.
    ========================================================================== */
-const JOKER_PRICE_OVERRIDE = { theWorld: 30, pinky: 30 };
+const JOKER_PRICE_OVERRIDE = { theWorld: 30 };   // P31 · Grup C: Pinky artık kurtarıcı değil, istisna kalktı
 function jokerPrice(key, rarity) {
   return JOKER_PRICE_OVERRIDE[key] ?? RARITY[rarity].price;
 }
@@ -776,7 +776,7 @@ const BORSA_BURN = 0.5;         // düşen türdeki hisselerden kalan oran
 const BORSA_TYPES = ['per', 'sirali', 'cift'];
 const BORSA_EMPTY = () => ({ per: 0, sirali: 0, cift: 0 });
 
-const KAGIT_TILES = 3;   // GRUP Q (P20): Kağıt Jokeri kaç taşı 13 yapar (2 → 3)
+const KAGIT_TILES = 2;   // P31 · Grup J: Kağıt her raund en düşük 2 taşı KALICI okeye çevirir
 
 /* TERAZİ (Rare) — PLAYTEST 29 · GRUP J (kullanıcı kararı 2026-09-12).
    Üç değişiklik + bir sadeleştirme:
@@ -1764,18 +1764,31 @@ const JOKER_DEFS = {
      zinciri). Karşılığında E10 fiyat indiriminden MUAF tutuldu, 30 coinde
      kaldı (bkz. JOKER_PRICE_OVERRIDE). */
   theWorld: { key: 'theWorld', name: 'The World', rarity: 'mythic', uses: 2, runLong: true,
-    desc: 'Boss raundunda ölürsen raund baştan başlar. Run boyunca 1 kez.' },
+    /* P31 · Grup A: başa sarmaya ek +3.0x KALICI; bedeli run boyu hedef +%10 (permTargetUp). */
+    desc: 'Boss raundunda ölürsen raund baştan başlar ve +3.0x kalıcı çarpan kazanırsın. Bedeli: run boyunca hedefler %10 artar. Run boyunca 1 kez.' },
   seytan: { key: 'seytan', name: 'Şeytan\'ın Teklifi', rarity: 'mythic', uses: 1,
-    desc: 'Coinin olduğu ilk raundda hepsini alır: coin başına +50 puan ve +0.2x.' },
-  /* MADDE E3-c — bkz. theWorld: tetiklenene kadar yaşlanmaz, 30 coinde kalır. */
-  pinky: { key: 'pinky', name: 'Pinky Finger of the Warrior', rarity: 'mythic', uses: 1, runLong: true,
-    desc: 'Raundu kaybedecekken eksik puanı tamamlar. Run boyunca 1 kez.' },
+    desc: 'Raundun ilk turunda tüm coinlerine el koyar. Coin başına +100 puan ve +4x çarpan verir.' },
+  /* PLAYTEST 31 · GRUP C (kullanıcı onayı 2026-09-13) — PINKY FINGER OF THE
+     WARRIOR → PINKY WARRIOR "KÜÇÜKLER ORDUSU". Eski kurtarma kartı
+     ("eksik puanı tamamlar, run boyunca 1 kez") tamamen kaldırıldı; yeni
+     anahtar açıldı. O raund 1-3 değerli bütün taşlar okey olur — en küçük
+     taşlar (serçe parmaklar) raundun en güçlü taşlarına döner. Okey
+     kuralları aynen geçerli: atılırsa okey atma cezası. */
+  pinkyWarrior: { key: 'pinkyWarrior', name: 'Pinky Warrior', rarity: 'mythic', uses: 1,
+    desc: 'O raund 1, 2 ve 3 değerli bütün taşlar okey olur. Okey kuralları geçerlidir: atarsan okey cezası yersin.' },
   kiyamet: { key: 'kiyamet', name: 'Kıyamet Trompeti', rarity: 'mythic', uses: 1,
-    desc: 'O raund tüm jokerler susar, hedef %80 düşer.' },
-  aynaKirigi: { key: 'aynaKirigi', name: 'Ayna Kırığı', rarity: 'mythic', uses: 1,
-    desc: 'O raund işlek tersine döner: ceza yerine taş değerinin 20 katı puan. Sonraki raundlarda işlek %10 artar.' },
+    desc: 'O raund tüm jokerler susar, hedef %90 düşer.' },
+  /* PLAYTEST 31 · GRUP E (kullanıcı kararı 2026-09-13) — AYNA KIRIĞI →
+     TANRININ ELİ. Beş öneri turundan sonra kullanıcının kendi tarifi:
+     bu kart slottayken tur sonundaki OTOMATİK çekiş kalkar, oyuncu
+     çekiş hakkı kadar taşı DESTESİNDEN KENDİSİ seçer (çekiş sayısı ve
+     ıstaka sınırı aynı kalır). Bkz. `s.godPick` / godPickTake(). */
+  tanrininEli: { key: 'tanrininEli', name: 'Tanrının Eli', rarity: 'mythic', uses: 1,
+    desc: 'Tur sonunda taş otomatik çekilmez: çekiş hakkın kadar taşı destenden kendin seçersin.' },
   ejderha: { key: 'ejderha', name: 'Gökyüzü Ejderhası', rarity: 'mythic', uses: 1,
-    desc: 'Her açılımda en yüksek taş 3 katı sayılır. Her açılımda elinden 1 taş yanar.' },
+    /* P31 · Grup F: yalnız en yüksek taş ×3 → açılımdaki HER taş ×5 (ham puanda,
+       çarpandan önce). Yanan taş artık desteden de KALICI silinir. */
+    desc: 'Açılımdaki her taşın değeri 5 katı sayılır. Her açılımda ıstakandan rastgele 1 taş kalıcı olarak silinir.' },
   /* v3: 0.1x/taş tek kartta ~+2.0x kalıcıydı → 0.05; v4 buff: 0.08.
      PLAYTEST 20 · GRUP L (kullanıcı raporu: "oyunu kırıyor") — KARA DELİK
      ARTIK ELİN YARISINI YUTAR. Eski hâli elin TAMAMINI (15-21 taş) alıp
@@ -1788,22 +1801,30 @@ const JOKER_DEFS = {
   /* Kullanıcı düzeltmesi 2026-09-06: İngilizcede "Void", Türkçede
      "Boşluk" — Sir.by gibi sabit bir ad DEĞİL, çevrilir. */
   karaDelik: { key: 'karaDelik', name: 'Boşluk', rarity: 'mythic', uses: 1,
-    desc: 'Raund başında elinin yarısını yutar: yutulan taş başına +15 puan ve +0.08x kalıcı. Sonra yutulanın yarısı kadar yeni taş çekersin.' },
-  /* Grup L: salt bilgi mythic için zayıftı — çekiş avantajı eklendi */
-  crimson: { key: 'crimson', name: 'Crimson King', rarity: 'mythic', uses: 1,
-    desc: 'Sıradaki 5 çekişini önceden görürsün. Her tur +1 fazla taş çekersin.' },
-  ademHavva: { key: 'ademHavva', name: 'Adem ile Havva', rarity: 'mythic', uses: 1,
-    desc: 'O raund elindeki ve destedeki her taşın değeri +2 olur (en çok 13).' },
-  /* PLAYTEST 20 · GRUP Q — 2 → 3 TAŞ ve "çalışmıyor" bug'ı.
-     KÖK NEDEN: joker `applied` bayrağıyla RUN BOYUNCA BİR KEZ çalışıyordu.
-     `_startRound` her raund çağrılıyor ama `!j.applied` koşulu ilk
-     rauntdan sonra hiç tutmuyordu; oyuncu 2. raunttan itibaren "hiçbir
-     şey olmuyor" görüyordu. Bayrak artık RAUND bazlı (`appliedRound`),
-     yani joker elde durduğu her raund çalışır. Sayı da 3'e çıkarıldı
-     (açıklama zaten 3 diyordu, kod da 3 alıyordu — asıl uyumsuzluk
-     tetiklenme sıklığındaydı). */
-  kagitJokeri: { key: 'kagitJokeri', name: 'Kağıt Jokeri', rarity: 'mythic', uses: 1,
-    desc: 'Her raund başında en düşük 3 taşın 13 olur.' },
+    /* P31 · Grup G: taş başına +15 → +150 puan, +0.08x → +1.0x kalıcı. */
+    desc: 'Raund başında elinin yarısını yutar: yutulan taş başına +150 puan ve +1.0x kalıcı. Sonra yutulanın yarısı kadar yeni taş çekersin.' },
+  /* PLAYTEST 31 · GRUP H (kullanıcı kararı 2026-09-13) — CRIMSON KING
+     "KANLI TAÇ". Eski hâli (5 çekişi görme, +1 çekiş) kaldırıldı. Her tur
+     başında taç, AÇILIMDA BONUS VEREN jokerlerinden rastgele birine geçer;
+     o tur o jokerin açılım katkısı iki kez işler. Kullanıcı düzeltmeleri:
+     (1) sıra/sol mantığı yok — rastgele, (2) Sarmaşık gibi açılıma bonus
+     vermeyen jokerler taç alamaz (bkz. _meldBonusKeys). */
+  crimsonTac: { key: 'crimsonTac', name: 'Crimson King', rarity: 'mythic', uses: 1,
+    desc: 'Her tur başında taç, açılımda bonus veren jokerlerinden rastgele birine geçer: o tur o jokerin etkisi iki kez işler.' },
+  /* PLAYTEST 31 · GRUP I (kullanıcı onayı 2026-09-13) — ADEM İLE HAVVA
+     "YASAK ELMA". Eski hâli (tüm taşlar +2) kaldırıldı, yeni anahtar. Raund
+     başında ele bir Elma taşı gelir: okey gibi her taşın yerine geçer ve
+     kullanıldığı açılım ×3 puan verir. Elmayı AÇTIĞIN an cennetten
+     kovulursun: raundun kalanında tur başı 2 taş eksik çekiş, işlek +%20. */
+  yasakElma: { key: 'yasakElma', name: 'Adem ile Havva', rarity: 'mythic', uses: 1,
+    desc: 'Raund başında eline bir Elma gelir: okey gibi her taşın yerine geçer, kullanıldığı açılım ×3 puan verir. Elmayı açınca kovulursun: kalan turlarda 2 taş eksik çekersin, işlek +%20.' },
+  /* PLAYTEST 31 · GRUP J (kullanıcı onayı 2026-09-13) — KAĞIT JOKERİ → KAĞIT
+     (EN "Paper"). Eski efekt (en düşük 3 taş 13 olur) kaldırıldı, yeni
+     anahtar. Her raund başında elindeki en düşük 2 asıl deste taşı KALICI
+     okeye çevrilir — Okey Mührü ile AYNI defter: `tileMods` remove +
+     okeyClone. Kopya her stage o stage'in okeyine dönüşür. */
+  kagit: { key: 'kagit', name: 'Kağıt', rarity: 'mythic', uses: 1,
+    desc: 'Her raund başında elindeki en düşük 2 taş KALICI olarak okeye dönüşür (Okey Mührü gibi: her stage o stage’in okeyi olur).' },
 
   /* ===== BOSS (EPIC) — Slot Jokerleri (4) + Deste Jokerleri (4, GDD 10):
      deste jokerleri desteye karışır, eline gelince aktifleşir,
@@ -2083,8 +2104,20 @@ const BAL_KUPU_PERM = 3;       // her raund sonuna eklenen kalıcı coin
 const ALIEN_HIDDEN_PER_TURN = 3;
 
 /* Şeytan'ın Teklifi (GDD 12) — feda edilen coin başına ödül */
-const SEYTAN_SCORE = 50;
-const SEYTAN_MULT = 0.2;
+/* P31 · Grup B (kullanıcı kararı 2026-09-13): 50 → 100 puan, 0.2 → 4.0x (coin başına) */
+const SEYTAN_SCORE = 100;
+const SEYTAN_MULT = 4.0;
+/* P31 · MYTHIC DENGE TURU (kullanıcı kararı 2026-09-13) */
+const WORLD_PERM_MULT = 3.0;     // Grup A — The World tetiklenince kalıcı çarpan
+const WORLD_TARGET_UP = 0.10;    // Grup A — bedeli: run boyunca hedefler +%10
+const KIYAMET_KEEP = 0.10;       // Grup D — hedefin kalan payı (%80 → %90 düşüş)
+const EJDERHA_TILE_MULT = 5;     // Grup F — açılımdaki her taşın değeri ×5
+const VOID_SCORE = 150;          // Grup G — Boşluk: yutulan taş başına puan (15 → 150)
+const VOID_MULT = 1.0;           // Grup G — Boşluk: yutulan taş başına kalıcı çarpan (0.08 → 1.0)
+const PINKY_MAX = 3;             // Grup C — Pinky Warrior: bu değere kadar (1-3) taşlar okey
+const APPLE_MULT = 3;            // Grup I — Yasak Elma: elmalı açılımın puan katı
+const APPLE_DRAW_CUT = 2;        // Grup I — kovulunca tur başı eksik çekiş
+const APPLE_ISLEK = 0.20;        // Grup I — kovulunca raundun kalanına işlek riski
 
 const GODZILLA_LEVELS = [
   { flat: 100, mult: 2.5 }, { flat: 250, mult: 3.5 },
@@ -2308,7 +2341,7 @@ function IS_BASE_TILE(t) {
 const TILE_ORIGIN_TR = {
   kirby: 'Sir.by', kirbyBoss: 'Sir.by (boss)', karaKedi: 'Kara Kedi',
   karaKediBoss: 'Kara Kedi (boss)',
-  ademHavva: 'Adem ile Havva', kagitJokeri: 'Kağıt Jokeri',
+  yasakElma: 'Adem ile Havva (Elma)', kagit: 'Kağıt',
   pandoraArmagan: 'Pandora — Armağan', cheating: 'The Cheating',
   tuccar: 'Tüccar takası', upgrade: 'Takas (13 yükseltmesi)',
   cekic: 'Değer Çekici', tac: 'Taç', boya: 'Boya Kabı', kopyaci: 'Kopyacı',
@@ -2817,6 +2850,7 @@ const Game = {
       lastExpired: [],
       winStreak: 0,
       nextTargetMult: 1,
+      permTargetUp: 0,      // P31 · Grup A — The World bedeli: hedefler run boyunca kalıcı artar
       islekPermBonus: 0,    // Ayna Kırığı kalıntısı
       worldUsed: false,
       gossipTable: [],      // Grup F — Dedikodu Masası: 3 açık taş
@@ -3040,8 +3074,24 @@ const Game = {
      efektini de (durum alanları dahil: terzi.color, truva.revealed vb.) taşır. */
   slotRecs() {
     const out = [];
-    for (const j of this.state.jokers) out.push(...this._recsOf(j));
+    const mute = this.state.crownMuteId;   // P31 · Grup H — taç farkı hesabı için geçici susturma
+    for (const j of this.state.jokers) if (mute == null || j.id !== mute) out.push(...this._recsOf(j));
     return out;
+  },
+
+  /* CRIMSON KING (P31 · Grup H) — "açılımda bonus veren" joker anahtarları.
+     Elle liste TUTULMAZ: `effect` tanımı olan kartlar + açılım puanlamasının
+     (_calcOpening) okuduğu anahtarlar. Yeni bir açılım jokeri eklendiğinde
+     kendiliğinden taç adayı olur. Sonuç bir kez hesaplanıp önbelleğe alınır. */
+  _meldBonusKeys() {
+    if (this._meldKeysCache) return this._meldKeysCache;
+    const keys = new Set(Object.values(JOKER_DEFS).filter(d => d.effect).map(d => d.key));
+    const src = String(this._calcOpening);
+    for (const m of src.matchAll(/(?:j\.key === |hasActive\()'([A-Za-z]+)'/g))
+      if (JOKER_DEFS[m[1]] && JOKER_DEFS[m[1]].mech !== 'deck') keys.add(m[1]);
+    keys.delete('crimsonTac');
+    this._meldKeysCache = keys;
+    return keys;
   },
 
   /* Bir slot kaydının taşıdığı TÜM efekt kayıtları: kendisi + Vasiyet
@@ -3075,7 +3125,11 @@ const Game = {
     }
     // Nefes İksiri (değnek) — run'ın kalanında tüm hedefler kalıcı düşer
     const cut = this.state?.permTargetCut || 0;
-    return cut ? Math.max(10, Math.round(base * (1 - cut) / 5) * 5) : base;
+    if (cut) base = Math.max(10, Math.round(base * (1 - cut) / 5) * 5);
+    /* The World (P31 · Grup A) — tetiklendiği andan run sonuna kadar tüm
+       hedefler kalıcı +%10. Bir kerelik değil, çarpan gibi her hedefe. */
+    const up = this.state?.permTargetUp || 0;
+    return up ? Math.round(base * (1 + up) / 5) * 5 : base;
   },
 
   /* Tüketilebilir envanter kapasitesi — taban GDD 6.5b'deki 3, Heybe ile
@@ -3217,8 +3271,7 @@ const Game = {
     const s = this.state;
     if (!s) return false;
     return [...(s.jokers || []), ...(s.backup || []), ...(s.deckJokers || [])].some(j =>
-         j.key === 'pinky'
-      || j.key === 'theWorld'
+         j.key === 'theWorld'
       || j.key === 'misunderstood'
       || (j.key === 'kaptan' && !j.saveUsed)
       || (j.key === 'truva' && j.pandora === 'umut' && !j.umutUsed && !s.umutRunUsed));
@@ -4024,6 +4077,9 @@ const Game = {
     s.yildizPick = null;
     s.ageSkip = false;        // Grup E — Zaman Taşı: bu raund joker yaşlanması yok
     s.graveTiles = [];        // Frankenstein — bu raund atılan taşlar (mezarlık)
+    s.appleEaten = false;     // P31 · Grup I — Yasak Elma: bu raund kovuldun mu
+    s.crownId = null;         // P31 · Grup H — Crimson King: bu turun taçlı jokeri
+    s.godPick = null;         // P31 · Grup E — Tanrının Eli: bekleyen seçimli çekiş
     s.teraziUsed = false;     // Grup C — Terazi feda hakkı
     s.paratonerBait = null;   // P29 · Grup F — yem her raundun başında boş
     s.teraziMult = 0;
@@ -4082,16 +4138,34 @@ const Game = {
       }
     }
 
-    // Kıyamet Trompeti — jokerler kapanır, hedef %80 düşer (GDD 12)
+    // Kıyamet Trompeti — jokerler kapanır, hedef %90 düşer (GDD 12 · P31 · Grup D: %80 → %90)
     if (this.slotRecs().some(j => j.key === 'kiyamet')) {
       s.jokersDisabled = true;
-      s.target = Math.max(50, Math.ceil(s.target * 0.2));
-      s.roundStartNotes.push('Kıyamet Trompeti: tüm joker efektleri kapalı, hedef %80 düştü');
+      s.target = Math.max(50, Math.ceil(s.target * KIYAMET_KEEP));
+      s.roundStartNotes.push(`Kıyamet Trompeti: tüm joker efektleri kapalı, hedef %${Math.round((1 - KIYAMET_KEEP) * 100)} düştü`);
     }
-    // Ayna Kırığı — işlek tersine döner
-    if (this.hasActive('aynaKirigi')) {
-      s.islekReversed = true;
-      s.roundStartNotes.push('Ayna Kırığı: bu raund işlek CEZA değil, 20 kat PUAN verir');
+    /* PINKY WARRIOR (P31 · Grup C) — küçükler ordusu. Okey işareti fiziksel
+       taşa yazılır (isOkeyReal); deste her raund yeniden kurulduğu için
+       etki raundla sınırlıdır. Özel taş, sahte okey ve deste jokeri hariç. */
+    if (this.hasActive('pinkyWarrior')) {
+      let n = 0;
+      for (const t of [...s.deck, ...s.hand]) {
+        if (t.jokerTile || t.fakeOkey || t.special || t.number > PINKY_MAX) continue;
+        t.isOkeyReal = true; t.pinkyOkey = true; n++;
+      }
+      s.roundStartNotes.push(`🩷 Pinky Warrior: küçükler ordusu — 1, 2 ve 3'ler bu raund OKEY (${n} taş)`);
+    }
+    /* ADEM İLE HAVVA · YASAK ELMA (P31 · Grup I) — ele bir Elma taşı. Kimliği
+       okeyin kimliğidir ama `copied` olduğu için asıl destenin 2 kopya
+       sınırına girmez; raund bitince destede yeniden kurulmaz. */
+    if (this.hasActive('yasakElma')) {
+      if (this.realHandCount() < MAX_HAND) {
+        s.hand.push({ id: nextTileId(s), color: s.okey.color, number: s.okey.number,
+          isOkeyReal: true, copied: true, apple: true, origin: 'yasakElma' });
+        s.roundStartNotes.push('🍎 Adem ile Havva: eline Yasak Elma geldi — her taşın yerine geçer, açılımı ×3. Açtığın an kovulursun.');
+      } else {
+        s.roundStartNotes.push('🍎 Adem ile Havva: ıstaka dolu — elma bu raund düşmedi');
+      }
     }
     if (s.islekPermBonus > 0)
       s.islekRateBonus += s.islekPermBonus;
@@ -4219,33 +4293,17 @@ const Game = {
       for (let k = 0; k < n && cand.length; k++)
         eaten.push(cand.splice(Math.floor(this.rng() * cand.length), 1)[0]);
       for (const t of eaten) this._takeTile(t, 'void');
-      s.score += n * 15;
-      s.permMult = round2(s.permMult + 0.08 * n);
+      s.score += n * VOID_SCORE;
+      s.permMult = round2(s.permMult + VOID_MULT * n);
       // telafi: yutulanın yarısı kadar yeni taş — el işlevsiz kalmasın
       const refill = Math.ceil(n / 2);
       let drew = 0;
       for (let k = 0; k < refill && s.deck.length; k++) { s.hand.push(s.deck.shift()); drew++; }
       s.roundStartNotes.push(`🕳 Boşluk elinin yarısını (${n} taş) yuttu: `
-        + `+${n * 15} puan, +${(0.08 * n).toFixed(2)}x KALICI çarpan`
+        + `+${n * VOID_SCORE} puan, +${(VOID_MULT * n).toFixed(2)}x KALICI çarpan`
         + (drew ? ` · yerine ${drew} yeni taş çektin` : ''));
       /* Grup F: artık sessiz değil — Şeytan'ın Teklifi deseninde pop-up. */
-      s.voidPending = { tiles: n, score: n * 15, mult: round2(0.08 * n), drew };
-    }
-    // Adem ile Havva — tüm değerler +2 (GDD 12)
-    /* Grup F: Boşluk ile aynı hata sınıfı — run bazlı `applied` yerine
-       RAUND bazlı bayrak; süresi uzatılan joker her raund çalışır. */
-    const ahRoundKey = `${s.stage}-${s.roundInStage}`;
-    const ahJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'ademHavva'
-      && j.appliedRound !== ahRoundKey);
-    if (ahJ) {
-      ahJ.appliedRound = ahRoundKey;
-      ahJ.applied = true;   // eski alan (kayıt uyumu)
-      for (const t of [...s.deck, ...s.hand])
-        /* Grup D: özel taş bu dünyada yeniden kurulmaz — değeri korunur */
-        if (!t.jokerTile && !t.fakeOkey && !t.special) {
-          t.number = Math.min(13, t.number + 2); retune(t, 'ademHavva');
-        }
-      s.roundStartNotes.push('Adem ile Havva: dünya yeniden kuruldu — tüm taşların değeri +2');
+      s.voidPending = { tiles: n, score: n * VOID_SCORE, mult: round2(VOID_MULT * n), drew };
     }
     /* İPOTEK (P30 · Grup G) — BORÇ TAHSİLATI. Boss kurulumundan (Godzilla
        tur sayısını 3'e çeker) SONRA çalışır ki kesinti gerçek tur sayısından
@@ -4273,25 +4331,31 @@ const Game = {
       nosJ.prophecy = true;
       s.roundStartNotes.push(`Nostradamus kehaneti: bu raundu ilk 2 turda geç → +${NOSTRA_MULT.toFixed(1)}x KALICI çarpan`);
     }
-    /* Kağıt Jokeri (GDD 12) — GRUP Q (P20): HER RAUND çalışır (eskiden
-       `applied` bayrağı yüzünden run boyunca yalnız bir kez tetikleniyordu,
-       bu yüzden "çalışmıyor" görünüyordu) ve 3 taşı 13 yapar.
-       Okey taşına ve dikili taşlara dokunmaz — onların değerini değiştirmek
-       başka mekanikleri (okey eşleşmesi, İğne dikişi) sessizce bozardı. */
+    /* KAĞIT (P31 · Grup J) — en düşük 2 asıl deste taşı KALICI okeye döner.
+       Okey Mührü ile aynı defter: `tileMods` remove (taşın eski kimliği
+       desteden gider) + okeyClone (her raund okey kopyası kurulur). Eldeki
+       taş anında okey olur. Raund bazlı bayrak (bkz. raund-bazlı tetiklenme
+       dersi): süresi uzatılan Kağıt her raund yeniden çalışır. */
     const roundKey = `${s.stage}-${s.roundInStage}`;
-    const kgJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'kagitJokeri'
+    const kgJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'kagit'
       && j.appliedRound !== roundKey);
     if (kgJ) {
       kgJ.appliedRound = roundKey;
-      kgJ.applied = true;   // eski alan (kayıt uyumu)
-      const low3 = [...s.hand]
-        .filter(t => !t.jokerTile && !t.fakeOkey && !this.isOkeyTile(t)
-          && !t.sewn && !t.bossSewn && !t.special && t.number < 13)   /* Grup D: joker dönüşümü özel taşa dokunmaz */
+      const low = [...s.hand]
+        .filter(t => IS_BASE_TILE(t) && !this.isOkeyTile(t) && !t.sewn && !t.bossSewn)
         .sort((a, b) => a.number - b.number).slice(0, KAGIT_TILES);
-      for (const t of low3) { t.number = 13; retune(t, 'kagitJokeri'); }
-      s.roundStartNotes.push(low3.length
-        ? `📄 Kağıt Jokeri: en düşük ${low3.length} taşın üstüne 13 yazıldı`
-        : '📄 Kağıt Jokeri: yükseltilecek taş yok (hepsi zaten 13)');
+      const faces = [];
+      for (const t of low) {
+        faces.push(`${COLOR_TR[t.color]} ${t.number}`);
+        s.tileMods.push({ op: 'remove', color: t.color, number: t.number });
+        s.tileMods.push({ op: 'okeyClone' });
+        this._dropMagnet(t);
+        t.color = s.okey.color; t.number = s.okey.number;
+        t.isOkeyReal = true; t.copied = true; t.origin = 'kagit';
+      }
+      s.roundStartNotes.push(low.length
+        ? `📃 Kağıt: ${faces.join(', ')} KALICI olarak okeye dönüştü`
+        : '📃 Kağıt: okeye çevrilecek uygun taş yok');
     }
     // Kahin — kehanet hedefi (GDD 10, tek hedefli uyarlama)
     s.kahinGoal = null;
@@ -4711,6 +4775,21 @@ const Game = {
 
   _onTurnStart(events) {
     const s = this.state;
+    /* CRIMSON KING · KANLI TAÇ (P31 · Grup H) — taç her tur açılımda bonus
+       veren jokerlerden RASTGELE birine geçer (sıra yok, kendisi hariç). */
+    s.crownId = null;
+    if (this.hasActive('crimsonTac')) {
+      const keys = this._meldBonusKeys();
+      const cand = s.jokers.filter(j => j.key !== 'crimsonTac'
+        && this._recsOf(j).some(r => keys.has(r.key)));
+      if (cand.length) {
+        const c = cand[Math.floor(this.rng() * cand.length)];
+        s.crownId = c.id;
+        events.push(`👑 Crimson King: taç bu tur ${c.name} jokerinde — açılım etkisi iki kez işler`);
+      } else {
+        events.push('👑 Crimson King: açılımda bonus veren jokerin yok — taç boşta kaldı');
+      }
+    }
     // deste jokeri aktivasyonu (GDD 10 — eline gelince)
     for (const j of s.deckJokers) {
       if (!s.hand.some(t => t.jokerTile === j.key)) continue;
@@ -5361,6 +5440,20 @@ const Game = {
 
   _calcOpening() {
     const s = this.state;
+    /* CRIMSON KING (P31 · Grup H) — taçlı jokerin katkısı = (onunla puan) −
+       (onsuz puan). Aynı hesap bir kez de jokersiz yapılır ve fark sonuca
+       bir kez daha eklenir. _calcOpening yan etkisizdir (önizleme de onu
+       çağırır), yani iki kez çağırmak durumu bozmaz. */
+    let crownBase = null, crownRec = null;
+    if (s.crownId != null && !this._crownPass && this.hasActive('crimsonTac')) {
+      crownRec = s.jokers.find(j => j.id === s.crownId) || null;
+      if (crownRec) {
+        this._crownPass = true;
+        s.crownMuteId = s.crownId;
+        try { crownBase = this._calcOpening().final; }
+        finally { s.crownMuteId = null; this._crownPass = false; }
+      }
+    }
     const ctx = this._buildCtx();
     const triggered = [];
     let mult = 0, flat = 0;
@@ -5643,6 +5736,10 @@ const Game = {
         text: `+${s.permComboBonus.toFixed(1)}x (${ctx.count} kombinasyon)` });
     }
 
+    /* GÖKYÜZÜ EJDERHASI (P31 · Grup F) — açılımdaki HER taşın değeri ×5.
+       Ham puana (çarpandan ÖNCE) uygulanır; işleme taşları da açılımın
+       parçası olduğu için onlar da sayılır. */
+    const ejMul = (this.hasActive('ejderha') && (ctx.tiles.length || islemeCount)) ? EJDERHA_TILE_MULT : 1;
     const mixed = ctx.hasCift && (ctx.hasPer || ctx.hasSirali);
     const teker = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'ucuncuTeker');
     let baseScore, raw, carpan, carpanText;
@@ -5665,8 +5762,8 @@ const Game = {
       let cCar = round2(getCarpan('cift', step(ciftCombos.length), s.permMult) + mult + TEKER_MULT);
       let pCar = round2(getCarpan('per', step(perCombos.length), s.permMult) + mult + TEKER_MULT);
       if (s.kumarbazRoll) { cCar = round2(cCar * s.kumarbazRoll); pCar = round2(pCar * s.kumarbazRoll); }
-      const cRaw = ciftCombos.reduce((a, c) => a + this.comboSum(c), 0);
-      const pRaw = perCombos.reduce((a, c) => a + this.comboSum(c), 0) + islemeSum;
+      const cRaw = ciftCombos.reduce((a, c) => a + this.comboSum(c), 0) * ejMul;
+      const pRaw = (perCombos.reduce((a, c) => a + this.comboSum(c), 0) + islemeSum) * ejMul;
       raw = cRaw + pRaw;
       baseScore = ceilMul(cRaw, cCar) + ceilMul(pRaw, pCar);
       carpan = null;
@@ -5687,7 +5784,7 @@ const Game = {
         const kj = this.slotRecs().find(j => j.key === 'kumarbaz');
         if (kj) triggered.push({ id: kj.id, name: kj.name, text: `çarpan ×${s.kumarbazRoll}` });
       }
-      raw = ctx.combos.reduce((a, c) => a + this.comboSum(c), 0) + islemeSum;
+      raw = (ctx.combos.reduce((a, c) => a + this.comboSum(c), 0) + islemeSum) * ejMul;
       baseScore = ceilMul(raw, carpan);
       carpanText = `${carpan.toFixed(1)}x`;
     }
@@ -5703,12 +5800,10 @@ const Game = {
         text: `ham puan +%${Math.round(s.permRawBonus * 100)} (+${baseScore - before})` });
     }
 
-    // Gökyüzü Ejderhası — en yüksek taş değeri 3 katına (değeri iki kez daha ekle)
-    if (this.hasActive('ejderha') && ctx.tiles.length) {
+    // Gökyüzü Ejderhası — taş değerleri ×5 yukarıda ham puana işlendi; burada yalnız döküm satırı
+    if (ejMul > 1) {
       const ej = this.slotRecs().find(j => j.key === 'ejderha');
-      const top = Math.max(...ctx.combos.flatMap(c => c.tiles.map(t => c.values?.get(t.id) ?? t.number)));
-      flat += top * 2;
-      triggered.push({ id: ej.id, name: ej.name, text: `en yüksek taş ×3 (+${top * 2})` });
+      triggered.push({ id: ej.id, name: ej.name, text: `her taş ×${EJDERHA_TILE_MULT} (ham ${raw / ejMul} → ${raw})` });
     }
 
     /* PLAYTEST 29 · GRUP B — Hayalet'in (eski Yankı) "+%50 puan" kolu BURADAN
@@ -5741,6 +5836,14 @@ const Game = {
        Boss kesintileri damgadan SONRA ve yüzde olarak işler, dolayısıyla
        damga onların da etkisini büyütmez/küçültmez. */
     let final = baseScore + flat;
+    /* YASAK ELMA (P31 · Grup I) — elmalı açılım ×3 (işleme taşları dahil). */
+    if (!s.jokersDisabled && final > 0 && this.hasActive('yasakElma')
+        && [...ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)].some(t => t.apple)) {
+      const b = final * (APPLE_MULT - 1);
+      final += b;
+      const aj = this.slotRecs().find(j => j.key === 'yasakElma');
+      triggered.push({ id: aj ? aj.id : 'apple', name: 'Adem ile Havva', text: `🍎 elma: ×${APPLE_MULT} (+${b})` });
+    }
     let damgaBonus = 0;
     const damgaJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'ayna');
     if (damgaJ && !s.damgaUsed && s.damgaArmed && final > 0) {
@@ -5772,6 +5875,16 @@ const Game = {
           triggered.push({ id: 'boss', name: 'GLITCH (BOSS)',
             text: `${bad} bozuk taş: -%${Math.round((1 - keep) * 100)}` });
         }
+      }
+    }
+    // Crimson King — taçlı jokerin açılım katkısı ikinci kez
+    if (crownBase != null) {
+      const delta = final - crownBase;
+      if (delta) {
+        final = Math.max(0, final + delta);
+        const cj = this.slotRecs().find(j => j.key === 'crimsonTac');
+        triggered.push({ id: cj ? cj.id : 'crown', name: 'Crimson King',
+          text: `👑 ${crownRec.name} iki kez (${delta > 0 ? '+' : ''}${delta})` });
       }
     }
     return { ctx, raw, carpan, carpanText, parts, final, flat, triggered, mixed, curMode, damgaBonus, kelebekCoin, islemeCount };
@@ -5809,6 +5922,7 @@ const Game = {
 
   stageCombo(ids) {
     const s = this.state;
+    if (s.godPick) return { ok: false, error: 'Önce Tanrının Eli ile destenden taşlarını seç.' };
     if (s.phase !== 'meld') return { ok: false, error: 'Şu an açılım aşamasında değilsin.' };
     const sel = this._tilesByIds(ids);
     if (!sel.tiles) return { ok: false, error: sel.error };
@@ -6493,6 +6607,7 @@ const Game = {
 
   confirmMelds() {
     const s = this.state;
+    if (s.godPick) return { ok: false, error: 'Önce Tanrının Eli ile destenden taşlarını seç.' };
     if (s.phase !== 'meld' || (!s.staged.length && !s.islemeler.length)) return { ok: false };
 
     // Grup H: gizli uzaylı taşıyan kombinasyonlar puanlanmadan önce çöker
@@ -6724,10 +6839,25 @@ const Game = {
         events.push(`Cellat ${COLOR_TR[low.color]} ${low.number} taşını idam etti (+20 puan, açılımlara +3)`);
       }
     }
+    /* YASAK ELMA (P31 · Grup I) — elma açıldıysa cennetten kovulma. */
+    if (!s.appleEaten && [...r.ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)].some(t => t.apple)) {
+      s.appleEaten = true;
+      s.islekRateBonus = round2((s.islekRateBonus || 0) + APPLE_ISLEK);
+      events.push(`🍎 Elmayı ısırdın — cennetten kovuldun: kalan turlarda ${APPLE_DRAW_CUT} taş eksik çekiş, işlek +%${Math.round(APPLE_ISLEK * 100)}`);
+    }
+    /* Gökyüzü Ejderhası (P31 · Grup F) — ıstakadan rastgele 1 taş KALICI
+       silinir: Ustura ile aynı defter (tileMods remove + özel/mıknatıs
+       kaydı). Deste jokeri ve sahte okey kalıcı silinemez, aday değildir. */
     if (this.hasActive('ejderha') && s.hand.length) {
-      const i = Math.floor(this.rng() * s.hand.length);
-      const burned = this._takeTile(s.hand[i], 'ejderha');
-      events.push(`Ejderha ${COLOR_TR[burned.color]} ${burned.number} taşını yaktı`);
+      const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey);
+      if (cand.length) {
+        const t = cand[Math.floor(this.rng() * cand.length)];
+        s.tileMods.push({ op: 'remove', color: t.color, number: t.number });
+        this._dropSpecialRecord(t);
+        this._dropMagnet(t);
+        const burned = this._takeTile(t, 'ejderha');
+        events.push(`Ejderha ${COLOR_TR[burned.color]} ${burned.number} taşını ıstakandan KALICI olarak sildi`);
+      }
     }
 
     const result = {
@@ -6786,6 +6916,7 @@ const Game = {
 
   skipToDiscard() {
     const s = this.state;
+    if (s.godPick) return { ok: false, error: 'Önce Tanrının Eli ile destenden taşlarını seç.' };
     if (s.phase !== 'meld') return { ok: false };
     if (s.staged.length || s.islemeler.length)
       return { ok: false, error: 'Önce bekleyen açılımı/işlemeyi onayla veya geri al.' };
@@ -7105,7 +7236,6 @@ const Game = {
         s.wonOnTurn = s.turn;
         this._finishWin();
       } else {
-        const pinkyJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'pinky');
         const kaptanJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'kaptan' && !j.saveUsed);
         const worldJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'theWorld');
         /* Pandora · UMUT (Grup F) — kutunun dibinde kalan: eksik puanın
@@ -7114,7 +7244,7 @@ const Game = {
            zincir normal şekilde devam eder. */
         const umutJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'truva'
           && j.pandora === 'umut' && !j.umutUsed && !s.umutRunUsed && s.score >= s.target / 2);
-        if (!pinkyJ && umutJ) {
+        if (umutJ) {
           /* PLAYTEST 17 · GRUP E/20 (kullanıcı kararı 2026-08-28) —
              UMUT ARTIK EKSİĞİN TAMAMINI KAPATIR.
              Eski hâli eksik puanın YARISINI veriyordu: 400 hedefte 250
@@ -7151,14 +7281,7 @@ const Game = {
             return { ok: true, roundOver: true, events };
           }
         }
-        if (pinkyJ) {
-          s.score = s.target;
-          s.jokers = s.jokers.filter(j => j !== pinkyJ);
-          s.wonOnTurn = s.turn;
-          events.push('Pinky Finger of the Warrior: eksik puan tamamlandı!');
-          this._finishWin();
-          if (s.coinReport) s.coinReport.savedBy = 'Pinky Finger of the Warrior';
-        } else if (kaptanJ) {
+        if (kaptanJ) {   // P31 · Grup C: Pinky kurtarması kaldırıldı
           /* Lanetli Kaptan (Grup B) — kurtarışın BEDELİ:
              - joker artık SATILAMAZ (noSell): güçlü kurtuluşu alıp hemen
                nakde çevirmek mümkün olmasın;
@@ -7173,7 +7296,12 @@ const Game = {
           // The World — boss raundu başa sarar (GDD 11)
           s.worldUsed = true;
           s.jokers = s.jokers.filter(j => j !== worldJ);
-          this._startRound(['The World: zaman geri sarıldı — boss raundu yeniden başlıyor!']);
+          /* P31 · Grup A — ödül ve bedel başa sarmadan ÖNCE yazılır: yeniden
+             kurulan boss raundunun hedefi de +%10'dan hesaplanır. */
+          s.permMult = round2(s.permMult + WORLD_PERM_MULT);
+          s.permTargetUp = round2((s.permTargetUp || 0) + WORLD_TARGET_UP);
+          this._startRound(['The World: zaman geri sarıldı — boss raundu yeniden başlıyor!',
+            `🕰️ The World: +${WORLD_PERM_MULT.toFixed(1)}x KALICI çarpan · bedeli: run boyunca hedefler +%${Math.round(WORLD_TARGET_UP * 100)}`]);
           return { ok: true, worldRestart: true, events: ['The World: boss raundu yeniden başladı'] };
         } else if (!s.jokersDisabled && s.misuActive
             && s.deckJokers.some(j => j.key === 'misunderstood')) {
@@ -7267,14 +7395,19 @@ const Game = {
 
     // çekiş — Grup A: el üst sınırına (MAX_HAND=21) kırpılır; Kara Kedi dönüşümü
     const wantN = 5 + (s.permDraw || 0) // kalıcı çekiş yükseltmesi (madde 24 · Derin Nefes)
-      + (this.hasActive('crimson') ? 1 : 0) // Crimson King (Grup L buff)
       + (s.tuccarDraw || 0)  // Tüccar takası: bu raund +1 taş
-      + (s.bonusDraw || 0);  // Grup E — Yıldız Taşı: açılımda kazanılan ekstra çekiş
+      + (s.bonusDraw || 0)   // Grup E — Yıldız Taşı: açılımda kazanılan ekstra çekiş
+      - (s.appleEaten ? APPLE_DRAW_CUT : 0);   // P31 · Grup I — cennetten kovulma
     if (s.bonusDraw) { events.push(`⭐ Yıldız Taşı: +${s.bonusDraw} ekstra taş`); s.bonusDraw = 0; }
     const drawN = Math.max(0, Math.min(wantN, MAX_HAND - this.realHandCount()));
+    /* TANRININ ELİ (P31 · Grup E) — otomatik çekiş YOK: hak `s.godPick`
+       olarak bekler, oyuncu destesinden seçer (godPickTake). Tur yine
+       ilerler; seçim bitene kadar açılım/atış kilitlidir. */
+    const godHand = this.hasActive('tanrininEli') && drawN > 0
+      && s.deck.some(t => !t.jokerTile);
     if (drawN < wantN) events.push(`Istaka sınırı: ${wantN} yerine ${drawN} taş çekildi (el en fazla ${MAX_HAND})`);
     let drawn;
-    if (this.hasActive('karaKedi') && s.deck.length) {
+    if (this.hasActive('karaKedi') && s.deck.length && !godHand) {
       // okey taşları dönüşümden muaf (fiziksel okey işareti korunur)
       const minPool = s.deck.filter(t => !t.jokerTile && !t.fakeOkey
         && !this.isOkeyTile(t) && !t.special);   /* Grup D: joker dönüşümü özel taşa dokunmaz */
@@ -7288,6 +7421,10 @@ const Game = {
           retune(t, 'karaKedi');
         }
       }
+    } else if (godHand) {
+      drawn = [];
+      s.godPick = { n: drawN };
+      events.push(`🤲 Tanrının Eli: destenden ${drawN} taş seç`);
     } else {
       drawn = s.deck.splice(0, drawN);
     }
@@ -9858,6 +9995,46 @@ const Game = {
     return { ok: true, key: j.key, from: fromIdx, to };
   },
 
+  /* TANRININ ELİ (P31 · Grup E) — bekleyen seçimli çekişi tamamlar.
+     `ids` destedeki taşların kimlikleridir; en fazla `godPick.n` taş.
+     Deste jokerleri seçilemez (eline gelişleri tur başı etkinleşmesine
+     bağlı). Oyuncu hakkından az seçerse kalan hak yanar. Kara Kedi (joker
+     ve boss) ve boss'un çekiş etkileri seçilen taşlara da uygulanır. */
+  godPickTake(ids) {
+    const s = this.state;
+    if (!s.godPick) return { ok: false, error: 'Bekleyen bir Tanrının Eli seçimi yok.' };
+    const want = [...new Set(ids || [])];
+    if (want.length > s.godPick.n)
+      return { ok: false, error: `En fazla ${s.godPick.n} taş seçebilirsin.` };
+    const room = Math.max(0, MAX_HAND - this.realHandCount());
+    const picked = [];
+    for (const id of want.slice(0, room)) {
+      const i = s.deck.findIndex(t => t.id === id && !t.jokerTile);
+      if (i < 0) return { ok: false, error: 'Seçilen taş destede yok.' };
+      picked.push(s.deck.splice(i, 1)[0]);
+    }
+    const events = [];
+    if (this.hasActive('karaKedi')) {
+      const minPool = s.deck.filter(t => !t.jokerTile && !t.fakeOkey && !this.isOkeyTile(t) && !t.special);
+      const minVal = minPool.length ? Math.min(...minPool.map(t => t.number)) : Infinity;
+      for (const t of picked) {
+        if (t.jokerTile || t.fakeOkey || this.isOkeyTile(t) || t.special) continue;
+        if (t.number === minVal && minVal < 12) {
+          events.push(`Kara Kedi: ${COLOR_TR[t.color]} ${t.number} → 12'ye dönüştü`);
+          t.number = 12; retune(t, 'karaKedi');
+        }
+      }
+    }
+    if (this.bossOn() && s.boss.key === 'karaKedi' && picked.length) this._karaKediBite(picked, events);
+    if (this.bossOn() && picked.length) this._bossOnDraw(picked, events);
+    s.hand.push(...picked);
+    const n = s.godPick.n;
+    s.godPick = null;
+    events.push(`🤲 Tanrının Eli: ${picked.length}/${n} taş seçip çektin`);
+    this._handAudit(events);
+    return { ok: true, drawn: picked.map(t => t.id), events };
+  },
+
   /* GRUP H — KUZEY YILDIZI: sıradaki seçim turunu kurar.
      Deste tükendiyse ya da el tavandaysa tur harcanmaz gibi görünmesin
      diye sebep AÇIKÇA yazılır (taş sessizce kaybolmaz). */
@@ -10115,6 +10292,10 @@ const Game = {
     if (st.secondChanceTaken == null) st.secondChanceTaken = (st.secondChance || 0) > 0;
     if (st.consumSlotBonus == null) st.consumSlotBonus = 0; // Grup D (P8)
     if (st.permTargetCut == null) st.permTargetCut = 0;     // Grup D (P8)
+    if (st.permTargetUp == null) st.permTargetUp = 0;       // P31 · Grup A — The World
+    if (st.godPick === undefined) st.godPick = null;        // P31 · Grup E
+    if (st.crownId === undefined) st.crownId = null;        // P31 · Grup H
+    if (st.appleEaten == null) st.appleEaten = false;       // P31 · Grup I
     /* Grup E (P9): Usta Eli artık carpanStep değil carpanScale. Eski
        kayıtlarda usta ile birikmiş basamaklar carpanStep'te duruyor; onlar
        Altın Oran basamağı gibi çalışmaya devam eder (oyuncudan bir şey
@@ -10283,6 +10464,8 @@ if (typeof module !== 'undefined') {
     YILDIZ_SHOW, SPECIAL_RARITY_W, SHOP_EXTRA_FIXED, FERMAN_MAX, MAGNET_MAX,
     /* PLAYTEST 26 — Yankee birikimi · PLAYTEST 30 — Legendary denge sabitleri */
     VASIYET_CAP, IPOTEK_TURNS, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
+    WORLD_PERM_MULT, WORLD_TARGET_UP, KIYAMET_KEEP, EJDERHA_TILE_MULT, VOID_SCORE, VOID_MULT,
+    SEYTAN_SCORE, SEYTAN_MULT, PINKY_MAX, APPLE_MULT, APPLE_DRAW_CUT, APPLE_ISLEK, KAGIT_TILES,
     MEDUSA_MULT, MEDUSA_FLAT, NOSTRA_MULT, TEKER_FLAT, ATES_HAGGLE_WIN, ATES_DISCOUNT,
     ATES_STEAL_WIN, ATES_STEAL_ISLEK, SISYPHUS_STEPS, FRANK_REVIVE_FLAT, FRANK_STITCH_MULT,
     PANDORA_UMUT_FLAT, PANDORA_SALGIN_MULT, PANDORA_SALGIN_BURN, PANDORA_ARMAGAN_BONUS,
