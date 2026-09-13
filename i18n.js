@@ -139,9 +139,10 @@
       /* Renk teması (Playtest 22) — adlar renk kimliğini söyler; Figma'daki
          "RENK DENEME 1/2" ürün adı olarak kullanılmaz. */
       colorTheme: 'RENK TEMASI',
-      theme_yesil: 'Yeşil',
-      theme_mor: 'Mor',
-      theme_amber: 'Amber',
+      theme_yesil: 'Çayır',
+      theme_mor: 'Erik',
+      theme_amber: 'Bal',
+      theme_lacivert: 'Gece',
       themeChanged: (n) => `Renk teması: ${n}`,
       /* devam / yeni run */
       resumeTitle: 'DEVAM EDEN RUN',
@@ -814,9 +815,10 @@
       close: 'Close',
       langChanged: 'Language changed: English',
       colorTheme: 'COLOR THEME',
-      theme_yesil: 'Green',
-      theme_mor: 'Purple',
-      theme_amber: 'Amber',
+      theme_yesil: 'Meadow',
+      theme_mor: 'Plum',
+      theme_amber: 'Honey',
+      theme_lacivert: 'Midnight',
       themeChanged: (n) => `Color theme: ${n}`,
       resumeTitle: 'RUN IN PROGRESS',
       resumeBody: (ch, r) => `You left off at: Stage ${ch}, ${r}. What would you like to do?`,

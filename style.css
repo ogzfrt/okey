@@ -4673,11 +4673,14 @@ body.menu-open #app {
      SABİT KALANLAR (hiçbir temada değişmez, bilinçli):
        · taş yüzü/kenarı ve mühür katmanları — taş kimliği okunur kalmalı
        · sayı renkleri (kırmızı/mavi/sarı/siyah) ve okey moru
-       · coin paneli + para metni (#BBD09E/#66862C) — Figma'nın İKİ tema
-         frame'inde de yeşil duruyor, para bir bilgi rengidir
-       · TURN pipleri (#FEA727/#D9E0C8) — ikisinde de aynı
-       · nadirlik renkleri (common/rare/legendary/mythic) */
-  --gm-coin-ink:  #66862C;   /* para metni — temadan BAĞIMSIZ */
+       · TURN pipleri (#FEA727/#D9E0C8) — dört frame'de de aynı
+       · nadirlik renkleri (common/rare/legendary/mythic)
+     PLAYTEST 32 (2026-09-13): tema listesi KAPANDI, tam 4 tema — Çayır
+     (yesil) · Erik (mor) · Bal (amber) · Gece (lacivert). Coin paneli artık
+     TEMALI: güncel Figma'nın dört frame'inde de panel yüzey+vurgu tonuyla
+     çiziliyor. */
+  --gm-coin-ink:  #66862C;   /* para metni — temanın vurgu tonu */
+  --img-panel-coin: url('assets/game/panel-coin.svg');
   --img-action-bar: url('assets/game/action-bar.svg');
   --img-btn-info: url('assets/game/btn-info.svg');
   --img-btn-open: url('assets/game/btn-open.svg');
@@ -4748,6 +4751,8 @@ html[data-theme="mor"] {
   --img-shoulder: url('assets/game/mor/shoulder.svg');
   --img-tray-3: url('assets/game/mor/tray-3.svg');
   --img-tile-back: url('assets/game/mor/tile-back.png');
+  --img-panel-coin: url('assets/game/mor/panel-coin.svg');
+  --gm-coin-ink: #4E1D4C;
 
   /* Store kabuğu — Mor. Zemin düz `--gm-light` tonudur: oyun ekranının
      panelleri de düz renk, gradyan piksel-art dile yabancı. Klasik'in
@@ -4792,6 +4797,8 @@ html[data-theme="amber"] {
   --img-shoulder: url('assets/game/amber/shoulder.svg');
   --img-tray-3: url('assets/game/amber/tray-3.svg');
   --img-tile-back: url('assets/game/amber/tile-back.png');
+  --img-panel-coin: url('assets/game/amber/panel-coin.svg');
+  --gm-coin-ink: #BB7125;
 
   /* Store kabuğu — Amber */
   --st-edge:      #BB7125;
@@ -4801,6 +4808,49 @@ html[data-theme="amber"] {
   --st-glow:      rgba(187, 113, 37, .13);
   --st-head:      #BB7125;
   --st-rule:      rgba(187, 113, 37, .35);
+}
+
+/* ---------- TEMA: Gece / lacivert (Figma 245:1310 "UI_RENK_VARYASYON_4") ----------
+   Hex'ler frame'den ÖLÇÜLDÜ (Playtest 32). Amber gibi yüzey = açık ton. */
+html[data-theme="lacivert"] {
+  --gm-dark:  #12354E;
+  --gm-light: #D9CFA7;
+  --gm-panel: #D9CFA7;
+  --img-action-bar: url('assets/game/lacivert/action-bar.svg');
+  --img-btn-info: url('assets/game/lacivert/btn-info.svg');
+  --img-btn-open: url('assets/game/lacivert/btn-open.svg');
+  --img-btn-pause: url('assets/game/lacivert/btn-pause.svg');
+  --img-btn-small: url('assets/game/lacivert/btn-small.svg');
+  --img-chip-round: url('assets/game/lacivert/chip-round.svg');
+  --img-meld-row: url('assets/game/lacivert/meld-row.svg');
+  --img-map-card: url('assets/game/lacivert/map-card.svg');
+  --img-map-okeybox: url('assets/game/lacivert/map-okeybox.svg');
+  --img-map-pill: url('assets/game/lacivert/map-pill.svg');
+  --img-map-select: url('assets/game/lacivert/map-select.svg');
+  --img-map-target: url('assets/game/lacivert/map-target.svg');
+  --img-map-title: url('assets/game/lacivert/map-title.svg');
+  --img-panel-jokers: url('assets/game/lacivert/panel-jokers.svg');
+  --img-panel-okey: url('assets/game/lacivert/panel-okey.svg');
+  --img-panel-score: url('assets/game/lacivert/panel-score.svg');
+  --img-panel-small: url('assets/game/lacivert/panel-small.svg');
+  --img-preview-box: url('assets/game/lacivert/preview-box.svg');
+  --img-rack-cell: url('assets/game/lacivert/rack-cell.svg');
+  --img-rack-outer1: url('assets/game/lacivert/rack-outer1.svg');
+  --img-rack-row: url('assets/game/lacivert/rack-row.svg');
+  --img-shoulder: url('assets/game/lacivert/shoulder.svg');
+  --img-tray-3: url('assets/game/lacivert/tray-3.svg');
+  --img-tile-back: url('assets/game/lacivert/tile-back.png');
+  --img-panel-coin: url('assets/game/lacivert/panel-coin.svg');
+  --gm-coin-ink: #12354E;
+
+  /* Store kabuğu — Gece */
+  --st-edge:      #12354E;
+  --st-edge-soft: rgba(18, 53, 78, .38);
+  --st-bg:        #D9CFA7;
+  --st-stripe:    rgba(18, 53, 78, .05);
+  --st-glow:      rgba(18, 53, 78, .13);
+  --st-head:      #12354E;
+  --st-rule:      rgba(18, 53, 78, .35);
 }
 
 
@@ -5079,9 +5129,9 @@ body.game-open #overlay { align-items: center; justify-content: center; }
 /* ---------- Üst sağ: coin (Figma 210:3626, 170×80) ---------- */
 .gm-stage :is(#coinChip, #mapCoin).gm-coin {
   position: absolute; left: 1709px; top: 41px; width: 170px; height: 80px;
-  background: url('assets/game/panel-coin.svg') no-repeat center / 100% 100%;
+  background: var(--img-panel-coin) no-repeat center / 100% 100%;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  /* para metni --gm-coin-ink: panelin kendisi gibi TEMADAN BAĞIMSIZ yeşil */
+  /* para metni --gm-coin-ink: panelle birlikte temanın vurgu tonu (Playtest 32) */
   font: 700 36px/1 var(--gm-font); color: var(--gm-coin-ink);
   border: 0; border-radius: 0;
 }
@@ -5642,7 +5692,7 @@ body.game-open #toast { top: 44%; }
 .gm-stage :is(#coinChip, #mapCoin).gm-coin {
   gap: 6px;
   font: 700 36px/1 var(--gm-font);
-  color: var(--gm-coin-ink);   /* temadan bağımsız — bkz. --gm-coin-ink */
+  color: var(--gm-coin-ink);   /* temanın vurgu tonu — bkz. --gm-coin-ink */
 }
 .gm-stage :is(#coinChip, #mapCoin).gm-coin .gm-cur {
   font: 400 48px/1 'Edit Undo BRK', var(--gm-font);

@@ -4361,10 +4361,15 @@
      oyun ekranının SVG arkaplanları (--img-*) aynı seçiciyle takas edilir.
      'yesil' varsayılandır ve ÖZNİTELİK YAZMAZ — böylece tema sistemi
      eklenmeden önceki CSS yolu birebir korunur. */
+  /* PLAYTEST 32 (2026-09-13) — liste KAPALI: oyunda tam bu 4 tema var,
+     yenisi eklenmez. Anahtarlar eski kayıtlar bozulmasın diye aynı kaldı;
+     görünen adlar i18n'de (Çayır · Erik · Bal · Gece). Coin paneli artık
+     temayla birlikte boyanıyor (Figma'nın dört frame'inde de öyle). */
   const THEMES = [
-    { key: 'yesil', sw: ['#66862C', '#AEDF7A', '#BBD09E'] },
-    { key: 'mor',   sw: ['#4E1D4C', '#EBD3A2', '#D9CAB2'] },
-    { key: 'amber', sw: ['#BB7125', '#FFEFAE', '#FFEFAE'] },
+    { key: 'yesil',    sw: ['#66862C', '#AEDF7A', '#BBD09E'] },   // Figma 320:221
+    { key: 'mor',      sw: ['#4E1D4C', '#EBD3A2', '#D9CAB2'] },   // Figma 245:799
+    { key: 'amber',    sw: ['#BB7125', '#FFEFAE', '#FFEFAE'] },   // Figma 245:977
+    { key: 'lacivert', sw: ['#12354E', '#D9CFA7', '#D9CFA7'] },   // Figma 245:1310
   ];
   const THEME_KEY = 'okeyTheme';
 
