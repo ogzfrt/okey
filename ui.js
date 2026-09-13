@@ -1371,7 +1371,14 @@
   }
 
   function placeActBadge(card) {
-    const r = card.getBoundingClientRect();
+    /* P45 (kullanıcı raporu 2026-09-14: "store'da da raund içindeki gibi
+       görünmeli") — KÖK NEDEN: rozet KART KUTUSUNU ölçüyordu. Omuzda kutu ile
+       değnek çizimi aynı boydadır (81×110), store kenar çubuğunda ise kutu ızgara
+       hücresi kadar geniştir (100×81) ve çizim içinde 60×81 durur: çerçeve
+       çizimi sarmıyor, delik yanlış şekilde, yazı büyük çıkıyordu. Artık ÇİZİM
+       ölçülür; çizimi olmayan kartta (joker) kartın kendisi. */
+    const ref = card.querySelector('.cs-art') || card;
+    const r = ref.getBoundingClientRect();
     if (!r.width) { hideActBadge(); return; }
     const W = r.width, H = r.height;
     /* P44 (kullanıcı çizimi 2026-09-14) — ROZET KARTIN ŞEKLİNİ İZLER.
@@ -1612,11 +1619,27 @@
     render();
   }
 
+  /* P45 (kullanıcı isteği 2026-09-14) — BACKUP'TAKİ JOKER SOL TIKLA ANA SLOTA.
+     Kartın köşesindeki "Ana Slota Al" düğmesinin ve store tooltip'indeki
+     "→ Ana" eyleminin işi; ikisi de kaldırıldı (DAMGALA / Sat / Takas ile aynı
+     kural: karttaki eylem rozetten yapılır, ikinci kopya tutulmaz). */
+  function moveBackupToMain(j) {
+    const res = Game.moveToMain(j.id);
+    if (!res.ok) { toast(res.error || t('moveFail')); return; }
+    toast(t('movedMain', T.name(j)), true);
+    // Grup G: raund içinde ana slota geçen joker ANINDA kurulur;
+    // kurulum bildirimleri (masa kuruldu, trans sayısı…) gösterilir
+    if (res.notes && res.notes.length) notify(res.notes);
+    render();
+    if (storeOpen()) renderStore();
+  }
+
   function jokerActs(j, opts = {}) {
     const s = Game.state;
     const has = (k) => j.key === k || (j.fused || []).some(f => f.key === k);
     let left = null;
     if (has('fuzyon')) left = { lbl: t('abUse'), fn: () => pickFuzyon(j.id) };
+    else if (opts.backup) left = { lbl: t('abToMain'), fn: () => moveBackupToMain(j) };
     else if (!opts.backup && s && s.status === 'playing' && !storeOpen()) {
       const dm = has('ayna') && Game.damgaState && Game.damgaState();
       if (dm && dm.id === j.id && !dm.used) left = { lbl: t(dm.armed ? 'abUndo' : 'abUse'), fn: useDamga };
@@ -1650,15 +1673,7 @@
          takas satın alırken hedef seçiminde (pickBuyDest) yapılıyor; tooltip
          düğmeleri aynı işin işlevsiz kopyasıydı. "→ Ana" ve "Birleştir" kalır. */
       const acts = [];
-      if (backup) acts.push({
-        label: t('moveMain'),
-        fn: () => {
-          const res = Game.moveToMain(j.id);
-          if (!res.ok) { toast(res.error || t('moveFail')); return; }
-          if (res.notes && res.notes.length) notify(res.notes);
-          renderStore(); render();
-        },
-      });
+      // P45: "→ Ana" de kalktı — backup kartı sol tıkla ana slota geçer (moveBackupToMain)
       /* Grup A (bug): "Birleştir" eylemi eskiden YALNIZ ana slot kartında
          vardı; Füzyon backup'a düşünce erişilemez oluyordu. Artık her iki
          raftaki Füzyon kartından da açılır. */
@@ -1773,24 +1788,7 @@
        hap düğme aynı işin ikinci kopyasıydı. Durum bilgisi yerinde kalır:
        Damga basılıyken rozet "Kaldır:" der ve hesap kutusu altın 2 katı
        gösterir; İpotek'in borç hâli tooltip'in ipotekLine satırında yazar. */
-    if (opts.backup) {
-      const btn = document.createElement('button');
-      btn.className = 'jt-move';
-      btn.textContent = t('moveMain');
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        hideTip();
-        const res = Game.moveToMain(j.id);
-        if (!res.ok) { toast(res.error || t('moveFail')); return; }
-        toast(t('movedMain', T.name(j)), true);
-        // Grup G: raund içinde ana slota geçen joker ANINDA kurulur;
-        // kurulum bildirimleri (masa kuruldu, trans sayısı…) gösterilir
-        if (res.notes && res.notes.length) notify(res.notes);
-        render();
-        if (storeOpen()) renderStore();
-      });
-      tile2.appendChild(btn);
-    }
+    // P45: backup kartındaki "Ana Slota Al" düğmesi kalktı — sol tık (jokerActs → moveBackupToMain)
     attachActs(tile2, () => jokerActs(j, opts));   // P41: sol tık kullan / sağ tık sat
     attachTip(tile2, j, { ...opts, actions: jokerActions(j, !!opts.backup) });
     enableJokerDrag(tile2, j, opts.backup ? 'backup' : 'main');

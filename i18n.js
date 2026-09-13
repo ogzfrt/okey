@@ -252,6 +252,7 @@
       abSell: (p) => `Sat +${p}:`,
       abLeft: 'Sol Tık',
       abRight: 'Sağ Tık',
+      abToMain: 'Ana Slota:',   // P45: backup kartı sol tıkla ana slota
       /* PLAYTEST 28 · GRUP B — Damga (eski Ayna) */
       damgaOff: '🔖 DAMGALA',
       damgaOn: '🔖 BASILI',
@@ -926,6 +927,7 @@
       abSell: (p) => `Sell +${p}:`,
       abLeft: 'Left-click',
       abRight: 'Right-click',
+      abToMain: 'To Main:',
       damgaOff: '🔖 STAMP',
       damgaOn: '🔖 STAMPED',
       damgaSpent: '🔖 SPENT',

@@ -289,17 +289,8 @@ body::before {
 }
 @keyframes blinkDanger { 50% { opacity: .4; } }
 .joker-tile .jt-uses.frozen { background: #1d3a5f; border-color: #4A90D9; color: #bfe0ff; }
-.joker-tile .jt-move {
-  border: 1px solid #8a8aa8;
-  background: rgba(0,0,0,.06);
-  color: #2b2b45;
-  border-radius: 6px;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 6px;
-  cursor: pointer;
-}
-.joker-tile .jt-move:hover { border-color: #2b2b45; }
+/* (P45: backup kartındaki "Ana Slota Al" düğmesi kaldırıldı — backup jokeri
+   kartın üstüne gelip sol tıkla ana slota geçer.) */
 
 /* (P43: kartın köşesindeki DAMGALA / İPOTEK hap düğmeleri kaldırıldı —
    elle kullanılan jokerler kartın üstüne gelip sol tıkla kullanılır.) */
@@ -6769,7 +6760,9 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   background: none; border: 0; border-left: 0; padding: 0; gap: 4px;
   align-items: center; box-shadow: none;
 }
-#storeSide #storeConsumRow .consum-card.art-only .c-icon.cs-art { width: 60px; height: 81px; margin: 0 auto; }
+/* P45: store kenar çubuğundaki değnek raund içindeki omuzla AYNI boyda (81×110) —
+   kullanıcı: "store'da da raund içinde göründüğü gibi görünmek zorunda" */
+#storeSide #storeConsumRow .consum-card.art-only .c-icon.cs-art { width: 81px; height: 110px; margin: 0 auto; }
 .consum-card.art-only.picking { outline: 3px solid #2ecc71; outline-offset: 2px; }
 
 /* P41 (kullanıcı isteği 2026-09-14) — EYLEM ROZETİ (#actBadge, ui.js attachActs).
