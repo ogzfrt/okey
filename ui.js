@@ -1328,9 +1328,16 @@
     tip.classList.remove('hidden');
     // kenarlara taşma kontrolü: önce sağa aç, sığmazsa sola; dikeyde kelepçele
     const r = target.getBoundingClientRect();
+    /* P38b — değnek kartının üstüne gelince çıkan kullanım rozeti (.c-hover)
+       kartın sağına taşar; tooltip kartın değil ROZETİN kenarından açılır ki
+       "Kullan: Sağ Tık" yazısının üstüne binmesin. */
+    const hv = target.querySelector && target.querySelector('.c-hover');
+    const hr = hv ? hv.getBoundingClientRect() : null;
+    const rightEdge = hr ? Math.max(r.right, hr.right) : r.right;
+    const leftEdge = hr ? Math.min(r.left, hr.left) : r.left;
     const tw = tip.offsetWidth, th = tip.offsetHeight;
-    let x = r.right + 10;
-    if (x + tw > window.innerWidth - 8) x = r.left - tw - 10;
+    let x = rightEdge + 10;
+    if (x + tw > window.innerWidth - 8) x = leftEdge - tw - 10;
     x = Math.max(8, x);
     let y = r.top + r.height / 2 - th / 2;
     y = Math.max(8, Math.min(y, window.innerHeight - th - 8));
@@ -2535,8 +2542,15 @@
        "Sağ tık" ipucu tooltip'te. Çizimi olmayan (ileride eklenecek) bir
        değnek eski kart düzeninde, düğmeyle kalır. */
     if (art) d.classList.add('art-only');
+    /* P38b (kullanıcı isteği 2026-09-14) — ÜSTÜNE GELİNCE KULLANIM ROZETİ.
+       Balatro'nun "Sell: $1" rozetinin birebir kalıbı: kartı saran yeşil
+       çizgili pano, sağ üstte ikon (sağ tuşu yanan fare), beyaz etiket +
+       altın satır. Satış yerine kullanım yazar; seçim sürerken "İptal". */
     d.innerHTML = art
-      ? `<span class="c-icon cs-art cs-${key}"></span>`
+      ? `<span class="c-hover" aria-hidden="true"><i class="ch-ico"></i>` +
+        `<b class="ch-lbl">${t(picking ? 'consumHoverCancel' : 'consumHoverUse')}</b>` +
+        `<em class="ch-val">${t('consumHoverHint')}</em></span>` +
+        `<span class="c-icon cs-art cs-${key}"></span>`
       : `<span class="c-icon">${def.icon}</span>` +
         `<div class="c-body"><b>${T.consumName(key, def.name)}</b><span>${T.consumDesc(key, def.desc)}</span></div>`;
     attachTip(d, { name: T.consumName(key, def.name),
@@ -5665,8 +5679,8 @@
      arkası (boss joker emsali), store/envanter/pakette emoji ikon. Yeni
      çizim gelince buraya anahtar, style.css'e bir `--cs-art` satırı. */
   /* P37 (2026-09-13) — Figma 295:176 güncellendi: 20 değneğin 20'si çizimli.
-     Boya Kabı yeni frame'de yok, eski çizimi kalır; Figma'daki "DERİN_NEFES"
-     çizimi Derin Nefes'tir (`altinCanak`, eski adı Nefes İksiri). */
+     P38b (2026-09-14): frame nadirlik satırlarına ayrıldı, Boya Kabı da eklendi;
+     20 çizim baştan alındı. Figma'daki "DERİN_NEFES" = Derin Nefes (`altinCanak`). */
   const CONSUM_ART = new Set(['zimpara', 'cekic', 'boya', 'muska', 'kumbara',
     'yildizTozu', 'gumusVernik', 'zamanKumu', 'tac',
     'balKupu', 'kopyaci', 'miknatis', 'altinCanak', 'altinOran', 'tacirMektubu',
