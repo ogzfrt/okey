@@ -737,7 +737,8 @@
          Rozet üç kademede renk değiştirir — %25 altı sakin, %50 altı uyarı,
          üstü tehlike — ki tehlike bir sayı okumadan da anlaşılsın. */
       if (j && j.key === 'cheating') {
-        const pct = Math.round((j.risk || 0) * 100);
+        /* P35 · Grup H — risk artık jokerin değil raundun: hile yaptıkça birikir */
+        const pct = Math.round(((Game.state && Game.state.cheatRisk) || 0) * 100);
         const b = document.createElement('div');
         b.className = 'dj-risk' + (pct >= 50 ? ' hot' : pct >= 25 ? ' warm' : '');
         b.textContent = t('cheatRiskBadge', pct);
@@ -1849,7 +1850,9 @@
       body = t('cheatHitBody', f.gain.toFixed(1), f.bank.toFixed(1), Math.round(f.risk * 100));
     } else if (f.side === 'joker') {
       title = t('cheatCaughtTitle');
-      body = f.back > 0 ? t('cheatCaughtBack', f.back) : t('cheatCaughtBare');
+      /* P35 · Grup H — yakalanınca silinen hile puanı yazılır */
+      body = f.lost > 0 ? t('cheatCaughtLost', f.lost)
+        : (f.back > 0 ? t('cheatCaughtBack', f.back) : t('cheatCaughtBare'));
     } else if (f.kind === 'exposed') {
       title = t('cheatBossExposedTitle');
       body = f.back ? t('cheatBossExposedBack', f.coin, T.color(f.back.color), f.back.number)
@@ -3024,6 +3027,21 @@
       b.className = 'gm-btn';
       b.innerHTML = t('tuccarBtn', '$');
       b.addEventListener('click', () => showTuccarOffer());
+      el.openAreaHint.appendChild(b);
+    }
+    /* P35 · GRUP H — "HİLE YAP". The Cheating eldeyken ve sahnede açılım
+       varken görünür; basınca sıradaki onaya +3.0x kurulur (hesap kutusu
+       bunu hemen gösterir), ikinci basış geri alır. Risk jokerin rozetinde. */
+    if (meldPhase && Game.canCheat && Game.canCheat() && (s.staged.length || s.islemeler.length)) {
+      const b = document.createElement('button');
+      b.className = 'gm-btn gm-cheat' + (s.cheatArmed ? ' on' : '');
+      b.innerHTML = t(s.cheatArmed ? 'cheatBtnOn' : 'cheatBtn');
+      b.title = t('cheatBtnTip', Math.round((s.cheatRisk || 0) * 100));
+      b.addEventListener('click', () => {
+        const r = Game.toggleCheat();
+        if (!r.ok) { toast(r.error); return; }
+        render();
+      });
       el.openAreaHint.appendChild(b);
     }
     /* PLAYTEST 17 · GRUP F/23 — BEKLEYEN FÜZYON.

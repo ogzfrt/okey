@@ -848,7 +848,14 @@ const CHEAT_RISK_STEP = 0.12;  // (eski lineer risk adımı — kayıt uyumu)
    jokeri kurtar" kararıydı; kazanılan şey tek bakışta okunan bir kural. */
 const CHEAT_RISK = 0.20;      // her tur sabit yakalanma riski
 const CHEAT_RISK_STEPS = [0.10, 0.20, 0.35];  // (eski merdiven — kayıt uyumu)
-const CHEAT_DECK_PICK = 3;    // destenin en yüksek kaç adayından çalınır
+const CHEAT_DECK_PICK = 3;    // (eski taş çalma — kayıt uyumu)
+/* P35 · GRUP H (kullanıcı kararı 2026-09-13) — JOKER "HİLELİ AÇILIM".
+   Taş çalma kaldırıldı (hissedilmiyordu). Oyuncu açılımı onaylamadan önce
+   "hile" der: o açılım +3.0x. Her hile raund boyu yakalanma riskine +%20
+   ekler; zar TUR SONUNDA atılır. Yakalanınca joker gider ve o raund hileyle
+   kazanılan EK puan skordan silinir. Boss Koşulu dokunulmadı. */
+const CHEAT_HILE_MULT = 3.0;
+const CHEAT_HILE_RISK = 0.20;
 /* GDD "discard ile risk sıfırlanır" diyordu ama Okey'de discard her turun
    ZORUNLU son adımıdır — o hâliyle risk hiç artmaz, kural anlamsızlaşırdı
    (ve kodda zaten hiç uygulanmamıştı). Kullanıcı kararı (P19): risk
@@ -1908,7 +1915,7 @@ const JOKER_DEFS = {
   ahtapot: { key: 'ahtapot', name: 'Ahtapot', rarity: 'epic', uses: 3, mech: 'deck', icon: '🐙',
     desc: '8 kolu var: her açılıma kol başına +1.0x. Her tur bir kol feda olur ve o tur +2.5x ekstra verir.' },
   cheating: { key: 'cheating', name: 'The Cheating', rarity: 'epic', uses: 3, mech: 'deck', icon: '🕶',
-    desc: 'Eldeyken her tur desteden 1 taş çalar. Her tur %20 yakalanma riski: yakalanırsan joker ve çaldığı taşlar gider.' },
+    desc: 'Açılıma hile yap: +3.0x. Her hile tur sonu yakalanma riskine +%20 ekler; yakalanırsan joker ve hile puanın gider.' },
   terziIgne: { key: 'terziIgne', name: 'Terzi\'nin İğnesi', rarity: 'epic', uses: 4, mech: 'deck', icon: '🪡',
     desc: 'Eldeyken her tur 2 taşını diker. Dikili taş atılamaz; açılımda kullanırsan +2.5x.' },
   /* PLAYTEST 8 — GRUP B2: SÜRE BUG'I.
@@ -4091,6 +4098,9 @@ const Game = {
        (Taş kimliği kuralı: değer bazlı takip yasak, id bazlı takip de
        destenin ömrüyle sınırlı.) */
     s.cheatStolen = [];
+    s.cheatArmed = false;     // P35 · Grup H — sıradaki açılıma hile kurulu mu
+    s.cheatRisk = 0;          // P35 · Grup H — raund boyu biriken yakalanma riski
+    s.cheatGain = 0;          // P35 · Grup H — hileyle kazanılan EK puan (yakalanınca silinir)
     s.bossCheatBag = [];
     s.bossCheatTook = 0;
     s.cheatFlash = [];
@@ -5152,68 +5162,9 @@ const Game = {
       events.push(`🐙 Ahtapot bir kolunu kurban etti: bu tur +${AHTAPOT_BURST_MULT.toFixed(1)}x; `
         + `kalan ${ahtJ.arms} kol`);
     }
-    /* ============================================================
-       THE CHEATING (JOKER) — PLAYTEST 19 · GRUP G'DE YENİDEN TASARLANDI.
-       Eski hâlinde üç sorun vardı:
-         (a) ÖDÜL ÖLÇEKLENMİYORDU: sabit +50 puan / +0.5x / +2 coin
-             arasından rastgele biri. Stage 4'te hedef 1160 iken +50 puan
-             fark edilmiyordu bile.
-         (b) RİSK GÖRÜNMÜYORDU: `risk` motorda büyüyor ama ui.js'te hiçbir
-             yerde çizilmiyordu — oyuncu ne kadar tehlikede olduğunu
-             bilmediği için bir karar da veremiyordu.
-         (c) GDD'nin "discard ile risk sıfırlanır" kolu hiç uygulanmamıştı;
-             risk yalnız artıyordu, yani joker kaçınılmaz bir bombaydı.
-       Yeni hâli tek eksende BİRİKİR (+0.4x/tur, raund boyu durur), risk
-       her tur %12 artar ve AÇILIMSIZ geçilen turda sıfırlanır. Yakalanınca
-       joker de biriken çarpan da gider — bedel gerçek. */
-    const chJ = s.deckJokers.find(j => j.key === 'cheating' && j.activeRound
-      && s.hand.some(t => t.jokerTile === 'cheating'));
-    if (chJ) {
-      /* PLAYTEST 21 — risk artık SABİT %20 (eski üç kademeli merdiven ve
-         "açılımsız tur sıfırlar" kolu kaldırıldı; bkz. CHEAT_RISK notu).
-         streak yalnız bildirim/kayıt uyumu için sayılmaya devam eder. */
-      chJ.streak = (chJ.streak || 0) + 1;
-      chJ.risk = CHEAT_RISK;
-      if (this.rng() < chJ.risk) {
-        /* YAKALANDI: joker gider VE çaldığı bütün taşlar desteye döner. */
-        s.deckJokers = s.deckJokers.filter(j => j !== chJ);
-        for (const t of s.hand.filter(t => t.jokerTile === 'cheating'))
-          this._takeTile(t, 'cheating-yakalandı');
-        const ids = new Set(s.cheatStolen || []);
-        const back = s.hand.filter(t => ids.has(t.id));
-        for (const t of back) this._takeTile(t, 'cheating-iade');
-        for (const t of back) {
-          delete t.stolen;
-          s.deck.splice(Math.floor(this.rng() * (s.deck.length + 1)), 0, t);
-        }
-        s.cheatStolen = [];
-        s.cheatBank = 0;
-        this._cheatFlash({ side: 'joker', kind: 'caught', lost: 0, back: back.length });
-        events.push('🕶 YAKALANDIN! The Cheating yok oldu'
-          + (back.length ? ` — çaldığı ${back.length} taş desteye geri döndü` : ''));
-      } else {
-        /* Destenin EN YÜKSEK CHEAT_DECK_PICK adayından biri çalınır. */
-        const cand = (s.deck || []).filter(t => !t.jokerTile && !t.fakeOkey);
-        if (cand.length) {
-          const top = [...cand].sort((a, b) => b.number - a.number)
-            .slice(0, CHEAT_DECK_PICK);
-          const t = top[Math.floor(this.rng() * top.length)];
-          s.deck = s.deck.filter(x => x !== t);
-          t.stolen = true;
-          tagOrigin(t, 'cheating');
-          s.hand.push(t);
-          if (!Array.isArray(s.cheatStolen)) s.cheatStolen = [];
-          s.cheatStolen.push(t.id);
-          this._cheatFlash({ side: 'joker', kind: 'steal',
-            color: t.color, number: t.number,
-            total: s.cheatStolen.length, risk: chJ.risk });
-          events.push(`🕶 Çaldı: ${COLOR_TR[t.color]} ${t.number} eline geçti `
-            + `(toplam ${s.cheatStolen.length} taş) · risk %${Math.round(chJ.risk * 100)}`);
-        } else {
-          events.push('🕶 Deste boş — çalacak taş kalmadı');
-        }
-      }
-    }
+    /* THE CHEATING (JOKER) — P35 · GRUP H: tur başında artık hiçbir şey
+       yapmaz. Taş çalma kaldırıldı; hile açılım anında (confirmMelds) kurulur,
+       zarı tur sonunda (_cheatJokerResolve) atılır. */
     /* TERZİ'NİN İĞNESİ — 2 taş dikilir (GDD 10).
        PLAYTEST 18 · GRUP A — jokerin "hiç çalışmıyor" görünmesinin üç ayrı
        nedeni vardı, üçü de burada / ui.js'te düzeltildi:
@@ -5741,6 +5692,13 @@ const Game = {
       mult += s.cheatBank;
       triggered.push({ id: 'cheating', name: 'The Cheating',
         text: `+${s.cheatBank.toFixed(1)}x (eski kayıt: biriken hile)` });
+    }
+    /* P35 · Grup H — HİLELİ AÇILIM: hile kuruluysa bu açılım +3.0x.
+       Önizleme de buradan beslenir, yani oyuncu hesap kutusunda görür. */
+    if (s.cheatArmed && this.canCheat()) {
+      mult += CHEAT_HILE_MULT;
+      triggered.push({ id: 'cheating', name: 'The Cheating',
+        text: `+${CHEAT_HILE_MULT.toFixed(1)}x (hile)` });
     }
     if (s.roundMult > 0) mult += s.roundMult;
 
@@ -6699,6 +6657,16 @@ const Game = {
     }
 
     const r = this._calcOpening();
+    /* P35 · Grup H — hilenin EK puanı: aynı açılım hilesiz bir kez daha
+       hesaplanır (_calcOpening yan etkisizdir), fark yakalanınca silinecek
+       miktardır. */
+    const cheatOn = !!s.cheatArmed && this.canCheat();
+    let cheatGain = 0;
+    if (cheatOn) {
+      s.cheatArmed = false;
+      try { cheatGain = Math.max(0, r.final - this._calcOpening().final); }
+      finally { s.cheatArmed = true; }
+    }
     /* GRUP F — boss koşullarının açılım anındaki etkileri. Puan EKLENMEDEN
        önce uygulanır ki "puan sıfırlanır" / "yansıma düşülür" kuralları
        kazanma kontrolünü doğru tetiklesin. */
@@ -6749,6 +6717,13 @@ const Game = {
       }
     }
     s.score += r.final;
+    /* P35 · Grup H — hile kaydı. Boss kesintisi açılımı sıfırladıysa ek
+       puan da o kadar küçülür (silinecek miktar alınandan büyük olamaz). */
+    if (cheatOn) {
+      s.cheatGain = (s.cheatGain || 0) + Math.min(cheatGain, Math.max(0, r.final));
+      s.cheatRisk = Math.min(1, round2((s.cheatRisk || 0) + CHEAT_HILE_RISK));
+    }
+    s.cheatArmed = false;
     /* MADDE D3 — run sonu özeti: en yüksek TEKLİ açılım. Boss kesintileri
        (Kahin sıfırlama, Ritim, Ayna Kral borcu) uygulandıktan SONRAKİ
        değer sayılır; oyuncunun gerçekten aldığı puan budur. */
@@ -7089,6 +7064,8 @@ const Game = {
     /* ---- THE CHEATING (Grup G, P19) — tur sonu ---- */
     /* (1) BOSS: tur başında duyurulan hile şimdi zar atılarak çözülür. */
     if (this.bossOn() && s.boss?.key === 'cheating') this._bossCheatResolve(events);
+    /* (1b) P35 · GRUP H — JOKER: bu raund hile yapıldıysa zar TUR SONUNDA. */
+    this._cheatJokerResolve(events);
     /* (2) PLAYTEST 21 — "açılımsız geçilen tur riski sıfırlar" kolu
        KALDIRILDI. Risk artık sabit %20 olduğu için sıfırlanacak bir kademe
        yok; kural tek cümleye indi (bkz. CHEAT_RISK notu). */
@@ -9346,6 +9323,46 @@ const Game = {
      Terazi'nin feda arayüzüyle aynı kalıp: taş atma aşamasında ıstakadan
      TEK bir taş işaretlenir. Fark, yemin elden ÇIKMAMASIDIR — işlek o tur
      tutmazsa taş yerinde kalır ve sonraki tur yeniden seçilir. */
+  /* THE CHEATING · HİLELİ AÇILIM (P35 · Grup H) — deste jokeri ELDEYKEN,
+     açılım aşamasında hile kurulabilir. Kurulu hile yalnız SIRADAKİ onaya
+     işler ve onaydan sonra kendiliğinden kapanır. */
+  canCheat() {
+    const s = this.state;
+    if (!s || s.jokersDisabled || s.status !== 'playing' || s.phase !== 'meld') return false;
+    return s.deckJokers.some(j => j.key === 'cheating' && j.activeRound)
+      && s.hand.some(t => t.jokerTile === 'cheating');
+  },
+
+  toggleCheat() {
+    const s = this.state;
+    if (!this.canCheat()) return { ok: false, error: 'The Cheating elinde değil.' };
+    s.cheatArmed = !s.cheatArmed;
+    return { ok: true, armed: s.cheatArmed };
+  },
+
+  /* Tur sonu zarı. Risk yalnız hile yapılan raundda birikir; zar tutarsa
+     joker gider ve hileyle kazanılan EK puan silinir (skor 0'ın altına
+     inmez). Tutmazsa risk durur — sonraki hile üstüne ekler. */
+  _cheatJokerResolve(events) {
+    const s = this.state;
+    if (!((s.cheatRisk || 0) > 0)) return;
+    const chJ = s.deckJokers.find(j => j.key === 'cheating');
+    if (!chJ) { s.cheatRisk = 0; s.cheatGain = 0; return; }
+    const pct = Math.round(s.cheatRisk * 100);
+    if (this.rng() < s.cheatRisk) {
+      const lost = Math.min(s.score, s.cheatGain || 0);
+      s.score -= lost;
+      s.deckJokers = s.deckJokers.filter(j => j !== chJ);
+      for (const t of s.hand.filter(t => t.jokerTile === 'cheating'))
+        this._takeTile(t, 'cheating-yakalandı');
+      s.cheatRisk = 0; s.cheatGain = 0; s.cheatArmed = false;
+      this._cheatFlash({ side: 'joker', kind: 'caught', lost, back: 0 });
+      events.push(`🕶 YAKALANDIN! The Cheating yok oldu — hileyle kazandığın ${lost} puan silindi`);
+    } else {
+      events.push(`🕶 Hile bu tur fark edilmedi · risk %${pct}`);
+    }
+  },
+
   /* RÜŞVET (P34) — taş atma aşamasında, tur başına bir kez. Önce desteden
      yeni taşlar ayrılır, SONRA eski taşlar desteye döner: aynı taşın hemen
      geri çekilmesi mümkün olmasın. Deste jokeri çekilmez (etkinleşmesi
@@ -10478,6 +10495,9 @@ const Game = {
     if (st.cheatBank == null) st.cheatBank = 0;
     /* GRUP G (P20) — The Cheating taş çalmaya çevrildi */
     if (!Array.isArray(st.cheatStolen)) st.cheatStolen = [];
+    if (st.cheatRisk == null) st.cheatRisk = 0;      // P35 · Grup H
+    if (st.cheatGain == null) st.cheatGain = 0;
+    st.cheatArmed = !!st.cheatArmed;
     if (!Array.isArray(st.bossCheatBag)) st.bossCheatBag = [];
     if (st.bossCheatTook == null) st.bossCheatTook = 0;
     if (!Array.isArray(st.cheatFlash)) st.cheatFlash = [];
