@@ -927,6 +927,13 @@ const KAIOKEN_MULT_3 = 15.0; // 3+ tur açmazsan (P30 +7.0 → P33 +15.0)
    yaşarken ömrü azaldıkça açılımlarına çarpan verir. */
 const ANKA_MULT_EARLY = 2.0; // son raundu değilken
 const ANKA_MULT_LAST = 5.0;  // son raundunda (usesLeft ≤ 1)
+/* P34 (kullanıcı onayı 2026-09-13) — iki yeni Legendary.
+   RÜŞVET: taş başına coin; tur başına tek kullanım, raund sınırı YOK.
+   HİDRA: atılan her okey sonraki tur 2 geçici okey doğurur (geçiciler de
+   çoğalır), raund başına en çok 4. */
+const RUSVET_COST = 2;
+const HIDRA_SPAWN = 2;
+const HIDRA_ROUND_CAP = 4;
 const MEDUSA_MULT = 3.0;     // Grup E — taşlaşmış taş açılımda (+1.2 → +3.0)
 const MEDUSA_FLAT = 80;      // Grup E — yanına sabit puan (yeni)
 const NOSTRA_MULT = 2.5;     // Grup J — kehanet tutunca kalıcı çarpan (+1.5 → +2.5)
@@ -1729,6 +1736,19 @@ const JOKER_DEFS = {
      Eski anahtarlar silindi; restore() onları kayıtlardan düşürür. */
   atesTuccari: { key: 'atesTuccari', name: 'Ateş Tüccarı', rarity: 'legendary', uses: 3,
     desc: 'Her store’da 1 ürüne pazarlık: %60 ihtimalle %40 indirim, tutmazsa ürün kaçar. Tutarsa ateşi çal: %50 bedava (sonraki raund işlek +%10), tutmazsa ürün kaçar.' },
+  /* PLAYTEST 34 (kullanıcı onayı 2026-09-13) — LEGENDARY 13 → 15, iki YENİ kart.
+     RÜŞVET — coini RAUND İÇİNDE harcamanın yolu. Taş atma aşamasında seçili
+     taşlar desteye (rastgele yere) döner, desteden aynı sayıda taş gelir.
+     Taşlar nesnenin kendisiyle taşınır ve `_takeTile` ile deftere yazılır
+     (bkz. useRusvet). */
+  rusvet: { key: 'rusvet', name: 'Rüşvet', rarity: 'legendary', uses: 3,
+    desc: 'Taş atarken tur başına bir kez: seçtiğin taşları desteye geri yolla, yerine yenilerini çek. Taş başına 2 coin.' },
+  /* HİDRA — okeyi ATMAK artık ceza değil yatırım: "bir kafa kesilir, iki kafa
+     çıkar". Ceza muafiyeti discard içinde, doğum yeni turun başında (çekişten
+     sonra). Geçici okeyler `copied` taşır (asıl deste 2 kopya kuralına girmez)
+     ve deste her raund yeniden kurulduğu için raund sonunda kendiliğinden gider. */
+  hidra: { key: 'hidra', name: 'Hidra', rarity: 'legendary', uses: 3,
+    desc: 'Okeyi atınca ceza yemezsin: sonraki tur eline 2 geçici okey gelir. Raund başına en çok 4 okey doğar, raund sonunda kaybolurlar.' },
   /* PLAYTEST 10 · GRUP E (kullanıcı kararı) — NOSTRADAMUS MYTHIC'TEN
      LEGENDARY'E İNDİ. Gerekçe: The World Legendary'den Mythic'e taşınırken
      (Grup C) iki bandın dolgusu bozulmuştu; bu, dengeleyici ters yönlü
@@ -2360,7 +2380,7 @@ const TILE_ORIGIN_TR = {
   cekic: 'Değer Çekici', tac: 'Taç', boya: 'Boya Kabı', kopyaci: 'Kopyacı',
   okeyMuhru: 'Okey Mührü', uzayli: 'Alien', frank: 'Dr. Frankenstein',
   vernik: 'Vernik', okeyBoss: 'Uzaylı (boss)',
-  yanki: 'Hayalet',
+  yanki: 'Hayalet', hidra: 'Hidra',
 };
 function retune(t, origin) {
   if (!t) return t;
@@ -4095,6 +4115,9 @@ const Game = {
     s.godPick = null;         // P31 · Grup E — Tanrının Eli: bekleyen seçimli çekiş
     s.teraziUsed = false;     // Grup C — Terazi feda hakkı
     s.paratonerBait = null;   // P29 · Grup F — yem her raundun başında boş
+    s.hidraPending = 0;       // P34 — Hidra: sonraki tur doğacak okey sayısı
+    s.hidraSpawned = 0;       // P34 — Hidra: bu raund doğan okey (tavan HIDRA_ROUND_CAP)
+    s.rusvetTurn = null;      // P34 — Rüşvet: hakkın kullanıldığı tur anahtarı
     s.teraziMult = 0;
     /* GRUP A (P20) — birikimli feda çarpanı ve işlek borcu raundu aşmaz */
     s.teraziRoundMult = 0;
@@ -7061,8 +7084,15 @@ const Game = {
         if (dj) dj.activeRound = false; // elden çıktı — etkisi durur
         events.push(`◈ ${t.jname} discard edildi: -100 puan (GDD 7.6)`);
       } else if (this.isOkeyTile(t)) {
-        s.score = Math.max(0, s.score - 100);
-        events.push('OKEY taşı atıldı: -100 puan (GDD 7.6)');
+        /* HİDRA (P34) — ceza yok; doğum yeni turun başında (aşağıdaki
+           HİDRA bloğu). Kıyamet Trompeti jokerleri susturduysa ceza işler. */
+        if (!s.jokersDisabled && this.hasActive('hidra')) {
+          s.hidraPending = (s.hidraPending || 0) + HIDRA_SPAWN;
+          events.push('🐉 Hidra: okey cezasız atıldı — sonraki tur iki kafa çıkacak');
+        } else {
+          s.score = Math.max(0, s.score - 100);
+          events.push('OKEY taşı atıldı: -100 puan (GDD 7.6)');
+        }
       } else if (t.stoned) {
         // Medusa — taşlaşmış taş işlekten etkilenmez (GDD 11)
         events.push(`Taşlaşmış ${COLOR_TR[t.color]} ${t.number} atıldı — işlek işlemez`);
@@ -7458,6 +7488,20 @@ const Game = {
       this._karaKediBite(drawn, events);
     if (this.bossOn() && drawn.length) this._bossOnDraw(drawn, events); // Grup F
     s.hand.push(...drawn);
+    /* HİDRA (P34) — bekleyen kafalar çekişten SONRA doğar ki çekiş hakkını
+       yemesinler; ıstaka sınırı ve raund tavanı aşılmaz, sığmayan kafa yanar. */
+    if (s.hidraPending) {
+      const room = Math.max(0, MAX_HAND - this.realHandCount());
+      const left = Math.max(0, HIDRA_ROUND_CAP - (s.hidraSpawned || 0));
+      const k = Math.min(s.hidraPending, left, room);
+      s.hidraPending = 0;
+      for (let i = 0; i < k; i++)
+        s.hand.push({ id: nextTileId(s), color: s.okey.color, number: s.okey.number,
+          isOkeyReal: true, copied: true, hidra: true, origin: 'hidra' });
+      s.hidraSpawned = (s.hidraSpawned || 0) + k;
+      events.push(k ? `🐉 Hidra: ${k} geçici okey ıstakana geldi (raund sonunda kaybolur)`
+        : '🐉 Hidra: bu raundun okey sınırı doldu — yeni kafa çıkmadı');
+    }
     s.turn++;
     s.phase = 'meld';
     s.turnMode = null;
@@ -9261,6 +9305,58 @@ const Game = {
      Terazi'nin feda arayüzüyle aynı kalıp: taş atma aşamasında ıstakadan
      TEK bir taş işaretlenir. Fark, yemin elden ÇIKMAMASIDIR — işlek o tur
      tutmazsa taş yerinde kalır ve sonraki tur yeniden seçilir. */
+  /* RÜŞVET (P34) — taş atma aşamasında, tur başına bir kez. Önce desteden
+     yeni taşlar ayrılır, SONRA eski taşlar desteye döner: aynı taşın hemen
+     geri çekilmesi mümkün olmasın. Deste jokeri çekilmez (etkinleşmesi
+     normal çekiş akışına bağlı). */
+  rusvetCost() { return RUSVET_COST; },
+
+  _rusvetKey() {
+    const s = this.state;
+    return `${s.stage}-${s.roundInStage}-${s.turn}`;
+  },
+
+  _rusvetEligible(t) {
+    return !!t && !t.jokerTile && !t.sewn && !t.bossSewn && !t.ghost;
+  },
+
+  canRusvet() {
+    const s = this.state;
+    if (!s) return false;
+    return !!(!s.jokersDisabled && this.hasActive('rusvet') && s.phase === 'discard'
+      && s.status === 'playing' && !s.godPick && s.rusvetTurn !== this._rusvetKey());
+  },
+
+  useRusvet(ids) {
+    const s = this.state;
+    if (!s || s.jokersDisabled || !this.hasActive('rusvet'))
+      return { ok: false, error: 'Rüşvet slotta değil.' };
+    if (s.status !== 'playing' || s.phase !== 'discard')
+      return { ok: false, error: 'Rüşvet yalnız taş atma aşamasında verilir.' };
+    if (s.rusvetTurn === this._rusvetKey())
+      return { ok: false, error: 'Bu tur rüşvet hakkını kullandın.' };
+    const tiles = [...new Set(ids || [])].map(id => s.hand.find(t => t.id === id));
+    if (!tiles.length) return { ok: false, error: 'Rüşvet için ıstakadan taş seç.' };
+    if (tiles.some(t => !t)) return { ok: false, error: 'Seçilen taşlardan biri elinde değil.' };
+    if (tiles.some(t => !this._rusvetEligible(t)))
+      return { ok: false, error: 'Deste jokeri, dikili ya da hayalet taş geri yollanamaz.' };
+    const cost = tiles.length * RUSVET_COST;
+    if (s.coins < cost) return { ok: false, error: `Yetersiz coin: ${cost} coin gerekiyor.` };
+    const drawn = s.deck.filter(t => !t.jokerTile).slice(0, tiles.length);
+    if (drawn.length < tiles.length) return { ok: false, error: 'Destede yeterli taş yok.' };
+    for (const d of drawn) s.deck.splice(s.deck.indexOf(d), 1);
+    for (const t of tiles) {
+      this._takeTile(t, 'rüşvet');
+      if (s.paratonerBait === t.id) s.paratonerBait = null;
+      s.deck.splice(Math.floor(this.rng() * (s.deck.length + 1)), 0, t);
+    }
+    s.hand.push(...drawn);
+    spendCoins(s, cost);
+    s.rusvetTurn = this._rusvetKey();
+    return { ok: true, cost, gone: tiles.map(t => t.id), drawn: drawn.map(t => t.id),
+      note: `💰 Rüşvet: ${this._tileNames(tiles)} desteye döndü, ${this._tileNames(drawn)} çektin (-${cost} coin)` };
+  },
+
   canParatonerBait() {
     const s = this.state;
     if (!s) return false;

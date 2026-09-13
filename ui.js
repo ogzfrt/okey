@@ -19,7 +19,7 @@
    'btnMapPause','btnMapInfo','mapMenuPop','btnMapGoMenu','btnMapSettings','btnMapSfx',
    'roundChip','coinChip','okeyChip','bossChip','turnIndicator',
    'scoreNow','scoreTarget','progressFill','permMult',
-   'jokerSlots','slotCount','backupSlots','backupCount','btnTerazi','btnParatoner','fatalityChip','borsaChip',
+   'jokerSlots','slotCount','backupSlots','backupCount','btnTerazi','btnParatoner','btnRusvet','fatalityChip','borsaChip',
    'consumCount','consumRow',
    'openAreaHint','combosRow','previewBar','crimsonPeek',
    'meldArea','meldRow','stageVal','roundVal',
@@ -1384,7 +1384,7 @@
     /* legendary */
     sisyphus: '🪨', midas: '👑', kaptan: '⚓', ucuncuTeker: '🛞', truva: '📦',
     kaioken: '🔥', ankaKusu: '🐦‍🔥', theWorld: '🕰️', medusa: '🐍',
-    vasiyet: '📜', ipotek: '🏦', truva: '🐴', atesTuccari: '🔥',
+    vasiyet: '📜', ipotek: '🏦', truva: '🐴', atesTuccari: '🔥', rusvet: '💰', hidra: '🐉',
     frankenstein: '🧟‍♂️',
     /* mythic */
     seytan: '😈', pinkyWarrior: '🩷', kiyamet: '☄️', tanrininEli: '🤲', ejderha: '🐉',
@@ -3146,6 +3146,18 @@
       el.btnParatoner.disabled = !set && !paratonerSel;
       el.btnParatoner.title = (set || paratonerSel) ? '' : t('paratonerNeedOne');
     }
+    /* P34 — "Rüşvet". Taş atma aşamasında görünür; seçili taş sayısı kadar
+       coin yazar. Coin yetmiyorsa pasif kalır ve nedeni ipucunda yazar. */
+    {
+      const canR = Game.canRusvet && Game.canRusvet();
+      const n = selection.size;
+      const cost = n * (Game.rusvetCost ? Game.rusvetCost() : 2);
+      const afford = !!Game.state && Game.state.coins >= cost;
+      el.btnRusvet.classList.toggle('hidden', !canR);
+      el.btnRusvet.textContent = n ? t('rusvetBtnN', cost) : t('rusvetBtn');
+      el.btnRusvet.disabled = !n || !afford;
+      el.btnRusvet.title = !n ? t('rusvetNeedOne') : (afford ? '' : t('rusvetNoCoin', cost));
+    }
     /* Butonlar - Figma 210:3746: barda TEK birincil buton vardır.
        (2026-08-23 duzeltmesi: "Ac" ve "Onayla" yan yana iki buton olarak
        duruyordu; tasarimda boyle bir ikili YOK.) Kural:
@@ -3479,6 +3491,17 @@
     const r = Game.setParatonerBait(set ? null : paratonerSel);
     if (!r.ok) { toast(r.error); render(); return; }
     toast(r.note, true);
+    render();
+  });
+
+  /* P34 — "Rüşvet": seçili taşları desteye yollar, yerine yenilerini çeker. */
+  el.btnRusvet.addEventListener('click', () => {
+    if (!selection.size) { toast(t('rusvetNeedOne')); return; }
+    const r = Game.useRusvet([...selection]);
+    if (!r.ok) { toast(r.error); render(); return; }
+    for (const id of r.gone) selection.delete(id);
+    toast(r.note, true);
+    SFX.coin();
     render();
   });
 
