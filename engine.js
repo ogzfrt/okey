@@ -805,8 +805,12 @@ const TERAZI_HEAVY_TARGET = 15;  // ağır taş: değerinin bu katı kadar hedef
    kullanamıyordu. Sınır artık COIN'dir — satın alabildiğin kadar kullan.
    `ALTIN_ORAN_MAX` sabiti yalnız eski kayıt alanlarının okunması için
    duruyor; hiçbir yerde sınır olarak kullanılmıyor. */
-const ALTIN_ORAN_GAIN = 1.0;
+/* P47 (kullanıcı kararı 2026-09-14) — değnek değerleri: Kıvılcım +1.0x → +1.5x,
+   Yıldız Tozu +0.3x → +0.5x, Muska %6 → %5. Açıklama ve etki aynı sabitten. */
+const ALTIN_ORAN_GAIN = 1.5;
 const ALTIN_ORAN_MAX = 2;   // (kullanılmıyor — bkz. yukarıdaki not)
+const YILDIZ_TOZU_MULT = 0.5;
+const MUSKA_ISLEK_CUT = 0.05;
 
 /* ============================================================
    PLAYTEST 19 · GRUP G — THE CHEATING (joker + boss) SAYILARI.
@@ -950,7 +954,7 @@ const MISU_PERM = 2.0;         // Grup D — kazanınca bıraktığı kalıcı �
 const ALIEN_COPY_FLAT = 80;    // Grup F — açılımda kullanılan kopya taş başına puan (yeni)
 const KARAKEDI_FLAT = 80;      // Grup P — 12'ye dönüşmüş taş açılımda (yeni)
 const RITIM_BONUS = [1.5, 3.0, 6.0];   // Grup K — 0.8/1.2/1.8 → 1.5/3.0/6.0
-const KELEBEK_PCT = 0.50;      // Grup N — puan +%25 → +%50
+const KELEBEK_MULT = 3.0;      // P47 — "puan +%50" kolu +3.0x ÇARPAN oldu (Grup N: +%25 → +%50 idi)
 const KELEBEK_FLAT = 300;      // Grup N — 120 → 300
 const KELEBEK_COIN = 15;       // Grup N — 4 → 15
 /* P37 (kullanıcı kararı 2026-09-13) — AYNA KRAL "BİRİKİM + ÇARPAN".
@@ -1055,11 +1059,11 @@ const CONSUMABLES = {
   /* Grup D: 0.2x → 0.3x. 1.0x ≈ 50 puan bütçesiyle 10 coinlik kalıcı bir
      karta 0.2x (≈10 puan/açılım) fazlasıyla sönüktü. */
   yildizTozu: { key: 'yildizTozu', name: 'Yıldız Tozu', icon: '✨', price: 10, rarity: 'rare', target: null,
-    desc: 'Tüm açılımlara kalıcı +0.3x.' },
+    desc: `Tüm açılımlara kalıcı +${YILDIZ_TOZU_MULT.toFixed(1)}x.` },
   /* Grup D: %3 → %6. Eski hâli oyun boyunca fark edilmiyordu (işlek zaten
      %20-35 bandında); artık bir Nazar Boncuğu yükseltmesine yaklaşıyor. */
   muska: { key: 'muska', name: 'Muska', icon: '🧿', price: 8, rarity: 'rare', target: null,
-    desc: 'İşlek riski kalıcı %6 düşer.' },
+    desc: `İşlek riski kalıcı %${Math.round(MUSKA_ISLEK_CUT * 100)} düşer.` },
   /* YENİ (Grup D) — enhancement ailesinin orta basamağı: taş → Altın Taş.
      PLAYTEST 28 · GRUP C — adı "Simya Şişesi" iken "ALTIN VERNİK" oldu
      (kullanıcı kararı 2026-09-10). EFEKT DEĞİŞMEDİ. Gerekçe: kart
@@ -1128,7 +1132,7 @@ const CONSUMABLES = {
   /* P33 · Grup C (kullanıcı kararı 2026-09-13) — "Kaldıraç" → "KIVILCIM"
      (EN "Spark"): ad iki dilde de anlamlı olmalı. EFEKT ve ANAHTAR değişmedi. */
   altinOran: { key: 'altinOran', name: 'Kıvılcım', icon: '📐', price: 16, rarity: 'legendary', target: null,
-    desc: 'Kalıcı çarpanın +1.0x artar. Kullanım sınırı yok.' },
+    desc: `Kalıcı çarpanın +${ALTIN_ORAN_GAIN.toFixed(1)}x artar. Kullanım sınırı yok.` },
   /* Grup D'de eklendi, PLAYTEST 9 · GRUP L'de yeniden tasarlandı:
      artık store rafı değil ANA SLOT kapasitesi veriyor, bu yüzden
      Legendary → MYTHIC (listede yeri değişmedi, kayıt uyumu için). */
@@ -1960,7 +1964,7 @@ const JOKER_DEFS = {
   godzilla: { key: 'godzilla', name: 'Godzilla', rarity: 'epic', uses: 3,
     desc: 'Açılımsız geçtiğin turlarda şarj olur. Sonraki açılıma S1 +150/+2.5x, S2 +300/+5.0x, S3 +600/+10.0x.' },
   kelebek: { key: 'kelebek', name: 'Kelebek Etkisi', rarity: 'epic', uses: 3,
-    desc: 'Önceki turdan farklı tür açarsan sürpriz ödül: +%50 puan, +300 puan ya da +15 coin.' },
+    desc: 'Önceki turdan farklı tür açarsan sürpriz ödül: +3.0x, +300 puan ya da +15 coin.' },
   aynaKral: { key: 'aynaKral', name: 'Ayna Kral', rarity: 'epic', uses: 2,
     desc: 'Açılımların puanı yansımada birikir. Açılımsız turda alırsın: 2 açılım ×1.5, 3+ açılım ×2.' },
   karaKedi: { key: 'karaKedi', name: 'Kara Kedi', rarity: 'epic', uses: 2,
@@ -5839,6 +5843,29 @@ const Game = {
         text: `+${s.permComboBonus.toFixed(1)}x (${ctx.count} kombinasyon)` });
     }
 
+    /* Kelebek Etkisi — önceki turdan FARKLI tür açınca sürpriz ödül.
+       P47 (kullanıcı kararı 2026-09-14): "+%50 puan" kolu +3.0x ÇARPAN oldu. Çarpan
+       tablosuna girebilmesi için blok çarpan hesabından ÖNCEYE alındı (eskiden
+       bitmiş puanı yüzdeyle büyütüyordu); hesap kutusu artık +3.0x'i gösterir. */
+    let kelebekCoin = 0;
+    {
+      const klb = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'kelebek');
+      const kMode = (ctx.hasCift && (ctx.hasPer || ctx.hasSirali)) ? 'mixed' : (ctx.count === 0 ? 'per' : s.turnMode);
+      if (klb && s.prevMeld && s.prevMeld.turn === s.turn - 1 && s.prevMeld.mode !== kMode) {
+        const pick = Math.floor(this.rng() * 3);
+        if (pick === 0) {
+          mult += KELEBEK_MULT;
+          triggered.push({ id: klb.id, name: klb.name, text: `+${KELEBEK_MULT.toFixed(1)}x` });
+        } else if (pick === 1) {
+          flat += KELEBEK_FLAT;
+          triggered.push({ id: klb.id, name: klb.name, text: `+${KELEBEK_FLAT} puan` });
+        } else {
+          kelebekCoin = KELEBEK_COIN;
+          triggered.push({ id: klb.id, name: klb.name, text: `+${KELEBEK_COIN} coin` });
+        }
+      }
+    }
+
     /* GÖKYÜZÜ EJDERHASI (P31 · Grup F) — açılımdaki HER taşın değeri ×5.
        Ham puana (çarpandan ÖNCE) uygulanır; işleme taşları da açılımın
        parçası olduğu için onlar da sayılır. */
@@ -5914,23 +5941,7 @@ const Game = {
        bkz. confirmMelds içindeki Hayalet bloğu). `curMode` Kelebek Etkisi
        için gerekli olduğu için yerinde kaldı. */
     const curMode = mixed ? 'mixed' : (ctx.count === 0 ? 'per' : s.turnMode);
-    // Kelebek Etkisi — önceki turdan FARKLI tür
-    let kelebekCoin = 0;
-    const klb = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'kelebek');
-    if (klb && s.prevMeld && s.prevMeld.turn === s.turn - 1 && s.prevMeld.mode !== curMode) {
-      const pick = Math.floor(this.rng() * 3);
-      /* P35 · Grup N — KELEBEK_PCT / KELEBEK_FLAT / KELEBEK_COIN */
-      if (pick === 0) {
-        baseScore = Math.ceil(baseScore * (1 + KELEBEK_PCT));
-        triggered.push({ id: klb.id, name: klb.name, text: `puan +%${Math.round(KELEBEK_PCT * 100)}` });
-      } else if (pick === 1) {
-        flat += KELEBEK_FLAT;
-        triggered.push({ id: klb.id, name: klb.name, text: `+${KELEBEK_FLAT} puan` });
-      } else {
-        kelebekCoin = KELEBEK_COIN;
-        triggered.push({ id: klb.id, name: klb.name, text: `+${KELEBEK_COIN} coin` });
-      }
-    }
+    // (Kelebek Etkisi P47'de çarpan hesabından önceye taşındı — yukarıya bak)
 
     /* DAMGA (P28 · Grup B) — ÖNCEKİ "Ayna"nın otomatik %50'si gitti.
        Damga, açılımın TAM puanını (ham × çarpan + joker flat'leri) ikiye
@@ -8970,10 +8981,10 @@ const Game = {
         gainCoins(s, 12); consume();
         return { ok: true, note: '🐖 Kumbara kırıldı: +12 coin' };
       case 'yildizTozu':
-        s.permMult = round2(s.permMult + 0.3); consume();
-        return { ok: true, note: '✨ Yıldız Tozu: tüm açılımlara KALICI +0.3x çarpan' };
+        s.permMult = round2(s.permMult + YILDIZ_TOZU_MULT); consume();
+        return { ok: true, note: `✨ Yıldız Tozu: tüm açılımlara KALICI +${YILDIZ_TOZU_MULT.toFixed(1)}x çarpan` };
       case 'muska':
-        s.permIslekReduce = round2((s.permIslekReduce || 0) + 0.06); consume();
+        s.permIslekReduce = round2((s.permIslekReduce || 0) + MUSKA_ISLEK_CUT); consume();
         return { ok: true, note: `🧿 Muska: işlek riski kalıcı -%${Math.round((s.permIslekReduce) * 100)}'e indi` };
       /* --- Grup D yeni tüketilebilirleri --- */
       case 'heybe':

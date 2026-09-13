@@ -2679,12 +2679,14 @@
       toast(t('sellToast', T.consumName(res.key, res.name), res.gain), true);
       SFX.coin(); renderStore(); render();
     };
+    /* P47 (kullanıcı isteği 2026-09-14): değnek de RAUND İÇİNDE sağ tıkla satılır
+       (P41'de yalnız store rafındaydı; jokerler P46'da açılmıştı). */
     if (art) attachActs(d, () => ({
       left: { lbl: t(picking ? 'abCancel' : 'abUse'), fn: useIt },
-      right: opts.sell ? { lbl: t('abSell', Game.consumSellPrice(key)), fn: sellIt } : null,
+      right: { lbl: t('abSell', Game.consumSellPrice(key)), fn: sellIt },
     }));
     const hint = art
-      ? ` — ${t(picking ? 'consumLeftCancel' : 'consumLeftUse')}${opts.sell ? ' · ' + t('consumRightSell') : ''}`
+      ? ` — ${t(picking ? 'consumLeftCancel' : 'consumLeftUse')} · ${t('consumRightSell')}`
       : '';
     attachTip(d, { name: T.consumName(key, def.name),
       rarityText: `${T.rarity(def.rarity || 'common')} · ${t('consumTag')}`,
