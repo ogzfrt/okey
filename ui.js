@@ -1373,13 +1373,22 @@
   function placeActBadge(card) {
     const r = card.getBoundingClientRect();
     if (!r.width) { hideActBadge(); return; }
-    const W = r.width, H = r.height, px = W * .1, py = H * .09;
+    const W = r.width, H = r.height;
+    /* P44 (kullanıcı çizimi 2026-09-14) — ROZET KARTIN ŞEKLİNİ İZLER.
+       Dikdörtgen kutu yerine kartın kendi köşe pahını büyüten SEKİZGEN çerçeve;
+       kart delikten görünür ve delik de kartın şeklindedir (değnek çiziminin
+       sekizgeni 81×110'da 20×21 pah; joker kartı düz dikdörtgen). Şekil CSS
+       kutusuyla çizilemediği için satır içi SVG: dış sekizgen = çerçeve
+       (--gm-light), bir çerçeve kalınlığı içeride pano (--gm-dark) + çizgi
+       deseni; iki yolda da kart deliği evenodd ile boş bırakılır. */
+    const b = Math.max(3, Math.round(W * .045));    // çerçeve kalınlığı
+    const px = b + W * .06, py = b + H * .045;      // çerçeve → kart boşluğu
     const st = actBadge.style;
     st.fontSize = (W * .17) + 'px';
     /* Yazı panelinin genişliği İÇERİKTEN ölçülür: store kenar çubuğundaki
        joker kutusu neredeyse kare (65 × 64) ve sabit "kartın 2.7 katı"
        genişlikte "Sağ Tık" panodan taşıyordu. Panel en az kartın 1.6 katı. */
-    const body = actBadge.firstElementChild;
+    const body = actBadge.querySelector('.ab-body');
     if (body) { body.style.left = '0px'; body.style.width = 'max-content'; }
     const cw = body ? body.getBoundingClientRect().width : 0;
     const sw = Math.max(W * 1.6, cw + W * .17 + 8);
@@ -1388,23 +1397,34 @@
     const flip = r.left - px + bw > window.innerWidth - 4;
     const hx = flip ? bw - px - W : px;             // kart deliğinin rozet içindeki x'i
     const sx = flip ? 0 : hx + W;                   // yazı panelinin x'i
-    // P42: pano temanın vurgu tonunda (Balatro yeşili yerine) — tema değişince rozet de değişir
-    const G = 'linear-gradient(var(--gm-dark), var(--gm-dark))';
-    const S = 'repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 2px, rgba(0,0,0,0) 2px 5px)';
     st.left = (r.left - hx) + 'px';
     st.top = (r.top - py) + 'px';
     st.width = bw + 'px';
     st.height = bh + 'px';
-    /* katmanlar: çizgi + yazı paneli, üst şerit, alt şerit, dar yan şerit.
-       Üst/alt şerit 1 px içeri taşar — yan yana iki şeridin ortak kenarında
-       yumuşatma dikişi kalmasın (bkz. P40 SVG dikişi). */
-    st.backgroundImage = [S, G, G, G, G].join(', ');
-    st.backgroundSize = [`${sw}px ${H}px`, `${sw}px ${H}px`, `${bw}px ${py + 1}px`,
-      `${bw}px ${py + 1}px`, `${px}px ${H}px`].join(', ');
-    st.backgroundPosition = [`${sx}px ${py}px`, `${sx}px ${py}px`, '0px 0px',
-      `0px ${py + H - 1}px`, `${flip ? hx + W : 0}px ${py}px`].join(', ');
+    const wand = card.classList.contains('consum-card');
+    const kx = wand ? W * 20 / 81 : 0, ky = wand ? H * 21 / 110 : 0;   // kartın kendi pahı
+    const c = Math.max(ky, H * .12) + py * .7;                        // dış pah
+    const ci = Math.max(0, c - b * .414);                             // iç pah (çerçeve kalınlığı kadar)
+    const f = (n) => Math.round(n * 100) / 100;
+    const oct = (x, y, w, h, cx, cy) =>
+      `M${f(x + cx)} ${f(y)}H${f(x + w - cx)}L${f(x + w)} ${f(y + cy)}V${f(y + h - cy)}` +
+      `L${f(x + w - cx)} ${f(y + h)}H${f(x + cx)}L${f(x)} ${f(y + h - cy)}V${f(y + cy)}Z`;
+    const hole = oct(hx, py, W, H, kx, ky);
+    const svg = actBadge.querySelector('.ab-bg');
+    if (svg) {
+      svg.setAttribute('width', f(bw));
+      svg.setAttribute('height', f(bh));
+      svg.setAttribute('viewBox', `0 0 ${f(bw)} ${f(bh)}`);
+      const inner = oct(b, b, bw - 2 * b, bh - 2 * b, ci, ci) + hole;
+      svg.innerHTML =
+        '<defs><pattern id="abStripe" width="5" height="5" patternUnits="userSpaceOnUse">' +
+        '<rect class="ab-s" width="5" height="2"/></pattern></defs>' +
+        `<path class="ab-o" fill-rule="evenodd" d="${oct(0, 0, bw, bh, c, c) + hole}"/>` +
+        `<path class="ab-p" fill-rule="evenodd" d="${inner}"/>` +
+        `<path fill="url(#abStripe)" fill-rule="evenodd" d="${inner}"/>`;
+    }
     if (body) {
-      body.style.left = (flip ? 4 + W * .05 : sx + W * .06) + 'px';
+      body.style.left = (flip ? b + W * .05 : sx + W * .06) + 'px';
       body.style.width = '';
     }
   }
@@ -1414,7 +1434,8 @@
     const row = (x, side) => !x ? '' :
       `<div class="ab-row"><i class="ab-ico ab-${side}"></i>` +
       `<span class="ab-txt"><b>${x.lbl}</b><em>${t(side === 'left' ? 'abLeft' : 'abRight')}</em></span></div>`;
-    actBadge.innerHTML = `<div class="ab-body">${row(a.left, 'left')}${row(a.right, 'right')}</div>`;
+    actBadge.innerHTML = '<svg class="ab-bg" aria-hidden="true"></svg>' +
+      `<div class="ab-body">${row(a.left, 'left')}${row(a.right, 'right')}</div>`;
     actBadgeFor = card;
     actBadge.classList.remove('hidden');   // önce görünür: placeActBadge içeriği ölçer
     placeActBadge(card);

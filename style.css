@@ -6783,14 +6783,20 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 #actBadge {
   position: fixed; z-index: 1150; pointer-events: none;
   box-sizing: border-box;
-  /* P42: pano temanın vurgu tonunda (JS şeritleri var(--gm-dark)), çerçeve temanın
-     açık tonu, köşeler oyunun diğer kutuları gibi keskin (Kahin kutusu kalıbı) */
-  border: 3px solid var(--gm-light); border-radius: 0;
-  background-repeat: no-repeat; background-origin: border-box; background-clip: border-box;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
   font-family: var(--gm-font, 'Pixel Operator Mono 8', 'Pixelify Sans', 'Courier New', monospace);
   animation: abIn .12s ease-out;
 }
+/* P44 (kullanıcı çizimi 2026-09-14) — rozetin ŞEKLİ satır içi SVG (ui.js
+   placeActBadge): kartın köşe pahını izleyen sekizgen çerçeve, kart şeklinde
+   delik. Renkler P42'deki gibi temadan: çerçeve --gm-light, pano --gm-dark.
+   Gölge kutuya değil şekle düşsün diye box-shadow yerine drop-shadow. */
+#actBadge .ab-bg {
+  position: absolute; left: 0; top: 0; overflow: visible;
+  filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .18));
+}
+#actBadge .ab-bg .ab-o { fill: var(--gm-light); }
+#actBadge .ab-bg .ab-p { fill: var(--gm-dark); }
+#actBadge .ab-bg .ab-s { fill: rgba(255, 255, 255, .07); }
 @keyframes abIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 #actBadge .ab-body {
   position: absolute; top: 0; bottom: 0;
