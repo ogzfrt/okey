@@ -263,13 +263,17 @@
              ızgaranın gerçek bir üyesi olmadığı için uzun etiketlerde
              (TR "Taş Feda Et", EN "Sacrifice") kutudan taşıyordu. Artık
              barın kendi çocuğu: fitActionLabels() onu da ölçekler. -->
-        <button id="btnTerazi" class="gm-btn gm-btn-terazi hidden">Taş Feda Et</button>
-        <!-- PLAYTEST 29 · GRUP F — Paratoner "Yem Seç". Terazi düğmesiyle
-             aynı ızgara üyeliği ve aynı stil ailesi; ikisi aynı anda
-             görünebilir (iki kart birden slotta olabilir). -->
-        <button id="btnParatoner" class="gm-btn gm-btn-terazi hidden">Yem Seç</button>
-        <!-- PLAYTEST 34 — Rüşvet: aynı ızgara üyeliği ve stil ailesi. -->
-        <button id="btnRusvet" class="gm-btn gm-btn-terazi hidden">Rüşvet</button>
+        <!-- P46 — taş atma aşamasının ikincil eylemleri barın SAĞ yanında küçük
+             kutular (style.css .gm-side-acts). Izgarada "Seçili Taşı At" ile aynı
+             tam genişlik satırını istedikleri için ikinci satıra düşüp ıstakanın
+             altında kalıyorlardı. -->
+        <div id="gmSideActs" class="gm-side-acts">
+          <button id="btnTerazi" class="gm-btn gm-btn-terazi hidden">Taş Feda Et</button>
+          <!-- PLAYTEST 29 · GRUP F — Paratoner "Yem Seç"; Terazi ile aynı anda görünebilir. -->
+          <button id="btnParatoner" class="gm-btn gm-btn-terazi hidden">Yem Seç</button>
+          <!-- PLAYTEST 34 — Rüşvet. -->
+          <button id="btnRusvet" class="gm-btn gm-btn-terazi hidden">Rüşvet</button>
+        </div>
         <div class="gm-sort">
           <span id="sortLabel" class="gm-sortlbl">Sort Hand</span>
           <div class="gm-sortbtns">

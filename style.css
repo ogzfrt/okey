@@ -7318,10 +7318,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
    PİKSEL sabit kalacak biçimde yeniden çiziliyor. Poligon doğrudan
    btn-open.svg'nin path verisinden türetildi (44 nokta), yani köşe her
    boyutta Figma'daki ile birebir aynı. */
-.gm-stage .gm-actions.discard-only > #btnDiscard,
-.gm-stage .gm-actions.discard-only > #btnRusvet,
-.gm-stage .gm-actions.discard-only > #btnParatoner,
-.gm-stage .gm-actions.discard-only > #btnTerazi {
+.gm-stage .gm-actions.discard-only > #btnDiscard {
   grid-column: 1 / -1;          /* üç slotu da kapla */
   justify-self: center;
   width: 210px;
@@ -7379,10 +7376,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
     5px 1px
   );
 }
-.gm-stage .gm-actions.discard-only > #btnDiscard:hover:not(:disabled),
-.gm-stage .gm-actions.discard-only > #btnRusvet:hover:not(:disabled),
-.gm-stage .gm-actions.discard-only > #btnParatoner:hover:not(:disabled),
-.gm-stage .gm-actions.discard-only > #btnTerazi:hover:not(:disabled) {
+.gm-stage .gm-actions.discard-only > #btnDiscard:hover:not(:disabled) {
   filter: brightness(1.12);
 }
 
@@ -7420,10 +7414,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
    alt bosluklari esitlenir (olcum: 1280x720'de 5/5 ekran px, tests/
    browser_p21.js bunu otomatik dogrular).
    Yatay ortalama zaten dogruydu; konum ve boyut degismedi. */
-.gm-stage .gm-actions.discard-only > #btnDiscard,
-.gm-stage .gm-actions.discard-only > #btnRusvet,
-.gm-stage .gm-actions.discard-only > #btnParatoner,
-.gm-stage .gm-actions.discard-only > #btnTerazi {
+.gm-stage .gm-actions.discard-only > #btnDiscard {
   padding-top: 0;
   padding-bottom: 0;
   /* YATAY: `letter-spacing: -2px` SON harften sonra da uygulanir, yani
@@ -7432,21 +7423,25 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
      letter-spacing kadar (2px) eklenerek merkez geri getirilir. */
   padding-right: 16px;
 }
-/* PLAYTEST 20 · GRUP A — Terazi düğmesi atma düğmesinin YANINDA, ondan
-   dar (140px) ve altın kenarlı: birincil eylem hep "at", feda ikincil.
-   Bar `width: max-content` olduğu için iki düğme yan yana sığar. */
-.gm-stage .gm-actions.discard-only > #btnRusvet,
-.gm-stage .gm-actions.discard-only > #btnParatoner,
-.gm-stage .gm-actions.discard-only > #btnTerazi {
-  width: 150px;
-  min-width: 150px;
-  background-color: #7E6A22;
-  color: #FFE9A8;
-  font-size: 20px;
+/* P46 (kullanıcı raporu 2026-09-14) — RÜŞVET / TERAZİ / PARATONER KÜÇÜK KUTU,
+   ATMA DÜĞMESİNİN YANINDA.
+   KÖK NEDEN: üçü de `discard-only` bar kuralında "Seçili Taşı At" ile aynı
+   `grid-column: 1 / -1` satırını istiyordu; ızgara bir satıra iki tam genişlik
+   öğe koyamadığı için ikincil düğme İKİNCİ SATIRA düşüyor ve ıstakanın altında
+   kalıyordu — Rüşvet görünmüyor, basılamıyordu. ("Bar max-content olduğu için
+   yan yana sığar" notu bar sabit 424px'e geçince geçersiz kalmıştı.)
+   Artık bu düğmeler barın içinde değil, barın SAĞ yanında kendi sütunlarında
+   (#gmSideActs): küçük kutu, oyunun küçük düğme görseliyle; birden çoğu
+   görünürse alttan yukarı dizilir. Taş atma aşaması dışında hepsi gizlidir. */
+.gm-stage .gm-actions > .gm-side-acts {
+  position: absolute; left: calc(100% + 12px); bottom: 9px;
+  display: flex; flex-direction: column-reverse; gap: 6px;
 }
-.gm-stage .gm-actions.discard-only > #btnRusvet:disabled,
-.gm-stage .gm-actions.discard-only > #btnParatoner:disabled,
-.gm-stage .gm-actions.discard-only > #btnTerazi:disabled { opacity: .45; }
+.gm-stage .gm-side-acts > .gm-btn {
+  width: 124px; min-width: 124px; height: 52px;
+  font-size: 16px; line-height: 1.1;
+}
+.gm-stage .gm-side-acts > .gm-btn:disabled { opacity: .45; }
 
 
 /* ==========================================================================

@@ -1649,7 +1649,10 @@
       else if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
         left = { lbl: t(s.paratonerBait != null ? 'abUndo' : 'abUse'), fn: doParatoner };
     }
-    const right = storeOpen() && !j.noSell && j.id != null
+    /* P46 (kullanıcı isteği 2026-09-14): jokerler RAUND İÇİNDE de sağ tıkla
+       satılır (P41'de satış yalnız store'daydı). Değnek satışı store'da kalır —
+       istek jokerler içindi. Harita panelinde eylem yok (attachActs). */
+    const right = !j.noSell && j.id != null
       ? { lbl: t('abSell', sellPrice(j.rarity, j.key)), fn: () => sellJokerNow(j) } : null;
     return { left, right };
   }
