@@ -1411,7 +1411,7 @@
     corporates: { name: 'The Corporates', desc: 'A corporation sets a task every round: reward for success, penalty for failure.' },
     godzilla: { name: 'Godzilla', desc: 'Charges on turns you skip melding. Next meld: S1 +150/+2.5x, S2 +300/+5.0x, S3 +600/+10.0x.' },
     kelebek: { name: 'Butterfly Effect', desc: 'Meld a different type than last turn for a surprise reward: +50% score, +300 pts or +15 coins.' },
-    aynaKral: { name: 'Mirror King', desc: 'Every meld banks its score as a reflection. Skip melding a turn to claim the bank.' },
+    aynaKral: { name: 'Mirror King', desc: 'Your meld scores bank as a reflection. Skip melding a turn to claim it: 2 melds ×1.5, 3+ melds ×2.' },
     karaKedi: { name: 'Black Cat', desc: 'Draw the lowest tile and it permanently becomes a 12; +80 pts when melded.' },
   };
 
@@ -1724,7 +1724,7 @@
     [/^🏆 Stage yükseltmeleri \(otomatik\): \+0\.3x kalıcı çarpan · \+1 kalıcı çekiş \(tur başına (\d+) taş\) · \+12 coin · Rare joker: (.+)$/,
       (m) => `🏆 Stage upgrades (automatic): +0.3x permanent mult · +1 permanent draw (${m[1]} tiles per turn) · +12 coins · Rare joker: ${trRareNote(m[2])}`],
     [/^Godzilla şarj oldu \(S(\d+)\)$/, 'Godzilla charged up (S$1)'],
-    [/^Ayna Kral yansıması: \+(\d+) puan$/, 'Mirror King reflection: +$1 pts'],
+    [/^Ayna Kral yansıması: \+(\d+) puan \((\d+) açılım ×([\d.]+)\)$/, 'Mirror King reflection: +$1 pts ($2 melds ×$3)'],
     [/^Seçilen renk: (.+?)\. Bu renkteki taşlar Per açılımlarında renk kuralından muaftır\.$/, 'Chosen color: $1. Tiles of this color are exempt from the Set color rule.'],
     [/^⚗ Füzyon: (.+?) eridi → (.+?) artık onun efektlerini de taşıyor \(süre: max\((\d+), (\d+)\) = (\d+) raund\)$/, '⚗ Fusion: $1 melted → $2 now carries its effects too (duration: max($3, $4) = $5 rounds)'],
     /* PLAYTEST 26 — güçlendirme kartı rozetleri (def.stats) */

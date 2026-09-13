@@ -953,6 +953,12 @@ const RITIM_BONUS = [1.5, 3.0, 6.0];   // Grup K — 0.8/1.2/1.8 → 1.5/3.0/6.0
 const KELEBEK_PCT = 0.50;      // Grup N — puan +%25 → +%50
 const KELEBEK_FLAT = 300;      // Grup N — 120 → 300
 const KELEBEK_COIN = 15;       // Grup N — 4 → 15
+/* P37 (kullanıcı kararı 2026-09-13) — AYNA KRAL "BİRİKİM + ÇARPAN".
+   Eski hâli yalnız SON açılımı saklıyordu (üstüne yazıyordu, net kazanç ≈ 0).
+   Artık her açılım yansımaya EKLENİR; açılımsız turda ödenirken biriktirilen
+   açılımlı TUR sayısı çarpanı belirler: 1 → ×1, 2 → ×1.5, 3+ → ×2. */
+const AYNA_MULT_2 = 1.5;
+const AYNA_MULT_3 = 2.0;
 const MEDUSA_MULT = 3.0;     // Grup E — taşlaşmış taş açılımda (+1.2 → +3.0)
 const MEDUSA_FLAT = 80;      // Grup E — yanına sabit puan (yeni)
 const NOSTRA_MULT = 2.5;     // Grup J — kehanet tutunca kalıcı çarpan (+1.5 → +2.5)
@@ -1946,7 +1952,7 @@ const JOKER_DEFS = {
   kelebek: { key: 'kelebek', name: 'Kelebek Etkisi', rarity: 'epic', uses: 3,
     desc: 'Önceki turdan farklı tür açarsan sürpriz ödül: +%50 puan, +300 puan ya da +15 coin.' },
   aynaKral: { key: 'aynaKral', name: 'Ayna Kral', rarity: 'epic', uses: 2,
-    desc: 'Her açılımın puanı yansımada birikir. Açılımsız geçtiğin turda birikeni alırsın.' },
+    desc: 'Açılımların puanı yansımada birikir. Açılımsız turda alırsın: 2 açılım ×1.5, 3+ açılım ×2.' },
   karaKedi: { key: 'karaKedi', name: 'Kara Kedi', rarity: 'epic', uses: 2,
     desc: 'En düşük taşı çekersen kalıcı 12 olur; açılımda +80 puan.' },
 };
@@ -4135,6 +4141,8 @@ const Game = {
     s.kristal = 0;
     s.vampirBank = 0;
     s.aynaKralBank = 0;
+    s.aynaKralMelds = 0;      // P37 — yansımaya açılım yapılmış tur sayısı
+    s.aynaKralTurnKey = null;
     s.godzillaLevel = 0;
     s.jokersDisabled = false;
     s.islekRateBonus = 0;
@@ -6767,7 +6775,15 @@ const Game = {
     if (!s.jokersDisabled && s.godzillaLevel > 0 && this.slotRecs().some(j => j.key === 'godzilla'))
       s.godzillaLevel = 0;
     // Ayna Kral — yansıma biriktir
-    if (this.hasActive('aynaKral')) s.aynaKralBank = r.final;
+    /* P37 — yansıma BİRİKİR; aynı turdaki ikinci onay tur sayısını artırmaz */
+    if (this.hasActive('aynaKral')) {
+      s.aynaKralBank = (s.aynaKralBank || 0) + r.final;
+      const aynaTurn = `${s.stage}-${s.roundInStage}-${s.turn}`;
+      if (s.aynaKralTurnKey !== aynaTurn) {
+        s.aynaKralTurnKey = aynaTurn;
+        s.aynaKralMelds = (s.aynaKralMelds || 0) + 1;
+      }
+    }
     // Gümüş Taş — kullanılan her gümüş raund sonunda +1 coin (GDD 6.5c)
     const usedTiles = [...r.ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)];
     s.gumusPending += usedTiles.filter(t => t.special === 'gumus').length;
@@ -7095,9 +7111,14 @@ const Game = {
         events.push(`Godzilla şarj oldu (S${s.godzillaLevel})`);
       }
       if (!s.openedThisTurn && s.aynaKralBank > 0 && this.slotRecs().some(j => j.key === 'aynaKral')) {
-        s.score += s.aynaKralBank;
-        events.push(`Ayna Kral yansıması: +${s.aynaKralBank} puan`);
+        const n = s.aynaKralMelds || 1;
+        const am = n >= 3 ? AYNA_MULT_3 : n === 2 ? AYNA_MULT_2 : 1;
+        const gain = Math.round(s.aynaKralBank * am);
+        s.score += gain;
+        events.push(`Ayna Kral yansıması: +${gain} puan (${n} açılım ×${am})`);
         s.aynaKralBank = 0;
+        s.aynaKralMelds = 0;
+        s.aynaKralTurnKey = null;
       }
     }
 

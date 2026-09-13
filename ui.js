@@ -328,7 +328,14 @@
     n.classList.add('out');
     setTimeout(() => n.remove(), 400);
   }
+  /* P37 (kullanıcı kararı 2026-09-13) — OYUN İÇİ BİLDİRİM KARTLARI KAPALI.
+     Kullanıcı hangi geri bildirimlerin döneceğini sonra tek tek seçecek.
+     Motor olay satırlarını üretmeye devam eder; yalnız ekrana basılmaz.
+     Kalıcı bilgiler kendi yerinde durur (Kahin kehaneti: #kahinChip).
+     Geri açmak: NOTES_ENABLED = true (testler __test.setNotes ile açar). */
+  let NOTES_ENABLED = false;
   function notify(lines, good = true, opts) {
+    if (!NOTES_ENABLED) return;
     let wrap = document.getElementById('noteStack');
     if (!wrap) {
       wrap = document.createElement('div');
@@ -2152,8 +2159,24 @@
     };
     ov.querySelector('#fzmMain').addEventListener('click', () => place('main'));
     ov.querySelector('#fzmBackup').addEventListener('click', () => place('backup'));
-    ov.querySelector('#fzmLater').addEventListener('click', close);
+    /* P37 (kullanıcı kararı 2026-09-13) — "ŞİMDİ DEĞİL" FÜZYONU RAFA KOYAR.
+       Eskiden Füzyon bekleyen eylem olarak kalıyor, ekranın ortasında yüzen
+       bir "⚗ Füzyon" düğmesiyle geri çağrılıyordu. Artık boş olan ilk rafa
+       (önce ana slot, sonra backup) oturur ve oradan kullanılır. İki raf da
+       doluysa mecburen bekler. */
+    ov.querySelector('#fzmLater').addEventListener('click', () => { close(); parkFuzyon(); });
     document.body.appendChild(ov);
+  }
+
+  function parkFuzyon() {
+    if (!Game.hasPendingFuzyon || !Game.hasPendingFuzyon()) return;
+    const d = Game.fuzyonDests();
+    const dest = d.main ? 'main' : d.backup ? 'backup' : null;
+    if (!dest) { render(); return; }
+    const r = Game.placeFuzyon(dest);
+    if (!r.ok) { toast(r.error); return; }
+    if (storeOpen()) renderStore();
+    render();
   }
 
   /* PLAYTEST 10 · GRUP A — adaylar ana slot + BACKUP.
@@ -2216,7 +2239,9 @@
       });
       row.appendChild(b);
     });
-    ov.querySelector('#fzCancel').addEventListener('click', () => ov.remove());
+    /* P37 — ele geçer geçmez açılan seçicideki "Şimdi değil" de Füzyonu rafa
+       koyar (bkz. parkFuzyon); raftan açılan seçicide "Vazgeç" yalnız kapatır. */
+    ov.querySelector('#fzCancel').addEventListener('click', () => { ov.remove(); if (auto) parkFuzyon(); });
     document.body.appendChild(ov);
   }
 
@@ -5625,8 +5650,13 @@
      19 değneğin kalan 10'unun çizimi henüz yok: koleksiyonda BLANK kart
      arkası (boss joker emsali), store/envanter/pakette emoji ikon. Yeni
      çizim gelince buraya anahtar, style.css'e bir `--cs-art` satırı. */
+  /* P37 (2026-09-13) — Figma 295:176 güncellendi: 20 değneğin 20'si çizimli.
+     Boya Kabı yeni frame'de yok, eski çizimi kalır; Figma'daki "DERİN_NEFES"
+     çizimi Nefes İksiri'dir (`altinCanak`). */
   const CONSUM_ART = new Set(['zimpara', 'cekic', 'boya', 'muska', 'kumbara',
-    'yildizTozu', 'gumusVernik', 'zamanKumu', 'tac']);
+    'yildizTozu', 'gumusVernik', 'zamanKumu', 'tac',
+    'balKupu', 'kopyaci', 'miknatis', 'altinCanak', 'altinOran', 'tacirMektubu',
+    'klonSisesi', 'heybe', 'ferman', 'okeyMuhru', 'simyaSisesi']);
 
   function showCollection() {
     const order = ['common', 'rare', 'epic', 'legendary', 'mythic'];
@@ -6380,6 +6410,8 @@
     fuzyonMenu,
     // Playtest 19 — Grup G: The Cheating bildirimi
     cheatFlash,
+    // P37 — bildirim kartları kapalı; eski testler kendi kontrolleri için açar
+    setNotes: (on) => { NOTES_ENABLED = !!on; },
     // Playtest 18 — Grup E: dil değişimini test tarafında da gerçek akışla uygula
     applyStaticTexts, fitPauseMenu,
     // Playtest 20 — Grup R: mod kilit sistemi
