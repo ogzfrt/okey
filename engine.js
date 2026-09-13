@@ -887,7 +887,7 @@ const AHTAPOT_BURST_MULT = 1.5;
 
 /* PLAYTEST 11 · GRUP D — Sisyphus "Kaya": üst üste açılım yapılan turlara
    göre çarpan. Bir tur açılım yapılmazsa kaya dibe düşer (sıfırlanır). */
-const SISYPHUS_STEPS = [2.0, 4.0, 8.0];   // P30 · Grup A: 1.0/2.5/4.5 → 2/4/8
+const SISYPHUS_STEPS = [3.0, 7.0, 15.0];  // P30: 1.0/2.5/4.5 → 2/4/8 · P33 · Grup B: → 3/7/15
 
 /* PLAYTEST 11 · GRUP F — Pandora'nın üç gizli varyantı. Kutu ele ilk
    geldiğinde EŞİT OLASILIKLA birine dönüşür. */
@@ -918,8 +918,15 @@ const FRANK_STITCH_MULT = 2.0;  // P30 · Grup L: 0.8 → 2.0
    ve olay notları da bunlardan okunur. */
 const MIDAS_COIN = 3;        // Grup B — açılımdaki taş başına coin (+1 → +3)
 const TEKER_MULT = 3.0;      // Grup C — karışık açılımda iki tabloya da (+1.0 → +3.0)
-const KAIOKEN_MULT_2 = 2.5;  // Grup D — 2 tur açmazsan (+1.5 → +2.5)
-const KAIOKEN_MULT_3 = 7.0;  // Grup D — 3+ tur açmazsan (+4.5 → +7.0)
+/* P33 · Grup B (kullanıcı onayı 2026-09-13): Kaioken raundda en çok TEK
+   açılım yapabildiği için (4 tur, 3'ünü bekliyor) açılım başı çarpanı
+   Sisyphus'un tüm serisinden büyük olmalı: en iyi raund ≈ 750 puan. */
+const KAIOKEN_MULT_2 = 6.0;  // 2 tur açmazsan (P30 +2.5 → P33 +6.0)
+const KAIOKEN_MULT_3 = 15.0; // 3+ tur açmazsan (P30 +7.0 → P33 +15.0)
+/* P33 · Grup A — ANKA KUŞU "YÜKSELEN ALEV": ölüm dönüşümüne DOKUNULMADI;
+   yaşarken ömrü azaldıkça açılımlarına çarpan verir. */
+const ANKA_MULT_EARLY = 2.0; // son raundu değilken
+const ANKA_MULT_LAST = 5.0;  // son raundunda (usesLeft ≤ 1)
 const MEDUSA_MULT = 3.0;     // Grup E — taşlaşmış taş açılımda (+1.2 → +3.0)
 const MEDUSA_FLAT = 80;      // Grup E — yanına sabit puan (yeni)
 const NOSTRA_MULT = 2.5;     // Grup J — kehanet tutunca kalıcı çarpan (+1.5 → +2.5)
@@ -1037,7 +1044,9 @@ const CONSUMABLES = {
      gidilemezdi — `genisKemer` YÜKSELTMESİ zaten aynı işi yapıyor ve iki
      kart aynı adı çağrıştırırsa hangisinin ne olduğu okunmaz.
      ANAHTAR `heybe` OLARAK KALIR (kayıt uyumu). */
-  heybe: { key: 'heybe', name: 'Ambar', icon: '🎒', price: 11, rarity: 'rare', target: null,
+  /* P33 · Grup C (kullanıcı kararı 2026-09-13) — "Ambar" → "KESE" (EN "Pouch"):
+     ad iki dilde de aynı nesneyi söylemeli. EFEKT ve ANAHTAR değişmedi. */
+  heybe: { key: 'heybe', name: 'Kese', icon: '🎒', price: 11, rarity: 'rare', target: null,
     desc: 'Değnek envanterin kalıcı +1 slot büyür.' },   /* Grup M: tavan metni kaldırıldı — sayaç UI'da */
   /* PLAYTEST 28 · GRUP H — 20. DEĞNEK (kullanıcı kararı 2026-09-10).
      Kadro 2026-09-08'de eski Ustura kaldırılınca 20 → 19'a inmişti ve yeri
@@ -1084,7 +1093,9 @@ const CONSUMABLES = {
      test dosyalarında geçmez ama gereksiz gürültü de yapmaz — sabit tek
      yerde tanımlı ve yorumu buraya bağlı.
      ANAHTAR `altinOran` OLARAK KALIR (kayıt uyumu). */
-  altinOran: { key: 'altinOran', name: 'Kaldıraç', icon: '📐', price: 16, rarity: 'legendary', target: null,
+  /* P33 · Grup C (kullanıcı kararı 2026-09-13) — "Kaldıraç" → "KIVILCIM"
+     (EN "Spark"): ad iki dilde de anlamlı olmalı. EFEKT ve ANAHTAR değişmedi. */
+  altinOran: { key: 'altinOran', name: 'Kıvılcım', icon: '📐', price: 16, rarity: 'legendary', target: null,
     desc: 'Kalıcı çarpanın +1.0x artar. Kullanım sınırı yok.' },
   /* Grup D'de eklendi, PLAYTEST 9 · GRUP L'de yeniden tasarlandı:
      artık store rafı değil ANA SLOT kapasitesi veriyor, bu yüzden
@@ -1650,7 +1661,7 @@ const JOKER_DEFS = {
      yukarı çıkar, bir tur duraksarsan en dibe düşer. Kaioken'in tam
      tersidir (o beklemeyi, bu durmamayı ödüllendirir). */
   sisyphus: { key: 'sisyphus', name: 'Sisyphus', rarity: 'legendary', uses: 3,
-    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +2.0x, 3. tur +4.0x, 4. tur +8.0x. Bir tur açmazsan kaya en dibe düşer.',
+    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +3.0x, 3. tur +7.0x, 4. tur +15.0x. Bir tur açmazsan kaya en dibe düşer.',
     effect: (c) => {
       const i = Math.min(c.consecMelds, SISYPHUS_STEPS.length) - 1;
       return i >= 0 ? { mult: SISYPHUS_STEPS[i], flat: 0 } : null;
@@ -1671,11 +1682,13 @@ const JOKER_DEFS = {
      (çarpan) indirildi; kademeler netleşti */
   kaioken: { key: 'kaioken', name: 'Kaioken', rarity: 'legendary', uses: 3,
     /* P30 · Grup D: kademeler +1.5x/+4.5x → +2.5x/+7.0x, yalnız çarpan. */
-    desc: '2 tur açmazsan sonraki açılım +2.5x. 3 tur açmazsan +7.0x.',
+    desc: '2 tur açmazsan sonraki açılım +6.0x. 3 tur açmazsan +15.0x.',
     effect: (c) => c.skipStreak >= 3 ? { mult: KAIOKEN_MULT_3, flat: 0 }
       : c.skipStreak === 2 ? { mult: KAIOKEN_MULT_2, flat: 0 } : null },
+  /* P33 · Grup A (kullanıcı kararı 2026-09-13) — YÜKSELEN ALEV eklendi.
+     Mythic dönüşümü AYNEN kaldı; bonus _calcOpening içinde (ANKA_MULT_*). */
   ankaKusu: { key: 'ankaKusu', name: 'Anka Kuşu', rarity: 'legendary', uses: 2,
-    desc: 'Süresi dolunca ölmez: 1 raundluk rastgele bir Mythic’e dönüşür.' },
+    desc: 'Ömrü azaldıkça alevi büyür: açılımların +2.0x, son raundunda +5.0x. Süresi dolunca ölmez: 1 raundluk rastgele bir Mythic’e dönüşür.' },
   medusa: { key: 'medusa', name: 'Medusa', rarity: 'legendary', uses: 2,
     /* P30 · Grup E: +1.2x → +3.0x ve +80 puan (MEDUSA_MULT / MEDUSA_FLAT). */
     desc: 'Her tur bir taşın taşlaşır: rengi serbest olur, işlek ona işlemez, açılımda +3.0x ve +80 puan verir.' },
@@ -5497,6 +5510,15 @@ const Game = {
         triggered.push({ id: mdj.id, name: mdj.name,
           text: `+${MEDUSA_MULT.toFixed(1)}x +${MEDUSA_FLAT} puan (taşlaşmış taş)` });
       }
+      // Anka Kuşu — Yükselen Alev (P33 · Grup A): son raundunda alev büyür
+      const ankj = this.slotRecs().find(j => j.key === 'ankaKusu');
+      if (ankj) {
+        const last = ankj.usesLeft != null && ankj.usesLeft <= 1;
+        const am = last ? ANKA_MULT_LAST : ANKA_MULT_EARLY;
+        mult += am;
+        triggered.push({ id: ankj.id, name: ankj.name,
+          text: `+${am.toFixed(1)}x (${last ? 'son raund alevi' : 'alev'})` });
+      }
       /* Pandora (Grup F) — açılan varyanta göre açılım etkisi.
          Umut  : açılımdaki her taş sabit puan
          Salgın: açılımda kullanılan her DERTLİ taş çarpan verir
@@ -8807,7 +8829,7 @@ const Game = {
           return { ok: false, error: `Envanter zaten en büyük hâlinde (${CONSUM_SLOT_MAX}).` };
         s.consumSlotBonus = (s.consumSlotBonus || 0) + 1;
         consume();
-        return { ok: true, note: `🎒 Ambar: değnek envanteri artık ${this.consumCap()} slot` };
+        return { ok: true, note: `🎒 Kese: değnek envanteri artık ${this.consumCap()} slot` };
       case 'altinOran':
         /* GRUP B (P18): tablo indeksi değil, kalıcı çarpanın kendisi artar.
            GRUP M (P20): run başına 2 kullanım sınırı KALDIRILDI. Sayaç
@@ -8815,7 +8837,7 @@ const Game = {
         s.altinOranCount = (s.altinOranCount || 0) + 1;
         s.permMult = round2(s.permMult + ALTIN_ORAN_GAIN);
         consume();
-        return { ok: true, note: `📐 Kaldıraç: kalıcı çarpan +${ALTIN_ORAN_GAIN.toFixed(1)}x → +${s.permMult.toFixed(1)}x` };
+        return { ok: true, note: `📐 Kıvılcım: kalıcı çarpan +${ALTIN_ORAN_GAIN.toFixed(1)}x → +${s.permMult.toFixed(1)}x` };
       /* PLAYTEST 9 · GRUP L — TACİR MEKTUBU YENİDEN TASARLANDI.
          Eski hâli "store'da +1 raf"tı: aynı işi stage sonu 'raf'
          yükseltmesi zaten BEDAVA yapıyordu ve raf sayısı hiçbir zaman
