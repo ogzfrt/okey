@@ -517,7 +517,7 @@ const BOSSES = [
   { key: 'dervish', name: 'GLITCH', desc: 'Her tur çektiğin 3 taş glitch’li gelir, ikisi bozuktur. Bozuk taşı açarsan o açılımın puanı %25 düşer.' },
   { key: 'terziIgne', name: 'Terzi\'nin İğnesi', desc: 'Her tur başında 2 taş dikilir: ne atılır ne açılımda kullanılır. Tur bitince serbest kalır.' },
   { key: 'avukat', name: 'Avukat', desc: 'Her tur bir jokerin susturulur, o tur çalışmaz. Joker yok olmaz.' },
-  { key: 'ritim', name: 'Ritim Jokeri', desc: 'Her açılımdan önce ritim sekansı çıkar. Tutturamazsan o açılım puan vermez.' },
+  { key: 'ritim', name: 'Ritim', desc: 'Her açılımdan önce ritim sekansı çıkar. Tutturamazsan o açılım puan vermez.' },
   { key: 'kahin', name: 'Kahin', desc: 'Her tur zorunlu bir kehanet gelir. Uymazsan o turun puanı sıfırlanır. Hepsine uyarsan +500 puan.' },
   { key: 'tuccar', name: 'Tüccar', desc: 'Teklifler çok daha ağır ve reddedemezsin: ya bedeli ödersin ya cezayı.' },
   { key: 'corporates', name: 'The Corporates', desc: 'Raund boyu tek bir ağır şirket görevi. Tamamlayamazsan Game Over.' },
@@ -689,7 +689,7 @@ const GLITCH_BOSS_CURSED = 2;
 const GLITCH_MELD_CUT = 0.25;
 const GLITCH_MELD_MAX_CUT = 0.50;   // tek açılımda toplam kesinti tavanı
 const GLITCH_JOKER_TILES = 2;
-const GLITCH_JOKER_BONUS = 6;
+const GLITCH_JOKER_BONUS = 60;   // P35 · Grup C: gizli bonus 6 → 60
 
 /* Grup Q — Bungie Gum: açılım başına sakızın kopma ihtimali (GDD 9'daki %25).
    ⚠ PLAYTEST 29 · GRUP M — GEÇİCİ DENEME (kullanıcı kararı 2026-09-12):
@@ -703,8 +703,8 @@ const BUNGIE_SNAP = 0.50;
 
 /* PLAYTEST 10 · GRUP A — Zombie jokeri (deste jokeri, boss varyantı ayrı).
    Enfekte taş açılımda kullanılırsa taş başına bu çarpan + bu sabit puan. */
-const ZOMBIE_MULT = 2.0;
-const ZOMBIE_FLAT = 5;
+const ZOMBIE_MULT = 2.5;   // P35 · Grup E: 2.0 → 2.5
+const ZOMBIE_FLAT = 50;    // P35 · Grup E: 5 → 50
 
 /* PLAYTEST 18 · GRUP A — Terazi "Adil Takas" SADELEŞTİRİLDİ (kullanıcı
    kararı, Öneri 1). Eski hâli feda edilen taşın DEĞERİNİ 5'e bölüyordu
@@ -882,8 +882,8 @@ const IPOTEK_TURNS = 2;
 /* Grup E/21 — Ahtapot: kol başına çarpan ve feda edilen kolun anlık çarpanı.
    Eski sabit puan değerlerinin (20 / 60) birbirine oranı korundu: feda,
    üç kola denktir. 8 kol = +4.0x, çarpan tablosunun iki basamağına denk. */
-const AHTAPOT_ARM_MULT = 0.5;
-const AHTAPOT_BURST_MULT = 1.5;
+const AHTAPOT_ARM_MULT = 1.0;     // P35 · Grup G: kol başına 0.5 → 1.0
+const AHTAPOT_BURST_MULT = 2.5;   // P35 · Grup G: feda edilen kol 1.5 → 2.5
 
 /* PLAYTEST 11 · GRUP D — Sisyphus "Kaya": üst üste açılım yapılan turlara
    göre çarpan. Bir tur açılım yapılmazsa kaya dibe düşer (sıfırlanır). */
@@ -934,6 +934,18 @@ const ANKA_MULT_LAST = 5.0;  // son raundunda (usesLeft ≤ 1)
 const RUSVET_COST = 2;
 const HIDRA_SPAWN = 2;
 const HIDRA_ROUND_CAP = 4;
+/* P35 · BOSS (EPIC) JOKER GÜÇ TURU (kullanıcı kararı 2026-09-13) — yalnız
+   JOKER EFEKTİ tarafı; Boss Koşulları dokunulmadı. */
+const CELLAT_EXEC = 80;        // Grup B — idam başına anlık puan (20 → 80)
+const CELLAT_MOTIVE = 50;      // Grup B — idam başına sonraki açılımlara birikim (3 → 50)
+const MISU_MULT = 2.5;         // Grup D — eldeyken açılım çarpanı (0.8 → 2.5)
+const MISU_PERM = 2.0;         // Grup D — kazanınca bıraktığı kalıcı çarpan (0.3 → 2.0)
+const ALIEN_COPY_FLAT = 80;    // Grup F — açılımda kullanılan kopya taş başına puan (yeni)
+const KARAKEDI_FLAT = 80;      // Grup P — 12'ye dönüşmüş taş açılımda (yeni)
+const RITIM_BONUS = [1.5, 3.0, 6.0];   // Grup K — 0.8/1.2/1.8 → 1.5/3.0/6.0
+const KELEBEK_PCT = 0.50;      // Grup N — puan +%25 → +%50
+const KELEBEK_FLAT = 300;      // Grup N — 120 → 300
+const KELEBEK_COIN = 15;       // Grup N — 4 → 15
 const MEDUSA_MULT = 3.0;     // Grup E — taşlaşmış taş açılımda (+1.2 → +3.0)
 const MEDUSA_FLAT = 80;      // Grup E — yanına sabit puan (yeni)
 const NOSTRA_MULT = 2.5;     // Grup J — kehanet tutunca kalıcı çarpan (+1.5 → +2.5)
@@ -1695,7 +1707,7 @@ const JOKER_DEFS = {
   /* P33 · Grup A (kullanıcı kararı 2026-09-13) — YÜKSELEN ALEV eklendi.
      Mythic dönüşümü AYNEN kaldı; bonus _calcOpening içinde (ANKA_MULT_*). */
   ankaKusu: { key: 'ankaKusu', name: 'Anka Kuşu', rarity: 'legendary', uses: 2,
-    desc: 'Ömrü azaldıkça alevi büyür: açılımların +2.0x, son raundunda +5.0x. Süresi dolunca ölmez: 1 raundluk rastgele bir Mythic’e dönüşür.' },
+    desc: 'Açılımların +2.0x, son raundunda +5.0x. Süresi dolunca 1 raundluk rastgele bir Mythic olur.' },
   medusa: { key: 'medusa', name: 'Medusa', rarity: 'legendary', uses: 2,
     /* P30 · Grup E: +1.2x → +3.0x ve +80 puan (MEDUSA_MULT / MEDUSA_FLAT). */
     desc: 'Her tur bir taşın taşlaşır: rengi serbest olur, işlek ona işlemez, açılımda +3.0x ve +80 puan verir.' },
@@ -1742,13 +1754,13 @@ const JOKER_DEFS = {
      Taşlar nesnenin kendisiyle taşınır ve `_takeTile` ile deftere yazılır
      (bkz. useRusvet). */
   rusvet: { key: 'rusvet', name: 'Rüşvet', rarity: 'legendary', uses: 3,
-    desc: 'Taş atarken tur başına bir kez: seçtiğin taşları desteye geri yolla, yerine yenilerini çek. Taş başına 2 coin.' },
+    desc: 'Taş atarken tur başına 1 kez: seçtiğin taşları desteye yolla, yenilerini çek. Taş başına 2 coin.' },
   /* HİDRA — okeyi ATMAK artık ceza değil yatırım: "bir kafa kesilir, iki kafa
      çıkar". Ceza muafiyeti discard içinde, doğum yeni turun başında (çekişten
      sonra). Geçici okeyler `copied` taşır (asıl deste 2 kopya kuralına girmez)
      ve deste her raund yeniden kurulduğu için raund sonunda kendiliğinden gider. */
   hidra: { key: 'hidra', name: 'Hidra', rarity: 'legendary', uses: 3,
-    desc: 'Okeyi atınca ceza yemezsin: sonraki tur eline 2 geçici okey gelir. Raund başına en çok 4 okey doğar, raund sonunda kaybolurlar.' },
+    desc: 'Okeyi cezasız atarsın: sonraki tur 2 geçici okey gelir (raundda en çok 4).' },
   /* PLAYTEST 10 · GRUP E (kullanıcı kararı) — NOSTRADAMUS MYTHIC'TEN
      LEGENDARY'E İNDİ. Gerekçe: The World Legendary'den Mythic'e taşınırken
      (Grup C) iki bandın dolgusu bozulmuştu; bu, dengeleyici ters yönlü
@@ -1866,9 +1878,9 @@ const JOKER_DEFS = {
      kodda 0.5 vardı → 2 taş/tur 1.0x üretiyordu (birikim raundlar arası
      taşındığı için 3. turda +3x'e ulaşıyordu). GDD formülüne dönüldü. */
   kirby: { key: 'kirby', name: 'Sir.by', rarity: 'epic', uses: 3, mech: 'deck', icon: '😗',
-    desc: 'Eldeyken her tur 2 taşının değeri 1 düşer (1’ler silinir). Yediği taş başına +0.3x biriktirir.' },
+    desc: 'Eldeyken her tur 2 taşının değeri 1 düşer (1’ler silinir). Yediği taş başına +0.8x biriktirir.' },
   cellat: { key: 'cellat', name: 'Cellat', rarity: 'epic', uses: 2, mech: 'deck', icon: '🪓',
-    desc: 'Eldeyken her açılımdan sonra en düşük taşını idam eder: +20 puan. Sonraki açılımlara +3 puan birikir.' },
+    desc: 'Eldeyken her açılımdan sonra en düşük taşını idam eder: +80 puan. Sonraki açılımlara +50 puan birikir.' },
   /* PLAYTEST 9 · GRUP N — Dervish → GLITCH (key `dervish` DEĞİŞMEDİ,
      kayıt uyumu; Sir.by ile aynı desen). Joker tarafı GDD'deki "gizli
      değer işleme" fikrine sadık kalır ama artık boss'la aynı dili konuşur:
@@ -1877,13 +1889,13 @@ const JOKER_DEFS = {
      AÇILIMDA ortaya çıkar. Taşlar artık görünür şekilde işaretlenir
      (t.glitch) ki oyuncu "bunlardan biri" bilgisini alsın. */
   dervish: { key: 'dervish', name: 'GLITCH', rarity: 'epic', uses: 3, mech: 'deck', icon: '🌀',
-    desc: 'Eldeyken her tur 2 taşını glitchler. Birinde gizli +6 puan vardır, açılımda ortaya çıkar.' },
+    desc: 'Eldeyken her tur 2 taşını glitchler. Birinde gizli +60 puan vardır, açılımda ortaya çıkar.' },
   misunderstood: { key: 'misunderstood', name: 'The Misunderstood', rarity: 'epic', uses: 3, mech: 'deck', icon: '🎭',
-    desc: 'Eline gelince hedef %15 artar, açılımların +0.8x olur. Kaybedecekken kendini feda edip puanı tamamlar. Kazanırsan +0.3x kalıcı bırakır.' },
+    desc: 'Eline gelince hedef %15 artar, açılımların +2.5x olur. Kaybedecekken kendini feda edip puanı tamamlar. Kazanırsan +2.0x kalıcı bırakır.' },
   zombie: { key: 'zombie', name: 'Zombie', rarity: 'epic', uses: 3, mech: 'deck', icon: '🧟',
-    desc: 'Eldeyken enfeksiyon her tur yan taşa atlar. Enfekte taşı açarsan: +2.0x, +5 puan. Taş gider, zincir kırılır.' },
+    desc: 'Eldeyken enfeksiyon her tur yan taşa atlar. Enfekte taşı açarsan: +2.5x, +50 puan. Taş gider, zincir kırılır.' },
   uzayli: { key: 'uzayli', name: 'Alien', rarity: 'epic', uses: 3, mech: 'deck', icon: '👽',
-    desc: 'Eldeyken her tur 3 taşının kopyasını eline ekler. Kopyalar raund sonunda kaybolur.' },
+    desc: 'Eldeyken her tur 3 taşını kopyalar. Kopya açılımda +80 puan, raund sonunda kaybolur.' },
   /* PLAYTEST 17 · GRUP E/21 — KOLLAR ARTIK ÇARPAN VERİR (kullanıcı onayı
      2026-08-28, +0.5x/kol). KÖK NEDEN: kol başına +20 SABİT PUAN, hedef
      tablosuyla birlikte büyümüyordu — 8 kol = 160 puan, Stage 1 boss
@@ -1894,11 +1906,11 @@ const JOKER_DEFS = {
      çünkü çarpan hedefle birlikte ölçeklenir. Feda edilen kolun anlık
      ödülü de aynı oranda çevrildi (60 puan = 3 kol → +1.5x). */
   ahtapot: { key: 'ahtapot', name: 'Ahtapot', rarity: 'epic', uses: 3, mech: 'deck', icon: '🐙',
-    desc: '8 kolu var: her açılıma kol başına +0.5x. Her tur bir kol feda olur ve o tur +1.5x ekstra verir.' },
+    desc: '8 kolu var: her açılıma kol başına +1.0x. Her tur bir kol feda olur ve o tur +2.5x ekstra verir.' },
   cheating: { key: 'cheating', name: 'The Cheating', rarity: 'epic', uses: 3, mech: 'deck', icon: '🕶',
     desc: 'Eldeyken her tur desteden 1 taş çalar. Her tur %20 yakalanma riski: yakalanırsan joker ve çaldığı taşlar gider.' },
   terziIgne: { key: 'terziIgne', name: 'Terzi\'nin İğnesi', rarity: 'epic', uses: 4, mech: 'deck', icon: '🪡',
-    desc: 'Eldeyken her tur 2 taşını diker. Dikili taş atılamaz; açılımda kullanırsan +0.6x.' },
+    desc: 'Eldeyken her tur 2 taşını diker. Dikili taş atılamaz; açılımda kullanırsan +2.5x.' },
   /* PLAYTEST 8 — GRUP B2: SÜRE BUG'I.
      Kök neden: GDD 10'da Freedom Fighters'ın süre hücresi bir SAYI değil
      "Run boyunca"dır. Kodda bu, `uses: 99` yer tutucusuyla taklit edilmişti;
@@ -1917,18 +1929,19 @@ const JOKER_DEFS = {
     desc: 'Her raund iki takas teklifi getirir: birini seç ya da reddet. Üst üste 2 ret ve gider.' },
   fatality: { key: 'fatality', name: 'Fatality', rarity: 'epic', uses: 3,
     desc: 'Her tur bir skor sınırı koyar. Sınırı aşarsan hedef %10 düşer.' },
-  ritim: { key: 'ritim', name: 'Ritim Jokeri', rarity: 'epic', uses: 3,
-    desc: 'Onaydan önce ritim çubuğu çıkar: doğru anda durdur → +0.8x / +1.2x / +1.8x. Kaçırırsan joker yok olur.' },
+  /* P35 · Grup K — ad "Ritim Jokeri" → "Ritim" (EN "Rhythm"), kademeler RITIM_BONUS. */
+  ritim: { key: 'ritim', name: 'Ritim', rarity: 'epic', uses: 3,
+    desc: 'Onaydan önce ritim çubuğu çıkar: doğru anda durdur → +1.5x / +3.0x / +6.0x. Kaçırırsan joker yok olur.' },
   corporates: { key: 'corporates', name: 'The Corporates', rarity: 'epic', uses: 4,
     desc: 'Her raund bir şirket görevi verir: başarırsan ödül, başaramazsan ceza.' },
   godzilla: { key: 'godzilla', name: 'Godzilla', rarity: 'epic', uses: 3,
-    desc: 'Açılımsız geçtiğin turlarda şarj olur. Sonraki açılıma S1 +100/+2.5x, S2 +250/+3.5x, S3 +550/+5.5x.' },
+    desc: 'Açılımsız geçtiğin turlarda şarj olur. Sonraki açılıma S1 +150/+2.5x, S2 +300/+5.0x, S3 +600/+10.0x.' },
   kelebek: { key: 'kelebek', name: 'Kelebek Etkisi', rarity: 'epic', uses: 3,
-    desc: 'Önceki turdan farklı tür açarsan sürpriz ödül: +%25 puan, +120 puan ya da +4 coin.' },
+    desc: 'Önceki turdan farklı tür açarsan sürpriz ödül: +%50 puan, +300 puan ya da +15 coin.' },
   aynaKral: { key: 'aynaKral', name: 'Ayna Kral', rarity: 'epic', uses: 2,
     desc: 'Her açılımın puanı yansımada birikir. Açılımsız geçtiğin turda birikeni alırsın.' },
   karaKedi: { key: 'karaKedi', name: 'Kara Kedi', rarity: 'epic', uses: 2,
-    desc: 'Destenin en düşük taşını çekersen o taş kalıcı olarak 12 olur.' },
+    desc: 'En düşük taşı çekersen kalıcı 12 olur; açılımda +80 puan.' },
 };
 
 /* Tüccar (GDD 10) — her raund başında sunulan takas havuzu.
@@ -2107,7 +2120,7 @@ const DECK_MAX_COPIES = 2;
 const STORE_TILE_PICKS = 10;
 
 const KIRBY_BITE = 2;
-const KIRBY_MULT = 0.3;
+const KIRBY_MULT = 0.8;   // P35 · Grup A: yenen taş başına 0.3 → 0.8
 
 /* PLAYTEST 18 · GRUP A — TERZİ'NİN İĞNESİ (deste jokeri).
    `IGNE_SEW` : tur başında dikilen taş sayısı (GDD 10)
@@ -2120,7 +2133,7 @@ const KIRBY_MULT = 0.3;
    elin tamamı dikilirse atılacak taş kalmaz ve tur kapanamazdı — gerçek
    bir softlock'tu. */
 const IGNE_SEW = 2;
-const IGNE_MULT = 0.6;
+const IGNE_MULT = 2.5;   // P35 · Grup I: 0.6 → 2.5
 const IGNE_FREE_MIN = 2;
 
 /* Lanetli Kaptan (Grup B) — Game Over'dan kurtardıktan sonra joker yaşadığı
@@ -2152,9 +2165,11 @@ const APPLE_MULT = 3;            // Grup I — Yasak Elma: elmalı açılımın 
 const APPLE_DRAW_CUT = 2;        // Grup I — kovulunca tur başı eksik çekiş
 const APPLE_ISLEK = 0.20;        // Grup I — kovulunca raundun kalanına işlek riski
 
+/* P35 · Grup M: S1 +100/2.5x → +150/2.5x · S2 +250/3.5x → +300/5.0x ·
+   S3 +550/5.5x → +600/10.0x */
 const GODZILLA_LEVELS = [
-  { flat: 100, mult: 2.5 }, { flat: 250, mult: 3.5 },
-  { flat: 550, mult: 5.5 },
+  { flat: 150, mult: 2.5 }, { flat: 300, mult: 5.0 },
+  { flat: 600, mult: 10.0 },
 ];
 
 /* ---------- Stage sonu güçlendirmeleri (Grup H, 2026-07-08) ----------
@@ -5591,8 +5606,8 @@ const Game = {
       }
       // The Misunderstood — bu raund aktifse
       if (s.misuActive) {
-        mult += 0.8;
-        triggered.push({ id: 'misu', name: 'The Misunderstood', text: '+0.8x' });
+        mult += MISU_MULT;
+        triggered.push({ id: 'misu', name: 'The Misunderstood', text: `+${MISU_MULT.toFixed(1)}x` });
       }
       // Cellat motivasyonu
       if (s.cellatMotive > 0) {
@@ -5608,6 +5623,24 @@ const Game = {
         flat += ZOMBIE_FLAT * infN;
         triggered.push({ id: 'zombie', name: 'Zombie',
           text: `+${(ZOMBIE_MULT * infN).toFixed(1)}x ve +${ZOMBIE_FLAT * infN} puan (${infN} enfekte)` });
+      }
+      /* P35 · Grup F — Alien JOKERİNİN kopya taşları (alien + origin 'uzayli';
+         boss'un gizli uzaylısı `hiddenAlien` bayrağıdır, buraya girmez).
+         Grup P — Kara Kedi JOKERİNİN 12'ye çevirdiği taşlar (origin
+         'karaKedi'; boss dönüşümü 'karaKediBoss', buraya girmez). İkisi de
+         Terzi'nin İğnesi gibi işleme taşlarını da sayar. */
+      const p35Used = [...ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)];
+      const alienN = p35Used.filter(t => t.alien && t.origin === 'uzayli').length;
+      if (alienN) {
+        flat += ALIEN_COPY_FLAT * alienN;
+        triggered.push({ id: 'uzayli', name: 'Alien',
+          text: `+${ALIEN_COPY_FLAT * alienN} puan (${alienN} kopya taş)` });
+      }
+      const kediN = p35Used.filter(t => t.origin === 'karaKedi').length;
+      if (kediN) {
+        flat += KARAKEDI_FLAT * kediN;
+        triggered.push({ id: 'karaKedi', name: 'Kara Kedi',
+          text: `+${KARAKEDI_FLAT * kediN} puan (${kediN} dönüşmüş taş)` });
       }
       /* Dr. Frankenstein'ın açılım bonusları. İki ameliyatın ödülü de
          korundu: dirilen taş düz puan, dikilmiş taş çarpan verir. Puan
@@ -5697,7 +5730,7 @@ const Game = {
       // Ritim Jokeri — mini oyun kazanıldıysa
       if ((s.ritimBonus || 0) > 0) {
         mult += s.ritimBonus;
-        triggered.push({ id: 'ritim', name: 'Ritim Jokeri', text: `+${s.ritimBonus.toFixed(1)}x (ritim tuttu)` });
+        triggered.push({ id: 'ritim', name: 'Ritim', text: `+${s.ritimBonus.toFixed(1)}x (ritim tuttu)` });
       }
     }
     /* The Cheating — GRUP G (P20): ÇARPAN EKSENİ KALDIRILDI.
@@ -5861,15 +5894,16 @@ const Game = {
     const klb = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'kelebek');
     if (klb && s.prevMeld && s.prevMeld.turn === s.turn - 1 && s.prevMeld.mode !== curMode) {
       const pick = Math.floor(this.rng() * 3);
+      /* P35 · Grup N — KELEBEK_PCT / KELEBEK_FLAT / KELEBEK_COIN */
       if (pick === 0) {
-        baseScore = Math.ceil(baseScore * 1.25);
-        triggered.push({ id: klb.id, name: klb.name, text: 'puan +%25' });
+        baseScore = Math.ceil(baseScore * (1 + KELEBEK_PCT));
+        triggered.push({ id: klb.id, name: klb.name, text: `puan +%${Math.round(KELEBEK_PCT * 100)}` });
       } else if (pick === 1) {
-        flat += 120;
-        triggered.push({ id: klb.id, name: klb.name, text: '+120 puan' });
+        flat += KELEBEK_FLAT;
+        triggered.push({ id: klb.id, name: klb.name, text: `+${KELEBEK_FLAT} puan` });
       } else {
-        kelebekCoin = 4;
-        triggered.push({ id: klb.id, name: klb.name, text: '+4 coin' });
+        kelebekCoin = KELEBEK_COIN;
+        triggered.push({ id: klb.id, name: klb.name, text: `+${KELEBEK_COIN} coin` });
       }
     }
 
@@ -6879,9 +6913,9 @@ const Game = {
       if (cand.length) {
         const low = cand.reduce((a, b) => (b.number < a.number ? b : a));
         this._takeTile(low, 'cellat');
-        s.score += 20;
-        s.cellatMotive += 3;
-        events.push(`Cellat ${COLOR_TR[low.color]} ${low.number} taşını idam etti (+20 puan, açılımlara +3)`);
+        s.score += CELLAT_EXEC;
+        s.cellatMotive += CELLAT_MOTIVE;
+        events.push(`Cellat ${COLOR_TR[low.color]} ${low.number} taşını idam etti (+${CELLAT_EXEC} puan, açılımlara +${CELLAT_MOTIVE})`);
       }
     }
     /* YASAK ELMA (P31 · Grup I) — elma açıldıysa cennetten kovulma. */
@@ -7779,11 +7813,11 @@ const Game = {
       s.permMult = round2(s.permMult + NOSTRA_MULT);
       extraNotes.push(`🔮 Nostradamus kehaneti GERÇEKLEŞTİ: +${NOSTRA_MULT.toFixed(1)}x KALICI çarpan!`);
     }
-    // The Misunderstood — kazanınca +0.3x kalıcı bırakıp gider (GDD 10)
+    // The Misunderstood — kazanınca kalıcı çarpan bırakıp gider (GDD 10 · P35: MISU_PERM)
     if (s.misuActive && s.deckJokers.some(j => j.key === 'misunderstood')) {
       s.deckJokers = s.deckJokers.filter(j => j.key !== 'misunderstood');
-      s.permMult = round2(s.permMult + 0.3);
-      extraNotes.push('The Misunderstood hedefe ulaştığını gördü: +0.3x kalıcı bırakıp gitti');
+      s.permMult = round2(s.permMult + MISU_PERM);
+      extraNotes.push(`The Misunderstood hedefe ulaştığını gördü: +${MISU_PERM.toFixed(1)}x kalıcı bırakıp gitti`);
     }
     // GDD 7.2 — süre azalması ve süresi dolanların temizliği, store
     // üretilmeden ÖNCE (süresi biten joker store'da görünmez/satılamaz)
@@ -9197,6 +9231,13 @@ const Game = {
      gerçek efekti gösterir. UI açılış anını ayrı bir "kutu açılıyor"
      sahnesiyle gösterir (bkz. showPandoraReveal).
      ============================================================ */
+  /* P35 · Grup L — The Corporates'in şirket görevleri, koleksiyon ipucunda
+     Pandora varyantlarıyla aynı biçimde listelenir (ad + etki). */
+  corpsInfo() {
+    return CORPS.map(c => ({ icon: '', name: c.name,
+      desc: `Görev: ${c.text}. Başarırsan ${c.rewardText}, başaramazsan ${c.penaltyText}.` }));
+  },
+
   PANDORA_INFO: {
     umut: { name: 'Pandora — Umut', icon: '🕊',
       desc: 'Kutunun dibinde kalan: açılımdaki her taş +50 puan. Ayrıca raundu kaybedecek olursan eksik puanının TAMAMINI tamamlar — run boyunca yalnız 1 kez.' },
@@ -9782,7 +9823,7 @@ const Game = {
       return { ok: true, success, boss: true };
     }
     if (success) {
-      const bonus = [0.8, 1.2, 1.8][this.ritimLevel() - 1];
+      const bonus = RITIM_BONUS[this.ritimLevel() - 1];
       s.ritimBonus = bonus;
       return { ok: true, success: true, bonus };
     }

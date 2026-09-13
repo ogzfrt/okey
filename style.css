@@ -5125,6 +5125,19 @@ body.game-open #overlay { align-items: center; justify-content: center; }
   background: var(--gm-turn-off); display: block;
 }
 .gm-stage .gm-turn i.on { background: var(--gm-turn-on); }
+/* PLAYTEST 35 · GRUP J — Kahin kehaneti etiketi: TUR göstergesinin hemen
+   altında (aynı sol kenar), coin panelinin soluna kadar; Fatality çipiyle
+   aynı görsel dil. Uzun metin iki satıra sarar. */
+.gm-stage #kahinChip.gm-kahin {
+  position: absolute; left: 1332px; top: 92px; max-width: 360px;
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+  background: var(--gm-turn-off); border: 2px solid var(--gm-dark); border-radius: 8px;
+  font: 700 15px/1.2 var(--gm-font); color: var(--gm-dark); letter-spacing: -1px;
+  cursor: help; z-index: 5;
+}
+.gm-stage #kahinChip.gm-kahin.hidden { display: none; }
+.gm-stage #kahinChip.gm-kahin.done { border-color: var(--gm-turn-on); }
+.gm-stage #kahinChip .kc-ok { color: #2E7D32; font-size: 18px; }
 
 /* ---------- Üst sağ: coin (Figma 210:3626, 170×80) ---------- */
 .gm-stage :is(#coinChip, #mapCoin).gm-coin {

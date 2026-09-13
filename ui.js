@@ -17,7 +17,7 @@
    'mapStage','mapRound','mapScoreVal','mapCoinVal','mapOkey','mapCards',
    'mapJokerSlots','mapDeckCount','mapDiscardSlot',
    'btnMapPause','btnMapInfo','mapMenuPop','btnMapGoMenu','btnMapSettings','btnMapSfx',
-   'roundChip','coinChip','okeyChip','bossChip','turnIndicator',
+   'roundChip','coinChip','okeyChip','bossChip','turnIndicator','kahinChip',
    'scoreNow','scoreTarget','progressFill','permMult',
    'jokerSlots','slotCount','backupSlots','backupCount','btnTerazi','btnParatoner','btnRusvet','fatalityChip','borsaChip',
    'consumCount','consumRow',
@@ -2999,6 +2999,26 @@
         }, {});
       }
     }
+    /* P35 · Grup J — KAHİN KEHANETİ KALICI ETİKET. Eskiden yalnız raund başı
+       bildirim kartıydı ve kapanınca oyuncu hedefi hatırlamak zorundaydı.
+       Artık TUR göstergesinin altında raund boyu durur; tutunca ✓ alır.
+       Joker hedefi (raund) öncelikli; boss raundunda o turun zorunlu
+       kehaneti gösterilir. */
+    {
+      const g = s.kahinGoal;
+      const bo = s.boss && s.boss.key === 'kahin' && s.bossOracle ? s.bossOracle : null;
+      const show = s.status === 'playing' && !!(g || bo);
+      el.kahinChip.classList.toggle('hidden', !show);
+      if (show) {
+        const done = g ? !!g.done : !!bo.met;
+        const reward = g ? ` → +${g.amount} ${g.reward === 'coin' ? t('kahinCoin') : t('kahinPts')}` : '';
+        const txt = t('kahinChip', T.ev(g ? g.text : bo.text) + reward);
+        el.kahinChip.classList.toggle('done', done);
+        el.kahinChip.innerHTML = `<span class="kc-ico">🔮</span><span class="kc-val">${txt}</span>`
+          + (done ? '<span class="kc-ok">✓</span>' : '');
+        el.kahinChip.title = txt;
+      }
+    }
     if (s.tuccarOffer && meldPhase) {
       const b = document.createElement('button');
       b.className = 'gm-btn';
@@ -5645,7 +5665,9 @@
           rarity: def.rarity, usesLeft: def.uses ?? RARITY[def.rarity].uses,
           /* P30 · Grup I — Pandora'nın kutusundan çıkabilecek üç kart */
           variants: def.key === 'truva' && Game.PANDORA_INFO
-            ? Object.values(Game.PANDORA_INFO) : undefined }, {});
+            ? Object.values(Game.PANDORA_INFO)
+            /* P35 · Grup L — The Corporates'in dört şirket görevi, aynı biçim */
+            : def.key === 'corporates' && Game.corpsInfo ? Game.corpsInfo() : undefined }, {});
         grid.appendChild(tile2);
       }
       el.colBody.appendChild(grid);
