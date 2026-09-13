@@ -845,7 +845,12 @@
        The Cheating'in desteden aşırdığı taş `stolen` bayrağı taşır; oyuncu
        hangi taşların jokerden geldiğini bilmeli, çünkü joker yakalanınca
        o taşların HEPSİ elinden alınıp desteye döner. */
-    const srcMark = tile.stolen ? { c: 'stolen', i: '🕶', k: 'stolenTile' }
+    /* P36 · Grup B — OKEY TAŞI KAYNAK ROZETİ TAŞIMAZ. Kağıt / Okey Mührü /
+       Hidra okeyleri `copied` bayrağı taşıdığı için mor okey çerçevesinin
+       üstüne mavi kesikli kontur + ⧉ basılıyor, taş normal okey gibi
+       görünmüyordu. Okey her stage o stage'in okeyi olur; kökeni önemsizdir. */
+    const srcMark = Game.isOkeyTile(tile) ? null
+      : tile.stolen ? { c: 'stolen', i: '🕶', k: 'stolenTile' }
       : tile.alien ? { c: 'alien', i: '👽', k: 'alienTile' }
       : tile.copied ? { c: 'copied', i: '⧉', k: 'copiedTile' }
       : tile.plague ? { c: 'plague', i: '🦠', k: 'plagueTile' }
@@ -2600,8 +2605,9 @@
       }
       /* Grup F — tur tur değişen boss durumları banner'da CANLI görünsün;
          yoksa oyuncu neden ceza yediğini banner'daki sabit metinden anlayamaz. */
-      if (s.boss.key === 'kahin' && s.bossOracle)
-        bossHtml += `<span class="bb-extra">${t('bossOracleExtra', T.ev(s.bossOracle.text))}</span>`;
+      /* P36 · Grup C (kullanıcı kararı 2026-09-13) — Kahin'in O TURKİ kehaneti
+         burada artık TEKRARLANMAZ: tek yeri TUR göstergesinin altındaki
+         #kahinChip. Boss kutusu yalnız kuralın kendisini (bd) gösterir. */
       if (s.boss.key === 'avukat' && s.bossMutedJoker) {
         const mj = Game.slotRecs().find(j => j.key === s.bossMutedJoker);
         bossHtml += `<span class="bb-extra">${t('bossMutedExtra', mj ? T.name(mj) : s.bossMutedJoker)}</span>`;

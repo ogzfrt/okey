@@ -2615,6 +2615,21 @@ function resolveCombo(tiles, isOkeyFn, freePerColors, opts) {
   const k = okeys.length;
   if (k === 0) return null;
 
+  /* P36 · Grup B — YALNIZ OKEYDEN OLUŞAN AÇILIM. Kağıt her raund 2, Okey
+     Mührü kalıcı okey ekler; elde 3+ okey birikebiliyor ve [okey][okey][okey]
+     "kurallara uymuyor" diye reddediliyordu (her dal en az bir gerçek taş
+     arıyordu). Okey her taşın yerine geçebildiği için en değerli yorum
+     seçilir: 3-4 okey → 13'lük Per, 5+ okey → 13'te biten Sıralı. */
+  if (others.length === 0 && k >= 3 && k <= 13) {
+    if (k <= 4)
+      return { type: 'per', values: new Map(tiles.map(t => [t.id, 13])), usedOkey: true };
+    const start = 13 - k + 1;
+    const ordered = typeof opts?.posOf === 'function'
+      ? [...tiles].sort((a, b) => opts.posOf(a) - opts.posOf(b)) : tiles;
+    return { type: 'sirali', values: new Map(ordered.map((t, i) => [t.id, start + i])),
+      usedOkey: true, altStarts: [start], start };
+  }
+
   // Çift: 1 okey + 1 taş → okey o taşı aynalar
   if (tiles.length === 2 && k >= 1 && others.length >= 1) {
     const v = others[0].number;
@@ -5132,7 +5147,10 @@ const Game = {
     // Uzaylı — 3 taşın kopyası eline eklenir (GDD 10)
     if (s.deckJokers.some(j => j.key === 'uzayli' && j.activeRound)
         && s.hand.some(t => t.jokerTile === 'uzayli')) {
-      const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !t.alien);
+      /* P36 · Grup B — okey KOPYALANMAZ: kopya `isOkeyReal` taşımadığı için
+         ıstakada okeyin yüzüyle ("13") düz taş olarak duruyor ve açılımda
+         reddediliyordu. Hayalet ve Frankenstein de okeyi kopyalamaz. */
+      const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !t.alien && !this.isOkeyTile(t));
       let n = 0;
       // Grup A: kopyalar el üst sınırını (21) aşamaz
       for (let k = 0; k < 3 && cand.length && this.realHandCount() < MAX_HAND; k++) {
@@ -7418,7 +7436,10 @@ const Game = {
       s.yankiPending = null;
       /* `copied` ZORUNLU: hayalet asıl deste taşı değildir, işaretsiz
          bırakılırsa bütünlük denetimi onu "çoğalma" sayar (IS_BASE_TILE). */
-      s.hand.push({ id: ++_tileId, color: g.color, number: g.number,
+      /* P36 · Grup A — kimlik `nextTileId(s)` ile: çıplak `++_tileId` canlı
+         durumu taramadığı için yeniden yükleme sonrası çakışma riski taşıyordu
+         (bkz. taş kimliği kuralı). */
+      s.hand.push({ id: nextTileId(s), color: g.color, number: g.number,
         ghost: true, copied: true, origin: 'yanki' });
       events.push(`📣 Hayalet: ${COLOR_TR[g.color]} ${g.number} ıstakana geldi — bu tur kullanılmazsa söner`);
     }
@@ -8791,7 +8812,8 @@ const Game = {
         faces.push({ color: m.color, number: m.number,
           copied: m.src !== 'mod', modded: m.src === 'mod' });
       } else if (m.op === 'okeyClone' && s.okey) {
-        faces.push({ color: s.okey.color, number: s.okey.number, copied: true });
+        // P36 · Grup B — kalıcı okey yüzü okey olarak işaretlenir (görünüm)
+        faces.push({ color: s.okey.color, number: s.okey.number, copied: true, isOkeyReal: true });
       }
     }
     for (const sp of (s.specialTiles || []))
@@ -8806,7 +8828,13 @@ const Game = {
   rollStoreTiles() {
     const s = this.state;
     if (!s) return [];
-    const pool = this._deckFaces();
+    /* P36 · Grup B — okey yüzleri (asıl okeyler + kalıcı okey kopyaları +
+       sahte okeyler) SUNULMAZ: store'da düz taş gibi görünüp değneğin hedefi
+       olabiliyorlardı; sahte okey de her stage okeyin yüzüne döndüğü için
+       kalıcı dönüşüm ona da tutunmaz. */
+    const ok = s.okey;
+    const pool = this._deckFaces().filter(f => !ok || f.special
+      || f.color !== ok.color || f.number !== ok.number);
     const opts = [];
     const used = new Set();
     while (opts.length < STORE_TILE_PICKS && used.size < pool.length) {
@@ -8863,6 +8891,13 @@ const Game = {
          yalnız JOKER kaynaklı otomatik dönüşümler içindir. */
       if (t.jokerTile || t.fakeOkey || t.alien)
         return { error: 'Bu taş dönüştürülemez (deste jokeri / uzaylı taşı).' };
+      /* P36 · Grup B (KÖK NEDEN) — OKEY HEDEF OLAMAZ. Değnek taşın yüzünü
+         `tileMods` remove+add ile KALICI yazar; okeye (asıl, Kağıt ya da Okey
+         Mührü kopyası) uygulanınca sonraki raundlarda okey değil SABİT değerli
+         bir taş doğuyordu (Taç → "13") ve açılımda reddediliyordu. Okey her
+         stage o stage'in okeyine döner — yüzü değneğe açık değildir. */
+      if (this.isOkeyTile(t))
+        return { error: 'Okey taşı dönüştürülemez — her stage o stage’in okeyine döner.' };
       return { tile: t };
     };
     const rndIns = (tile) => {
