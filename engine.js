@@ -950,7 +950,8 @@ const HIDRA_ROUND_CAP = 4;
 const CELLAT_EXEC = 80;        // Grup B — idam başına anlık puan (20 → 80)
 const CELLAT_MOTIVE = 50;      // Grup B — idam başına sonraki açılımlara birikim (3 → 50)
 const MISU_MULT = 2.5;         // Grup D — eldeyken açılım çarpanı (0.8 → 2.5)
-const MISU_PERM = 2.0;         // Grup D — kazanınca bıraktığı kalıcı çarpan (0.3 → 2.0)
+/* P49e: MISU_PERM (kazanınca/süre dolunca +2.0x kalıcı) KALDIRILDI —
+   The Misunderstood artık süresi dolunca V2'ye döner (bkz. _ageJokers). */
 const ALIEN_COPY_FLAT = 100;   // Grup F — açılımda kullanılan kopya taş başına puan · P49 · Grup B: 80 → 100
 /* P49 · Grup A — The Misunderstood V2 "Uyanış" (kullanıcı onayı 2026-09-14):
    feda anında kart kaybolmaz, V2'ye döner (bkz. _awakenMisunderstood). */
@@ -1938,7 +1939,7 @@ const JOKER_DEFS = {
   dervish: { key: 'dervish', name: 'GLITCH', rarity: 'epic', uses: 3, mech: 'deck', icon: '🌀',
     desc: 'Eldeyken her tur 2 taşını glitchler. Birinde gizli +100 puan var, açılımda ortaya çıkar.' },
   misunderstood: { key: 'misunderstood', name: 'The Misunderstood', rarity: 'epic', uses: 3, mech: 'deck', icon: '🎭',
-    desc: 'Eline gelince hedef %15 artar, açılımların +2.5x olur. Kaybedecekken feda olup puanı tamamlar ve uyanır. Uyanmadan biterse +2.0x kalıcı bırakır.' },
+    desc: 'Eline gelince hedef %15 artar, açılımların +2.5x olur. Kaybedecekken feda olup puanı tamamlar ve uyanır; süresi dolunca da uyanır.' },
   zombie: { key: 'zombie', name: 'Zombie', rarity: 'epic', uses: 3, mech: 'deck', icon: '🧟',
     desc: 'Eldeyken enfeksiyon her tur yan taşa atlar. Enfekte taşı açarsan: +2.5x, +50 puan. Taş gider, zincir kırılır.' },
   uzayli: { key: 'uzayli', name: 'Alien', rarity: 'epic', uses: 3, mech: 'deck', icon: '👽',
@@ -7744,13 +7745,15 @@ const Game = {
       j.drawnThisRound = false;
       delete j.protected;
     }
+    /* P49e (kullanıcı kararı 2026-09-14) — uyanmadan süresi dolan The
+       Misunderstood GİTMEZ, V2 "Uyanış"a döner (feda ile aynı dönüşüm).
+       Eski +2.0x kalıcı veda hediyesi kaldırıldı. */
+    if (s.deckJokers.some(j => j.key === 'misunderstood' && !j.awakened && j.usesLeft <= 0)) {
+      this._awakenMisunderstood();
+      notes.push(`🎭 The Misunderstood süresi doldu ve UYANDI: ${MISU_V2_ROUNDS} raund boyunca açılımların +${MISU_V2_MULT.toFixed(1)}x alır`);
+    }
     const deadDeck = s.deckJokers.filter(j => j.usesLeft <= 0);
     if (deadDeck.length) s.lastExpired.push(...deadDeck.map(j => j.name));
-    // P49d — The Misunderstood uyanmadan süresini doldurduysa veda hediyesi
-    if (deadDeck.some(j => j.key === 'misunderstood' && !j.awakened)) {
-      s.permMult = round2(s.permMult + MISU_PERM);
-      notes.push(`🎭 The Misunderstood uyanmadan süresini doldurdu: +${MISU_PERM.toFixed(1)}x kalıcı bıraktı`);
-    }
     s.deckJokers = s.deckJokers.filter(j => j.usesLeft > 0);
 
     // Anka Kuşu — küllerinden Mythic doğar (GDD 11)
@@ -7958,10 +7961,9 @@ const Game = {
       misuGrow.awakenMult = round2(misuGrow.awakenMult + MISU_V2_GROW);
       extraNotes.push(`🎭 Uyanış büyüdü: açılımların artık +${misuGrow.awakenMult.toFixed(1)}x`);
     }
-    /* The Misunderstood — P49d (kullanıcı kararı 2026-09-14): raundu kendin
-       kazanınca kart ARTIK GİTMEZ, V1 olarak süresi bitene kadar kalır.
-       +2.0x kalıcı (MISU_PERM) uyanmadan süresi dolunca bir kez verilir
-       (bkz. _ageJokers) — her kazanılan raundda verilseydi 3 raundda +6x ederdi. */
+    /* The Misunderstood — P49d/e (kullanıcı kararı 2026-09-14): raundu kendin
+       kazanınca kart GİTMEZ, V1 olarak süresi bitene kadar kalır; süresi
+       dolunca V2'ye döner (bkz. _ageJokers). Kalıcı çarpan bırakmaz. */
     // GDD 7.2 — süre azalması ve süresi dolanların temizliği, store
     // üretilmeden ÖNCE (süresi biten joker store'da görünmez/satılamaz)
     this._ageJokers(extraNotes);

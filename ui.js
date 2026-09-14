@@ -755,13 +755,6 @@
         b.title = t('cheatRiskTip', pct);
         d.appendChild(b);
       }
-      // P49 · Grup A — Uyanış'ın güncel çarpanı (Cheating risk rozetiyle aynı kalıp)
-      if (j && j.key === 'misunderstood' && j.awakened) {
-        const b = document.createElement('div');
-        b.className = 'dj-risk';
-        b.textContent = `+${(j.awakenMult || 0).toFixed(1)}x`;
-        d.appendChild(b);
-      }
       if (j) attachTip(d, j, {});
       return d;
     }
@@ -1757,13 +1750,6 @@
       b.className = 'jt-charge' + (lv > 0 ? ' on' : '');
       b.textContent = lv >= 3 ? '⚡S3★' : (lv > 0 ? `⚡S${lv}` : 'S0');
       b.title = lv > 0 ? t('godzillaOn', lv) : t('godzillaOff');
-      tile2.appendChild(b);
-    }
-    // P49 · Grup A — Uyanış'ın güncel çarpanı (Godzilla şarj rozetiyle aynı kalıp)
-    if (!opts.backup && j.key === 'misunderstood' && j.awakened) {
-      const b = document.createElement('span');
-      b.className = 'jt-charge on';
-      b.textContent = `+${(j.awakenMult || 0).toFixed(1)}x`;
       tile2.appendChild(b);
     }
     /* PLAYTEST 17 · GRUP B/9 — HİPNOTİZÖR'ÜN TRANS SAYISI KARTTA CANLI DURUR.
