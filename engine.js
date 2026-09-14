@@ -952,6 +952,21 @@ const CELLAT_MOTIVE = 50;      // Grup B — idam başına sonraki açılımlara
 const MISU_MULT = 2.5;         // Grup D — eldeyken açılım çarpanı (0.8 → 2.5)
 const MISU_PERM = 2.0;         // Grup D — kazanınca bıraktığı kalıcı çarpan (0.3 → 2.0)
 const ALIEN_COPY_FLAT = 100;   // Grup F — açılımda kullanılan kopya taş başına puan · P49 · Grup B: 80 → 100
+/* P49 · Grup A — The Misunderstood V2 "Uyanış" (kullanıcı onayı 2026-09-14):
+   feda anında kart kaybolmaz, V2'ye döner (bkz. _awakenMisunderstood). */
+const MISU_V2_MULT = 4.0;      // uyanınca her açılıma çarpan
+const MISU_V2_GROW = 1.0;      // kazanılan her raund sonunda büyüme
+const MISU_V2_ROUNDS = 3;      // V2'nin süresi (raund)
+const MISU_V2_NAME = 'The Misunderstood — Uyanış';
+const MISU_V2_DESC = `Uyandı: hedef artmaz, açılımların +${MISU_V2_MULT.toFixed(1)}x alır. `
+  + `Kazandığın her raund +${MISU_V2_GROW.toFixed(1)}x büyür; ${MISU_V2_ROUNDS} raund sürer.`;
+/* P49 · Grup D — The Corporates şirket ödülleri (end game kartı, kullanıcı
+   isteğiyle artırıldı; eski: +0.2x · +5 coin · +300 puan +3 coin · +0.3x) */
+const CORP_KIZIL_MULT = 1.0;   // Kurogane
+const CORP_DERIN_COIN = 25;    // Abyssal
+const CORP_ALTIN_MULT = 2.0;   // Heliox
+const CORP_ALTIN_COIN = 5;     // Heliox
+const CORP_YESIL_MULT = 1.0;   // Verdatek
 const KARAKEDI_FLAT = 80;      // Grup P — 12'ye dönüşmüş taş açılımda (yeni)
 const RITIM_BONUS = [1.5, 3.0, 6.0];   // Grup K — 0.8/1.2/1.8 → 1.5/3.0/6.0
 const KELEBEK_MULT = 3.0;      // P47 — "puan +%50" kolu +3.0x ÇARPAN oldu (Grup N: +%25 → +%50 idi)
@@ -1923,7 +1938,7 @@ const JOKER_DEFS = {
   dervish: { key: 'dervish', name: 'GLITCH', rarity: 'epic', uses: 3, mech: 'deck', icon: '🌀',
     desc: 'Eldeyken her tur 2 taşını glitchler. Birinde gizli +100 puan var, açılımda ortaya çıkar.' },
   misunderstood: { key: 'misunderstood', name: 'The Misunderstood', rarity: 'epic', uses: 3, mech: 'deck', icon: '🎭',
-    desc: 'Eline gelince hedef %15 artar, açılımların +2.5x olur. Kaybedecekken kendini feda edip puanı tamamlar. Kazanırsan +2.0x kalıcı bırakır.' },
+    desc: 'Eline gelince hedef %15 artar, açılımların +2.5x olur. Kaybedecekken feda olup puanı tamamlar ve uyanır. Kazanırsan +2.0x kalıcı bırakır.' },
   zombie: { key: 'zombie', name: 'Zombie', rarity: 'epic', uses: 3, mech: 'deck', icon: '🧟',
     desc: 'Eldeyken enfeksiyon her tur yan taşa atlar. Enfekte taşı açarsan: +2.5x, +50 puan. Taş gider, zincir kırılır.' },
   uzayli: { key: 'uzayli', name: 'Alien', rarity: 'epic', uses: 3, mech: 'deck', icon: '👽',
@@ -2118,12 +2133,14 @@ const CORPS_BOSS = {
   yesil: { text: 'Bu raundun HER turunda açılım yap — hiç pas geçme' },
 };
 
-/* GDD 10/18 — The Corporates şirketleri (raund bazlı görev uyarlaması) */
+/* GDD 10/18 — The Corporates şirketleri (raund bazlı görev uyarlaması)
+   P49 · Grup D: tek kelimelik mega-şirket adları (Cyberpunk / Armored Core
+   esintisi). Anahtarlar (kizil/derin/altin/yesil) kayıt uyumu için AYNI. */
 const CORPS = [
-  { key: 'kizil', name: '🔴 Kızıl Kule A.Ş.', text: 'Bir turda YALNIZCA Çift aç', rewardText: '+0.2x kalıcı', penaltyText: '-100 puan' },
-  { key: 'derin', name: '🔵 Derin Su Ltd.', text: 'Bir turda en az 3 kombinasyon aç', rewardText: '+5 coin', penaltyText: '-50 puan' },
-  { key: 'altin', name: '🟡 Altın Hilal Holding', text: 'Raundu 1. veya 2. turda geç', rewardText: '+300 puan +3 coin', penaltyText: 'raund coini yarıya' },
-  { key: 'yesil', name: '🟢 Yeşil Vadi Teknoloji', text: 'Her turda el aç, hiç geçme', rewardText: '+0.3x kalıcı', penaltyText: '-50 puan' },
+  { key: 'kizil', name: '🔴 Kurogane', text: 'Bir turda YALNIZCA Çift aç', rewardText: `+${CORP_KIZIL_MULT.toFixed(1)}x kalıcı`, penaltyText: '-100 puan' },
+  { key: 'derin', name: '🔵 Abyssal', text: 'Bir turda en az 3 kombinasyon aç', rewardText: `+${CORP_DERIN_COIN} coin`, penaltyText: '-50 puan' },
+  { key: 'altin', name: '🟡 Heliox', text: 'Raundu 1. veya 2. turda geç', rewardText: `+${CORP_ALTIN_MULT.toFixed(1)}x kalıcı +${CORP_ALTIN_COIN} coin`, penaltyText: 'raund coini yarıya' },
+  { key: 'yesil', name: '🟢 Verdatek', text: 'Her turda el aç, hiç geçme', rewardText: `+${CORP_YESIL_MULT.toFixed(1)}x kalıcı`, penaltyText: '-50 puan' },
 ];
 
 /* Grup J: eski değerler (100/3x → 800/8x) boss ödülünü tek başına
@@ -3365,7 +3382,7 @@ const Game = {
     if (!s) return false;
     return [...(s.jokers || []), ...(s.backup || []), ...(s.deckJokers || [])].some(j =>
          j.key === 'theWorld'
-      || j.key === 'misunderstood'
+      || (j.key === 'misunderstood' && !j.awakened)   // P49: uyanmış V2 bir daha kurtarmaz
       || (j.key === 'kaptan' && !j.saveUsed)
       || (j.key === 'truva' && j.pandora === 'umut' && !j.umutUsed && !s.umutRunUsed));
   },
@@ -4357,6 +4374,9 @@ const Game = {
     // bilinçli sapma: doğal çekilişte raund boyunca hiç gelmeme sorunu).
     // Aktivasyon yine _onTurnStart'ta "eldeyken" kuralıyla yapılır.
     for (const j of s.deckJokers) {
+      /* P49 · Grup A — uyanmış The Misunderstood ele TAŞ olarak gelmez:
+         elde beklemeden her raund aktiftir, yaşlanması için "geldi" sayılır. */
+      if (j.awakened) { j.activeRound = true; j.drawnThisRound = true; continue; }
       j.activeRound = false;
       s.hand.push({ id: nextTileId(s), jokerTile: j.key, jname: j.name });
     }
@@ -5638,6 +5658,12 @@ const Game = {
       if (kbj) {
         mult += kbj.kirbyMult;
         triggered.push({ id: 'kirby', name: kbj.name, text: `+${kbj.kirbyMult.toFixed(1)}x` });
+      }
+      // P49 · Grup A — The Misunderstood V2 "Uyanış": her açılıma güncel çarpanı
+      const misuV2 = !s.jokersDisabled && s.deckJokers.find(j => j.key === 'misunderstood' && j.awakened);
+      if (misuV2) {
+        mult += misuV2.awakenMult;
+        triggered.push({ id: misuV2.id, name: misuV2.name, text: `+${misuV2.awakenMult.toFixed(1)}x` });
       }
       // The Misunderstood — bu raund aktifse
       if (s.misuActive) {
@@ -7475,12 +7501,14 @@ const Game = {
             `🕰️ The World: +${WORLD_PERM_MULT.toFixed(1)}x KALICI çarpan · bedeli: run boyunca hedefler +%${Math.round(WORLD_TARGET_UP * 100)}`]);
           return { ok: true, worldRestart: true, events: ['The World: boss raundu yeniden başladı'] };
         } else if (!s.jokersDisabled && s.misuActive
-            && s.deckJokers.some(j => j.key === 'misunderstood')) {
+            && s.deckJokers.some(j => j.key === 'misunderstood' && !j.awakened)) {
           // The Misunderstood — kendini feda eder, eksik puanı tamamlar (GDD 10)
-          s.deckJokers = s.deckJokers.filter(j => j.key !== 'misunderstood');
+          // P49 · Grup A — artık kaybolmaz, V2 "Uyanış"a döner
+          this._awakenMisunderstood();
           s.score = s.target;
           s.wonOnTurn = s.turn;
           events.push('🎭 The Misunderstood kendini feda etti — eksik puan tamamlandı!');
+          events.push(`🎭 The Misunderstood UYANDI: ${MISU_V2_ROUNDS} raund boyunca açılımların +${MISU_V2_MULT.toFixed(1)}x alır`);
           this._finishWin();
           if (s.coinReport) s.coinReport.savedBy = 'The Misunderstood';
         } else if (this._autoRescueTurn(events)) {
@@ -7816,15 +7844,15 @@ const Game = {
     if (!c || !c.boss || c.failed) return;
     if (c.key === 'kizil' && !(s.openedThisTurn && s.turnComboCount > 0 && s.turnAllCift)) {
       c.failed = true;
-      events.push('👹 Kızıl Kule görevi bu turda ihlal edildi (yalnızca Çift açmalıydın)');
+      events.push('👹 Kurogane görevi bu turda ihlal edildi (yalnızca Çift açmalıydın)');
     }
     if (c.key === 'derin' && s.turnComboCount < 3) {
       c.failed = true;
-      events.push('👹 Derin Su görevi bu turda ihlal edildi (en az 3 kombinasyon gerekiyordu)');
+      events.push('👹 Abyssal görevi bu turda ihlal edildi (en az 3 kombinasyon gerekiyordu)');
     }
     if (c.key === 'yesil' && !s.openedThisTurn) {
       c.failed = true;
-      events.push('👹 Yeşil Vadi görevi bu turda ihlal edildi (pas geçtin)');
+      events.push('👹 Verdatek görevi bu turda ihlal edildi (pas geçtin)');
     }
   },
 
@@ -7895,12 +7923,15 @@ const Game = {
       if (c.key === 'altin') c.done = s.wonOnTurn <= 2;
       if (c.key === 'yesil') c.done = !c.failed;
       if (c.done) {
-        if (c.key === 'kizil') { s.permMult = round2(s.permMult + 0.2); extraNotes.push('🏢 Kızıl Kule ödülü: +0.2x kalıcı çarpan'); }
-        else if (c.key === 'derin') { gainCoins(s, 5); extraNotes.push('🏢 Derin Su ödülü: +5 coin'); }
-        else if (c.key === 'altin') { s.score += 300; gainCoins(s, 3); extraNotes.push('🏢 Altın Hilal ödülü: +300 puan, +3 coin'); }
-        else if (c.key === 'yesil') { s.permMult = round2(s.permMult + 0.3); extraNotes.push('🏢 Yeşil Vadi ödülü: +0.3x kalıcı çarpan'); }
+        if (c.key === 'kizil') { s.permMult = round2(s.permMult + CORP_KIZIL_MULT); extraNotes.push(`🏢 Kurogane ödülü: +${CORP_KIZIL_MULT.toFixed(1)}x kalıcı çarpan`); }
+        else if (c.key === 'derin') { gainCoins(s, CORP_DERIN_COIN); extraNotes.push(`🏢 Abyssal ödülü: +${CORP_DERIN_COIN} coin`); }
+        else if (c.key === 'altin') {
+          s.permMult = round2(s.permMult + CORP_ALTIN_MULT); gainCoins(s, CORP_ALTIN_COIN);
+          extraNotes.push(`🏢 Heliox ödülü: +${CORP_ALTIN_MULT.toFixed(1)}x kalıcı çarpan, +${CORP_ALTIN_COIN} coin`);
+        }
+        else if (c.key === 'yesil') { s.permMult = round2(s.permMult + CORP_YESIL_MULT); extraNotes.push(`🏢 Verdatek ödülü: +${CORP_YESIL_MULT.toFixed(1)}x kalıcı çarpan`); }
       } else {
-        if (c.key === 'altin') { corpCoinHalf = true; extraNotes.push('🏢 Altın Hilal cezası: raund coini yarıya indi'); }
+        if (c.key === 'altin') { corpCoinHalf = true; extraNotes.push('🏢 Heliox cezası: raund coini yarıya indi'); }
         else {
           const pen = c.key === 'kizil' ? 100 : 50;
           s.score = Math.max(0, s.score - pen);
@@ -7915,9 +7946,17 @@ const Game = {
       s.permMult = round2(s.permMult + NOSTRA_MULT);
       extraNotes.push(`🔮 Nostradamus kehaneti GERÇEKLEŞTİ: +${NOSTRA_MULT.toFixed(1)}x KALICI çarpan!`);
     }
+    /* P49 · Grup A — Uyanış kazanılan her raund sonunda büyür. Dönüştüğü
+       raund (`fresh`) ve süresinin son raundu sayılmaz: +4 → +5 → +6. */
+    const misuGrow = !s.jokersDisabled
+      && s.deckJokers.find(j => j.key === 'misunderstood' && j.awakened && !j.fresh && j.usesLeft > 1);
+    if (misuGrow) {
+      misuGrow.awakenMult = round2(misuGrow.awakenMult + MISU_V2_GROW);
+      extraNotes.push(`🎭 Uyanış büyüdü: açılımların artık +${misuGrow.awakenMult.toFixed(1)}x`);
+    }
     // The Misunderstood — kazanınca kalıcı çarpan bırakıp gider (GDD 10 · P35: MISU_PERM)
-    if (s.misuActive && s.deckJokers.some(j => j.key === 'misunderstood')) {
-      s.deckJokers = s.deckJokers.filter(j => j.key !== 'misunderstood');
+    if (s.misuActive && s.deckJokers.some(j => j.key === 'misunderstood' && !j.awakened)) {
+      s.deckJokers = s.deckJokers.filter(j => !(j.key === 'misunderstood' && !j.awakened));
       s.permMult = round2(s.permMult + MISU_PERM);
       extraNotes.push(`The Misunderstood hedefe ulaştığını gördü: +${MISU_PERM.toFixed(1)}x kalıcı bırakıp gitti`);
     }
@@ -9349,6 +9388,25 @@ const Game = {
      ============================================================ */
   /* P35 · Grup L — The Corporates'in şirket görevleri, koleksiyon ipucunda
      Pandora varyantlarıyla aynı biçimde listelenir (ad + etki). */
+  /* P49 · Grup A — The Misunderstood V1 → V2 "Uyanış" (kullanıcı onayı 2026-09-14).
+     Feda anında kart destede KALIR: hedef cezası biter, MISU_V2_ROUNDS raund
+     her açılıma +MISU_V2_MULT verir ve kazanılan her raund sonunda büyür.
+     Ele taş olarak gelmez (hep aktif) ve bir daha kurtarma yapmaz. `fresh`
+     dönüştüğü raundun yaşlanmasını ve büyümesini atlatır (_startRound siler). */
+  _awakenMisunderstood() {
+    const s = this.state;
+    const j = s.deckJokers.find(x => x.key === 'misunderstood' && !x.awakened);
+    if (!j) return null;
+    j.awakened = true;
+    j.awakenMult = MISU_V2_MULT;
+    j.usesLeft = MISU_V2_ROUNDS;
+    j.fresh = true;
+    j.name = MISU_V2_NAME;
+    j.desc = MISU_V2_DESC;
+    s.misuActive = false;
+    return j;
+  },
+
   corpsInfo() {
     return CORPS.map(c => ({ icon: '', name: c.name,
       desc: `Görev: ${c.text}. Başarırsan ${c.rewardText}, başaramazsan ${c.penaltyText}.` }));

@@ -1728,6 +1728,8 @@
        yer tutucu uydurulmaz, eski kart görünümlerinde kalırlar. */
     const hasArt = JOKER_ART.has(j.key);
     if (hasArt) tile2.classList.add('has-art', 'jk-' + j.key);
+    // P49 · Grup A — uyanmış The Misunderstood Figma V2 çizimine geçer
+    if (j.key === 'misunderstood' && j.awakened) tile2.classList.add('misu-v2');
     /* Çizimli kartta AD YAZILMAZ (kullanıcı kararı 2026-09-10) — çizim
        kartın TAMAMINI kaplar, ad ve açıklama zaten üstüne gelince
        ipucunda çıkar. Koleksiyon rafındaki (.col-jk-card) kuralın
@@ -1745,6 +1747,13 @@
       b.className = 'jt-charge' + (lv > 0 ? ' on' : '');
       b.textContent = lv >= 3 ? '⚡S3★' : (lv > 0 ? `⚡S${lv}` : 'S0');
       b.title = lv > 0 ? t('godzillaOn', lv) : t('godzillaOff');
+      tile2.appendChild(b);
+    }
+    // P49 · Grup A — Uyanış'ın güncel çarpanı (Godzilla şarj rozetiyle aynı kalıp)
+    if (!opts.backup && j.key === 'misunderstood' && j.awakened) {
+      const b = document.createElement('span');
+      b.className = 'jt-charge on';
+      b.textContent = `+${(j.awakenMult || 0).toFixed(1)}x`;
       tile2.appendChild(b);
     }
     /* PLAYTEST 17 · GRUP B/9 — HİPNOTİZÖR'ÜN TRANS SAYISI KARTTA CANLI DURUR.

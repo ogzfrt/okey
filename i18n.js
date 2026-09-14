@@ -1427,7 +1427,7 @@
     kirby: { name: 'Sir.by', desc: 'In hand, 2 of your tiles lose 1 value every turn (1s are deleted). Banks +1.0x per tile eaten.' },
     cellat: { name: 'Executioner', desc: 'In hand, executes your lowest tile after every meld: +80 pts. Later melds bank +50 pts each.' },
     dervish: { name: 'GLITCH', desc: 'In hand, glitches 2 of your tiles every turn. One hides +100 pts, revealed when you meld it.' },
-    misunderstood: { name: 'The Misunderstood', desc: 'In hand, the target rises 15% and your melds get +2.5x. It sacrifices itself to save a lost round. Win instead and it leaves +2.0x permanent.' },
+    misunderstood: { name: 'The Misunderstood', desc: 'In hand, the target rises 15% and your melds get +2.5x. It sacrifices itself to save a lost round and awakens. Win instead and it leaves +2.0x permanent.' },
     zombie: { name: 'Zombie', desc: 'In hand, the infection hops to the neighbouring rack tile every turn. Meld an infected tile: +2.5x, +50 pts. The tile is gone, the chain breaks.' },
     uzayli: { name: 'Alien', desc: 'In hand, copies 3 of your tiles every turn. A copy scores +100 pts in a meld and vanishes at round end.' },
     ahtapot: { name: 'Octopus', desc: '8 arms: +1.0x per arm on every meld. One arm is sacrificed each turn and gives an extra +2.5x that turn.' },
@@ -1531,10 +1531,10 @@
   };
 
   const CORP_EN = {
-    kizil: { name: '🔴 Crimson Tower Inc.', text: 'Open ONLY Pairs in one turn', reward: '+0.2x permanent', penalty: '-100 pts' },
-    derin: { name: '🔵 Deep Water Ltd.', text: 'Open at least 3 combos in one turn', reward: '+5 coins', penalty: '-50 pts' },
-    altin: { name: '🟡 Golden Crescent Holding', text: 'Clear the round on turn 1 or 2', reward: '+300 pts +3 coins', penalty: 'round coins halved' },
-    yesil: { name: '🟢 Green Valley Tech', text: 'Meld every turn, never pass', reward: '+0.3x permanent', penalty: '-50 pts' },
+    kizil: { name: '🔴 Kurogane', text: 'Open ONLY Pairs in one turn', reward: '+1.0x permanent', penalty: '-100 pts' },
+    derin: { name: '🔵 Abyssal', text: 'Open at least 3 combos in one turn', reward: '+25 coins', penalty: '-50 pts' },
+    altin: { name: '🟡 Heliox', text: 'Clear the round on turn 1 or 2', reward: '+2.0x permanent +5 coins', penalty: 'round coins halved' },
+    yesil: { name: '🟢 Verdatek', text: 'Meld every turn, never pass', reward: '+1.0x permanent', penalty: '-50 pts' },
   };
 
   /* ---------- Motor olay mesajı kalıpları (TR → EN) ----------
@@ -1599,11 +1599,14 @@
     [/^🐪 Takas kabul: -3 coin → bu raund \+1\.5x çarpan$/, '🐪 Trade accepted: -3 coins → +1.5x mult this round'],
     [/^🏢 (.+?): "(.+?)" → ödül: (.+?) \/ ceza: (.+)$/, (m) => `🏢 ${trCorpName(m[1])}: "${trCorpText(m[2])}" → reward: ${trCorpRP(m[3])} / penalty: ${trCorpRP(m[4])}`],
     [/^🏢 (.+?) görevi tamamlandı$/, (m) => `🏢 ${trCorpName(m[1])} task complete`],
-    [/^🏢 Kızıl Kule ödülü: \+0\.2x kalıcı çarpan$/, '🏢 Crimson Tower reward: +0.2x permanent mult'],
-    [/^🏢 Derin Su ödülü: \+5 coin$/, '🏢 Deep Water reward: +5 coins'],
-    [/^🏢 Altın Hilal ödülü: \+300 puan, \+3 coin$/, '🏢 Golden Crescent reward: +300 pts, +3 coins'],
-    [/^🏢 Yeşil Vadi ödülü: \+0\.3x kalıcı çarpan$/, '🏢 Green Valley reward: +0.3x permanent mult'],
-    [/^🏢 Altın Hilal cezası: raund coini yarıya indi$/, '🏢 Golden Crescent penalty: round coins halved'],
+    [/^🏢 Kurogane ödülü: \+([\d.]+)x kalıcı çarpan$/, '🏢 Kurogane reward: +$1x permanent mult'],
+    [/^🏢 Abyssal ödülü: \+(\d+) coin$/, '🏢 Abyssal reward: +$1 coins'],
+    [/^🏢 Heliox ödülü: \+([\d.]+)x kalıcı çarpan, \+(\d+) coin$/, '🏢 Heliox reward: +$1x permanent mult, +$2 coins'],
+    [/^🏢 Verdatek ödülü: \+([\d.]+)x kalıcı çarpan$/, '🏢 Verdatek reward: +$1x permanent mult'],
+    [/^🏢 Heliox cezası: raund coini yarıya indi$/, '🏢 Heliox penalty: round coins halved'],
+    [/^👹 Kurogane görevi bu turda ihlal edildi \(yalnızca Çift açmalıydın\)$/, '👹 Kurogane task broken this turn (you had to open only Pairs)'],
+    [/^👹 Abyssal görevi bu turda ihlal edildi \(en az 3 kombinasyon gerekiyordu\)$/, '👹 Abyssal task broken this turn (at least 3 combos were required)'],
+    [/^👹 Verdatek görevi bu turda ihlal edildi \(pas geçtin\)$/, '👹 Verdatek task broken this turn (you passed)'],
     [/^🏢 (.+?) cezası: -(\d+) puan$/, (m) => `🏢 ${trCorpName(m[1])} penalty: -${m[2]} pts`],
     [/^🗣 Dedikodu: raund sonu store'unda "(.+?)" \((.+?)\) çıkacak$/, '🗣 Gossip: "$1" ($2) will appear in the round-end store'],
     [/^◈ (.+?) eline geldi — aktif!$/, '◈ $1 drawn to hand — active!'],
@@ -1742,6 +1745,11 @@
     [/^The World: boss raundu yeniden başladı$/, 'The World: boss round restarted'],
     [/^🎭 The Misunderstood kendini feda etti — eksik puan tamamlandı!$/, '🎭 The Misunderstood sacrificed itself — the gap was filled!'],
     [/^The Misunderstood hedefe ulaştığını gördü: \+([\d.]+)x kalıcı bırakıp gitti$/, 'The Misunderstood saw you reach the target: left +$1x permanent and departed'],
+    [/^🎭 The Misunderstood UYANDI: (\d+) raund boyunca açılımların \+([\d.]+)x alır$/, '🎭 The Misunderstood AWAKENED: your melds get +$2x for $1 rounds'],
+    [/^🎭 Uyanış büyüdü: açılımların artık \+([\d.]+)x$/, '🎭 Awakening grew: your melds now get +$1x'],
+    [/^The Misunderstood — Uyanış$/, 'The Misunderstood — Awakened'],
+    [/^Uyandı: hedef artmaz, açılımların \+([\d.]+)x alır\. Kazandığın her raund \+([\d.]+)x büyür; (\d+) raund sürer\.$/,
+      'Awakened: the target no longer rises, your melds get +$1x. Grows +$2x each round you win; lasts $3 rounds.'],
     [/^Kara Kedi: (.+?) → 12'ye dönüştü$/, 'Black Cat: $1 → turned into a 12'],
     [/^👹 Kara Kedi: (.+?) → 1'e dönüştü$/, '👹 Black Cat: $1 → turned into a 1'],
     [/^Istaka sınırı: (\d+) yerine (\d+) taş çekildi \(el en fazla (\d+)\)$/, 'Rack limit: drew $2 tiles instead of $1 (hand max $3)'],
@@ -1926,7 +1934,7 @@
     for (const k in CORP_EN) if (n.includes(CORP_EN[k].name.slice(3)) || n.includes(corpTrName(k))) return CORP_EN[k].name;
     return n;
   }
-  const CORP_TR_NAMES = { kizil: 'Kızıl Kule A.Ş.', derin: 'Derin Su Ltd.', altin: 'Altın Hilal Holding', yesil: 'Yeşil Vadi Teknoloji' };
+  const CORP_TR_NAMES = { kizil: 'Kurogane', derin: 'Abyssal', altin: 'Heliox', yesil: 'Verdatek' };   // P49 · Grup D
   function corpTrName(k) { return CORP_TR_NAMES[k]; }
   function trCorpText(t) {
     const map = {
@@ -1939,8 +1947,8 @@
   }
   function trCorpRP(t) {
     const map = {
-      '+0.2x kalıcı': '+0.2x permanent', '-100 puan': '-100 pts', '+5 coin': '+5 coins', '-50 puan': '-50 pts',
-      '+300 puan +3 coin': '+300 pts +3 coins', 'raund coini yarıya': 'round coins halved', '+0.3x kalıcı': '+0.3x permanent',
+      '+1.0x kalıcı': '+1.0x permanent', '-100 puan': '-100 pts', '+25 coin': '+25 coins', '-50 puan': '-50 pts',
+      '+2.0x kalıcı +5 coin': '+2.0x permanent +5 coins', 'raund coini yarıya': 'round coins halved',
     };
     return map[t] || t;
   }
