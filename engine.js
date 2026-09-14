@@ -1938,7 +1938,7 @@ const JOKER_DEFS = {
   dervish: { key: 'dervish', name: 'GLITCH', rarity: 'epic', uses: 3, mech: 'deck', icon: '🌀',
     desc: 'Eldeyken her tur 2 taşını glitchler. Birinde gizli +100 puan var, açılımda ortaya çıkar.' },
   misunderstood: { key: 'misunderstood', name: 'The Misunderstood', rarity: 'epic', uses: 3, mech: 'deck', icon: '🎭',
-    desc: 'Eline gelince hedef %15 artar, açılımların +2.5x olur. Kaybedecekken feda olup puanı tamamlar ve uyanır. Kazanırsan +2.0x kalıcı bırakır.' },
+    desc: 'Eline gelince hedef %15 artar, açılımların +2.5x olur. Kaybedecekken feda olup puanı tamamlar ve uyanır. Uyanmadan biterse +2.0x kalıcı bırakır.' },
   zombie: { key: 'zombie', name: 'Zombie', rarity: 'epic', uses: 3, mech: 'deck', icon: '🧟',
     desc: 'Eldeyken enfeksiyon her tur yan taşa atlar. Enfekte taşı açarsan: +2.5x, +50 puan. Taş gider, zincir kırılır.' },
   uzayli: { key: 'uzayli', name: 'Alien', rarity: 'epic', uses: 3, mech: 'deck', icon: '👽',
@@ -7746,6 +7746,11 @@ const Game = {
     }
     const deadDeck = s.deckJokers.filter(j => j.usesLeft <= 0);
     if (deadDeck.length) s.lastExpired.push(...deadDeck.map(j => j.name));
+    // P49d — The Misunderstood uyanmadan süresini doldurduysa veda hediyesi
+    if (deadDeck.some(j => j.key === 'misunderstood' && !j.awakened)) {
+      s.permMult = round2(s.permMult + MISU_PERM);
+      notes.push(`🎭 The Misunderstood uyanmadan süresini doldurdu: +${MISU_PERM.toFixed(1)}x kalıcı bıraktı`);
+    }
     s.deckJokers = s.deckJokers.filter(j => j.usesLeft > 0);
 
     // Anka Kuşu — küllerinden Mythic doğar (GDD 11)
@@ -7953,12 +7958,10 @@ const Game = {
       misuGrow.awakenMult = round2(misuGrow.awakenMult + MISU_V2_GROW);
       extraNotes.push(`🎭 Uyanış büyüdü: açılımların artık +${misuGrow.awakenMult.toFixed(1)}x`);
     }
-    // The Misunderstood — kazanınca kalıcı çarpan bırakıp gider (GDD 10 · P35: MISU_PERM)
-    if (s.misuActive && s.deckJokers.some(j => j.key === 'misunderstood' && !j.awakened)) {
-      s.deckJokers = s.deckJokers.filter(j => !(j.key === 'misunderstood' && !j.awakened));
-      s.permMult = round2(s.permMult + MISU_PERM);
-      extraNotes.push(`The Misunderstood hedefe ulaştığını gördü: +${MISU_PERM.toFixed(1)}x kalıcı bırakıp gitti`);
-    }
+    /* The Misunderstood — P49d (kullanıcı kararı 2026-09-14): raundu kendin
+       kazanınca kart ARTIK GİTMEZ, V1 olarak süresi bitene kadar kalır.
+       +2.0x kalıcı (MISU_PERM) uyanmadan süresi dolunca bir kez verilir
+       (bkz. _ageJokers) — her kazanılan raundda verilseydi 3 raundda +6x ederdi. */
     // GDD 7.2 — süre azalması ve süresi dolanların temizliği, store
     // üretilmeden ÖNCE (süresi biten joker store'da görünmez/satılamaz)
     this._ageJokers(extraNotes);
