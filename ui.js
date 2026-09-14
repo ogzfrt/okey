@@ -1761,6 +1761,18 @@
       b.title = t('hipnoBadge', Game.state.hipnoNumber);
       tile2.appendChild(b);
     }
+    /* P48 — SISYPHUS KAYASI KARTTA: kaya raundlar arası taşındığı için oyuncu
+       yüksekliğini görmeli (Godzilla şarj rozetiyle aynı kalıp). Sayı = üst üste
+       açılımlı tur; sıradaki açılım o basamağın çarpanını alır. */
+    if (!opts.backup && (j.key === 'sisyphus' || (j.fused || []).some(f => f.key === 'sisyphus'))) {
+      const n = Game.state.sisyphusStreak || 0;
+      const steps = SISYPHUS_STEPS;   // engine.js üst düzey sabiti (klasik betikler ortak kapsamda)
+      const b = document.createElement('span');
+      b.className = 'jt-charge' + (n > 0 ? ' on' : '');
+      b.textContent = `🪨${n}`;
+      b.title = n > 0 ? t('sisyphusBadge', n, steps[Math.min(n, steps.length) - 1].toFixed(1)) : t('sisyphusBadgeZero');
+      tile2.appendChild(b);
+    }
     /* PLAYTEST 30 · GRUP F — VASİYET'İN MİRAS DEPOSU KARTTA CANLI DURUR.
        Rozet kaç efekt taşıdığını gösterir (📜1/2); efektlerin adı ve
        açıklaması ipucunda "Miras" satırlarında listelenir. Godzilla /

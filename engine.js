@@ -1707,9 +1707,14 @@ const JOKER_DEFS = {
      yukarı çıkar, bir tur duraksarsan en dibe düşer. Kaioken'in tam
      tersidir (o beklemeyi, bu durmamayı ödüllendirir). */
   sisyphus: { key: 'sisyphus', name: 'Sisyphus', rarity: 'legendary', uses: 3,
-    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +3.0x, 3. tur +7.0x, 4. tur +15.0x. Bir tur açmazsan kaya en dibe düşer.',
+    /* P48 (kullanıcı kararı 2026-09-14) — KAYA RAUNDLAR ARASI TAŞINIR.
+       Eskiden `consecMeldTurns` okunuyordu ve o sayaç her raund başında 0'lanıyordu:
+       raund 4 turlu olduğu için +15.0x'e ancak son turda ulaşılabiliyordu.
+       Artık jokere özel `sisyphusStreak` okunur; yalnız açılımsız geçen turda
+       sıfırlanır. `consecMeldTurns` raund içi kalır (Seri Açıcı onu okur). */
+    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +3.0x, 3. tur +7.0x, 4. tur +15.0x. Kaya raundlar arasında da kalır; bir tur açmazsan en dibe düşer.',
     effect: (c) => {
-      const i = Math.min(c.consecMelds, SISYPHUS_STEPS.length) - 1;
+      const i = Math.min(c.sisyphusStreak || 0, SISYPHUS_STEPS.length) - 1;
       return i >= 0 ? { mult: SISYPHUS_STEPS[i], flat: 0 } : null;
     } },
   /* v3: +2 coin/taş raund başına ~30 coin üretiyordu (temel raund
@@ -2880,6 +2885,8 @@ const Game = {
       bossCheatPlan: null,  // Grup G (P19) — boss'un bu tur DUYURDUĞU hile
       bossCheatStats: null, // Grup G (P19) — { tries, hits } — banner sayacı
       carpanStep: 0,        // (eski) Altın Oran/Usta Eli basamağı — yalnız eski kayıtlar için
+      sisyphusStreak: 0,    // P48 — Sisyphus kayası: üst üste açılımlı tur, RAUNDLAR ARASI taşınır
+      sisyphusTurnKey: null, // P48 — aynı tur iki kez sayılmasın (tur sonu + raund kazanma)
       altinOranCount: 0,    // Grup B (P18) — Altın Oran kaç kez kullanıldı (tavan ALTIN_ORAN_MAX)
       carpanScale: 0,       // Grup E — Usta Eli (kombinasyon sayısı 2 kat sayılır)
       consumSlotBonus: 0,   // Grup D (P8) — Heybe: tüketilebilir envanteri büyütür
@@ -4296,8 +4303,16 @@ const Game = {
       s.islekRateBonus += s.islekPermBonus;
 
     // Sisyphus (Grup D): artık raund başı puanı YOK — kaya tur içinde yükselir
-    if (this.hasActive('sisyphus'))
-      s.roundStartNotes.push('🪨 Sisyphus: kaya en dipte — üst üste açılım yaptıkça yükselecek');
+    // P48: kaya raundlar arası taşınır — raund başı notu kayanın o anki yerini söyler
+    if (this.hasActive('sisyphus')) {
+      const n = s.sisyphusStreak || 0;
+      if (n > 0) {
+        const next = SISYPHUS_STEPS[Math.min(n, SISYPHUS_STEPS.length) - 1];
+        s.roundStartNotes.push(`🪨 Sisyphus: kaya ${n} tur yukarıda — açılım yaparsan +${next.toFixed(1)}x`);
+      } else {
+        s.roundStartNotes.push('🪨 Sisyphus: kaya en dipte — üst üste açılım yaptıkça yükselecek');
+      }
+    }
     /* Şeytan'ın Teklifi (GDD 12) — Playtest 6 KÖK NEDEN: joker Mythic
        fiyatına satın alınıyor, dolayısıyla alındıktan SONRAKİ raund başında
        cüzdan çoğu zaman 0 oluyordu; `applied` yine de işaretlendiği için
@@ -5449,6 +5464,7 @@ const Game = {
       handAfter: s.hand.length,
       handAtStart: s.hand.length + tiles.length + s.islemeler.reduce((a, e) => a + e.tiles.length, 0),
       consecMelds: s.consecMeldTurns,
+      sisyphusStreak: s.sisyphusStreak || 0,   // P48 — raundlar arası taşınan kaya
       skipStreak: s.skipStreak,
       // Grup E (Playtest 7) — İşlemeci jokeri için: bu turda işleme yapıldı mı
       islemeTiles: s.islemeler.reduce((a, e) => a + e.tiles.length, 0),
@@ -7145,6 +7161,7 @@ const Game = {
     if (this.bossOn() && s.corpTask?.boss && !s.openedThisTurn)
       this._bossCorpTurn(events);
     s.consecMeldTurns = s.openedThisTurn ? s.consecMeldTurns + 1 : 0;
+    this._sisyphusTurnEnd();   // P48 — raundlar arası kaya
     s.skipStreak = s.openedThisTurn ? 0 : s.skipStreak + 1;
 
     /* ---- THE CHEATING (Grup G, P19) — tur sonu ---- */
@@ -7811,8 +7828,22 @@ const Game = {
     }
   },
 
+  /* P48 — SISYPHUS KAYASI tur sonunda güncellenir: açılımlı tur +1, açılımsız
+     tur dibe (0). İki kapıdan çağrılır: normal tur sonu (discard) ve raundu
+     AÇILIMLA kazanan tur — o tur tur sonuna hiç varmaz; sayılmasaydı her raund
+     son açılımlı turunu kaybederdi. Anahtar aynı turun iki kez sayılmasını önler. */
+  _sisyphusTurnEnd() {
+    const s = this.state;
+    const key = `${s.stage}-${s.roundInStage}-${s.turn}`;
+    if (s.sisyphusTurnKey === key) return;
+    s.sisyphusTurnKey = key;
+    s.sisyphusStreak = s.openedThisTurn ? (s.sisyphusStreak || 0) + 1 : 0;
+  },
+
   _finishWin() {
     const s = this.state;
+    // P48: raundu açılımla kazanan tur da kayayı bir basamak yükseltir
+    if (s.openedThisTurn) this._sisyphusTurnEnd();
     // Boss şartı ihlal edildiyse hedefe ulaşmak yetmez (GDD 13.4)
     const fail = this.bossFailReason();
     if (fail) {

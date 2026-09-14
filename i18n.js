@@ -253,6 +253,9 @@
       abLeft: 'Sol Tık',
       abRight: 'Sağ Tık',
       abToMain: 'Ana Slota:',   // P45: backup kartı sol tıkla ana slota
+      /* P48 — Sisyphus kayası kart rozeti */
+      sisyphusBadge: (n, x) => `Kaya ${n} tur yukarıda — sıradaki açılım +${x}x`,
+      sisyphusBadgeZero: 'Kaya en dipte — üst üste açılım yaptıkça yükselir (raundlar arası kalır)',
       /* PLAYTEST 28 · GRUP B — Damga (eski Ayna) */
       damgaOff: '🔖 DAMGALA',
       damgaOn: '🔖 BASILI',
@@ -928,6 +931,8 @@
       abLeft: 'Left-click',
       abRight: 'Right-click',
       abToMain: 'To Main:',
+      sisyphusBadge: (n, x) => `Boulder ${n} turns up — next meld +${x}x`,
+      sisyphusBadgeZero: 'Boulder at the bottom — climbs with consecutive melds (carries over rounds)',
       damgaOff: '🔖 STAMP',
       damgaOn: '🔖 STAMPED',
       damgaSpent: '🔖 SPENT',
@@ -1393,7 +1398,7 @@
     terzi: { name: 'Chameleon', desc: 'Tiles of its colour count as colourless: they fit into ANY combo at ANY position.' },
     bungieGum: { name: 'Bungie Gum', desc: 'Melded tiles stick to the gum: the meld stays on the table this turn and returns to your rack next turn. 50% chance the gum snaps on each meld.' },
     fuzyon: { name: 'Fusion', desc: 'Merges two of your jokers: one melts, its effect and duration pass to the other.' },
-    sisyphus: { name: 'Sisyphus', desc: 'The boulder climbs as you meld turn after turn: +3.0x on turn 2, +7.0x on turn 3, +15.0x on turn 4. Skip a turn and it rolls back down.' },
+    sisyphus: { name: 'Sisyphus', desc: 'The boulder climbs as you meld turn after turn: +3.0x on turn 2, +7.0x on turn 3, +15.0x on turn 4. The boulder carries over between rounds; skip a turn and it rolls back down.' },
     midas: { name: 'Midas', desc: '+3 coins for every tile you meld. Paid at round end.' },
     kaptan: { name: 'Cursed Captain', desc: 'Prevents Game Over once. Price: can’t be sold, targets rise 20% while it’s alive.' },
     ucuncuTeker: { name: 'Third Wheel', desc: 'Pairs and Sets/Runs can share a turn. Both get +3.0x, plus +200 pts.' },
@@ -1611,6 +1616,8 @@
     /* Playtest 11 · Gruplar C/D/F */
     [/^⚖ Terazi: (.+?) feda edildi → bu turun açılımına \+([\d.]+)x$/,
       '⚖ Scales: $1 sacrificed → +$2x to this turn\'s meld'],
+    [/^🪨 Sisyphus: kaya (\d+) tur yukarıda — açılım yaparsan \+([\d.]+)x$/,
+      '🪨 Sisyphus: the boulder is $1 turns up — meld for +$2x'],
     [/^🪨 Sisyphus: kaya en dipte — üst üste açılım yaptıkça yükselecek$/,
       '🪨 Sisyphus: the boulder is at the bottom — it climbs with every consecutive meld'],
     [/^🦠 Pandora \(Salgın\): elde bekleyen (\d+) dertli taş (\d+) puan yaktı$/,
