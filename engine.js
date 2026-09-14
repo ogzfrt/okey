@@ -64,7 +64,9 @@ const TOTAL_STAGES = 8;
    │ Bu yüzden düzeltme İKİ TARAFLI: hedef eğimi indi VE güç yükseldi.
    └──────────────────────────────────────────────────────────────────────
 
-   · targets         — S1 340/500/680, sonrası ×1.30/stage (eski: S1
+   · targets         — ⚠ P50 (2026-09-14): S1 400/590/800, ×1.23/stage, S4
+                       1495 sabit — aşağıdaki gerekçe 2026-09-09 sürümüne aittir.
+                       S1 340/500/680, sonrası ×1.30/stage (eski: S1
                        400/600/800 ve ×1.5). İki değişiklik de kullanıcı
                        kararı. S1 satırı indi çünkü sabit kaldığında modun
                        EN SERT kapısı ilk stage'in boss'u oluyordu — zorluk
@@ -84,10 +86,11 @@ const TOTAL_STAGES = 8;
    · startPermMult   — run kalıcı çarpanı 0 yerine +0.5 başlar. Kullanıcının
        0.5             istediği "çarpan tablosuna taban bonusu" budur:
                        tabloya dokunmadan her açılıma sabit bir taban ekler.
-   · coinMult 1.5    — taban + aşım bonusuna uygulanır (stage ölçeği ayrıca
+   · coinMult 1      — taban + aşım bonusuna uygulanır (stage ölçeği ayrıca
                        işler, joker coinleri hariçtir — tıpkı stageCoinScale
-                       gibi). Gerekçe: run yarı uzunlukta, yani toplam kazanç
-                       yarıya iniyor; ×1.5 bunu KISMEN telafi eder.
+                       gibi). 2026-09-09'da ×1.5'ti (run yarı uzunlukta →
+                       toplam kazancı kısmen telafi); P50'de (2026-09-14)
+                       kullanıcı kararıyla ×1: ekonomi normal run'la aynı test edilecek.
    · priceMult 1.0   — %10 zam KALDIRILDI (kullanıcı: "şimdilik %10, sonra
                        test üzerinden değiştireceğim" demişti; test geldi).
                        Havuz Legendary/Mythic'e açılınca zam, kullanıcının
@@ -121,13 +124,20 @@ const RUN_MODES = {
   hizli: {
     key: 'hizli',
     stages: 4,
+    /* P50 (2026-09-14, kullanıcı: "hızlı run 400 ile başlasın, bütün tablo
+       orantılı") — zemin R1 400 (S1 şekli 0.50 / 0.735 korunur → boss 800),
+       tavan S4 boss 1495 sabit: adım (1495/800)^(1/3) ≈ 1.23 (eski 1.30).
+       Nefes: 495<800 · 610<985 · 750<1215. */
     targets: [
-      [340, 500, 680],       // S1
-      [440, 650, 885],       // S2  (×1.30)
-      [575, 845, 1150],      // S3  (×1.30)
-      [750, 1100, 1495],     // S4 — FINAL BOSS  (×1.30)
+      [400, 590, 800],       // S1  (eski 340/500/680)
+      [495, 725, 985],       // S2  (×1.23)
+      [610, 895, 1215],      // S3  (×1.23)
+      [750, 1100, 1495],     // S4 — FINAL BOSS  (değişmedi)
     ],
-    coinMult: 1.5,
+    /* P50 — kullanıcı: "coin kazancını arttırmayalım, normal run'daki gibi
+       test edeceğim". ×1.5 → ×1. Diğer güç paketi (el +2, +0.5x, 3 açılış
+       jokeri, gerilen nadirlik eğrisi) aynen duruyor. */
+    coinMult: 1,
     priceMult: 1.0,
     handBonus: 2,
     startPermMult: 0.5,
@@ -305,14 +315,26 @@ const MAX_HAND = 21;
    2050<2340 · 3000<3340.
    ⚠ KALİBRASYON SINIRI DEĞİŞMEDİ: tests/sim_p7.js botu ~1200-1800 puanda
    tavan yapar, yani S5+ bandını sim doğrulayamaz; S1-S4 doğrulanır. */
+/* v11 (2026-09-14, P50 — kullanıcı kararı "normal run 250 ile başlasın,
+   bütün tablo orantılı") — STAGE 1 = 250 / 375 / 500.
+   v10 ile AYNI kural: ZEMİN VERİLİR, TAVAN SABİT (S8 boss 4750), stage içi
+   ritim korunur (S1 R1 = boss×0.50, R2 = boss×0.75 → S8'de 0.632 / 0.811'e
+   doğrusal açılır). Kullanıcı yalnız R1'i verdi (250); S1'in eski şekli
+   (200/300/400) aynen ×1.25 büyütüldü → boss 500.
+       boss adımı = (4750 / 500)^(1/7) ≈ 1.379   (v10: 1.424)
+   Boss ekseni: 500 → 690 → 950 → 1310 → 1810 → 2500 → 3440 → 4750
+   Net etki: S1 %25 zor, fark stage ilerledikçe söner, S8 hiç değişmedi.
+   Adım tarihsel banda (1.36–1.40) geri döndü.
+   NEFES KURALI sağlanıyor: 360<500 · 510<690 · 730<950 · 1040<1310 ·
+   1490<1810 · 2110<2500 · 3000<3440. */
 const STAGE_TARGETS = [
-  [200, 300, 400],      // S1 — el 15 (kullanıcı tarafından sabitlendi)
-  [300, 430, 570],      // S2 (el 17)
-  [440, 620, 810],      // S3 (el 19)
-  [650, 900, 1160],     // S4 (el 21)
-  [950, 1300, 1650],    // S5
-  [1390, 1860, 2340],   // S6 — güçlü build'in de zorlanmaya başladığı yer
-  [2050, 2680, 3340],   // S7
+  [250, 375, 500],      // S1 — el 15 (kullanıcı: "250 ile başlasın")
+  [360, 520, 690],      // S2 (el 17)
+  [510, 730, 950],      // S3 (el 19)
+  [730, 1020, 1310],    // S4 (el 21)
+  [1040, 1420, 1810],   // S5
+  [1490, 1980, 2500],   // S6 — güçlü build'in de zorlanmaya başladığı yer
+  [2110, 2760, 3440],   // S7
   [3000, 3850, 4750],   // S8 — FINAL BOSS (tavan v7'den beri DEĞİŞMEDİ)
 ];
 /* Tablo dışına taşan stage'ler için (Trainer Sonsuz Mod) büyüme çarpanı.

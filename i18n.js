@@ -85,9 +85,9 @@
       /* MADDE D4 — mod seçim katmanı */
       modePickTitle: 'RUN MODU SEÇ',
       modePickBody: 'Aynı kurallar, farklı uzunluk ve tempo.',
-      modeDesc_base: '8 stage · 24 raund. Hedefler 200’den başlar, ekonomi standart.',
-      modeDesc_hizli: '4 stage · 12 raund. Başlangıçta 2 joker, hedefler 400’den başlar, '
-        + 'coin kazancı ×1.5, store fiyatları %10 daha yüksek.',
+      modeDesc_base: '8 stage · 24 raund. Hedefler 250’den başlar, ekonomi standart.',
+      modeDesc_hizli: '4 stage · 12 raund. Başlangıçta 3 joker, hedefler 400’den başlar, '
+        + 'ekonomi standart.',
       backBtn: 'Vazgeç',
       okBtn: 'Devam',
       /* MADDE D4 — açılış çarkı */
@@ -799,9 +799,9 @@
       modeLockedTip: 'Unlocks when you finish your first Base Run.',
       modePickTitle: 'CHOOSE RUN MODE',
       modePickBody: 'Same rules, different length and pace.',
-      modeDesc_base: '8 stages · 24 rounds. Targets start at 200, standard economy.',
-      modeDesc_hizli: '4 stages · 12 rounds. Start with 2 jokers, targets begin at 400, '
-        + 'coin income ×1.5, shop prices 10% higher.',
+      modeDesc_base: '8 stages · 24 rounds. Targets start at 250, standard economy.',
+      modeDesc_hizli: '4 stages · 12 rounds. Start with 3 jokers, targets begin at 400, '
+        + 'standard economy.',
       backBtn: 'Back',
       okBtn: 'Continue',
       openReelTitle: 'OPENING JOKERS',
