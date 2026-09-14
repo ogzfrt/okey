@@ -4374,9 +4374,8 @@ const Game = {
     // bilinçli sapma: doğal çekilişte raund boyunca hiç gelmeme sorunu).
     // Aktivasyon yine _onTurnStart'ta "eldeyken" kuralıyla yapılır.
     for (const j of s.deckJokers) {
-      /* P49 · Grup A — uyanmış The Misunderstood ele TAŞ olarak gelmez:
-         elde beklemeden her raund aktiftir, yaşlanması için "geldi" sayılır. */
-      if (j.awakened) { j.activeRound = true; j.drawnThisRound = true; continue; }
+      /* P49 · Grup A — uyanmış The Misunderstood da V1'in YERİNE ele taş
+         olarak gelir (kullanıcı kararı): adı ve çizimi V2'dir. */
       j.activeRound = false;
       s.hand.push({ id: nextTileId(s), jokerTile: j.key, jname: j.name });
     }
@@ -4961,7 +4960,7 @@ const Game = {
            Kol fedası bir sonraki turda başlar (aşağıya bak). */
         if (j.key === 'ahtapot') j.justActivated = true;
         events.push(`◈ ${j.name} eline geldi — aktif!`);
-        if (j.key === 'misunderstood' && !s.misuActive && !s.jokersDisabled) {
+        if (j.key === 'misunderstood' && !j.awakened && !s.misuActive && !s.jokersDisabled) {
           s.misuActive = true;
           s.target = Math.ceil(s.target * 1.15);
           events.push('The Misunderstood: hedef puan +%15 arttı');
@@ -5660,7 +5659,7 @@ const Game = {
         triggered.push({ id: 'kirby', name: kbj.name, text: `+${kbj.kirbyMult.toFixed(1)}x` });
       }
       // P49 · Grup A — The Misunderstood V2 "Uyanış": her açılıma güncel çarpanı
-      const misuV2 = !s.jokersDisabled && s.deckJokers.find(j => j.key === 'misunderstood' && j.awakened);
+      const misuV2 = !s.jokersDisabled && s.deckJokers.find(j => j.key === 'misunderstood' && j.awakened && j.activeRound);
       if (misuV2) {
         mult += misuV2.awakenMult;
         triggered.push({ id: misuV2.id, name: misuV2.name, text: `+${misuV2.awakenMult.toFixed(1)}x` });

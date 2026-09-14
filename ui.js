@@ -725,7 +725,10 @@
          açıklama ipucunda. Çizimi olmayan deste jokeri emoji + ad
          düzeninde kalır. */
       const djArt = JOKER_ART.has(tile.jokerTile);
-      d.className = 'tile deck-joker' + (djArt ? ' has-art jk-' + tile.jokerTile : '');
+      // P49 · Grup A — uyanmış The Misunderstood taşı V1 yerine Figma V2 çizimiyle gelir
+      const djV2 = tile.jokerTile === 'misunderstood'
+        && Game.state.deckJokers.some(x => x.key === 'misunderstood' && x.awakened);
+      d.className = 'tile deck-joker' + (djArt ? ' has-art jk-' + tile.jokerTile : '') + (djV2 ? ' misu-v2' : '');
       d.dataset.id = tile.id;
       d.innerHTML = djArt
         ? '<div class="dj-art"></div>'
@@ -750,6 +753,13 @@
         b.className = 'dj-risk' + (pct >= 50 ? ' hot' : pct >= 25 ? ' warm' : '');
         b.textContent = t('cheatRiskBadge', pct);
         b.title = t('cheatRiskTip', pct);
+        d.appendChild(b);
+      }
+      // P49 · Grup A — Uyanış'ın güncel çarpanı (Cheating risk rozetiyle aynı kalıp)
+      if (j && j.key === 'misunderstood' && j.awakened) {
+        const b = document.createElement('div');
+        b.className = 'dj-risk';
+        b.textContent = `+${(j.awakenMult || 0).toFixed(1)}x`;
         d.appendChild(b);
       }
       if (j) attachTip(d, j, {});
