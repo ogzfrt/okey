@@ -7187,6 +7187,22 @@ const Game = {
         + picks.map(t => `${COLOR_TR[t.color]} ${t.number}`).join(', '));
 
     // graveyard: önceki turun açıkları gider, bu turunkiler işlenebilir olur (GDD 3.7)
+    /* P50b (2026-09-15) — SAHTE "EL DENETİMİ" ALARMI. Masadan kalkan
+       kombinasyonların taşları oyundan çıkar (hiçbir kaba taşınmaz). Açılan
+       taşlar sorun değil: bir önceki tur sonunda zaten elde değildiler. Ama
+       BU TUR işlenen taş, tur başındaki el fotoğrafında VARDI ve aynı tur
+       kombinasyonuyla birlikte masadan kalkıyordu → _handAudit onu hiçbir
+       bölgede ve defterde bulamayıp "sahipsiz kayboldu" diyordu (sim botu:
+       raundların ~%40'ı). Böyle taşlar burada deftere "işleme" diye yazılır;
+       tanı panelinin tur izi de "→?" yerine "→işleme" gösterir. */
+    {
+      const snap = new Set((s.handSnapshot || []).map(e => e.id));
+      for (const c of (s.prevOpen || []))
+        for (const t of (c.tiles || []))
+          if (t && snap.has(t.id))
+            (s.handLedger = s.handLedger || []).push({ id: t.id, by: 'işleme',
+              face: t.jokerTile ? `◈${t.jname || t.jokerTile}` : `${COLOR_TR[t.color] || t.color} ${t.number}` });
+    }
     s.prevOpen = s.opened;
     s.opened = [];
 
