@@ -689,7 +689,7 @@ const GLITCH_BOSS_CURSED = 2;
 const GLITCH_MELD_CUT = 0.25;
 const GLITCH_MELD_MAX_CUT = 0.50;   // tek açılımda toplam kesinti tavanı
 const GLITCH_JOKER_TILES = 2;
-const GLITCH_JOKER_BONUS = 60;   // P35 · Grup C: gizli bonus 6 → 60
+const GLITCH_JOKER_BONUS = 100;  // P35 · Grup C: 6 → 60 · P49 · Grup B: 60 → 100
 
 /* Grup Q — Bungie Gum: açılım başına sakızın kopma ihtimali (GDD 9'daki %25).
    ⚠ PLAYTEST 29 · GRUP M — GEÇİCİ DENEME (kullanıcı kararı 2026-09-12):
@@ -951,7 +951,7 @@ const CELLAT_EXEC = 80;        // Grup B — idam başına anlık puan (20 → 8
 const CELLAT_MOTIVE = 50;      // Grup B — idam başına sonraki açılımlara birikim (3 → 50)
 const MISU_MULT = 2.5;         // Grup D — eldeyken açılım çarpanı (0.8 → 2.5)
 const MISU_PERM = 2.0;         // Grup D — kazanınca bıraktığı kalıcı çarpan (0.3 → 2.0)
-const ALIEN_COPY_FLAT = 80;    // Grup F — açılımda kullanılan kopya taş başına puan (yeni)
+const ALIEN_COPY_FLAT = 100;   // Grup F — açılımda kullanılan kopya taş başına puan · P49 · Grup B: 80 → 100
 const KARAKEDI_FLAT = 80;      // Grup P — 12'ye dönüşmüş taş açılımda (yeni)
 const RITIM_BONUS = [1.5, 3.0, 6.0];   // Grup K — 0.8/1.2/1.8 → 1.5/3.0/6.0
 const KELEBEK_MULT = 3.0;      // P47 — "puan +%50" kolu +3.0x ÇARPAN oldu (Grup N: +%25 → +%50 idi)
@@ -1910,7 +1910,7 @@ const JOKER_DEFS = {
      kodda 0.5 vardı → 2 taş/tur 1.0x üretiyordu (birikim raundlar arası
      taşındığı için 3. turda +3x'e ulaşıyordu). GDD formülüne dönüldü. */
   kirby: { key: 'kirby', name: 'Sir.by', rarity: 'epic', uses: 3, mech: 'deck', icon: '😗',
-    desc: 'Eldeyken her tur 2 taşının değeri 1 düşer (1’ler silinir). Yediği taş başına +0.8x biriktirir.' },
+    desc: 'Eldeyken her tur 2 taşının değeri 1 düşer (1’ler silinir). Yediği taş başına +1.0x biriktirir.' },
   cellat: { key: 'cellat', name: 'Cellat', rarity: 'epic', uses: 2, mech: 'deck', icon: '🪓',
     desc: 'Eldeyken her açılımdan sonra en düşük taşını idam eder: +80 puan. Sonraki açılımlara +50 puan birikir.' },
   /* PLAYTEST 9 · GRUP N — Dervish → GLITCH (key `dervish` DEĞİŞMEDİ,
@@ -1921,13 +1921,13 @@ const JOKER_DEFS = {
      AÇILIMDA ortaya çıkar. Taşlar artık görünür şekilde işaretlenir
      (t.glitch) ki oyuncu "bunlardan biri" bilgisini alsın. */
   dervish: { key: 'dervish', name: 'GLITCH', rarity: 'epic', uses: 3, mech: 'deck', icon: '🌀',
-    desc: 'Eldeyken her tur 2 taşını glitchler. Birinde gizli +60 puan vardır, açılımda ortaya çıkar.' },
+    desc: 'Eldeyken her tur 2 taşını glitchler. Birinde gizli +100 puan var, açılımda ortaya çıkar.' },
   misunderstood: { key: 'misunderstood', name: 'The Misunderstood', rarity: 'epic', uses: 3, mech: 'deck', icon: '🎭',
     desc: 'Eline gelince hedef %15 artar, açılımların +2.5x olur. Kaybedecekken kendini feda edip puanı tamamlar. Kazanırsan +2.0x kalıcı bırakır.' },
   zombie: { key: 'zombie', name: 'Zombie', rarity: 'epic', uses: 3, mech: 'deck', icon: '🧟',
     desc: 'Eldeyken enfeksiyon her tur yan taşa atlar. Enfekte taşı açarsan: +2.5x, +50 puan. Taş gider, zincir kırılır.' },
   uzayli: { key: 'uzayli', name: 'Alien', rarity: 'epic', uses: 3, mech: 'deck', icon: '👽',
-    desc: 'Eldeyken her tur 3 taşını kopyalar. Kopya açılımda +80 puan, raund sonunda kaybolur.' },
+    desc: 'Eldeyken her tur 3 taşını kopyalar. Kopya açılımda +100 puan, raund sonunda kaybolur.' },
   /* PLAYTEST 17 · GRUP E/21 — KOLLAR ARTIK ÇARPAN VERİR (kullanıcı onayı
      2026-08-28, +0.5x/kol). KÖK NEDEN: kol başına +20 SABİT PUAN, hedef
      tablosuyla birlikte büyümüyordu — 8 kol = 160 puan, Stage 1 boss
@@ -2152,7 +2152,7 @@ const DECK_MAX_COPIES = 2;
 const STORE_TILE_PICKS = 10;
 
 const KIRBY_BITE = 2;
-const KIRBY_MULT = 0.8;   // P35 · Grup A: yenen taş başına 0.3 → 0.8
+const KIRBY_MULT = 1.0;   // P35 · Grup A: 0.3 → 0.8 · P49 · Grup B: 0.8 → 1.0
 
 /* PLAYTEST 18 · GRUP A — TERZİ'NİN İĞNESİ (deste jokeri).
    `IGNE_SEW` : tur başında dikilen taş sayısı (GDD 10)

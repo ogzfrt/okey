@@ -5810,7 +5810,8 @@
      geldiğinde buraya anahtarı, style.css'e de bir `--jk-art` satırı
      eklenir — başka hiçbir yere dokunmak gerekmez. */
   const JOKER_ART = new Set(['aynaKral', 'ahtapot', 'cellat', 'fatality',
-    'freedom', 'dervish', 'karaKedi', 'ritim', 'terziIgne', 'zombie']);
+    'freedom', 'dervish', 'karaKedi', 'ritim', 'terziIgne', 'zombie',
+    'kelebek', 'uzayli', 'misunderstood']);   // P49 · Grup C: 13 çizim
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',

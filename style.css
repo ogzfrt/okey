@@ -7075,6 +7075,14 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-ritim      { --jk-art: url('assets/game/joker/ritim.svg'); }
 .jk-terziIgne  { --jk-art: url('assets/game/joker/terzi-ignesi.svg'); }
 .jk-zombie     { --jk-art: url('assets/game/joker/zombie.svg'); }
+/* P49 · Grup C (2026-09-14) — frame 15 karta çıktı. Yeniden çizilen:
+   FREEDOM_FIGHTERS (339:229, yazı Figma dışa aktarımında yola çevrildi),
+   KARAKEDİ (338:8), ZOMBİ (338:71). Yeni: KELEBEK ETKİSİ (338:21) → kelebek,
+   UZAYLI (338:33) → uzayli, THE_MISUNDERSTOOD_V1 (338:178) → misunderstood.
+   THE_MISUNDERSTOOD_V2 (338:198) diskte hazır, dönüşüm mekaniği onay bekliyor. */
+.jk-kelebek    { --jk-art: url('assets/game/joker/kelebek.svg'); }
+.jk-uzayli     { --jk-art: url('assets/game/joker/uzayli.svg'); }
+.jk-misunderstood { --jk-art: url('assets/game/joker/misunderstood-v1.svg'); }
 
 /* GRUP E (2026-09-07) — GÖRSELİ HAZIRLANMAMIŞ BOSS JOKERİ "BLANK" DURUR.
    20 boss jokerinin 10'unun tasarımı hazır; kalan 10'u kart ARKASIYLA
