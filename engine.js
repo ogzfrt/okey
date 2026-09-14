@@ -4075,6 +4075,17 @@ const Game = {
     s.prevOpen = [];
     s.islemeler = [];
     s.gossipTable = [];
+    /* P49f (2026-09-14) — "ARAF" KAPLARI DA DESTE KURULMADAN ÖNCE BOŞALIR.
+       KÖK NEDEN ("Siyah 12 çoğalma" alarmı): The Cheating boss'unun çaldığı
+       taşlar (`bossCheatBag`) ve Kuzey Yıldızı seçenekleri (`yildizPick`)
+       tileZones'ta sayılır ama aşağıda, nöbetçiden (raund başı) SONRA
+       sıfırlanıyordu. Boss raundundan sonraki raund başında önceki destenin
+       çalıntı taşı yeni destedeki iki kopyanın üstüne 3. kopya görünüyordu
+       (bot taraması: 800 run'da 12 alarm, hepsi cheating boss sonrası).
+       Oyunda gerçek çoğalma yoktu — kap birkaç satır aşağıda boşalıyordu —
+       ama F9 tanı paneline sahte "çoğalma" kanıtı yazılıyordu. */
+    s.bossCheatBag = [];
+    s.yildizPick = null;
     s.storeTilePick = null;   // P29 · Grup O — store seçimi raunda taşmaz
     s.deck = createDeck(s);
     // Sahte okeyler bu stage'in okeyinin normal kopyaları olur:
