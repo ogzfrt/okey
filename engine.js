@@ -329,26 +329,28 @@ const MAX_HAND = 21;
    1490<1810 · 2110<2500 · 3000<3440. */
 const STAGE_TARGETS = [
   [250, 375, 500],      // S1 — el 15 (kullanıcı: "250 ile başlasın")
-  /* P51 · GRUP B (kullanıcı onayı 2026-09-15) — tam run botuyla ölçülerek kuruldu
-     (tools/run_audit.js). Eskiden S2'den sonra oyun çöküyordu: boss geçişi %82-95,
-     1. turda kazanma %60-75. Ekonomi ve joker/kalıcı çarpan musluklarının kısılmasıyla
-     birlikte tablo yeniden kalibre edildi:
-       · S1 aynı (kullanıcı: "hakkıyla zorlu"),
-       · S2-S3 +%5 (S1'e göre fazla rahattı),
-       · S4-S8 boss adımı 1.42x — v1'deki 1.5x ölçümde S7-S8'i fazla serti (S8 boss %4).
-     R1/R2 oranları S3 şeklinden (0.54 / 0.77). Final boss 4750 → 5765.
+  /* P51 · GRUP B (kullanıcı onayı 2026-09-15) — BALATRO EĞRİSİ, tam run botuyla
+     ölçülerek kuruldu (tools/run_audit.js).
+     v2 (10.3) S4-S8'de sabit 1.42x adımla büyüyordu: erken stage'ler (el 15→21
+     büyürken) rahat kalıyor, 1. turda kazanma S3-S4'te ~%20'ye çıkıyor; geç
+     stage'ler ise duvara dönüyordu. Balatro'nun ante eğrisi TERSİDİR: erken sert
+     büyür (×2.5), geç yavaşlar (×1.4). Uyarlama:
+       · raund şekli Balatro'nun Small : Big : Boss = 1 : 1.5 : 2 oranı
+         → R1 %50 · R2 %75 · Boss %100 (S1 zaten tam bu şekildeydi),
+       · boss adımı ÖNE YÜKLÜ: ×1.50 · ×1.45 · ×1.45 · ×1.35 · ×1.30 · ×1.28 · ×1.25.
+     S1 aynı (kullanıcı: "hakkıyla zorlu"). Final boss 5765 → 4440.
      Nefes kuralı korunur: her R1 önceki boss'un altında. */
-  [380, 545, 720],      // S2 (el 17)
-  [540, 770, 1000],     // S3 (el 19)
-  [765, 1090, 1420],    // S4 (el 21)
-  [1080, 1545, 2015],   // S5
-  [1535, 2195, 2860],   // S6
-  [2180, 3120, 4060],   // S7
-  [3095, 4430, 5765],   // S8 — FINAL BOSS
+  [375, 565, 750],      // S2 (el 17)   ×1.50
+  [545, 820, 1090],     // S3 (el 19)   ×1.45
+  [790, 1185, 1580],    // S4 (el 21)   ×1.45
+  [1070, 1600, 2135],   // S5           ×1.35
+  [1390, 2080, 2775],   // S6           ×1.30
+  [1775, 2665, 3550],   // S7           ×1.28
+  [2220, 3330, 4440],   // S8 — FINAL BOSS ×1.25
 ];
 /* Tablo dışına taşan stage'ler için (Trainer Sonsuz Mod) büyüme çarpanı.
-   v10: tablo içi ~1.424x adımla tutarlı olsun diye 1.44 → 1.42. */
-const TARGET_GROWTH = 1.42;   // P51 · Grup B: tablo içi boss adımıyla aynı
+   P51 · Grup B: eğrinin son adımıyla aynı (sonsuz modda yavaşlayan uç). */
+const TARGET_GROWTH = 1.25;
 
 /* Çoklu kombinasyon ham puan bonusu (MULTI_RAW_BONUS) playtest 3'te
    KALDIRILDI (kullanıcı kararı): GDD 4.2 çarpan tablosu çok kombinasyonu
