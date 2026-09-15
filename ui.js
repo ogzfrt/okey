@@ -49,7 +49,7 @@
      Bu yüzden satış fiyatı yalnız rarity'den okunamaz; motorun kendi
      hesabı kullanılır ki UI ile motor iki farklı sayı söylemesin. */
   const sellPrice = (rarity, key) => (Game.state?.sellFull
-    ? Game.jokerPriceOf(key, rarity) : Game.jokerSellOf(key, rarity));
+    ? Math.round(Game.jokerPriceOf(key, rarity) * SIGORTA_RATE) : Game.jokerSellOf(key, rarity));   // P51: %75
 
   /* ---------- Oyun kimliği (Grup D) ----------
      İsim henüz kesinleşmedi (Kısmet / Taşlık / Okeylike / Rakkam ...).
@@ -3225,7 +3225,7 @@
       el.openAreaHint.appendChild(b);
     }
     /* P35 · GRUP H — "HİLE YAP". The Cheating eldeyken ve sahnede açılım
-       varken görünür; basınca sıradaki onaya +3.0x kurulur (hesap kutusu
+       varken görünür; basınca sıradaki onaya +CHEAT_HILE_MULT (P51: 2.0x) kurulur (hesap kutusu
        bunu hemen gösterir), ikinci basış geri alır. Risk jokerin rozetinde. */
     if (meldPhase && Game.canCheat && Game.canCheat() && (s.staged.length || s.islemeler.length)) {
       const b = document.createElement('button');
