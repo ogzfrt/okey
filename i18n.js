@@ -255,7 +255,7 @@
       abToMain: 'Ana Slota:',   // P45: backup kartı sol tıkla ana slota
       /* P48 — Sisyphus kayası kart rozeti */
       sisyphusBadge: (n, x) => `Kaya ${n} tur yukarıda — sıradaki açılım +${x}x`,
-      sisyphusBadgeZero: 'Kaya en dipte — üst üste açılım yaptıkça yükselir (raundlar arası kalır)',
+      sisyphusBadgeZero: 'Kaya en dipte — üst üste açılım yaptıkça yükselir (raundlar arası kalır, her raund bir kademe düşer)',
       /* PLAYTEST 28 · GRUP B — Damga (eski Ayna) */
       damgaOff: '🔖 DAMGALA',
       damgaOn: '🔖 BASILI',
@@ -932,7 +932,7 @@
       abRight: 'Right-click',
       abToMain: 'To Main:',
       sisyphusBadge: (n, x) => `Boulder ${n} turns up — next meld +${x}x`,
-      sisyphusBadgeZero: 'Boulder at the bottom — climbs with consecutive melds (carries over rounds)',
+      sisyphusBadgeZero: 'Boulder at the bottom — climbs with consecutive melds (carries over rounds, drops one step each round)',
       damgaOff: '🔖 STAMP',
       damgaOn: '🔖 STAMPED',
       damgaSpent: '🔖 SPENT',
@@ -1398,7 +1398,7 @@
     terzi: { name: 'Chameleon', desc: 'Tiles of its colour count as colourless: they fit into ANY combo at ANY position.' },
     bungieGum: { name: 'Bungie Gum', desc: 'Melded tiles stick to the gum: the meld stays on the table this turn and returns to your rack next turn. 50% chance the gum snaps on each meld.' },
     fuzyon: { name: 'Fusion', desc: 'Merges two of your jokers: one melts, its effect and duration pass to the other.' },
-    sisyphus: { name: 'Sisyphus', desc: 'The boulder climbs as you meld turn after turn: +2.0x on turn 2, +4.0x on turn 3, +8.0x on turn 4. The boulder carries over between rounds; skip a turn and it rolls back down.' },
+    sisyphus: { name: 'Sisyphus', desc: 'The boulder climbs as you meld turn after turn: +2.0x on turn 2, +4.0x on turn 3, +8.0x on turn 4. The boulder carries over between rounds but drops one step each new round; skip a turn and it rolls back down.' },
     midas: { name: 'Midas', desc: '+2 coins for every tile you meld. Paid at round end.' },
     kaptan: { name: 'Cursed Captain', desc: 'Prevents Game Over once. Price: can’t be sold, targets rise 20% while it’s alive.' },
     ucuncuTeker: { name: 'Third Wheel', desc: 'Pairs and Sets/Runs can share a turn. Both get +2.0x, plus +200 pts.' },

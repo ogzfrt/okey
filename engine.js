@@ -1776,7 +1776,7 @@ const JOKER_DEFS = {
        raund 4 turlu olduğu için +15.0x'e ancak son turda ulaşılabiliyordu.
        Artık jokere özel `sisyphusStreak` okunur; yalnız açılımsız geçen turda
        sıfırlanır. `consecMeldTurns` raund içi kalır (Seri Açıcı onu okur). */
-    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +2.0x, 3. tur +4.0x, 4. tur +8.0x. Kaya raundlar arasında da kalır; bir tur açmazsan en dibe düşer.',
+    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +2.0x, 3. tur +4.0x, 4. tur +8.0x. Kaya raundlar arasında kalır ama her yeni raundda bir kademe düşer; bir tur açmazsan en dibe düşer.',
     effect: (c) => {
       const i = Math.min(c.sisyphusStreak || 0, SISYPHUS_STEPS.length) - 1;
       return i >= 0 ? { mult: SISYPHUS_STEPS[i], flat: 0 } : null;
@@ -4384,6 +4384,11 @@ const Game = {
 
     // Sisyphus (Grup D): artık raund başı puanı YOK — kaya tur içinde yükselir
     // P48: kaya raundlar arası taşınır — raund başı notu kayanın o anki yerini söyler
+    /* P51 · Grup B (kullanıcı kararı 2026-09-15) — KAYA HER YENİ RAUNDDA BİR KADEME
+       DÜŞER. Bot ölçümünde Sisyphus 1. turda kazanmayı ×2.5-2.7 kaldırıyordu: kaya tam
+       taşındığı için her raund +8.0x ile başlıyordu. Artık tepede biten kaya yeni
+       raunda bir basamak aşağıda (+4.0x) başlar; tepeye dönmek için yeniden itmek gerekir. */
+    if ((s.sisyphusStreak || 0) > 0) s.sisyphusStreak -= 1;
     if (this.hasActive('sisyphus')) {
       const n = s.sisyphusStreak || 0;
       if (n > 0) {
