@@ -5816,7 +5816,8 @@
      eklenir — başka hiçbir yere dokunmak gerekmez. */
   const JOKER_ART = new Set(['aynaKral', 'ahtapot', 'cellat', 'fatality',
     'freedom', 'dervish', 'karaKedi', 'ritim', 'terziIgne', 'zombie',
-    'kelebek', 'uzayli', 'misunderstood']);   // P49 · Grup C: 13 çizim
+    'kelebek', 'uzayli', 'misunderstood',     // P49 · Grup C: 13 çizim
+    'kahin', 'kirby', 'corporates']);         // P51 · Grup C: 16 çizim (SIR_BY → kirby)
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',

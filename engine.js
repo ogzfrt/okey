@@ -5346,8 +5346,8 @@ const Game = {
     const ffJ = s.deckJokers.find(j => j.key === 'freedom' && j.marked);
     if (ffJ) {
       for (const t of s.hand) {
-        if (t.jokerTile || t.ffPaid) continue;
-        if (ffJ.marked.some(m => m.color === t.color && m.number === t.number)) {
+        if (t.ffPaid) continue;
+        if (this.freedomMark(t)) {   // P51: okey/sahte okey/joker taşı hariç — UI ile tek kaynak
           t.ffPaid = true;
           s.score += t.number * 10;
           events.push(`⚔ Freedom Fighters: işaretli ${COLOR_TR[t.color]} ${t.number} → +${t.number * 10} puan`);
@@ -5527,8 +5527,12 @@ const Game = {
   /* Freedom Fighters (GDD 10) — bu taş jokerin işaretlediklerinden biri mi?
      UI taşın üstünde işaret göstermek için kullanır (Playtest 6: işaretleme
      çalışıyordu ama ıstakada hiçbir şekilde görünmüyordu). */
+  /* P51 · GRUP A — işaret renk+sayı HEDEFİDİR; okey taşı (ıstakadaki ve OKEY
+     kutusundaki gösterge, ikisi de isOkeyReal) ve sahte okey kapsam DIŞIDIR.
+     Eskiden okey yüzü işaretlenince okey de "işaretli" çiziliyor ve puan
+     alıyordu. Tur başı ödemesi de BU fonksiyondan geçer — görsel = ödeme. */
   freedomMark(tile) {
-    if (!tile || tile.jokerTile) return null;
+    if (!tile || tile.jokerTile || tile.fakeOkey || this.isOkeyTile(tile)) return null;
     const j = this.state.deckJokers.find(x => x.key === 'freedom' && x.marked);
     if (!j) return null;
     const hit = j.marked.some(m => m.color === tile.color && m.number === tile.number);

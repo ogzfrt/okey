@@ -4022,9 +4022,15 @@ body.menu-open #app {
   pointer-events: none;
   z-index: 1;
 }
-/* sayı yıkamanın ÜSTÜNDE kalsın */
+/* sayı yıkamanın ÜSTÜNDE kalsın.
+   P51 · GRUP A (bug) — burada `position: relative` vardı. Figma taş şablonunda
+   `.num` ve `.dot` MUTLAK konumludur (aşağıdaki "SAYI FIGMA HİZASINA" bloğu);
+   bu kuralın seçici önceliği (0,3,0) şablonunkini (0,2,0) eziyordu → işaretli
+   taşın sayısı akışa düşüp (0,17)'den (7,54)'e kayıyor, mühürün altında kalıp
+   "boş/soluk taş" gibi görünüyordu. İşaret yalnız ÜST KATMANDIR: konuma
+   dokunulmaz, yalnız istifleme sırası verilir (mutlak öğede z-index çalışır). */
 .tile.ff-mark .num, .tile.bm-bff .num,
-.tile.ff-mark .dot, .tile.bm-bff .dot { position: relative; z-index: 2; }
+.tile.ff-mark .dot, .tile.bm-bff .dot { z-index: 2; }
 .tile.ff-mark .num, .tile.bm-bff .num { text-shadow: 0 1px 0 rgba(255,255,255,.9); }
 
 /* rozet: küçük hap değil, taşın omzuna oturan gerçek bir kokard */
@@ -7075,6 +7081,13 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-ritim      { --jk-art: url('assets/game/joker/ritim.svg'); }
 .jk-terziIgne  { --jk-art: url('assets/game/joker/terzi-ignesi.svg'); }
 .jk-zombie     { --jk-art: url('assets/game/joker/zombie.svg'); }
+/* P51 · Grup C (2026-09-15) — frame 18 karta çıktı. Yeni: KAHİN (343:2) → kahin,
+   SIR_BY (343:31) → kirby (joker adı Sir.by, anahtar kayıt uyumu için `kirby`),
+   THE_CORPORATES (345:57) → corporates. Güncellenen: THE_MISUNDERSTOOD_V1
+   (338:178) ve V2 (338:198) — gözler 1px kısaldı; dosyalar yerinde değişti. */
+.jk-kahin      { --jk-art: url('assets/game/joker/kahin.svg'); }
+.jk-kirby      { --jk-art: url('assets/game/joker/sir-by.svg'); }
+.jk-corporates { --jk-art: url('assets/game/joker/corporates.svg'); }
 /* P49 · Grup C (2026-09-14) — frame 15 karta çıktı. Yeniden çizilen:
    FREEDOM_FIGHTERS (339:229, yazı Figma dışa aktarımında yola çevrildi),
    KARAKEDİ (338:8), ZOMBİ (338:71). Yeni: KELEBEK ETKİSİ (338:21) → kelebek,
