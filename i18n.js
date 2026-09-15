@@ -1414,11 +1414,11 @@
     hidra: { name: 'Hydra', desc: 'Discard okeys for free: next turn you get 2 temporary okeys (at most 4 per round).' },
     /* Playtest 10 · Grup B — üç varyasyon (trainer-only, test aşamasında) */
     frankenstein: { name: 'Dr. Frankenstein', desc: 'At every turn start the highest tile you discarded revives with +3 value: +80 pts when melded. Your two lowest tiles merge into one (max 13): +1.5x when melded.' },
-    seytan: { name: "Devil's Offer", desc: 'On the first turn of the round it seizes all your coins. +30 pts and +0.15x mult per coin.' },
-    pinkyWarrior: { name: 'Pinky Warrior', desc: 'This round every tile valued 1, 2 or 3 becomes an okey. Okey rules apply: discard one and you pay the okey penalty.' },
+    seytan: { name: "Devil's Offer", desc: 'On the first turn of the round it seizes all your coins. +20 pts and +0.10x mult per coin.' },
+    pinkyWarrior: { name: 'Pinky Warrior', desc: 'This round every tile valued 1 or 2 becomes an okey. Okey rules apply: discard one and you pay the okey penalty.' },
     kiyamet: { name: 'Doomsday Trumpet', desc: 'All jokers go silent this round and the target drops 60%.' },
     tanrininEli: { name: 'Hand of God', desc: 'No automatic draw at turn end: you pick as many tiles as you would draw straight from your deck.' },
-    ejderha: { name: 'Sky Dragon', desc: 'Every tile in a meld counts 3 times its value. Each meld permanently deletes a random tile from your rack.' },
+    ejderha: { name: 'Sky Dragon', desc: 'Every tile in a meld counts 2 times its value. Each meld permanently deletes a random tile from your rack.' },
     karaDelik: { name: 'Void', desc: 'Swallows half your hand at round start: +40 pts and +0.15x permanent per tile eaten. Then you draw half that many new tiles.' },
     crimsonTac: { name: 'Crimson King', desc: 'Each turn the crown lands on a random joker that boosts melds: that joker’s effect applies twice this turn.' },
     nostradamus: { name: 'Nostradamus', desc: 'Finish this round within 2 turns for a permanent +1.5x. Miss it and you get nothing.' },
@@ -1559,7 +1559,7 @@
     [/^🕳 Boşluk elinin yarısını \((\d+) taş\) yuttu: \+(\d+) puan, \+([\d.]+)x KALICI çarpan$/, '🕳 Void swallowed half your hand ($1 tiles): +$2 pts, +$3x PERMANENT mult'],
     [/^🕳 Boşluk elinin yarısını \((\d+) taş\) yuttu: \+(\d+) puan, \+([\d.]+)x KALICI çarpan · yerine (\d+) yeni taş çektin$/, '🕳 Void swallowed half your hand ($1 tiles): +$2 pts, +$3x PERMANENT mult · you drew $4 new tiles in return'],
     /* Playtest 31 · Grup C/E/H/I/J — yeni Mythic kartların notları */
-    [/^🩷 Pinky Warrior: küçükler ordusu — 1, 2 ve 3'ler bu raund OKEY \((\d+) taş\)$/, '🩷 Pinky Warrior: the little army — 1s, 2s and 3s are OKEYS this round ($1 tiles)'],
+    [/^🩷 Pinky Warrior: küçükler ordusu — 1 ve 2'ler bu raund OKEY \((\d+) taş\)$/, '🩷 Pinky Warrior: the little army — 1s and 2s are OKEYS this round ($1 tiles)'],
     [/^🍎 Adem ile Havva: eline Yasak Elma geldi — her taşın yerine geçer, açılımı ×3\. Açtığın an kovulursun\.$/, '🍎 Adam & Eve: the Forbidden Apple is in your hand — it stands in for any tile, its meld ×3. Meld it and you are cast out.'],
     [/^🍎 Adem ile Havva: ıstaka dolu — elma bu raund düşmedi$/, '🍎 Adam & Eve: rack full — no apple this round'],
     [/^🍎 Elmayı ısırdın — cennetten kovuldun: kalan turlarda (\d+) taş eksik çekiş, işlek \+%(\d+)$/, '🍎 You bit the apple — cast out of paradise: $1 fewer draws in the remaining turns, işlek +$2%'],

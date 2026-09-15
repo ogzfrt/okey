@@ -1908,7 +1908,7 @@ const JOKER_DEFS = {
     /* P31 · Grup A: başa sarmaya ek +3.0x KALICI; bedeli run boyu hedef +%10 (permTargetUp). */
     desc: 'Boss raundunda ölürsen raund baştan başlar ve +1.5x kalıcı çarpan kazanırsın. Bedeli: run boyunca hedefler %10 artar. Run boyunca 1 kez.' },
   seytan: { key: 'seytan', name: 'Şeytan\'ın Teklifi', rarity: 'mythic', uses: 1,
-    desc: 'Raundun ilk turunda tüm coinlerine el koyar. Coin başına +30 puan ve +0.15x çarpan verir.' },   // SEYTAN_SCORE / SEYTAN_MULT
+    desc: 'Raundun ilk turunda tüm coinlerine el koyar. Coin başına +20 puan ve +0.10x çarpan verir.' },   // SEYTAN_SCORE / SEYTAN_MULT
   /* PLAYTEST 31 · GRUP C (kullanıcı onayı 2026-09-13) — PINKY FINGER OF THE
      WARRIOR → PINKY WARRIOR "KÜÇÜKLER ORDUSU". Eski kurtarma kartı
      ("eksik puanı tamamlar, run boyunca 1 kez") tamamen kaldırıldı; yeni
@@ -1916,7 +1916,7 @@ const JOKER_DEFS = {
      taşlar (serçe parmaklar) raundun en güçlü taşlarına döner. Okey
      kuralları aynen geçerli: atılırsa okey atma cezası. */
   pinkyWarrior: { key: 'pinkyWarrior', name: 'Pinky Warrior', rarity: 'mythic', uses: 1,
-    desc: 'O raund 1, 2 ve 3 değerli bütün taşlar okey olur. Okey kuralları geçerlidir: atarsan okey cezası yersin.' },
+    desc: 'O raund 1 ve 2 değerli bütün taşlar okey olur. Okey kuralları geçerlidir: atarsan okey cezası yersin.' },
   kiyamet: { key: 'kiyamet', name: 'Kıyamet Trompeti', rarity: 'mythic', uses: 1,
     desc: 'O raund tüm jokerler susar, hedef %60 düşer.' },
   /* PLAYTEST 31 · GRUP E (kullanıcı kararı 2026-09-13) — AYNA KIRIĞI →
@@ -1929,7 +1929,7 @@ const JOKER_DEFS = {
   ejderha: { key: 'ejderha', name: 'Gökyüzü Ejderhası', rarity: 'mythic', uses: 1,
     /* P31 · Grup F: yalnız en yüksek taş ×3 → açılımdaki HER taş ×5 (ham puanda,
        çarpandan önce). Yanan taş artık desteden de KALICI silinir. */
-    desc: 'Açılımdaki her taşın değeri 3 katı sayılır. Her açılımda ıstakandan rastgele 1 taş kalıcı olarak silinir.' },
+    desc: 'Açılımdaki her taşın değeri 2 katı sayılır. Her açılımda ıstakandan rastgele 1 taş kalıcı olarak silinir.' },
   /* v3: 0.1x/taş tek kartta ~+2.0x kalıcıydı → 0.05; v4 buff: 0.08.
      PLAYTEST 20 · GRUP L (kullanıcı raporu: "oyunu kırıyor") — KARA DELİK
      ARTIK ELİN YARISINI YUTAR. Eski hâli elin TAMAMINI (15-21 taş) alıp
@@ -2250,18 +2250,18 @@ const ALIEN_HIDDEN_PER_TURN = 3;
 /* Şeytan'ın Teklifi (GDD 12) — feda edilen coin başına ödül */
 /* P31 · Grup B (kullanıcı kararı 2026-09-13): 50 → 100 puan, 0.2 → 4.0x (coin başına) */
 /* P51 · Grup B — coin başına +4.0x: 50 coin tek raundda +200x ediyordu (1. turda kazanmayı ×5 kaldıran kart). */
-const SEYTAN_SCORE = 30;
-const SEYTAN_MULT = 0.15;
+const SEYTAN_SCORE = 20;     // P51 · Grup B: 30 → 20 (2. tur: bot 1. tur kaldıracı ×2.8)
+const SEYTAN_MULT = 0.10;     // P51 · Grup B: 0.15 → 0.10
 /* P31 · MYTHIC DENGE TURU (kullanıcı kararı 2026-09-13) */
 const WORLD_PERM_MULT = 1.5;     // Grup A — The World tetiklenince kalıcı çarpan (P51: 3.0 → 1.5)
 const WORLD_TARGET_UP = 0.10;    // Grup A — bedeli: run boyunca hedefler +%10
 const KIYAMET_KEEP = 0.40;       // Grup D — hedefin kalan payı (%80 → %90 düşüş · P51: → %60 düşüş)
-const EJDERHA_TILE_MULT = 3;     // Grup F — açılımdaki her taşın değeri ×5 · P51: ×5 → ×3
+const EJDERHA_TILE_MULT = 2;     // Grup F — açılımdaki her taşın değeri ×5 · P51: ×5 → ×3 → ×2 (bot kaldıracı ×4.8)
 /* P51 · Grup B — Boşluk run'ın EN BÜYÜK kalıcı çarpan musluğuydu: raund başına ~+10x
    (1500 run ölçümünde 1. turda kazanmayı ×5 kaldıran kartlardan). */
 const VOID_SCORE = 40;           // Grup G — Boşluk: yutulan taş başına puan (15 → 150 · P51: 150 → 40)
 const VOID_MULT = 0.15;          // Grup G — Boşluk: yutulan taş başına kalıcı çarpan (0.08 → 1.0 · P51: 1.0 → 0.15)
-const PINKY_MAX = 3;             // Grup C — Pinky Warrior: bu değere kadar (1-3) taşlar okey
+const PINKY_MAX = 2;             // Grup C — Pinky Warrior: bu değere kadar taşlar okey · P51: 1-3 → 1-2 (bot kaldıracı ×3.4)
 const APPLE_MULT = 2;            // Grup I — Yasak Elma: elmalı açılımın puan katı (P51: ×3 → ×2)
 const APPLE_DRAW_CUT = 2;        // Grup I — kovulunca tur başı eksik çekiş
 const APPLE_ISLEK = 0.20;        // Grup I — kovulunca raundun kalanına işlek riski
@@ -4365,7 +4365,7 @@ const Game = {
         if (t.jokerTile || t.fakeOkey || t.special || t.number > PINKY_MAX) continue;
         t.isOkeyReal = true; t.pinkyOkey = true; n++;
       }
-      s.roundStartNotes.push(`🩷 Pinky Warrior: küçükler ordusu — 1, 2 ve 3'ler bu raund OKEY (${n} taş)`);
+      s.roundStartNotes.push(`🩷 Pinky Warrior: küçükler ordusu — 1 ve 2'ler bu raund OKEY (${n} taş)`);
     }
     /* ADEM İLE HAVVA · YASAK ELMA (P31 · Grup I) — ele bir Elma taşı. Kimliği
        okeyin kimliğidir ama `copied` olduğu için asıl destenin 2 kopya
