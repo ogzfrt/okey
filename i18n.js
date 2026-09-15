@@ -1422,7 +1422,7 @@
     karaDelik: { name: 'Void', desc: 'Swallows half your hand at round start: +40 pts and +0.15x permanent per tile eaten. Then you draw half that many new tiles.' },
     crimsonTac: { name: 'Crimson King', desc: 'Each turn the crown lands on a random joker that boosts melds: that joker’s effect applies twice this turn.' },
     nostradamus: { name: 'Nostradamus', desc: 'Finish this round within 2 turns for a permanent +1.5x. Miss it and you get nothing.' },
-    yasakElma: { name: 'Adam & Eve', desc: 'An Apple reaches your hand at round start: it stands in for any tile and its meld scores ×2. Meld it and you are cast out: 2 fewer draws each turn, işlek +20%.' },
+    yasakElma: { name: 'Adam & Eve', desc: 'An Apple reaches your hand at round start: it stands in for any tile and its meld scores ×1.5. Meld it and you are cast out: 2 fewer draws each turn, işlek +20%.' },
     kagit: { name: 'Paper', desc: 'At every round start your lowest tile PERMANENTLY becomes an okey (like the Okey Seal: each stage they become that stage’s okey).' },
     kirby: { name: 'Sir.by', desc: 'In hand, 2 of your tiles lose 1 value every turn (1s are deleted). Banks +0.6x per tile eaten.' },
     cellat: { name: 'Executioner', desc: 'In hand, executes your lowest tile after every meld: +80 pts. Later melds bank +50 pts each.' },

@@ -190,9 +190,15 @@ function spendCoins(s, n) {
 
 /* Kademeli başlangıç el büyüklüğü (kullanıcı kararı, 2026-07):
    C1: 15, C2: 17, C3: 19, C4+: 21 (Final Boss dahil sabit). */
+/* P51 · Grup B (kullanıcı kararı 2026-09-16) — EL BÜYÜMESİ YAVAŞLADI.
+   Eski: 15 → 17 → 19 → 21 (S4’te tavan). Bot ölçümünde S3-S4’te kazanılan raundların
+   %16-19’u 1. turda bitiyordu; kaynağı tek bir kart değil, erken stage’lerde elin çok hızlı
+   büyümesiydi (S1→S4 +6 taş). Balatro’da el büyüklüğü sabittir; en yakın uyarlama stage başına
+   +1: 15 · 16 · 17 · 18 · 19 · 20 · 21 · 21. MAX_HAND tavanı (21) değişmedi. */
 function handSizeFor(stage) {
-  return stage >= 4 ? 21 : 15 + 2 * (stage - 1);
+  return Math.min(MAX_HAND_BASE, 15 + Math.max(0, (stage || 1) - 1));
 }
+const MAX_HAND_BASE = 21;   // P51: handSizeFor tavanı (MAX_HAND ile aynı; MAX_HAND fonksiyondan sonra tanımlı)
 
 /* Grup A (2026-07-09, kullanıcı kararı): ıstakada AYNI ANDA en fazla 21 taş
    bulunabilir. Hiçbir mekanizma (ekstra çekiş, Uzaylı kopyaları, Tekrar Çek,
@@ -337,20 +343,28 @@ const STAGE_TARGETS = [
      büyür (×2.5), geç yavaşlar (×1.4). Uyarlama:
        · raund şekli Balatro'nun Small : Big : Boss = 1 : 1.5 : 2 oranı
          → R1 %50 · R2 %75 · Boss %100 (S1 zaten tam bu şekildeydi),
-       · boss adımı ÖNE YÜKLÜ: ×1.50 · ×1.45 · ×1.45 · ×1.35 · ×1.30 · ×1.28 · ×1.25.
-     S1 aynı (kullanıcı: "hakkıyla zorlu"). Final boss 5765 → 4440.
+       · boss adımı ÖNE YÜKLÜ: ×1.50 · ×1.45 · ×1.33 · ×1.24 · ×1.18 · ×1.13 · ×1.12.
+     S1 aynı (kullanıcı: "hakkıyla zorlu"). Final boss 5765 → 4440 → 3350 → 2680.
+     v7 (KAZANILABİLİRLİK, çekirdek denge kuralı 2026-09-16): tests/sim_p7.js güçlü kadrosu
+     S4'ten sonra hiçbir boss'u geçemiyordu (S5-S8 %0-3, "tüm bossları geçme" %0) — P51 güç
+     kısmalarından sonra oyuncu gücü S4-S8 arasında düzleşiyor, 1.25-1.35x adım oyunu
+     kazanılamaz yapıyordu. Balatro'da iyi oyuncu her blind'ı yüksek oranla geçer; risk run
+     boyunca kabaca sabittir. S5-S8 boss hedefleri -%6 / -%12 / -%18 / -%25.
+     v8: v7 tam run botunda boss S4 %38 → S8 %21, temiz run bitirme %0 (P51 öncesi "fazla kolay"
+     oyunda bot %1 bitiriyordu). S4-S8 boss hedefleri bir kez daha -%8 ile -%20 arası indi;
+     hedef: bot S4-S8 boss geçişi ~%45-50, 1. turda kazanma %12 altında kalsın.
      Nefes kuralı korunur: her R1 önceki boss'un altında. */
   [375, 565, 750],      // S2 (el 17)   ×1.50
   [545, 820, 1090],     // S3 (el 19)   ×1.45
-  [790, 1185, 1580],    // S4 (el 21)   ×1.45
-  [1070, 1600, 2135],   // S5           ×1.35
-  [1390, 2080, 2775],   // S6           ×1.30
-  [1775, 2665, 3550],   // S7           ×1.28
-  [2220, 3330, 4440],   // S8 — FINAL BOSS ×1.25
+  [725, 1090, 1450],    // S4 (el 18)   ×1.33
+  [900, 1350, 1800],    // S5 (el 19)   ×1.24
+  [1065, 1600, 2130],   // S6 (el 20)   ×1.18
+  [1200, 1800, 2400],   // S7 (el 21)   ×1.13
+  [1340, 2010, 2680],   // S8 — FINAL BOSS ×1.12
 ];
 /* Tablo dışına taşan stage'ler için (Trainer Sonsuz Mod) büyüme çarpanı.
    P51 · Grup B: eğrinin son adımıyla aynı (sonsuz modda yavaşlayan uç). */
-const TARGET_GROWTH = 1.25;
+const TARGET_GROWTH = 1.12;   // v8: eğrinin son adımı
 
 /* Çoklu kombinasyon ham puan bonusu (MULTI_RAW_BONUS) playtest 3'te
    KALDIRILDI (kullanıcı kararı): GDD 4.2 çarpan tablosu çok kombinasyonu
@@ -1958,7 +1972,7 @@ const JOKER_DEFS = {
      kullanıldığı açılım ×3 puan verir. Elmayı AÇTIĞIN an cennetten
      kovulursun: raundun kalanında tur başı 2 taş eksik çekiş, işlek +%20. */
   yasakElma: { key: 'yasakElma', name: 'Adem ile Havva', rarity: 'mythic', uses: 1,
-    desc: 'Raund başında eline bir Elma gelir: okey gibi her taşın yerine geçer, kullanıldığı açılım ×2 puan verir. Elmayı açınca kovulursun: kalan turlarda 2 taş eksik çekersin, işlek +%20.' },
+    desc: 'Raund başında eline bir Elma gelir: okey gibi her taşın yerine geçer, kullanıldığı açılım ×1.5 puan verir. Elmayı açınca kovulursun: kalan turlarda 2 taş eksik çekersin, işlek +%20.' },
   /* PLAYTEST 31 · GRUP J (kullanıcı onayı 2026-09-13) — KAĞIT JOKERİ → KAĞIT
      (EN "Paper"). Eski efekt (en düşük 3 taş 13 olur) kaldırıldı, yeni
      anahtar. Her raund başında elindeki en düşük 2 asıl deste taşı KALICI
@@ -2262,7 +2276,7 @@ const EJDERHA_TILE_MULT = 2;     // Grup F — açılımdaki her taşın değeri
 const VOID_SCORE = 40;           // Grup G — Boşluk: yutulan taş başına puan (15 → 150 · P51: 150 → 40)
 const VOID_MULT = 0.15;          // Grup G — Boşluk: yutulan taş başına kalıcı çarpan (0.08 → 1.0 · P51: 1.0 → 0.15)
 const PINKY_MAX = 2;             // Grup C — Pinky Warrior: bu değere kadar taşlar okey · P51: 1-3 → 1-2 (bot kaldıracı ×3.4)
-const APPLE_MULT = 2;            // Grup I — Yasak Elma: elmalı açılımın puan katı (P51: ×3 → ×2)
+const APPLE_MULT = 1.5;          // Grup I — Yasak Elma: elmalı açılımın puan katı (P51: ×3 → ×2 → ×1.5; yeni el büyümesiyle 1. tur kaldıracı ×3.7-4.5)
 const APPLE_DRAW_CUT = 2;        // Grup I — kovulunca tur başı eksik çekiş
 const APPLE_ISLEK = 0.20;        // Grup I — kovulunca raundun kalanına işlek riski
 
@@ -4374,7 +4388,7 @@ const Game = {
       if (this.realHandCount() < MAX_HAND) {
         s.hand.push({ id: nextTileId(s), color: s.okey.color, number: s.okey.number,
           isOkeyReal: true, copied: true, apple: true, origin: 'yasakElma' });
-        s.roundStartNotes.push('🍎 Adem ile Havva: eline Yasak Elma geldi — her taşın yerine geçer, açılımı ×3. Açtığın an kovulursun.');
+        s.roundStartNotes.push('🍎 Adem ile Havva: eline Yasak Elma geldi — her taşın yerine geçer, açılımı ×1.5. Açtığın an kovulursun.');
       } else {
         s.roundStartNotes.push('🍎 Adem ile Havva: ıstaka dolu — elma bu raund düşmedi');
       }
@@ -6067,7 +6081,7 @@ const Game = {
     /* YASAK ELMA (P31 · Grup I) — elmalı açılım ×3 (işleme taşları dahil). */
     if (!s.jokersDisabled && final > 0 && this.hasActive('yasakElma')
         && [...ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)].some(t => t.apple)) {
-      const b = final * (APPLE_MULT - 1);
+      const b = Math.ceil(final * (APPLE_MULT - 1));   // ×1.5: yarım puan yukarı yuvarlanır
       final += b;
       const aj = this.slotRecs().find(j => j.key === 'yasakElma');
       triggered.push({ id: aj ? aj.id : 'apple', name: 'Adem ile Havva', text: `🍎 elma: ×${APPLE_MULT} (+${b})` });
