@@ -111,8 +111,6 @@
         + 'kazandırır (en çok +5). Yani 25 coin biriktirmenin somut bir ödülü var.',
       hint_catchUp: 'ACİL RAF: paran azaldığı için en ucuz kart indirime girdi ve bu '
         + 'store’da yenileme bedava. Stage başına bir kez olur.',
-      hint_bond: 'TAHVİL her store’da durur: bir kez öde, run’ın sonuna kadar her '
-        + 'raund coin kazan. 4 raundta kendini amorti eder.',
       hint_tradeUp: 'TAKAS: bir jokerine tıklayıp farkı ödeyerek onu bir üst '
         + 'nadirlikten rastgele bir kartla değiştirebilirsin. Süresi bitmek üzere '
         + 'olan kartı değerlendirmenin yolu budur.',
@@ -483,6 +481,10 @@
       consumNoJoker: 'Hedeflenecek jokerin yok.',
       consumNeedRound: 'Bu değnek raund içinde, elinden taş seçerek kullanılır.',
       tipUses: (n) => `⏳ Kalan süre: ${n} raund`,
+      tipNow: (v) => `Şu an: ${v}`,
+      tipNowArms: (n) => `${n} kol`,
+      tipNowShares: (n) => `${n} hisse`,
+      tipNowDrain: (n) => `${n} emilen`,
       tipUsesRun: () => '⏳ Kalan süre: Run boyunca (∞)',
       tipBackup: (n) => `❄ Backup'ta dondurulmuş — zorunlu geçişe ${n} raund`,
       godzillaOn: (n) => `Godzilla S${n} şarjlı — sonraki açılıma uygulanır`,
@@ -530,6 +532,7 @@
       /* MADDE E6 (2026-09-09): fiyat sabit 3 değil, aynı store içinde
          tırmanan bir merdiven (3-5-8-12). Metin artık fiyatı parametre alır. */
       rerollBtn: (n, c) => `🎲 Yenile — ${n} ${c}`,
+      rerollBtnLeft: (n, c, k) => `🎲 Yenile — ${n} ${c} (${k} hak)`,
       rerollFreeCatch: '🎲 Yenile — BEDAVA',
       storeContinue: 'Haritaya Dön →',
       discounted: 'İND.',
@@ -648,12 +651,6 @@
       coinJoker: 'Joker coin bonusu (Midas/Kum Saati):',
       coinPerm: 'Coin Kasası (kalıcı):',
       coinInterest: 'Faiz (elde tutulan coin):',      // MADDE E1
-      coinBond: (n) => `Tahvil geliri (${n} adet):`,  // MADDE E9
-      bondName: 'Tahvil',
-      bondTag: 'YATIRIM',
-      bondDesc: (y, max) => `Her raund sonunda +${y} coin. Run boyunca en fazla ${max} adet.`,
-      bondOwned: (n, max) => `Sahip olunan: ${n}/${max}`,
-      bondBought: (y) => `Tahvil alındı — her raund sonunda +${y} coin`,
       catchUpTag: 'ACİL RAF',                          // MADDE E2
       catchUpNote: 'Paran azaldı: en ucuz kart indirimde ve bu store\'da yenileme bedava.',
       tradeBtn: (c, coin) => `⇧ Takas — ${c} ${coin}`,
@@ -821,8 +818,6 @@
         + '(max +5). Saving up to 25 has a concrete payoff.',
       hint_catchUp: 'RELIEF SHELF: you were low on coins, so the cheapest card is '
         + 'discounted and this shop\'s reroll is free. Once per stage.',
-      hint_bond: 'The BOND is always in the shop: pay once, earn coins every round for '
-        + 'the rest of the run. It pays for itself in 4 rounds.',
       hint_tradeUp: 'TRADE UP: click one of your jokers and pay the difference to swap it '
         + 'for a random card one rarity higher. Best use for a card about to expire.',
       modeAlwaysOpen: 'Always open (test mode)',
@@ -1127,6 +1122,10 @@
       consumNoJoker: 'You have no joker to target.',
       consumNeedRound: 'This consumable is used during a round, by picking a tile from your hand.',
       tipUses: (n) => `⏳ Remaining: ${n} rounds`,
+      tipNow: (v) => `Now: ${v}`,
+      tipNowArms: (n) => `${n} arms`,
+      tipNowShares: (n) => `${n} shares`,
+      tipNowDrain: (n) => `${n} drained`,
       tipUsesRun: () => '⏳ Remaining: the whole run (∞)',
       tipBackup: (n) => `❄ Frozen in backup — forced move in ${n} rounds`,
       godzillaOn: (n) => `Godzilla charged S${n} — applies to next meld`,
@@ -1168,6 +1167,7 @@
       rerollUsed: '🎲 Reroll used',
       rerollFree: '🔄 Reroll (Trainer — unlimited)',
       rerollBtn: (n, c) => `🎲 Reroll — ${n} ${c}`,
+      rerollBtnLeft: (n, c, k) => `🎲 Reroll — ${n} ${c} (${k} left)`,
       rerollFreeCatch: '🎲 Reroll — FREE',
       storeContinue: 'Back to Map →',
       discounted: 'SALE',
@@ -1270,12 +1270,6 @@
       coinJoker: 'Joker coin bonus (Midas/Hourglass):',
       coinPerm: 'Coin Vault (permanent):',
       coinInterest: 'Interest (coins held):',
-      coinBond: (n) => `Bond income (${n}):`,
-      bondName: 'Bond',
-      bondTag: 'INVESTMENT',
-      bondDesc: (y, max) => `+${y} coins at the end of every round. Max ${max} per run.`,
-      bondOwned: (n, max) => `Owned: ${n}/${max}`,
-      bondBought: (y) => `Bond bought — +${y} coins every round`,
       catchUpTag: 'RELIEF',
       catchUpNote: 'Running low: the cheapest card is discounted and this shop\'s reroll is free.',
       tradeBtn: (c, coin) => `⇧ Trade up — ${c} ${coin}`,
@@ -1381,7 +1375,7 @@
     ayna: { name: 'Stamp', desc: 'Once a round: stamp before melding — that meld scores double.' },
     kumarbaz: { name: 'Gambler', desc: 'Coin flip every turn: your multiplier doubles or halves. Very rarely the coin LANDS ON ITS EDGE — that turn is ×35.' },
     copcu: { name: 'Scavenger', desc: 'Discard 3 tiles: +5 coins.' },
-    yanki: { name: 'Ghost', desc: 'The lowest tile of your meld returns to your rack as a ghost next turn. It lives one turn, cannot be discarded, and does not count toward your hand limit.' },
+    yanki: { name: 'Ghost', desc: 'The HIGHEST tile of your meld returns to your rack as a ghost next turn. It lives 2 turns, cannot be discarded, and does not count toward your hand limit.' },
     zincir: { name: 'Chain', desc: 'Keep melding turn after turn: +2.0x on turn 2, then +1.0x each turn after. Cap: +5.0x. Every turn without a meld drops the bank by -1.0x.' },
     vampir: { name: 'Vampire', desc: 'Drains the highest tile from every combo you meld. Your meld on the LAST turn of the round scores 4x everything it drained.' },
     bitki: { name: 'Plant', desc: 'Every turn you skip melding adds +150 pts to your next meld.' },
@@ -1443,7 +1437,7 @@
     godzilla: { name: 'Godzilla', desc: 'Charges on turns you skip melding. Next meld: S1 +120/+2.0x, S2 +240/+3.5x, S3 +450/+6.0x.' },
     kelebek: { name: 'Butterfly Effect', desc: 'Meld a different type than last turn for a surprise reward: +2.0x, +200 pts or +8 coins.' },
     aynaKral: { name: 'Mirror King', desc: 'Your meld scores bank as a reflection. Skip melding a turn to claim it: 2 melds ×1.5, 3+ melds ×2.' },
-    karaKedi: { name: 'Black Cat', desc: 'Draw the lowest tile and it permanently becomes a 12; +80 pts when melded.' },
+    karaKedi: { name: 'Black Cat', desc: 'Draw the lowest tile and it permanently becomes a 13; +80 pts when melded.' },
   };
 
   /* Boss kısıtlama açıklamaları (BOSSES[].desc EN) */
@@ -1645,8 +1639,8 @@
     [/^🍬 Bungie Gum koptu — bu turun (\d+) taşı geri dönmeyecek$/, '🍬 Bungie Gum snapped — this turn’s $1 tiles will not come back'],
     [/^📣 Hayalet: (.+?) sonraki tur ıstakana gelecek$/,
       '📣 Ghost: the ghost of $1 arrives on your rack next turn'],
-    [/^📣 Hayalet: (.+?) ıstakana geldi — bu tur kullanılmazsa söner$/,
-      '📣 Ghost: the ghost of $1 is on your rack — it fades unless you use it this turn'],
+    [/^📣 Hayalet: (.+?) ıstakana geldi — (\d+) tur yaşar$/,
+      '📣 Ghost: the ghost of $1 is on your rack — it lives $2 turns'],
     [/^📣 Hayalet: kullanılmayan (\d+) taş söndü$/,
       '📣 Ghost: $1 unused ghost tile(s) faded away'],
     [/^🍬 Bungie Gum: (\d+) taş sakıza yapıştı — SONRAKİ TUR başında ıstakana dönecek$/, '🍬 Bungie Gum: $1 tiles stuck to the gum — they return to your rack at the START OF NEXT TURN'],
@@ -1751,7 +1745,7 @@
     [/^The Misunderstood — Uyanış$/, 'The Misunderstood — Awakened'],
     [/^Uyandı: hedef artmaz, açılımların \+([\d.]+)x alır\. Kazandığın her raund \+([\d.]+)x büyür; (\d+) raund sürer\.$/,
       'Awakened: the target no longer rises, your melds get +$1x. Grows +$2x each round you win; lasts $3 rounds.'],
-    [/^Kara Kedi: (.+?) → 12'ye dönüştü$/, 'Black Cat: $1 → turned into a 12'],
+    [/^Kara Kedi: (.+?) → 13'e dönüştü$/, 'Black Cat: $1 → turned into a 13'],
     [/^👹 Kara Kedi: (.+?) → 1'e dönüştü$/, '👹 Black Cat: $1 → turned into a 1'],
     [/^Istaka sınırı: (\d+) yerine (\d+) taş çekildi \(el en fazla (\d+)\)$/, 'Rack limit: drew $2 tiles instead of $1 (hand max $3)'],
     [/^Açılımsız geçiş: işlek riski \+%(\d+)$/, 'Passed without melding: işlek risk +$1%'],

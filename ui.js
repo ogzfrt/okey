@@ -1255,6 +1255,48 @@
     return key === 'godzilla' ? out.replace(GODZILLA_LV_RX, '$1S$2$3') : out;
   }
 
+  /* P52 · GRUP I (kullanıcı isteği 2026-09-17) — BİRİKİM YAPAN JOKERİN ANLIK DEĞERİ.
+     Katalizör/Zincir/Yankee gibi kartların açıklaması yalnız KURALI söylüyordu;
+     oyuncu o an ne kadar biriktiğini hiçbir yerde göremiyordu. İpucu kutusunun
+     sağ altında "Şu an: …" satırı çizilir. Değer kartın KENDİ kaydından okunur
+     (füzyon/Vasiyet alt kayıtları dahil, bkz. Game._recsOf), birikimi olmayan
+     kartta satır hiç çizilmez. */
+  function accumNow(j) {
+    const s = Game.state;
+    if (!s || j.id == null) return '';
+    const recs = (Game._recsOf ? Game._recsOf(j) : [j]) || [j];
+    const deck = (s.deckJokers || []);
+    const rec = (k) => recs.find((r) => r.key === k) || deck.find((r) => r.key === k && recs.some((x) => x.key === k));
+    const x = (v) => '+' + Number(v).toFixed(2).replace(/\.?0+$/, '') + 'x';
+    const out = [];
+    const num = (v) => Number(v) || 0;
+    const add = (k, fn) => { const r = recs.find((q) => q.key === k) || (deck.find((q) => q.key === k && recs.some((z) => z.key === k))); if (r) { const v = fn(r); if (v) out.push(v); } };
+    add('katalizor', (r) => (num(r.katalizorMult) ? x(r.katalizorMult) : null));
+    add('zincir', (r) => (num(r.zincirMult) ? x(r.zincirMult) : null));
+    add('yankee', (r) => (num(r.yankeeMult) ? x(r.yankeeMult) : null));
+    add('kirby', (r) => (num(r.kirbyMult) ? x(r.kirbyMult) : null));
+    add('ahtapot', (r) => (num(r.arms) ? t('tipNowArms', r.arms) : null));
+    add('misunderstood', (r) => (r.awakened && num(r.awakenMult) ? x(r.awakenMult) : null));
+    add('tradeJokeri', (r) => {
+      const sh = r.borsaShares || {};
+      const n = num(sh.per) + num(sh.sirali) + num(sh.cift);
+      return n ? t('tipNowShares', n) : null;
+    });
+    if (recs.some((r) => r.key === 'sisyphus')) {
+      const n = num(s.sisyphusStreak);
+      const steps = window.SISYPHUS_STEPS || [2, 4, 8];
+      if (n > 0) out.push(x(steps[Math.min(n, steps.length) - 1]));
+    }
+    if (recs.some((r) => r.key === 'terazi') && num(s.teraziRoundMult)) out.push(x(s.teraziRoundMult));
+    if (recs.some((r) => r.key === 'vampir') && num(s.vampirBank)) out.push(t('tipNowDrain', num(s.vampirBank)));
+    if (recs.some((r) => r.key === 'godzilla') && num(s.godzillaLevel)) out.push('S' + num(s.godzillaLevel));
+    if (recs.some((r) => r.key === 'cheating')) {
+      const risk = Math.round(num(s.cheatRisk) * 100);
+      if (risk) out.push('%' + risk);
+    }
+    return out.length ? `<div class="tip-now">${t('tipNow', out.join(' · '))}</div>` : '';
+  }
+
   function showTip(target, j, opts = {}) {
     clearTimeout(tipHideTimer);
     /* Kategori satırı: "COMMON · DESTE JOKERİ" / "DEĞNEK" gibi. Rengi artık
@@ -1309,7 +1351,7 @@
       `<div class="tip-in">` +
       `<div class="tip-head">${j.key ? T.name(j) : j.name}</div>` + rarityLine +
       `<div class="tip-desc">${emphNums(j.key ? T.desc(j) : T.ev(j.desc), j.key)}</div>` +
-      fusedLines + legacyLines + variantLines + ipotekLine + usesLine +
+      fusedLines + legacyLines + variantLines + ipotekLine + usesLine + accumNow(j) +
       `</div>`;
     const inner = tip.firstElementChild;
     // Eylem butonları (Grup G2): store açıkken slot jokerlerine Sat / →Ana / Birleştir
@@ -4839,8 +4881,6 @@
       if (cr.permCoin > 0)
         coinHtml += `<br>${t('coinPerm')} <b style="color:#F5A623">${COIN} +${cr.permCoin}</b>`;
       // MADDE E9 — tahvil geliri
-      if (cr.bondCoin > 0)
-        coinHtml += `<br>${t('coinBond', s.bonds || 0)} <b style="color:#F5A623">${COIN} +${cr.bondCoin}</b>`;
       // MADDE E1 — faiz (raund gelirinden SONRA, cebindeki toplam üzerinden)
       if (cr.interest > 0)
         coinHtml += `<br>${t('coinInterest')} <b style="color:#F5A623">${COIN} +${cr.interest}</b>`;
@@ -5422,42 +5462,7 @@
       el.storeRowExtras.appendChild(card);
     }
 
-    /* ============================================================
-       MADDE E9 (2026-09-09) — TAHVİL: store'un SABİT kalemi.
-       Rastgele çekilişin dışındadır; run başına tavan dolunca motor onu
-       hiç üretmez (bkz. engine _generateStore), yani "hiçbir şey yapmayan"
-       bir kart rafta durmaz.
-       ============================================================ */
-    const bond = s.store.bond;
-    if (bond) {
-      const card = document.createElement('div');
-      card.className = 'store-item viz r-consum r-legendary' + (bond.sold ? ' sold-out' : '');
-      card.innerHTML =
-        `<div class="s-rarity">${t('bondTag')}${s.store.anarchist ? ' · ⚡' : ''}</div>` +
-        `<div class="s-ico ico-consum">📈</div>` +
-        `<div class="s-name">${t('bondName')}</div>` +
-        chipsHtml(t('bondDesc', BOND_YIELD, BOND_MAX)) +
-        `<div class="s-desc">${t('bondOwned', s.bonds || 0, BOND_MAX)}</div>`;
-      attachTip(card, { name: t('bondName'), rarityText: t('bondTag'),
-        desc: t('bondDesc', BOND_YIELD, BOND_MAX) }, {});
-      if (bond.sold) {
-        card.innerHTML += `<div class="s-sold">${t('sold')}</div>`;
-      } else {
-        const btn = document.createElement('button');
-        btn.className = 'btn primary s-buy';
-        btn.innerHTML = anarOld(bond) + t('buyBtn', bond.price, COIN);
-        btn.disabled = s.coins < bond.price;
-        btn.addEventListener('click', () => {
-          const res = Game.buyBond();
-          if (!res.ok) { toast(res.error); return; }
-          toast(t('bondBought', res.yield), true);
-          SFX.coin();
-          renderStore(); render();
-        });
-        card.appendChild(btn);
-      }
-      el.storeRowExtras.appendChild(card);
-    }
+    /* P52 · GRUP F: TAHVİL KARTI KALDIRILDI (kullanıcı kararı 2026-09-17). */
 
     /* GRUP G (kullanıcı kararı 2026-09-07) — ÖZEL TAŞ KARTI RAFTAN KALKTI.
        Özel taşlar artık store rafında tek tek satılmıyor; tek kaynakları
@@ -5536,12 +5541,21 @@
       el.btnReroll.disabled = false;
       el.btnReroll.innerHTML = t('rerollFree');
     } else {
-      /* MADDE E6 — hak sınırı kalktı, fiyat merdiveni motordan okunur.
-         MADDE E2 — catch-up açıldıysa o store'un ilk yenilemesi bedava. */
+      /* P52 · Grup B — store başına 2 hak, düz 3 coin; kalan hak düğmede yazar.
+         MADDE E2 — catch-up açıldıysa o store'un ilk yenilemesi bedava ve
+         hakkı tüketmez, o yüzden "hak bitti" kolundan ÖNCE bakılır. */
       const rc = Game.rerollCost();
-      el.btnReroll.disabled = !s.store.freeReroll && s.coins < rc;
-      el.btnReroll.innerHTML = s.store.freeReroll
-        ? t('rerollFreeCatch') : t('rerollBtn', rc, COIN);
+      const left = Game.rerollLeft();
+      if (s.store.freeReroll) {
+        el.btnReroll.disabled = false;
+        el.btnReroll.innerHTML = t('rerollFreeCatch');
+      } else if (left <= 0) {
+        el.btnReroll.disabled = true;
+        el.btnReroll.innerHTML = t('rerollUsed');
+      } else {
+        el.btnReroll.disabled = s.coins < rc;
+        el.btnReroll.innerHTML = t('rerollBtnLeft', rc, COIN, left);
+      }
     }
 
     /* MADDE D5 — store'a bağlı ipuçları. Sıra ÖNEMLİ: en genel olan
@@ -5551,7 +5565,6 @@
     if (!Game.trainerMode) {
       const shown = Hints.show('store');
       if (!shown && s.store.items.some(i => i.catchUp)) Hints.show('catchUp');
-      else if (!shown && s.store.bond && !s.store.bond.sold) Hints.show('bond');
       /* P43: "TAKAS: jokerine tıkla, farkı öde" ipucu kalktı — tooltip'teki Takas
          düğmesi kullanıcı kararıyla silindi, ipucu artık olmayan bir düğmeyi tarif ederdi. */
     }

@@ -7857,6 +7857,16 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   padding: 9px 11px 0;
   margin: 0;
 }
+/* P52 · Grup I — birikim yapan jokerin ANLIK değeri (sağ alt köşe) */
+#jokerTip .tip-now {
+  margin-top: 6px;
+  text-align: right;
+  font-family: var(--gm-font);
+  font-size: 14px;
+  color: var(--tip-accent);
+  letter-spacing: .02em;
+}
+
 #jokerTip .tip-fused {
   margin: 9px 11px 0;
   padding-top: 8px;
