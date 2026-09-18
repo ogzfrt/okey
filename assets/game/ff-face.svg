@@ -1,0 +1,8 @@
+<svg shape-rendering="crispEdges" preserveAspectRatio="none" overflow="visible" style="display: block;" width="73" height="102" viewBox="0 0 73 102" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- P52 · Grup A — Figma 346:84 (color_fba077_1). Kaynak yolda evenodd ile açılmış
+     18 alt yol (mühür deliği + ışın çentikleri) vardı; DIŞ HAT DIŞINDAKİLER SİLİNDİ.
+     Gerekçe: Figma o deliklerin altını yine #FBA077 gösteriyor (render'da delik yok),
+     oyunda ise taşın arkası -ıstakanın yeşili- sızıyordu. Üstteki ışın ve mühür
+     katmanları zaten bu yüzün üzerine biniyor, yani doldurmak görüntüyü değiştirmez. -->
+<path id="color_fba077_1" fill-rule="evenodd" clip-rule="evenodd" d="M4 0H69V2H71V4H73V98H71V100H69V102H4V100H2V98H0V4H2V2H4V1V0Z" fill="#FBA077"/>
+</svg>

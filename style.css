@@ -3997,31 +3997,44 @@ body.menu-open #app {
    çapraz kılıç dokusuyla yıkanıyor, rozet büyütülüp nabız atıyor ve taş
    ıstakada bir tık yukarı kalkıyor. Altın halka artık yalnız okeyin.
    ============================================================ */
+/* ── P52 · GRUP A — FIGMA ASSETİ (275-1054 → FREEDOM_FIGHTERS_EFFECT 346:2466)
+   Yukarıdaki metin TARİHÇEDİR: kırmızı nabızlı halka ve çapraz tarama dokusu,
+   çizim HENÜZ YOKKEN "bu taş işaretli" demenin uydurma yoluydu. Artık tasarımın
+   kendisi var; taş dönüşünce YÜZÜNÜ DEĞİŞTİRİR.
+   Figma'da dört renk satırı (SARILAR/MAVİLER/KIRMIZILAR/SİYAHLAR) var ve
+   katman hex'leri DÖRDÜNDE DE AYNI — değişen tek şey sayının kendi rengi
+   (ör. sarı satırda #E4B70A, bizim '.tile.yellow .num' rengiyle birebir).
+   Bu yüzden renk başına ayrı varlık yok, tek şablon yeter.
+   Katman sırası (altta → üstte) ve ölçüleri (81×110 taşta) tasarımdan:
+     color_fba077_1  #FBA077  73×102 @ (4,4)    → ff-face.svg
+     color_e52b56_1  #E52B56  81×110 @ (0,0)    → ff-border.svg   (yırtık kırmızı kontur)
+     color_f3d648_1  #F3D648  81×109 @ (0,1)    → ff-rays.svg     (ışınlar)
+     color_fff5c1_1  #FFF5C1  27× 27 @ (27,68)  → ff-gem-mid.svg
+     color_f5e284_1  #F5E284  35× 34 @ (23,64)  → ff-gem-out.svg
+     color_fffce9_1  #FFFCE9  17× 18 @ (32,72)  → ff-gem-core.svg
+     color_f3d648_2  #F3D648   9× 53 @ (0,0)    → ff-tick-l.svg
+     color_f3d648_3  #F3D648   6×  4 @ (56,0)   → ff-tick-a.svg
+     color_f3d648_4  #F3D648   4×  4 @ (20,0)   → ff-tick-b.svg
+     color_f3d648_5  #F3D648   4×  4 @ (39,0)   → ff-tick-c.svg
+   CSS'te 'background' listesi ÜSTTEN alta yazılır, yani sıra terstir.
+   Yüzde hesabı: konum% = ofset ÷ (kap − görsel), boyut% = görsel ÷ kap.       */
 .tile.ff-mark, .tile.bm-bff {
-  box-shadow:
-    0 0 0 2px #FFE9B0,
-    0 0 0 5px #C1121F,
-    0 0 18px rgba(193,18,31,.65),
-    0 4px 8px rgba(34,56,74,.35) !important;
-  animation: ffWar 1.4s ease-in-out infinite;
+  background:
+    url('assets/game/ff-tick-c.svg') no-repeat 50.649%     0 /  4.938%  3.636%,
+    url('assets/game/ff-tick-b.svg') no-repeat 25.974%     0 /  4.938%  3.636%,
+    url('assets/game/ff-tick-a.svg') no-repeat 74.667%     0 /  7.407%  3.636%,
+    url('assets/game/ff-tick-l.svg') no-repeat       0     0 / 11.111% 48.182%,
+    url('assets/game/ff-rays.svg')   no-repeat       0  100% / 100%    99.091%,
+    url('assets/game/ff-border.svg') no-repeat       0     0 / 100%    100%,
+    url('assets/game/ff-face.svg')   no-repeat 50%      50%  / 90.123% 92.727%;
+  box-shadow: none !important;
+  animation: none;
   z-index: 4;
 }
-@keyframes ffWar {
-  0%, 100% { box-shadow: 0 0 0 2px #FFE9B0, 0 0 0 5px #C1121F, 0 0 12px rgba(193,18,31,.5),  0 4px 8px rgba(34,56,74,.35); }
-  50%      { box-shadow: 0 0 0 2px #FFF6DC, 0 0 0 5px #E63946, 0 0 26px rgba(230,57,70,.95), 0 4px 8px rgba(34,56,74,.35); }
-}
-/* yüz yıkaması + çapraz "cephe" şeritleri (okeyin ::after yıldızıyla çakışmasın diye ::before) */
-.tile.ff-mark::before, .tile.bm-bff::before {
-  content: '';
-  position: absolute; inset: 0;
-  border-radius: inherit;
-  background:
-    repeating-linear-gradient(135deg,
-      rgba(193,18,31,.16) 0 5px, rgba(255,255,255,0) 5px 11px),
-    linear-gradient(180deg, rgba(255,196,80,.34), rgba(193,18,31,.12) 55%, rgba(255,196,80,.30));
-  pointer-events: none;
-  z-index: 1;
-}
+/* ⚠ Mührün (`.dot`) FF kuralları BURADA DEĞİL, taş şablonunun yanındadır
+   (aşağıda "FF mührü" bloğu): taban `.tile .dot` kuralı bu satırlardan ~1400
+   satır SONRA geliyor ve aynı özgüllükte (0,3,0) olduğu için sonrakini
+   kazanıyordu — mühür eski krem elmas olarak çiziliyordu. */
 /* sayı yıkamanın ÜSTÜNDE kalsın.
    P51 · GRUP A (bug) — burada `position: relative` vardı. Figma taş şablonunda
    `.num` ve `.dot` MUTLAK konumludur (aşağıdaki "SAYI FIGMA HİZASINA" bloğu);
@@ -4031,7 +4044,9 @@ body.menu-open #app {
    dokunulmaz, yalnız istifleme sırası verilir (mutlak öğede z-index çalışır). */
 .tile.ff-mark .num, .tile.bm-bff .num,
 .tile.ff-mark .dot, .tile.bm-bff .dot { z-index: 2; }
-.tile.ff-mark .num, .tile.bm-bff .num { text-shadow: 0 1px 0 rgba(255,255,255,.9); }
+/* P52 · Grup A: beyaz alt gölge KALDIRILDI — uydurma "savaş" görünümünün
+   parçasıydı; tasarımda sayı düz durur ve rengi taşın kendi rengidir
+   (Figma sarı satırda #E4B70A = `.tile.yellow .num`). */
 
 /* rozet: küçük hap değil, taşın omzuna oturan gerçek bir kokard */
 .tile.ff-mark .tile-mark.ff,
@@ -4057,9 +4072,10 @@ body.menu-open #app {
 /* bonusu ödenmiş / boss'ta açılımda kullanılmış işaret: görevi bitti, sönükleşir */
 .tile.ff-mark.ff-paid, .tile.bm-bff.bm-done {
   animation: none;
-  box-shadow: 0 0 0 2px rgba(193,18,31,.42), 0 3px 6px rgba(34,56,74,.28) !important;
+  /* P52: görevi biten işaret artık halkayla değil, çizimin kendisi solarak
+     anlatılır (tasarımda "ödenmiş" diye ayrı bir varyant yok). */
+  filter: saturate(.55) brightness(1.06);
 }
-.tile.ff-mark.ff-paid::before, .tile.bm-bff.bm-done::before { opacity: .28; }
 .tile.ff-mark.ff-paid .tile-mark.ff,
 .tile.bm-bff.bm-done  .tile-mark.boss {
   animation: none; opacity: .55; filter: grayscale(.55);
@@ -6333,6 +6349,37 @@ body.game-open #toast { top: 44%; }
   /* okey taşında en üstte mor göz var; sıra: göz, l1, l5, l4, l3, l2 */
   background-position: 50% 50%, 50% 53.33%, 50% 50%, 50% 50%, 50% 50%, 50% 50%;
 }
+
+/* --- P52 · GRUP A: FREEDOM FIGHTERS MÜHRÜ (Figma 346:2466) ---------------
+   Dönüşen taşta renkli elmas YOKTUR; yerine üç katlı sarı bir ışık topu
+   durur. `.dot` kabı (taşta 20,60 · 41×42) aynen korunur:
+     #FFF5C1 27×27 @ (27,68) → kapta (7,8)   → ff-gem-mid   (altta)
+     #F5E284 35×34 @ (23,64) → kapta (3,4)   → ff-gem-out   (ortası boş halka)
+     #FFFCE9 17×18 @ (32,72) → kapta (12,12) → ff-gem-core  (üstte)
+   Konumlar yukarıdaki GRUP C ölçümüyle aynı mantıkta: out ve core tam
+   merkezde (50% 50%), mid tasarımda yarım piksel aşağıda (50% 53.33%).
+   ⚠ BU BLOK EN SONDA DURMALI: yukarıdaki P40/GRUP C düzeltmeleri `.dot`u
+   aynı özgüllükle (0,3,0) yeniden yazıyor; daha önce konsaydı onlar kazanır
+   ve mühür yine krem elmas çizilirdi.
+   `background-color` taşın KENDİ yüzü olmalı (#FBA077): yüz SVG'sinde mühür
+   deliği açıktır, aksi hâlde delikten ıstakanın yeşili sızar (bkz. GRUP A/1b). */
+.tile.ff-mark .dot, .tile.bm-bff .dot {
+  background:
+    url('assets/game/ff-gem-core.svg') no-repeat 50% 50%     / 41.463% 42.857%,
+    url('assets/game/ff-gem-out.svg')  no-repeat 50% 50%     / 85.366% 80.952%,
+    url('assets/game/ff-gem-mid.svg')  no-repeat 50% 53.33%  / 65.854% 64.286%;
+  /* ŞEFFAF: mühür kabının 60-63. satırları tasarımda IŞINLARI gösterir
+     (ışın katmanı taşın arka planında, mührün altındadır). Buraya yüz rengi
+     konulsaydı o dört satır orange kalırdı. Yüzün deliklerinden yeşil sızması
+     ayrı bir konudur ve ff-face.svg'nin dolu hâliyle çözüldü. */
+  background-color: transparent;
+}
+.tile.ff-mark .dot::after, .tile.bm-bff .dot::after { content: none; }
+/* Sayının kırmızı konturu (Figma: #E52B56, 1 tasarım pikseli, ortalanmış).
+   Kod üreticisi metin konturunu yazmıyor; ölçüm ekran görüntüsünden yapıldı
+   (glif kenarında #F06566 = #E52B56 ile #FBA077'nin yarı karışımı).
+   `em` ile yazıldı ki taş küçüldükçe kontur da incelsin: 1px ÷ 36px = .0277em. */
+.tile.ff-mark .num, .tile.bm-bff .num { -webkit-text-stroke: .0277em #E52B56; }
 
 /* ==========================================================================
    PLAYTEST 16 · GRUP G — BOSS KURAL KUTUSU KENDİ SÜTUNUNDA
