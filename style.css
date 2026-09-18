@@ -4048,26 +4048,14 @@ body.menu-open #app {
    parçasıydı; tasarımda sayı düz durur ve rengi taşın kendi rengidir
    (Figma sarı satırda #E4B70A = `.tile.yellow .num`). */
 
-/* rozet: küçük hap değil, taşın omzuna oturan gerçek bir kokard */
-.tile.ff-mark .tile-mark.ff,
-.tile.bm-bff  .tile-mark.boss {
-  top: -8px; right: -7px;
-  min-width: 21px; height: 21px;
-  font-size: 12.5px;
-  background: radial-gradient(circle at 35% 30%, #FFE9A8, #E8930C 60%, #B3690A);
-  color: #4A0B10;
-  border: 2px solid #C1121F;
-  box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(120,10,20,.55);
-  animation: ffBadge 1.4s ease-in-out infinite;
-  z-index: 6;
-}
-@keyframes ffBadge {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.18); }
-}
-/* ıstakada bir tık yukarıda dursun — sıradan taşların hizasını bozar, göze çarpar */
-#rack .tile.ff-mark, #rack .tile.bm-bff { margin-top: -5px; }
-#rack .tile.ff-mark:hover, #rack .tile.bm-bff:hover { transform: translateY(-4px); }
+/* P52 · GRUP A (kullanıcı kararı 2026-09-18) — SONRADAN EKLENENLER KALKTI.
+   Burada bir ⚔ kokard biçimi (radyal altın hap + nabız animasyonu) ve
+   "işaretli taş ıstakada 5px yukarıda dursun" kuralı vardı. İkisi de çizim
+   yokken taşı fark ettirmek için uydurulmuştu; tasarım (346:2466) taşın
+   kendisini baştan çiziyor, dolayısıyla ikisi de gereksizdi ve kokard
+   çizimin sağ üst köşesini kapatıyordu. Rozet artık DOM'a da eklenmiyor
+   (bkz. ui.js), bu yüzden geriye biçim kuralı da bırakılmadı.
+   Diğer boss/joker işaretlerinin rozetleri olduğu gibi duruyor. */
 
 /* bonusu ödenmiş / boss'ta açılımda kullanılmış işaret: görevi bitti, sönükleşir */
 .tile.ff-mark.ff-paid, .tile.bm-bff.bm-done {
@@ -4076,10 +4064,8 @@ body.menu-open #app {
      anlatılır (tasarımda "ödenmiş" diye ayrı bir varyant yok). */
   filter: saturate(.55) brightness(1.06);
 }
-.tile.ff-mark.ff-paid .tile-mark.ff,
-.tile.bm-bff.bm-done  .tile-mark.boss {
-  animation: none; opacity: .55; filter: grayscale(.55);
-}
+/* (Kokard kalktığı için "ödenmiş rozet" kolu da kalktı; ödenmiş taş artık
+   yalnızca çizimin kendisi solarak anlatılıyor — yukarıdaki .ff-paid kuralı.) */
 
 /* Grup B2 — süresi run boyunca olan joker: sayaç yerine ∞ rozeti */
 .joker-tile.run-long .jt-uses {

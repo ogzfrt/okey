@@ -798,16 +798,16 @@
     if (tile.bungie) d.appendChild(fxOrbit('bungie'));
     if (tile.ghost) d.appendChild(fxOrbit('ghost'));
     if (Game.state && Game.state.paratonerBait === tile.id) d.appendChild(fxOrbit('bait'));
-    /* Grup A1 — Freedom Fighters işaretli taşı ANINDA tanınabilir yap:
-       kokarda ikonu + altın kenarlık + parıltı. Bonusu ödenmişse sönük. */
+    /* Freedom Fighters işareti — P52 · GRUP A (kullanıcı kararı 2026-09-18:
+       "Figma'dakinin birebir aynısı olsun, senin yaptığın olmasın").
+       ⚔ KOKARDI KALDIRILDI: tasarımda (346:2466) taşın üstünde rozet yoktur ve
+       gerek de kalmadı — taş artık yüzünü tümden değiştiriyor, kokard yalnız
+       çizimin köşesini kapatıyordu. Tooltip DURUYOR: o görsel bir ekleme değil,
+       "bu taş ne kadar puan getirecek" bilgisinin tek kanalı. */
     const ff = Game.freedomMark ? Game.freedomMark(tile) : null;
     if (ff) {
       d.classList.add('ff-mark');
       if (ff.paid) d.classList.add('ff-paid');
-      const b = document.createElement('span');
-      b.className = 'tile-mark ff';
-      b.textContent = '⚔';
-      d.appendChild(b);
       attachTip(d, { name: t('ffMarkName'), rarityText: t('ffMarkTag'),
         desc: ff.paid ? t('ffMarkPaid') : t('ffMarkDesc', ff.value) }, {});
     }
@@ -837,10 +837,15 @@
     if (bossMark) {
       d.classList.add('bm-' + bossMark.c);
       if (bossMark.c === 'bff' && tile.ffUsedInMeld) d.classList.add('bm-done');
-      const b = document.createElement('span');
-      b.className = 'tile-mark boss';
-      b.textContent = bossMark.i;
-      d.appendChild(b);
+      /* P52 · Grup A: Freedom Fighters BOSS varyantı da Figma dönüşüm assetini
+         kullanıyor; onda da rozet çizilmez (bkz. yukarıdaki joker notu).
+         Diğer boss işaretleri rozetlerini aynen korur. */
+      if (bossMark.c !== 'bff') {
+        const b = document.createElement('span');
+        b.className = 'tile-mark boss';
+        b.textContent = bossMark.i;
+        d.appendChild(b);
+      }
       attachTip(d, { name: t(bossMark.k + 'Name'), rarityText: t('bossMarkTag'),
         desc: t(bossMark.k + 'Desc') }, {});
     }
