@@ -212,32 +212,40 @@ function spendCoins(s, n) {
 /* P53 · GRUPLAR A+B (kullanıcı kararı 2026-09-19) — BAŞLANGIÇ ELİ 21'DEN
    BAŞLAR VE STAGE BAŞINA +2 BÜYÜR.
    Eski sistem (P51): 15 · 16 · 17 · 18 · 19 · 20 · 21 · 21 (tavan 21).
-   Yeni:              21 · 23 · 25 · 27 · 29 · 31 · 33 · 35
+   Yeni:              21 · 23 · 25 · 27 · 29 · 30 · 30 · 30
    Gerekçe (kullanıcı): oyuncu daha ilk stage'den "gerçek bir el" ile oynasın,
-   ve el büyümesi run boyunca hissedilir bir ilerleme ekseni olsun. */
+   ve el büyümesi run boyunca hissedilir bir ilerleme ekseni olsun.
+   ⚠ TAVAN 30 (kullanıcı kararı, aynı gün ikinci tur): dizi önce 35'e kadar
+   gidiyordu, ama o kadar taş ıstakaya sığmıyor — hücre 57px'e iniyor ve
+   ekran okunmaz hâle geliyordu ("ui bozuluyor 38'e çıkınca"). Büyüme S6'da
+   30'da durur; S6-S8 arasındaki güç artışı artık elden değil joker/yükseltme
+   birikiminden gelir. */
 function handSizeFor(stage) {
   return Math.min(MAX_HAND_BASE, 21 + 2 * Math.max(0, (stage || 1) - 1));
 }
 /* Tavan = EN BÜYÜK stage'in başlangıç eli. Bu ilişki P51'de de aynıydı
    (handSizeFor tavanı 21 = MAX_HAND 21); yalnız sayı büyüdü. */
-const MAX_HAND_BASE = 35;
+const MAX_HAND_BASE = 30;
 
 /* ISTAKA IZGARASI — sütun sayısı BURADA tanımlıdır, ui.js onu okur.
-   P53 · GRUP B: 15 → 20. Alt satırın slot tabanı da budur; `setRackOrder`
-   eskiden 15'i GÖMÜLÜ taşıyordu ve ui.js sütun sayısını değiştirince serbest
-   ıstakada alt satır sessizce boş kalıyordu. Tek sayı, tek yer. */
-const RACK_COLS = 20;
+   P53 · GRUP B: 15 → 17 (MAX_HAND 30 + 4 hücre boşluk payı). Alt satırın
+   slot tabanı da budur; `setRackOrder` eskiden 15'i GÖMÜLÜ taşıyordu ve
+   ui.js sütun sayısını değiştirince serbest ıstakada alt satır sessizce boş
+   kalıyordu. Tek sayı, tek yer. */
+const RACK_COLS = 17;
 
 /* Grup A (2026-07-09, kullanıcı kararı): ıstakada AYNI ANDA en fazla N taş
    bulunabilir. Hiçbir mekanizma (ekstra çekiş, Uzaylı kopyaları, Tekrar Çek,
    kalıcı çekiş yükseltmeleri…) bu sınırı aşamaz — çekişler sınıra kırpılır.
    P53 · GRUP B: sabit 21 tavanı artık BAŞLANGIÇ eliyle çelişiyordu (S2'de
    23 taşla başlanıyor). Tavan, tarihsel kuralı koruyacak biçimde en büyük
-   başlangıç eline (S8 = 35) taşındı — yani "ıstakaya S8 oyuncusunun
+   başlangıç eline (S6+ = 30) taşındı — yani "ıstakaya son stage oyuncusunun
    elinden fazlası sığmaz" kuralı aynen duruyor, yalnız ölçek büyüdü.
-   UI tarafı: ıstaka ızgarası 2×15 (30 hücre) iken 2×20'ye (40 hücre)
-   genişletildi; taş genişliği zaten hücre sayısından türetiliyor. */
-const MAX_HAND = 35;
+   UI tarafı: ıstaka ızgarası 2×15 (30 hücre) iken 2×17'ye (34 hücre)
+   genişletildi; taş genişliği zaten hücre sayısından türetiliyor (81 → 70px).
+   ⚠ 30 SINIRI KULLANICI KARARIDIR: dizi 35'e kadar gidince hücre 57px'e
+   iniyor ve ıstaka okunmaz oluyordu. */
+const MAX_HAND = 30;
 
 /* GDD 5.2 — boss hedefleri playtest geri bildirimiyle düşürüldü
    (Normal 2 → Boss sıçraması ~1.3x; GDD'deki 1.67x çok sertti).
@@ -409,7 +417,7 @@ const MAX_HAND = 35;
    biriktirip son turda dökmez — oranlar ALT SINIRDIR, gerçek oyuncu daha
    yüksek geçer. */
 const STAGE_TARGETS = [
-  [320, 525, 730],      // S1 — el 21 · oran 0.44/0.72
+  [290, 510, 730],      // S1 — el 21 · oran 0.40/0.70
   /* P51 · GRUP B (kullanıcı onayı 2026-09-15) — BALATRO EĞRİSİ, tam run botuyla
      ölçülerek kuruldu (tools/run_audit.js).
      v2 (10.3) S4-S8'de sabit 1.42x adımla büyüyordu: erken stage'ler (el 15→21
@@ -435,17 +443,40 @@ const STAGE_TARGETS = [
      (S5 1925 · S6 2550 · S7 3340 · S8 4340); erken taraf ise HEDEFLE değil GÜÇLE yumuşatıldı:
      run artık 1 Common joker ile başlar (RUN_MODES.base.openJokers).
      Nefes kuralı korunur: her R1 önceki boss'un altında. */
-  [620,  960, 1300],    // S2 — el 23 · oran 0.48/0.74 · boss ×1.78
-  [915, 1355, 1780],    // S3 — el 25 · oran 0.51/0.76 · boss ×1.37
-  [1270, 1795, 2300],   // S4 — el 27 · oran 0.55/0.78 · boss ×1.29
-  [1705, 2320, 2900],   // S5 — el 29 · oran 0.59/0.80 · boss ×1.26
-  [2265, 2970, 3620],   // S6 — el 31 · oran 0.63/0.82 · boss ×1.25
-  [2950, 3740, 4450],   // S7 — el 33 · oran 0.66/0.84 · boss ×1.23
-  [3780, 4645, 5400],   // S8 — el 35 · FINAL BOSS · oran 0.70/0.86 · ×1.21
+/* v13 (2026-09-19, P53 · 2. tur) — EL TAVANI 30'A İNDİ, GEÇ OYUN YENİDEN
+   KALİBRE EDİLDİ. v12 el dizisinin 35'e kadar gittiğini varsayıyordu;
+   kullanıcı ıstaka okunmaz hâle geldiği için tavanı 30'a çekti
+   (21·23·25·27·29·30·30·30), yani S6-S8'de oyuncu gücü v12'nin beklediğinden
+   DÜŞÜK kaldı. Ölçüm (tools/human_audit.js, 150 run, v12 tablosu + yeni el):
+   S7 boss %21 · S8 boss %12, S7-S8 ilk raund geçme %62-63 — geç oyun duvara
+   dönmüştü. Yeni boss ekseni S4'ten itibaren yumuşatıldı ve raund oranı
+   rampası daraltıldı (R1 0.40 → 0.60, R2 0.70 → 0.80; v12'de 0.44 → 0.70 /
+   0.72 → 0.86 idi — S8'in ilk raundu tek başına final boss'un %70'iydi).
+   ÖLÇÜM (human_audit, 200 run, AUDIT_CONTINUE):
+     stage        S1   S2   S3   S4   S5   S6   S7   S8
+     R1 geçme    %75  %93  %90  %83  %84  %81  %75  %76
+     BOSS geçme  %37  %40  %40  %30  %41  %26  %24  %13
+     KAYIPTA skor/hedef  0.73 0.66 0.64 0.66 0.63 0.67 0.70 0.72
+   "KAYIPTA skor/hedef" stage'ler arası tek karşılaştırılabilir zorluk
+   ölçüsüdür (kazanılan raundda skor hedefe değince kesilir): 0.63-0.73
+   bandında DÜZ — yani hedef eğrisi oyuncu gücünü birebir takip ediyor,
+   oyun ilerledikçe ne kolaylaşıyor ne duvara dönüyor.
+   ⚠ Boss geçişinin S6-S8'de düşmesinin ölçülmüş sebebi hedef DEĞİL: boss
+   kayıplarının yalnız %5'i koşul ihlali, %95'i puan; ama o bantta bot
+   yalnız KURTARILMIŞ (zayıf kadrolu) run'larla temsil ediliyor. Temiz run
+   örneği n=0 olduğu için S6-S8 bandı bot ile DOĞRULANAMAZ, insan geri
+   bildirimi gerekir. */
+  [555,  930, 1300],    // S2 — el 23 · oran 0.43/0.72 · boss ×1.78
+  [815, 1295, 1780],    // S3 — el 25 · oran 0.46/0.73 · boss ×1.37
+  [1095, 1670, 2250],   // S4 — el 27 · oran 0.49/0.74 · boss ×1.26
+  [1440, 2120, 2800],   // S5 — el 29 · oran 0.51/0.76 · boss ×1.24
+  [1820, 2585, 3350],   // S6 — el 30 · oran 0.54/0.77 · boss ×1.20
+  [2255, 3105, 3950],   // S7 — el 30 · oran 0.57/0.79 · boss ×1.18
+  [2760, 3680, 4600],   // S8 — el 30 · FINAL BOSS · oran 0.60/0.80 · ×1.16
 ];
 /* Tablo dışına taşan stage'ler için (Trainer Sonsuz Mod) büyüme çarpanı.
    P51 · Grup B: eğrinin son adımıyla aynı (sonsuz modda yavaşlayan uç). */
-const TARGET_GROWTH = 1.21;   // P53 · Grup C: eğrinin son adımıyla aynı
+const TARGET_GROWTH = 1.16;   // P53 v13: eğrinin son adımıyla aynı (Sonsuz Mod bunu kullanır)
 
 /* Çoklu kombinasyon ham puan bonusu (MULTI_RAW_BONUS) playtest 3'te
    KALDIRILDI (kullanıcı kararı): GDD 4.2 çarpan tablosu çok kombinasyonu
@@ -3677,8 +3708,30 @@ const Game = {
   /* Bu run'ın toplam stage sayısı — normalde sabit TOTAL_STAGES, trainer
      modunda oyuncunun seçtiği değer (Infinity = Sonsuz Mod). */
   totalStages() {
+    /* P53 · SONSUZ MOD (kullanıcı kararı 2026-09-19): AYRI BİR MOD DEĞİLDİR.
+       Temel run'ın 8 stage'i bitince oyuncuya zafer ekranında sorulur; "devam"
+       derse bu bayrak açılır ve run'ın sonu kalkar. Stage'ler TARGET_GROWTH ile
+       sertleşmeye devam eder (bkz. targetFor, tablo dışı dal). */
+    if (this.state && this.state.endless) return Infinity;
     if (this.trainerMode && this.state.trainerStages) return this.state.trainerStages;
     return runModeOf(this.state).stages;   // MADDE D4 — Hızlı Run'da 4
+  },
+
+  /* P53 — SONSUZ MODA GEÇ. Zafer ekranındaki "Devam et" düğmesi çağırır.
+     Run bitmiş sayılmaz: mühür kaldırılır ve son boss'un ÜRETİLMEYEN iki
+     ödülü (yükseltme çarkı + store) burada üretilir — yani oyuncu sanki
+     sıradan bir stage geçişindeymiş gibi devam eder. */
+  continueEndless() {
+    const s = this.state;
+    if (!s) return { ok: false, error: 'Run yok.' };
+    if (!s.runFinished && s.status !== 'runComplete')
+      return { ok: false, error: 'Sonsuz Mod yalnız run tamamlanınca açılır.' };
+    s.endless = true;
+    s.runFinished = false;
+    s.status = 'won';              // raund sonu akışı normal şekilde sürsün
+    if (!s.upgradeOffer) s.upgradeOffer = this._genUpgradeOffer();
+    if (!s.store) { s.store = this._generateStore(s.pendingLocks); s.pendingLocks = null; }
+    return { ok: true, stage: s.stage };
   },
 
   /* MADDE D4 — aktif run modunun tanımı (UI ve testler için tek kaynak). */

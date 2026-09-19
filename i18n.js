@@ -682,6 +682,11 @@
       rcFinalBuild: 'Bitiş kadrosu',
       rcNoJokers: 'Jokersiz bitirdin — saf oyun.',
       rcMenu: 'Ana Menüye Dön',
+      /* P53 — Sonsuz Mod: ayrı bir mod değil, run bitince açılan bir seçim */
+      rcEndless: '♾️ Sonsuz Mod\'a Devam Et',
+      rcEndlessHint: 'Run bitmez: stage\'ler sertleşerek devam eder. Kaybedersen run biter.',
+      endlessOn: (n) => `♾️ Sonsuz Mod açıldı — Stage ${n} ve ötesi`,
+      endlessStage: (n) => `STAGE ${n} · ♾️ SONSUZ`,
       newRunToast: 'Yeni run başladı',
       /* banner */
       obTitle: (c, t) => `STAGE ${c} / ${t}`,
@@ -1300,6 +1305,10 @@
       rcFinalBuild: 'Final build',
       rcNoJokers: 'You finished with no jokers — pure play.',
       rcMenu: 'Back to Main Menu',
+      rcEndless: '♾️ Continue in Endless Mode',
+      rcEndlessHint: 'The run never ends: stages keep getting harder. Lose and the run is over.',
+      endlessOn: (n) => `♾️ Endless Mode unlocked — Stage ${n} and beyond`,
+      endlessStage: (n) => `STAGE ${n} · ♾️ ENDLESS`,
       newRunToast: 'New run started',
       obTitle: (c, t) => `STAGE ${c} / ${t}`,
       obSub: "The mascot announces this stage's okey:",

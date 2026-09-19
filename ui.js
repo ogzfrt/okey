@@ -96,8 +96,10 @@
   /* Istaka ızgarası (2026-07-09): 2 satır × 15 sütun = 30 serbest hücre.
      MAX_HAND (21) sığar, boşluk bırakma özgürlüğü kalır.
      P53 · GRUP B (2026-09-19): başlangıç eli 21'den başlayıp stage başına +2
-     büyüdüğü için MAX_HAND 35'e çıktı; 30 hücre yetmiyordu. Izgara 2×20 = 40
-     hücre oldu — 35 taş sığar, 5 hücre boşluk bırakma özgürlüğü kalır.
+     büyüdüğü için MAX_HAND 30'a çıktı; 30 hücre taşları alıyor ama boşluk
+     payı bırakmıyordu. Izgara 2×17 = 34 hücre oldu — 30 taş sığar, 4 hücre
+     boşluk bırakma özgürlüğü kalır. (Dizi bir ara 35'e kadar gidiyordu;
+     hücre 57px'e inip ıstaka okunmaz olduğu için tavan 30'a çekildi.)
      Satır SAYISI değişmedi (Figma ıstakası 2 satırdır); yalnız sütun sayısı
      arttı, taş genişliği zaten sütun sayısından türetiliyor (aşağıda).
      ⚠ Sütun sayısı ARTIK BURADA TANIMLI DEĞİL: motor da alt satırın slot
@@ -5610,6 +5612,12 @@
     let openedModes = [];
     if (!Game.trainerMode) openedModes = Modes.complete('base');
 
+    /* P53 — "Sonsuz Mod'a devam" seçeneği yalnız TEMEL run'ın sonunda çıkar:
+       trainer sandbox'ında stage sayısı zaten seçiliyor, Hızlı Run ise kendi
+       kısalığı için tasarlandı. */
+    const canEndless = !Game.trainerMode && !Game.state.endless
+      && Game.state.runMode !== 'hizli';
+
     let ov = document.getElementById('runCompleteOv');
     if (ov) ov.remove();
     ov = document.createElement('div');
@@ -5641,7 +5649,15 @@
         (openedModes.length
           ? `<div class="rc-unlock">${t('modeUnlocked',
               openedModes.map(m => t('modeName_' + m.key)).join(', '))}</div>` : '') +
-        `<button class="btn primary rc-btn" id="rcMenu">${t('rcMenu')}</button>` +
+        /* P53 (kullanıcı kararı 2026-09-19) — SONSUZ MOD AYRI BİR MOD DEĞİL.
+           Menüde düğmesi YOKTUR; yalnız burada, run özeti okunduktan sonra bir
+           SEÇİM olarak çıkar. Trainer run'ında gösterilmez (orada zaten stage
+           sayısı seçiliyor) ve run zaten sonsuzsa tekrar gösterilmez. */
+        (canEndless
+          ? `<button class="btn primary rc-btn rc-endless" id="rcEndless">${t('rcEndless')}</button>` +
+            `<div class="rc-endless-hint">${t('rcEndlessHint')}</div>`
+          : '') +
+        `<button class="btn${canEndless ? '' : ' primary'} rc-btn" id="rcMenu">${t('rcMenu')}</button>` +
       `</div>`;
     document.body.appendChild(ov);
     ov.querySelector('#rcMenu').addEventListener('click', () => {
@@ -5651,6 +5667,19 @@
       el.upgradeOverlay.classList.add('hidden');
       Game.trainerMode = false;
       showScreen('menu');
+    });
+    /* Devam: motor mührü kaldırır ve son boss'un ÜRETİLMEYEN iki ödülünü
+       (yükseltme çarkı + store) üretir — oyuncu sıradan bir stage geçişine
+       düşer, run kaldığı yerden sürer. */
+    const endBtn = ov.querySelector('#rcEndless');
+    if (endBtn) endBtn.addEventListener('click', () => {
+      const r = Game.continueEndless();
+      if (!r.ok) { toast(r.error, true); return; }
+      ov.remove();
+      el.overlay.classList.add('hidden');
+      toast(t('endlessOn', r.stage + 1), true);
+      if (Game.state.upgradeOffer) showUpgradeScene();
+      else openStore();
     });
   }
 
