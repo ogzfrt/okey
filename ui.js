@@ -94,8 +94,16 @@
   const setMenuLabel = (node, str) => { node.innerHTML = pxAccents(str); };
 
   /* Istaka ızgarası (2026-07-09): 2 satır × 15 sütun = 30 serbest hücre.
-     MAX_HAND (21) sığar, boşluk bırakma özgürlüğü kalır. */
-  const RACK_COLS = 15, RACK_CAP = 30, RACK_GAP = 12;
+     MAX_HAND (21) sığar, boşluk bırakma özgürlüğü kalır.
+     P53 · GRUP B (2026-09-19): başlangıç eli 21'den başlayıp stage başına +2
+     büyüdüğü için MAX_HAND 35'e çıktı; 30 hücre yetmiyordu. Izgara 2×20 = 40
+     hücre oldu — 35 taş sığar, 5 hücre boşluk bırakma özgürlüğü kalır.
+     Satır SAYISI değişmedi (Figma ıstakası 2 satırdır); yalnız sütun sayısı
+     arttı, taş genişliği zaten sütun sayısından türetiliyor (aşağıda).
+     ⚠ Sütun sayısı ARTIK BURADA TANIMLI DEĞİL: motor da alt satırın slot
+     tabanı olarak aynı sayıyı kullanıyor (Game.setRackOrder), iki kopya
+     sessizce ayrışabiliyordu. Tek kaynak engine.js'teki `RACK_COLS`. */
+  const RACK_CAP = RACK_COLS * 2, RACK_GAP = 12;
 
   /* PLAYTEST 20 · GRUP J — SERBEST ISTAKA (DENEYSEL, YALNIZ TRAINER).
      Ana oyun modu bu daldan HİÇ geçmez: `Game.trainerMode` kapalıyken
@@ -2976,7 +2984,8 @@
     }
     // taş genişliği sabit 15 sütuna göre (satır iç genişliğinden)
     /* Figma ıstakası (2026-08-23): satır iç genişliği 1442 − 2×28 yatay
-       dolgu, 15 hücre, 12px boşluk → taş 81px (tasarım ölçüsü). */
+       dolgu, 15 hücre, 12px boşluk → taş 81px (tasarım ölçüsü).
+       P53 · GRUP B: 20 hücrede aynı satır genişliği → taş 57px. */
     const rowW = el.rackRow1.clientWidth || 1442;
     const wTw = Math.max(34, Math.min(81,
       Math.floor((rowW - 56 - (RACK_COLS - 1) * RACK_GAP) / RACK_COLS)));

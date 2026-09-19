@@ -79,10 +79,11 @@ const TOTAL_STAGES = 8;
                        (oyuncu güç paketiyle hedefi yakalar).
                        "Nefes kuralı" (yeni stage R1 < önceki stage boss'u)
                        her adımda sağlanır: 440<680 · 575<885 · 750<1150.
-   · handBonus 2     — el 15/17/19/21 yerine 17/19/21/21 (MAX_HAND tavanı
-                       aynen işler). En doğrudan kaldıraç: hedefin ikiye
-                       katlandığı eksen taş sayısıdır — daha çok taş, hem
-                       ham puanı hem çarpan basamağını büyütür.
+   · handBonus 2     — P53 sonrası: el 21/23/25/27 yerine 23/25/27/29
+                       (MAX_HAND tavanı 35, aynen işler). En doğrudan
+                       kaldıraç: hedefin ikiye katlandığı eksen taş
+                       sayısıdır — daha çok taş, hem ham puanı hem çarpan
+                       basamağını büyütür.
    · startPermMult   — run kalıcı çarpanı 0 yerine +0.5 başlar. Kullanıcının
        0.5             istediği "çarpan tablosuna taban bonusu" budur:
                        tabloya dokunmadan her açılıma sabit bir taban ekler.
@@ -118,12 +119,15 @@ const RUN_MODES = {
     handBonus: 0,
     startPermMult: 0,
     curveStretch: false,
-    /* P52 (kullanıcı oyun testi 2026-09-17): "ilk raundlar çok zor, çünkü daha
-       başlangıç olduğu için elimde güçlendirme ve joker yok". Erken oyun HEDEF
-       düşürülerek değil GÜÇ verilerek yumuşatılır: run 1 Common joker ile başlar
-       (Balatro da ilk ante'ye joker'siz sokmaz, ilk shop hemen gelir). */
-    openJokers: 1,
-    openRarity: { common: 1 },   // ağırlık tablosu (bkz. _weightedRarity)
+    /* P53 · GRUP D (kullanıcı kararı 2026-09-19) — NORMAL RUN AÇILIŞ JOKERİ
+       ALMAZ. P52'de erken oyunu yumuşatmak için 1 Common joker veriliyordu
+       (openJokers: 1, openRarity {common:1}); P53'te aynı yumuşatma çok daha
+       büyük bir kaldıraçla geliyor: başlangıç eli 15 → 21. Normal run artık
+       BOŞ joker slotuyla başlar, ilk jokerini store'dan alır.
+       ⚠ Hızlı Run'ın 3 açılış jokeri BİLE İSTEYEREK duruyor (kısa run'ın güç
+       paketi); yalnız `base` modu değişti. */
+    openJokers: 0,
+    openRarity: null,
   },
   hizli: {
     key: 'hizli',
@@ -132,11 +136,22 @@ const RUN_MODES = {
        orantılı") — zemin R1 400 (S1 şekli 0.50 / 0.735 korunur → boss 800),
        tavan S4 boss 1495 sabit: adım (1495/800)^(1/3) ≈ 1.23 (eski 1.30).
        Nefes: 495<800 · 610<985 · 750<1215. */
+    /* P53 · GRUP C (2026-09-19) — YENİDEN KALİBRE EDİLDİ (zorunlu).
+       Gruplar A+B `handSizeFor`'u değiştirdi; hızlı run da onu okur
+       (handBonus 2 üstüne biner) → eli 17/19/21/21 iken 23/25/27/29 oldu.
+       Eski tabloyla ölçüm (100 run, tutumlu): boss %72/75/64/69,
+       "1. turda kazanma" %24-65 — mod fiilen oynanmıyordu.
+       Yeni boss ekseni: 1080 · 1490 · 1880 · 2230 (adım ×1.38 · 1.26 · 1.19,
+       temel run'la aynı "öne yüklü" şekil). Raund oranları artık stage'le
+       açılıyor: R1 boss×0.50 → 0.66, R2 boss×0.75 → 0.84.
+       ⚠ P50'de kullanıcının sabitlediği S4 boss 1495 tavanı KORUNAMADI: yeni
+       elde bot onu %69 geçiyordu. Ölçüm (100 run, tutumlu): boss %50/59/48/39.
+       Nefes: 825<1080 · 1140<1490 · 1470<1880. */
     targets: [
-      [400, 590, 800],       // S1  (eski 340/500/680)
-      [495, 725, 985],       // S2  (×1.23)
-      [610, 895, 1215],      // S3  (×1.23)
-      [750, 1100, 1495],     // S4 — FINAL BOSS  (değişmedi)
+      [ 540,  810, 1080],       // S1
+      [ 825, 1160, 1490],       // S2
+      [1140, 1525, 1880],       // S3
+      [1470, 1875, 2230],       // S4
     ],
     /* P50 — kullanıcı: "coin kazancını arttırmayalım, normal run'daki gibi
        test edeceğim". ×1.5 → ×1. Diğer güç paketi (el +2, +0.5x, 3 açılış
@@ -194,20 +209,35 @@ function spendCoins(s, n) {
 
 /* Kademeli başlangıç el büyüklüğü (kullanıcı kararı, 2026-07):
    C1: 15, C2: 17, C3: 19, C4+: 21 (Final Boss dahil sabit). */
-/* P51 · Grup B (kullanıcı kararı 2026-09-16) — EL BÜYÜMESİ YAVAŞLADI.
-   Eski: 15 → 17 → 19 → 21 (S4’te tavan). Bot ölçümünde S3-S4’te kazanılan raundların
-   %16-19’u 1. turda bitiyordu; kaynağı tek bir kart değil, erken stage’lerde elin çok hızlı
-   büyümesiydi (S1→S4 +6 taş). Balatro’da el büyüklüğü sabittir; en yakın uyarlama stage başına
-   +1: 15 · 16 · 17 · 18 · 19 · 20 · 21 · 21. MAX_HAND tavanı (21) değişmedi. */
+/* P53 · GRUPLAR A+B (kullanıcı kararı 2026-09-19) — BAŞLANGIÇ ELİ 21'DEN
+   BAŞLAR VE STAGE BAŞINA +2 BÜYÜR.
+   Eski sistem (P51): 15 · 16 · 17 · 18 · 19 · 20 · 21 · 21 (tavan 21).
+   Yeni:              21 · 23 · 25 · 27 · 29 · 31 · 33 · 35
+   Gerekçe (kullanıcı): oyuncu daha ilk stage'den "gerçek bir el" ile oynasın,
+   ve el büyümesi run boyunca hissedilir bir ilerleme ekseni olsun. */
 function handSizeFor(stage) {
-  return Math.min(MAX_HAND_BASE, 15 + Math.max(0, (stage || 1) - 1));
+  return Math.min(MAX_HAND_BASE, 21 + 2 * Math.max(0, (stage || 1) - 1));
 }
-const MAX_HAND_BASE = 21;   // P51: handSizeFor tavanı (MAX_HAND ile aynı; MAX_HAND fonksiyondan sonra tanımlı)
+/* Tavan = EN BÜYÜK stage'in başlangıç eli. Bu ilişki P51'de de aynıydı
+   (handSizeFor tavanı 21 = MAX_HAND 21); yalnız sayı büyüdü. */
+const MAX_HAND_BASE = 35;
 
-/* Grup A (2026-07-09, kullanıcı kararı): ıstakada AYNI ANDA en fazla 21 taş
+/* ISTAKA IZGARASI — sütun sayısı BURADA tanımlıdır, ui.js onu okur.
+   P53 · GRUP B: 15 → 20. Alt satırın slot tabanı da budur; `setRackOrder`
+   eskiden 15'i GÖMÜLÜ taşıyordu ve ui.js sütun sayısını değiştirince serbest
+   ıstakada alt satır sessizce boş kalıyordu. Tek sayı, tek yer. */
+const RACK_COLS = 20;
+
+/* Grup A (2026-07-09, kullanıcı kararı): ıstakada AYNI ANDA en fazla N taş
    bulunabilir. Hiçbir mekanizma (ekstra çekiş, Uzaylı kopyaları, Tekrar Çek,
-   kalıcı çekiş yükseltmeleri…) bu sınırı aşamaz — çekişler sınıra kırpılır. */
-const MAX_HAND = 21;
+   kalıcı çekiş yükseltmeleri…) bu sınırı aşamaz — çekişler sınıra kırpılır.
+   P53 · GRUP B: sabit 21 tavanı artık BAŞLANGIÇ eliyle çelişiyordu (S2'de
+   23 taşla başlanıyor). Tavan, tarihsel kuralı koruyacak biçimde en büyük
+   başlangıç eline (S8 = 35) taşındı — yani "ıstakaya S8 oyuncusunun
+   elinden fazlası sığmaz" kuralı aynen duruyor, yalnız ölçek büyüdü.
+   UI tarafı: ıstaka ızgarası 2×15 (30 hücre) iken 2×20'ye (40 hücre)
+   genişletildi; taş genişliği zaten hücre sayısından türetiliyor. */
+const MAX_HAND = 35;
 
 /* GDD 5.2 — boss hedefleri playtest geri bildirimiyle düşürüldü
    (Normal 2 → Boss sıçraması ~1.3x; GDD'deki 1.67x çok sertti).
@@ -337,8 +367,49 @@ const MAX_HAND = 21;
    Adım tarihsel banda (1.36–1.40) geri döndü.
    NEFES KURALI sağlanıyor: 360<500 · 510<690 · 730<950 · 1040<1310 ·
    1490<1810 · 2110<2500 · 3000<3440. */
+/* v12 (2026-09-19, P53 · GRUP C) — EL SİSTEMİ DEĞİŞTİ, TABLO SIFIRDAN
+   KALİBRE EDİLDİ (tools/run_audit.js, 100 run × 2 profil).
+   Sebep: başlangıç eli 15 → 21 ve stage başına +2 (21·23·25·27·29·31·33·35).
+   Taş sayısı, hedefin iki katına çıktığı EN DOĞRUDAN eksendir; v11 tablosu
+   eski ele göre kalibreydi ve yeni elde çöküyordu — ölçüm (v11 tablosu +
+   yeni el, tutumlu bot): boss geçişi S1 %88 · S2 %90 · S3 %90 · S4 %75 ·
+   S5 %75 · S6 %58 · S7 %62 · S8 %56, "1. turda kazanma" %18-52. Oyun
+   fiilen kendini oynuyordu.
+   YÖNTEM: hedef, P52'de kullanıcının ONAYLADIĞI zorluk profilini yeni el
+   sisteminde YENİDEN ÜRETMEKTİ (tabloyu yeniden tasarlamak değil). Boss
+   ekseni ve raund oranları bot ölçümüyle o profile oturtuldu.
+     · boss ekseni: 730 · 1300 · 1780 · 2300 · 2900 · 3620 · 4450 · 5400
+       adım: ×1.78 · 1.37 · 1.29 · 1.26 · 1.25 · 1.23 · 1.21
+       S1→S2 adımı bilinçli olarak ÇOK büyük: Grup D ile normal run artık
+       açılış jokeri almıyor, yani S1 gerçekten çıplak elle oynanıyor;
+       S2'ye gelen oyuncunun elinde zaten 2-3 store ziyareti var.
+     · raund oranları ARTIK STAGE'LE AÇILIYOR (v10 precedent'i):
+       R1 boss×0.44 → 0.70, R2 boss×0.72 → 0.86 (S1 → S8, doğrusal).
+       v11'in sabit 0.50/0.75'i yeni elde R1'i bedavaya çeviriyordu.
+   ÖLÇÜM (100 run, AUDIT_CONTINUE=1 — sol: tutumlu, sağ: avcı):
+     stage  R1      R2      BOSS    1.tur
+     S1     82/84   59/64   45/48   4/7
+     S2     95/91   80/85   54/52   21/19
+     S3     89/90   84/75   40/41   20/21
+     S4     82/82   72/64   53/41   23/15
+     S5     80/85   67/63   41/50   15/22
+     S6     73/77   62/73   30/33   23/18
+     S7     75/79   64/60   35/31   20/13
+     S8     69/58   57/54   21/23   16/11
+   P52'de yayınlanan tablonun bot profili: boss %36/69/51/42/43/36/32/21 —
+   yani zorluk kapıları KORUNDU, yalnız el sistemi değişti.
+   ⚠ KALAN SAPMA: "1. turda kazanma" %11-23 (P52'de %3-15). Bu, büyük elin
+   YAPISAL sonucudur — 25-35 taşlık elden ilk turda çok daha büyük bir döküm
+   yapılabiliyor. R1 oranını daha yukarı çekmek raundun "nefes" işlevini
+   tamamen silerdi; bilinçli olarak kabul edildi.
+   NEFES KURALI ("yeni stage R1 < önceki stage boss'u") istisnasız sağlanır:
+   620<730 · 915<1300 · 1270<1780 · 1705<2300 · 2265<2900 · 2950<3620 ·
+   3780<4450.
+   ⚠ KALİBRASYON SINIRI: bot değnek kullanmaz, okey takası yapmaz, taş
+   biriktirip son turda dökmez — oranlar ALT SINIRDIR, gerçek oyuncu daha
+   yüksek geçer. */
 const STAGE_TARGETS = [
-  [250, 375, 500],      // S1 — el 15 (kullanıcı: "250 ile başlasın")
+  [320, 525, 730],      // S1 — el 21 · oran 0.44/0.72
   /* P51 · GRUP B (kullanıcı onayı 2026-09-15) — BALATRO EĞRİSİ, tam run botuyla
      ölçülerek kuruldu (tools/run_audit.js).
      v2 (10.3) S4-S8'de sabit 1.42x adımla büyüyordu: erken stage'ler (el 15→21
@@ -364,17 +435,17 @@ const STAGE_TARGETS = [
      (S5 1925 · S6 2550 · S7 3340 · S8 4340); erken taraf ise HEDEFLE değil GÜÇLE yumuşatıldı:
      run artık 1 Common joker ile başlar (RUN_MODES.base.openJokers).
      Nefes kuralı korunur: her R1 önceki boss'un altında. */
-  [375, 565, 750],      // S2 (el 17)   ×1.50
-  [545, 820, 1090],     // S3 (el 19)   ×1.45
-  [725, 1090, 1450],    // S4 (el 18)   ×1.33
-  [965, 1445, 1925],    // S5 (el 19)   ×1.328
-  [1275, 1915, 2550],   // S6 (el 20)   ×1.32
-  [1670, 2505, 3340],   // S7 (el 21)   ×1.31
-  [2170, 3255, 4340],   // S8 — FINAL BOSS ×1.30
+  [620,  960, 1300],    // S2 — el 23 · oran 0.48/0.74 · boss ×1.78
+  [915, 1355, 1780],    // S3 — el 25 · oran 0.51/0.76 · boss ×1.37
+  [1270, 1795, 2300],   // S4 — el 27 · oran 0.55/0.78 · boss ×1.29
+  [1705, 2320, 2900],   // S5 — el 29 · oran 0.59/0.80 · boss ×1.26
+  [2265, 2970, 3620],   // S6 — el 31 · oran 0.63/0.82 · boss ×1.25
+  [2950, 3740, 4450],   // S7 — el 33 · oran 0.66/0.84 · boss ×1.23
+  [3780, 4645, 5400],   // S8 — el 35 · FINAL BOSS · oran 0.70/0.86 · ×1.21
 ];
 /* Tablo dışına taşan stage'ler için (Trainer Sonsuz Mod) büyüme çarpanı.
    P51 · Grup B: eğrinin son adımıyla aynı (sonsuz modda yavaşlayan uç). */
-const TARGET_GROWTH = 1.30;   // P52: geç oyun yeniden sertleşti
+const TARGET_GROWTH = 1.21;   // P53 · Grup C: eğrinin son adımıyla aynı
 
 /* Çoklu kombinasyon ham puan bonusu (MULTI_RAW_BONUS) playtest 3'te
    KALDIRILDI (kullanıcı kararı): GDD 4.2 çarpan tablosu çok kombinasyonu
@@ -9815,7 +9886,7 @@ const Game = {
      ARASINA bırakır ve sıra kayar (ray üzerinde kaydırma hissi).
      Motor tarafı tek bir işten ibarettir: iki satırın id listesini alıp
      `slot` numaralarını yeniden yazmak. Sıra numaraları klasik düzenle
-     AYNI uzayda kalır (üst satır 0-14, alt satır 15-29), böylece iki
+     AYNI uzayda kalır (üst satır 0..RACK_COLS-1, alt satır RACK_COLS..), böylece iki
      düzen arasında geçiş yapılsa bile ıstaka bozulmaz.
      DENEYSELDİR: ana oyun modunda hiç çağrılmaz (ui.js yalnız trainer'da
      serbest düzeni çizer), bu yüzden klasik düzenin davranışı birebir
@@ -9838,7 +9909,7 @@ const Game = {
       return n;
     };
     const n1 = take(row1Ids, 0);
-    take(row2Ids, 15);
+    take(row2Ids, RACK_COLS);   // P53 · Grup B: gömülü 15 yerine tek kaynak
     /* Listelerde geçmeyen taş kalırsa (beklenmedik durum) sıraları
        bozulmasın diye üst satırın sonuna eklenir — taş kaybolmaz. */
     let tail = n1;
@@ -10977,6 +11048,7 @@ if (typeof module !== 'undefined') {
     COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
+    RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,
     BORSA_SHARE_MULT, BORSA_SHARE_CAP, BORSA_DIVIDEND, BORSA_BURN,
     CHEAT_RISK_STEPS, CHEAT_DECK_PICK,

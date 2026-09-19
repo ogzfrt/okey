@@ -5333,14 +5333,20 @@ body.game-open #overlay { align-items: center; justify-content: center; }
 }
 .gm-stage #rackRow1 { top: 10px; }
 .gm-stage #rackRow2 { top: 141px; }
+/* P53 · GRUP B (2026-09-19): 81px SABİT değeri `var(--tw)` oldu. Istaka
+   ızgarası 2×15'ten 2×20'ye çıktı (el 21 → 35 büyüyor), satırın Figma
+   genişliği (1442) ise değişmedi: 20 hücre × 81px taşardı (scrollWidth
+   1876). `--tw` ui.js'te satır genişliğinden hesaplanır → 20 sütunda 57px,
+   toplam 20×57 + 19×12 boşluk + 56 dolgu = 1424 ≤ 1442. Taşın Figma
+   en/boy oranı (1 : 1.358) hücrede de korunur. */
 .gm-stage .rack-empty {
-  width: 81px; height: 110px; flex: 0 0 81px;
+  width: var(--tw); height: calc(var(--tw) * 1.358); flex: 0 0 var(--tw);
   background: var(--img-rack-cell) no-repeat center / 100% 100%;
   border: 0; border-radius: 0; opacity: 1;
 }
 /* Sürükle-bırak hedefi */
 .gm-stage .rack-empty.drop-cell { filter: brightness(1.35); }
-.gm-stage .rack-row .tile { flex: 0 0 81px; }
+.gm-stage .rack-row .tile { flex: 0 0 var(--tw); }
 
 /* ---------- GRUP C: açılır/kapanır backup & Değnek omuzları ----------
    Figma'da omuz (Group 137, 310×170) ıstakanın ÜST köşesine oturur:
@@ -7130,6 +7136,10 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-uzayli     { --jk-art: url('assets/game/joker/uzayli.svg'); }
 .jk-misunderstood { --jk-art: url('assets/game/joker/misunderstood-v1.svg'); }
 .jk-misunderstood.misu-v2 { --jk-art: url('assets/game/joker/misunderstood-v2.svg'); }
+/* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
+   değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
+   çizim tamamen başka (sarı/turkuaz nota kartı → mavi çark kartı).
+   `assets/game/joker/ritim.svg` yerinde değişti; sınıf ve yol aynı kaldı. */
 
 /* GRUP E (2026-09-07) — GÖRSELİ HAZIRLANMAMIŞ BOSS JOKERİ "BLANK" DURUR.
    20 boss jokerinin 10'unun tasarımı hazır; kalan 10'u kart ARKASIYLA
