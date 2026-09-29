@@ -6014,14 +6014,24 @@
      showTrainerSetup aynı fonksiyonları çağırır. `artRow`: o nadirlik rafı
      görsel dizisi mi (Epic + Mythic). */
   const COL_ART_RARITIES = new Set(['epic', 'mythic']);
+  /* P54 (kullanıcı raporu: "Dr. Frankenstein koleksiyonda ve trainer'da
+     gözükmüyor") — KÖK NEDEN: çizim yalnız Epic/Mythic raflarında
+     kullanılıyordu; Legendary rafı yazılı kart olarak kuruluyordu, yani
+     Frankenstein'ın çizimi hiç okunmuyordu. Artık çizimi olan HER kart
+     (nadirlik ne olursa olsun) çizimiyle görünür. Görsel raf olmayan bir
+     rafta çizimi henüz olmayan kart kart arkasına DÖNMEZ — adıyla kalır,
+     ama raf karışık ölçüde olmasın diye çizimli kartla aynı kutuya oturur
+     (`.col-sized`). */
+  const rarityHasArt = (rar) => Object.values(JOKER_DEFS).some(d => d.rarity === rar && JOKER_ART.has(d.key));
   function colJokerCard(def) {
     const tile2 = document.createElement('div');
-    if (COL_ART_RARITIES.has(def.rarity)) {
+    if (COL_ART_RARITIES.has(def.rarity) || JOKER_ART.has(def.key)) {
       const has = JOKER_ART.has(def.key);
       tile2.className = 'col-jk-card' + (has ? '' : ' blank');
       tile2.innerHTML = `<div class="col-jk-art${has ? ' jk-' + def.key : ''}"></div>`;
     } else {
-      tile2.className = `joker-tile r-${def.rarity} col-tile`;
+      tile2.className = `joker-tile r-${def.rarity} col-tile`
+        + (rarityHasArt(def.rarity) ? ' col-sized' : '');
       tile2.innerHTML =
         (def.mech === 'deck' ? `<div class="col-deck-tag">${t('colDeckTag')}</div>` : '') +
         (def.icon ? `<div class="col-icon">${def.icon}</div>` : '') +
@@ -6104,7 +6114,7 @@
          jokeri BLANK durur (kart arkası) — bilgi yine hover'da tam. */
       /* P54 · Grup F: Mythic'in de Figma çizimleri geldi → aynı görsel dizisi
          (çizimi olmayan The World blank/kart arkası durur). */
-      const artRow = COL_ART_RARITIES.has(rar);
+      const artRow = COL_ART_RARITIES.has(rar) || rarityHasArt(rar);
       grid.className = artRow ? 'col-grid col-jk-row' : 'col-grid';
       for (const def of defs) {
         const tile2 = colJokerCard(def);
@@ -6504,7 +6514,7 @@
       h.textContent = T.rarity(r);
       wrap.appendChild(h);
       const grid = document.createElement('div');
-      grid.className = 'tr-grid col-grid ' + (COL_ART_RARITIES.has(r) ? 'col-jk-row' : 'tr-col-tiles');
+      grid.className = 'tr-grid col-grid ' + (COL_ART_RARITIES.has(r) || rarityHasArt(r) ? 'col-jk-row' : 'tr-col-tiles');
       for (const d of defs) {
         const card = trPickCard(colJokerCard(d), T.name({ key: d.key, name: d.name }),
           selected.has(d.key), () => {

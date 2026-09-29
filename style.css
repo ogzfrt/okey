@@ -8104,3 +8104,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
    Freedom "FIGHT FOR FREEDOM") SVG içinde `shape-rendering="geometricPrecision"`
    taşır: kökteki crispEdges, kesirli ölçekte (sahne ≠ 1:1) yazının yarım
    piksellik yollarını düşürüp harfleri kırıyordu. Çizim katmanları keskin kalır. */
+
+/* P54 — çizimli kart içeren (ör. Legendary: Frankenstein) ama tümü çizimli
+   olmayan rafta, çizimsiz kart çizimli kartla AYNI kutuda durur. */
+.col-tile.col-sized { width: 110px; height: 150px; min-height: 0; box-sizing: border-box; justify-content: center; }
+#trainerSetup .col-tile.col-sized, #trainerFilter .col-tile.col-sized { width: 81px; height: 110px; padding: 6px 4px; }
