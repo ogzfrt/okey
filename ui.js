@@ -750,22 +750,23 @@
         enableDrag(d, tile);
       }
       const j = Game.state.deckJokers.find(x => x.key === tile.jokerTile);
-      /* PLAYTEST 19 · GRUP G — THE CHEATING RİSK GÖSTERGESİ.
-         Motor `j.risk`i her tur büyütüyordu ama HİÇBİR YERDE çizilmiyordu:
-         oyuncu ne kadar tehlikede olduğunu göremediği için jokerin tek
-         kararını ("bir tur pas geçip riski sıfırlayayım mı?") veremiyordu.
-         Rozet üç kademede renk değiştirir — %25 altı sakin, %50 altı uyarı,
-         üstü tehlike — ki tehlike bir sayı okumadan da anlaşılsın. */
-      if (j && j.key === 'cheating') {
-        /* P35 · Grup H — risk artık jokerin değil raundun: hile yaptıkça birikir */
-        const pct = Math.round(((Game.state && Game.state.cheatRisk) || 0) * 100);
-        const b = document.createElement('div');
-        b.className = 'dj-risk' + (pct >= 50 ? ' hot' : pct >= 25 ? ' warm' : '');
-        b.textContent = t('cheatRiskBadge', pct);
-        b.title = t('cheatRiskTip', pct);
-        d.appendChild(b);
-      }
       if (j) attachTip(d, j, {});
+      return d;
+    }
+    /* P54 · Grup A — ÜÇ KAĞITÇI (BOSS): ters gelen taşın yüzü gizlidir.
+       Seçilip açılabilir, atılabilir; ne olduğu açılımda ya da bir sonraki
+       tur başında görünür. İpucu da yüzü söylemez. */
+    if (tile.faceDown) {
+      d.className = 'tile face-down';
+      d.dataset.id = tile.id;
+      d.innerHTML = '<div class="num">?</div><div class="dot"></div>';
+      attachTip(d, { name: t('faceDownName'), rarityText: t('bossMarkTag'), desc: t('faceDownDesc') }, {});
+      if (interactive) {
+        if (selection.has(tile.id)) d.classList.add('selected');
+        if (newTileIds.has(tile.id)) d.classList.add('new');
+        d.addEventListener('click', () => onTileClick(tile.id));
+        enableDrag(d, tile);
+      }
       return d;
     }
     // Sahte okey (klasik 101) — okeyin NORMAL kopyası, joker değil
@@ -1308,10 +1309,9 @@
     if (recs.some((r) => r.key === 'terazi') && num(s.teraziRoundMult)) out.push(x(s.teraziRoundMult));
     if (recs.some((r) => r.key === 'vampir') && num(s.vampirBank)) out.push(t('tipNowDrain', num(s.vampirBank)));
     if (recs.some((r) => r.key === 'godzilla') && num(s.godzillaLevel)) out.push('S' + num(s.godzillaLevel));
-    if (recs.some((r) => r.key === 'cheating')) {
-      const risk = Math.round(num(s.cheatRisk) * 100);
-      if (risk) out.push('%' + risk);
-    }
+    // P54 · Grup B — Öteki Dünya: geride bekleyen elin taş sayısı
+    if (recs.some((r) => r.key === 'otekiDunya') && (s.otekiHand || []).length)
+      out.push(t('tipNowTiles', s.otekiHand.length));
     /* P54 · Bölüm 1 · Madde 1 — birikim artık kartın İÇİNDE, kendi şeridinde:
        sola etiket, sağa değer; kenar boşlukları açıklama satırlarıyla aynı.
        (P52'de metin kutunun sağ kenarına yapışık, küçük bir satırdı.) */
@@ -1614,11 +1614,11 @@
     frankenstein: '🧟‍♂️',
     /* mythic */
     seytan: '😈', pinkyWarrior: '🩷', kiyamet: '☄️', tanrininEli: '🤲', ejderha: '🐉',
-    karaDelik: '🕳️', crimsonTac: '👑', nostradamus: '🔮', yasakElma: '🍎',
+    karaDelik: '🕳️', nostradamus: '🔮', yasakElma: '🍎',
     kagit: '📃',
     /* epic */
     kirby: '🌸', cellat: '🪓', dervish: '🌀', misunderstood: '🎭', zombie: '🧟',
-    uzayli: '👽', ahtapot: '🐙', cheating: '🃏', terziIgne: '📍', freedom: '🗽',
+    uzayli: '👽', ahtapot: '🐙', ucKagitci: '🃏', otekiDunya: '🌗', terziIgne: '📍', freedom: '🗽',
     avukat: '⚖️', kahin: '👁️', tuccar: '💼', fatality: '💀', ritim: '🥁',
     corporates: '🏢', godzilla: '🦖', kelebek: '🦋', aynaKral: '🪞', karaKedi: '🐈‍⬛',
   };
@@ -1680,6 +1680,15 @@
     render();
   }
 
+  /* P54 · Grup B — Öteki Dünya: kartın sol tıkı iki eli yer değiştirir. */
+  function useOtekiCard() {
+    const res = Game.useOteki();
+    if (!res.ok) { toast(T.ev(res.error)); return; }
+    selection.clear();
+    toast(T.ev(res.note), true);
+    render();
+  }
+
   function useIpotekCard() {
     const res = Game.useIpotek();
     if (!res.ok) { toast(T.ev(res.error)); return; }
@@ -1712,6 +1721,7 @@
       const dm = has('ayna') && Game.damgaState && Game.damgaState();
       if (dm && dm.id === j.id && !dm.used) left = { lbl: t(dm.armed ? 'abUndo' : 'abUse'), fn: useDamga };
       else if (has('ipotek') && Game.ipotekState && Game.ipotekState().canUse) left = { lbl: t('abUse'), fn: useIpotekCard };
+      else if (has('otekiDunya') && Game.otekiState && Game.otekiState().canUse) left = { lbl: t('abUse'), fn: useOtekiCard };
       else if (has('rusvet') && Game.canRusvet && Game.canRusvet()) left = { lbl: t('abUse'), fn: doRusvet };
       else if (has('terazi') && Game.canTeraziSacrifice && Game.canTeraziSacrifice()) left = { lbl: t('abUse'), fn: doTerazi };
       else if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
@@ -1864,12 +1874,15 @@
         tile2.appendChild(b);
       }
     }
-    /* PLAYTEST 31 · GRUP H — CRIMSON KING'İN TACI kartın sol üst köşesinde. */
-    if (!opts.backup && Game.state.crownId === j.id && Game.hasActive('crimsonTac')) {
+    /* P54 · Grup B — ÖTEKİ DÜNYA'DA BEKLEYEN EL kartta canlı durur (🌗N).
+       Vasiyet / Godzilla rozetiyle aynı kalıp. */
+    if (!opts.backup && (j.key === 'otekiDunya' || (j.fused || []).some(f => f.key === 'otekiDunya'))
+        && Game.state.status === 'playing') {
+      const n = (Game.state.otekiHand || []).length;
       const b = document.createElement('span');
-      b.className = 'jt-crown';
-      b.textContent = '👑';
-      b.title = t('crownBadge');
+      b.className = 'jt-charge' + (n ? ' on' : '');
+      b.textContent = `🌗${n}`;
+      b.title = t('otekiBadge', n);
       tile2.appendChild(b);
     }
     /* P43 (kullanıcı isteği 2026-09-14) — DAMGALA / İPOTEK DÜĞMELERİ KALKTI.
@@ -2806,13 +2819,6 @@
     const n = [];
     const k = s.boss.key;
     if (k === 'kelebek' && s.bossBan) n.push(t('bossBanExtra', T.typeName(s.bossBan)));
-    if (k === 'cheating') {
-      if (s.bossCheatPlan) n.push(t('bossCheatPlan', t('bossCheatKind_' + s.bossCheatPlan.kind),
-        Math.round((s.bossCheatPlan.chance || 0.5) * 100)));
-      if (s.bossCheatStats && s.bossCheatStats.tries)
-        n.push(t('bossCheatStats', s.bossCheatStats.hits, s.bossCheatStats.tries));
-      if (s.bossCheatTook) n.push(t('bossCheatTook', s.bossCheatTook));   // GRUP G (P20): çalınan taş sayacı
-    }
     if (k === 'avukat' && s.bossMutedJoker) {
       const mj = Game.slotRecs().find(j => j.key === s.bossMutedJoker);
       n.push(t('bossMutedExtra', mj ? T.name(mj) : s.bossMutedJoker));
@@ -2833,6 +2839,11 @@
   function render() {
     const s = Game.state;
     hideTip(); // hover'daki eleman yeniden çizimde kaybolabilir
+    /* P54 · Grup A — Üç Kağıtçı'nın bekleyen seçimi (tur başında motor kurar).
+       Hangi akıştan gelinirse gelinsin (raund başı, discard, kayıttan dönüş)
+       pencere render üzerinden açılır; açıksa ikinci kez kurulmaz. */
+    if (s && s.ucKagit && s.status === 'playing' && !document.getElementById('ucKagitPop'))
+      setTimeout(showUcKagit, 450);
     /* PLAYTEST 9 · GRUP D (bug) — SEÇİM BUDAMASI.
        `selection` taş ID'si tutar; eldeki taş başka bir yolla elden çıkarsa
        (Okey'i Al takası, tüketilebilir, boss efekti, deste jokeri) ID
@@ -2871,9 +2882,6 @@
       // P42: tur tur değişen boss notları (Kelebek yasağı dahil) üstteki #kahinChip'te — bkz. bossTurnNotes
       /* GRUP B/1 (P20): sınır artık üst şeritteki #fatalityChip'te yazar —
          burada ikinci kez yazılmaz. */
-      /* Grup G (P19) — The Cheating artık "telegraflı" bir tehdit: bu tur ne
-         DENEYECEĞİ ve şimdiye kadar kaç denemesinin tuttuğu banner'da canlı
-         durur, yani oyuncu turu ona göre planlayabilir. */
       /* P36 · Grup C / P42 — Kahin kehaneti ve boss'un TUR TUR değişen
          notları (susturulan joker, yasak, borç, görev…) boss kutusunda
          TEKRARLANMAZ: tek yerleri üst ortadaki #kahinChip (bossTurnNotes).
@@ -3303,21 +3311,6 @@
       b.addEventListener('click', () => showTuccarOffer());
       el.openAreaHint.appendChild(b);
     }
-    /* P35 · GRUP H — "HİLE YAP". The Cheating eldeyken ve sahnede açılım
-       varken görünür; basınca sıradaki onaya +CHEAT_HILE_MULT (P51: 2.0x) kurulur (hesap kutusu
-       bunu hemen gösterir), ikinci basış geri alır. Risk jokerin rozetinde. */
-    if (meldPhase && Game.canCheat && Game.canCheat() && (s.staged.length || s.islemeler.length)) {
-      const b = document.createElement('button');
-      b.className = 'gm-btn gm-cheat' + (s.cheatArmed ? ' on' : '');
-      b.innerHTML = t(s.cheatArmed ? 'cheatBtnOn' : 'cheatBtn');
-      b.title = t('cheatBtnTip', Math.round((s.cheatRisk || 0) * 100));
-      b.addEventListener('click', () => {
-        const r = Game.toggleCheat();
-        if (!r.ok) { toast(r.error); return; }
-        render();
-      });
-      el.openAreaHint.appendChild(b);
-    }
     /* PLAYTEST 17 · GRUP F/23 — BEKLEYEN FÜZYON.
        Füzyon artık ne ana slotu ne backup'ı işgal eder; alındığı anda
        birleştirme ekranı açılır. Oyuncu "Sonra" derse ya da o an
@@ -3674,6 +3667,74 @@
     box.appendChild(btn);
     wrap.appendChild(box);
     ov.appendChild(wrap);
+    document.body.appendChild(ov);
+  }
+
+  /* P54 · Grup A — ÜÇ KAĞITÇI seçim penceresi. Kuzey Yıldızı kabuğu (pk-*):
+     üç KAPALI taş; her birinin altında "Bak" düğmesi (tur başına bir bakış,
+     UC_PEEK_COST coin). Bakılan taş yüzünü gösterir. Pencere kapatılamaz —
+     seçim bitmeden açılım/atış motorda da kilitlidir. */
+  function showUcKagit() {
+    const s = Game.state;
+    if (!s || !s.ucKagit || s.status !== 'playing' || document.getElementById('ucKagitPop')) return;
+    const cost = UC_PEEK_COST;   // engine.js üst düzey sabiti (i18n CHEAT_HILE_MULT ile aynı yol)
+    const ov = document.createElement('div');
+    ov.id = 'ucKagitPop';
+    ov.className = 'pk-ov tone-gold';
+    ov.innerHTML =
+      `<div class="pk-box yildiz-box uc-box"><h3>${t('ucTitle')}</h3>` +
+      `<div class="pk-body pk-choice"></div>` +
+      `<div class="pk-foot"><span class="pk-hint">${t('ucHint', cost)}</span></div></div>`;
+    const body = ov.querySelector('.pk-body');
+    const faces = {};
+    const draw = () => {
+      body.innerHTML = '';
+      const u2 = Game.state.ucKagit;
+      [0, 1, 2].forEach((i) => {
+        const c = document.createElement('div');
+        c.className = 'pk-card yildiz-opt uc-opt';
+        const holder = document.createElement('button');
+        holder.className = 'yildiz-tile uc-tile';
+        const f = faces[i];
+        const tile = f ? { id: -100 - i, color: f.color, number: f.number, isOkeyReal: !!f.okey }
+          : { id: -100 - i, faceDown: true };
+        holder.appendChild(tileEl(tile, false));
+        holder.addEventListener('click', () => {
+          if (ov.dataset.done) return;
+          ov.dataset.done = '1';
+          const r = Game.ucKagitTake(i);
+          if (!r.ok) { toast(T.ev(r.error)); ov.remove(); render(); return; }
+          SFX.draw();
+          [...body.children].forEach((el2, k) => el2.classList.add(k === i ? 'pk-won' : 'pk-lost'));
+          if (r.took != null) newTileIds = new Set([r.took]);
+          notify(r.events, true, { quiet: true });
+          setTimeout(() => { ov.remove(); render(); setTimeout(() => newTileIds.clear(), 600); }, 620);
+        });
+        c.appendChild(holder);
+        if (u2 && u2.peek == null) {
+          const pb = document.createElement('button');
+          pb.className = 'gm-btn uc-peek';
+          pb.textContent = t('ucPeekBtn', cost);
+          pb.disabled = Game.state.coins < cost;
+          pb.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const r = Game.ucKagitPeek(i);
+            if (!r.ok) { toast(T.ev(r.error)); return; }
+            faces[i] = r.face;
+            render();
+            draw();
+          });
+          c.appendChild(pb);
+        } else if (f) {
+          const lb = document.createElement('div');
+          lb.className = 'uc-peeked';
+          lb.textContent = f.okey ? t('ucPeekOkey') : t('ucPeekPlain');
+          c.appendChild(lb);
+        }
+        body.appendChild(c);
+      });
+    };
+    draw();
     document.body.appendChild(ov);
   }
 
@@ -5897,8 +5958,9 @@
     'kahin', 'kirby', 'corporates',           // P51 · Grup C: 16 çizim (SIR_BY → kirby)
     'avukat', 'godzilla', 'tuccar',           // P54 · Grup F: boss frame 20/20 (Cheating hariç 19)
     /* P54 · Grup F — MYTHIC çizimleri (Figma 379:319, 9 kart; The World yok) */
-    'tanrininEli', 'seytan', 'crimsonTac', 'karaDelik', 'yasakElma',
-    'pinkyWarrior', 'kiyamet', 'kagit', 'ejderha']);
+    'tanrininEli', 'seytan', 'theWorld', 'karaDelik', 'yasakElma',
+    'pinkyWarrior', 'kiyamet', 'kagit', 'ejderha',
+    'frankenstein']);                         // P54 · Figma 383:975 — ilk Legendary çizimi
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',

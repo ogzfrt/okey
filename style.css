@@ -294,17 +294,7 @@ body::before {
 
 /* (P43: kartın köşesindeki DAMGALA / İPOTEK hap düğmeleri kaldırıldı —
    elle kullanılan jokerler kartın üstüne gelip sol tıkla kullanılır.) */
-/* PLAYTEST 31 · GRUP H — Crimson King tacı (kartın sol üst köşesi) */
-.joker-tile .jt-crown {
-  position: absolute;
-  top: -10px;
-  left: -6px;
-  font-size: 16px;
-  line-height: 1;
-  z-index: 3;
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,.35));
-  pointer-events: none;
-}
+/* (P54 · Grup B: Crimson King'in taç rozeti kaldırıldı — taç efekti oyundan çıktı.) */
 /* PLAYTEST 31 · GRUP I / C — Yasak Elma ve Pinky Warrior okeyleri */
 .tile.apple-tile::after,
 .tile.pinky-okey::after {
@@ -1546,6 +1536,9 @@ body::before {
   gap: 0;
 }
 .joker-tile.has-art.jt-enter { animation: fadeIn .25s ease; }
+/* P54 — ilk Legendary çizimi (Frankenstein): Legendary'nin çapraz parlaması
+   (`::after`) da kabuğun parçasıdır, çizimin üstünden geçmez. */
+.joker-tile.has-art::after { content: none; }
 
 /* GRUP G (2026-09-06) — JOKER SÜRÜKLEME.
    Kart sürüklenirken yerinde soluk bir iz bırakır; imleçte 1:1 ölçekli
@@ -3151,6 +3144,11 @@ body.menu-open #app {
 }
 .yildiz-tile { --tw: 74px; display: flex; }
 .yildiz-tile .tile { cursor: pointer; }
+/* P54 · Grup A — Üç Kağıtçı: kapalı taş + "Bak" düğmesi aynı kartta, alt alta */
+.pk-card.uc-opt { flex-direction: column; gap: 10px; }
+.yildiz-tile.uc-tile { background: none; border: 0; padding: 0; cursor: pointer; }
+.uc-opt .uc-peek { font-size: 14px; padding: 4px 10px; }
+.uc-opt .uc-peeked { font: 700 13px/1 var(--gm-font); color: #8A6D1F; letter-spacing: -.5px; }
 
 .pk-ico.sp-art-sm {
   width: 33px; height: 45px;
@@ -7157,18 +7155,23 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 /* P54 · GRUP F — MYTHIC JOKER ÇİZİMLERİ. Kaynak: Figma 379:319
    "MYTHIC-JOKERLER" (9 kart, 81 × 110). Eşleşme katman adından:
    Tanrının_eli → tanrininEli · Şeytanın_teklifi → seytan ·
-   Crimson_king → crimsonTac · boşluk → karaDelik · Adem_ile_Havva → yasakElma ·
+   Crimson_king → theWorld (P54 · Grup B takası) · boşluk → karaDelik · Adem_ile_Havva → yasakElma ·
    Pinky_warrior → pinkyWarrior · Kıyamet_trompeti → kiyamet · Kâğıt → kagit ·
    gökyüzü ejderhası → ejderha. The World'ün çizimi YOK (ad değişikliği bekliyor). */
 .jk-tanrininEli  { --jk-art: url('assets/game/joker/tanrinin-eli.svg'); }
 .jk-seytan       { --jk-art: url('assets/game/joker/seytan.svg'); }
-.jk-crimsonTac   { --jk-art: url('assets/game/joker/crimson-king.svg'); }
+/* P54 · Grup B: "Crimson King" adı + çizimi artık başa sarma kartında (anahtar `theWorld`) */
+.jk-theWorld     { --jk-art: url('assets/game/joker/crimson-king.svg'); }
 .jk-karaDelik    { --jk-art: url('assets/game/joker/bosluk.svg'); }
 .jk-yasakElma    { --jk-art: url('assets/game/joker/adem-havva.svg'); }
 .jk-pinkyWarrior { --jk-art: url('assets/game/joker/pinky-warrior.svg'); }
 .jk-kiyamet      { --jk-art: url('assets/game/joker/kiyamet.svg'); }
 .jk-kagit        { --jk-art: url('assets/game/joker/kagit.svg'); }
 .jk-ejderha      { --jk-art: url('assets/game/joker/ejderha.svg'); }
+/* P54 (2026-09-29) — LEGENDARY çizimleri: Figma 383:1000 "LEGENDARY_JOKERLER".
+   İlk kart: Dr_Frankenstein (383:975) → frankenstein. Koleksiyonun Legendary
+   rafı kartlar tamamlanınca görsel dizisine çevrilecek (şimdilik 1/15). */
+.jk-frankenstein { --jk-art: url('assets/game/joker/frankenstein.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
    çizim tamamen başka (sarı/turkuaz nota kartı → mavi çark kartı).
@@ -8040,3 +8043,10 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 .run-sum .rs-line:last-child { border-bottom: 0; }
 .run-sum .rs-line span { color: var(--muted, #7C8CA0); }
+
+/* P54 · Grup A — ÜÇ KAĞITÇI (BOSS) TERS TAŞI. Figma'da bu hâlin çizimi YOK;
+   geçici görünüm: taş şablonu korunur, yüz koyu, sayı yerine "?".
+   Tasarım gelince bu blok Figma değerleriyle değişecek. */
+.tile.face-down { background-color: var(--gm-dark, #2E3A2A); }
+.tile.face-down .num { color: var(--gm-light, #EEF3D9); }
+.tile.face-down .dot { opacity: .35; }
