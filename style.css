@@ -8053,3 +8053,54 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 
 /* P54 · Grup C — Satranç Saati rozeti durdurulunca soluklaşır */
 .joker-tile .jt-charge.jt-clock.frozen { opacity: .6; }
+
+/* ==========================================================================
+   P54 (kullanıcı isteği 2026-09-29) — TRAINER KURULUMUNDA KOLEKSİYON KARTLARI
+   Kartlar koleksiyonla aynı kurucudan gelir (colJokerCard/…); burada yalnız
+   ÖLÇÜ ve SEÇİM durumu tanımlanır. Görsel kartlar Figma'nın kendi kutusunda
+   (81 × 110) — koleksiyonun 110 × 150'si ~115 kartlık seçim ekranını
+   gereksiz kaydırırdı. Seçili kart: yeşil çerçeve + sağ üstte ✓.
+   ========================================================================== */
+#trainerSetup .tr-grid.col-grid,
+#trainerFilter .tr-grid.col-grid { gap: 8px; }
+#trainerSetup .col-jk-art, #trainerSetup .col-cs-art, #trainerSetup .col-sp-art,
+#trainerFilter .col-jk-art {
+  width: 81px; height: 110px;
+}
+#trainerSetup .tr-col-tiles, #trainerFilter .tr-col-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+}
+#trainerSetup .tr-col-tiles .col-tile, #trainerFilter .tr-col-tiles .col-tile {
+  min-height: 66px; padding: 8px 6px;
+}
+.tr-card {
+  position: relative;
+  cursor: pointer;
+  border-radius: 6px;
+  outline: 3px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color .12s, transform .12s;
+}
+.tr-card:hover { transform: translateY(-2px); }
+.tr-card:focus-visible { outline-color: #9FB4C6; }
+.tr-card.on { outline-color: #2E9E4C; }
+.tr-card .tr-check {
+  position: absolute; top: -8px; right: -8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #2E9E4C; color: #fff;
+  font: 800 12px/20px system-ui, sans-serif; text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  display: none; z-index: 2;
+}
+.tr-card.on .tr-check { display: block; }
+/* ekran okuyucu / test etiketi: kartın adı, görünmez */
+.tr-card .tr-sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* P54 — Figma yazı katmanları (Avukat "DEED OF TRUST", Corporates "140.85",
+   Freedom "FIGHT FOR FREEDOM") SVG içinde `shape-rendering="geometricPrecision"`
+   taşır: kökteki crispEdges, kesirli ölçekte (sahne ≠ 1:1) yazının yarım
+   piksellik yollarını düşürüp harfleri kırıyordu. Çizim katmanları keskin kalır. */

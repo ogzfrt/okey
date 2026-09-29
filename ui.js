@@ -6008,6 +6008,58 @@
     'balKupu', 'kopyaci', 'miknatis', 'altinCanak', 'altinOran', 'tacirMektubu',
     'klonSisesi', 'heybe', 'ferman', 'okeyMuhru', 'simyaSisesi']);
 
+  /* P54 (kullanıcı isteği 2026-09-29) — KOLEKSİYON KARTLARI ORTAK KURUCU.
+     Trainer kurulumu da jokerleri/değnekleri/özel taşları koleksiyondaki
+     gibi göstersin diye kart kurulumu tek yerde: showCollection ve
+     showTrainerSetup aynı fonksiyonları çağırır. `artRow`: o nadirlik rafı
+     görsel dizisi mi (Epic + Mythic). */
+  const COL_ART_RARITIES = new Set(['epic', 'mythic']);
+  function colJokerCard(def) {
+    const tile2 = document.createElement('div');
+    if (COL_ART_RARITIES.has(def.rarity)) {
+      const has = JOKER_ART.has(def.key);
+      tile2.className = 'col-jk-card' + (has ? '' : ' blank');
+      tile2.innerHTML = `<div class="col-jk-art${has ? ' jk-' + def.key : ''}"></div>`;
+    } else {
+      tile2.className = `joker-tile r-${def.rarity} col-tile`;
+      tile2.innerHTML =
+        (def.mech === 'deck' ? `<div class="col-deck-tag">${t('colDeckTag')}</div>` : '') +
+        (def.icon ? `<div class="col-icon">${def.icon}</div>` : '') +
+        `<div class="jt-name">${T.name({ key: def.key, name: def.name })}</div>`;
+    }
+    attachTip(tile2, { key: def.key, name: def.name, desc: def.desc,
+      rarity: def.rarity, usesLeft: def.uses ?? RARITY[def.rarity].uses,
+      /* P30 · Grup I — Pandora'nın kutusundan çıkabilecek üç kart */
+      variants: def.key === 'truva' && Game.PANDORA_INFO
+        ? Object.values(Game.PANDORA_INFO)
+        /* P35 · Grup L — The Corporates'in dört şirket görevi, aynı biçim */
+        : def.key === 'corporates' && Game.corpsInfo ? Game.corpsInfo() : undefined }, {});
+    return tile2;
+  }
+  function colConsumCard(def) {
+    const tile2 = document.createElement('div');
+    const has = CONSUM_ART.has(def.key);
+    tile2.className = 'col-cs-card' + (has ? '' : ' blank');
+    tile2.innerHTML = `<div class="col-cs-art${has ? ' cs-' + def.key : ''}"></div>`;
+    attachTip(tile2, { name: T.consumName(def.key, def.name),
+      rarityText: `${T.rarity(def.rarity || 'common')} · ${t('consumTag')}`,
+      accent: def.rarity || 'common',
+      desc: T.consumDesc(def.key, def.desc) }, {});
+    return tile2;
+  }
+  function colSpecialCard(def) {
+    const tile2 = document.createElement('div');
+    tile2.className = 'col-sp-card';
+    const art = SPECIAL_ART.has(def.key);
+    tile2.innerHTML = art
+      ? `<div class="col-sp-art sp-${def.key}"></div>`
+      : `<div class="jt-name">${T.specialName(def.key, def.name)}</div>`;
+    attachTip(tile2, { name: T.specialName(def.key, def.name),
+      rarityText: t('specialTag'),
+      desc: T.specialDesc(def.key, def.desc) }, {});
+    return tile2;
+  }
+
   function showCollection() {
     const order = ['common', 'rare', 'epic', 'legendary', 'mythic'];
     const all = Object.values(JOKER_DEFS);
@@ -6052,28 +6104,10 @@
          jokeri BLANK durur (kart arkası) — bilgi yine hover'da tam. */
       /* P54 · Grup F: Mythic'in de Figma çizimleri geldi → aynı görsel dizisi
          (çizimi olmayan The World blank/kart arkası durur). */
-      const artRow = rar === 'epic' || rar === 'mythic';
+      const artRow = COL_ART_RARITIES.has(rar);
       grid.className = artRow ? 'col-grid col-jk-row' : 'col-grid';
       for (const def of defs) {
-        const tile2 = document.createElement('div');
-        if (artRow) {
-          const has = JOKER_ART.has(def.key);
-          tile2.className = 'col-jk-card' + (has ? '' : ' blank');
-          tile2.innerHTML = `<div class="col-jk-art${has ? ' jk-' + def.key : ''}"></div>`;
-        } else {
-          tile2.className = `joker-tile r-${def.rarity} col-tile`;
-          tile2.innerHTML =
-            (def.mech === 'deck' ? `<div class="col-deck-tag">${t('colDeckTag')}</div>` : '') +
-            (def.icon ? `<div class="col-icon">${def.icon}</div>` : '') +
-            `<div class="jt-name">${T.name({ key: def.key, name: def.name })}</div>`;
-        }
-        attachTip(tile2, { key: def.key, name: def.name, desc: def.desc,
-          rarity: def.rarity, usesLeft: def.uses ?? RARITY[def.rarity].uses,
-          /* P30 · Grup I — Pandora'nın kutusundan çıkabilecek üç kart */
-          variants: def.key === 'truva' && Game.PANDORA_INFO
-            ? Object.values(Game.PANDORA_INFO)
-            /* P35 · Grup L — The Corporates'in dört şirket görevi, aynı biçim */
-            : def.key === 'corporates' && Game.corpsInfo ? Game.corpsInfo() : undefined }, {});
+        const tile2 = colJokerCard(def);
         grid.appendChild(tile2);
       }
       el.colBody.appendChild(grid);
@@ -6109,15 +6143,7 @@
          emsaliyle BLANK (kart arkası) durur, bilgisi yine tooltip'te. */
       grid.className = 'col-grid col-cs-row';
       for (const def of cons) {
-        const tile2 = document.createElement('div');
-        const has = CONSUM_ART.has(def.key);
-        tile2.className = 'col-cs-card' + (has ? '' : ' blank');
-        tile2.innerHTML = `<div class="col-cs-art${has ? ' cs-' + def.key : ''}"></div>`;
-        attachTip(tile2, { name: T.consumName(def.key, def.name),
-          rarityText: `${T.rarity(def.rarity || 'common')} · ${t('consumTag')}`,
-          accent: def.rarity || 'common',
-          desc: T.consumDesc(def.key, def.desc) }, {});
-        grid.appendChild(tile2);
+        grid.appendChild(colConsumCard(def));
       }
       el.colBody.appendChild(grid);
     }
@@ -6132,25 +6158,9 @@
       /* Özel taş rafı kart ızgarası DEĞİL, taş dizisidir (bkz. .col-sp-row) */
       grid.className = 'col-grid col-sp-row';
       for (const def of sp) {
-        const tile2 = document.createElement('div');
-        /* Kart kabuğu (joker-tile: krem zemin, çerçeve, gölge) BİLEREK yok —
-           kullanıcı isteği: koleksiyonda çerçevesiz, yalnız taşın kendisi. */
-        tile2.className = 'col-sp-card';
-        /* Kullanıcı kararı 2026-09-06: koleksiyonda özel taş artık emoji
-           yer tutucuyla değil, Figma'daki GERÇEK varlığıyla görünür
-           (SPECIAL_ART → assets/game/special/<tip>.svg, node 259:91).
-           Kart YALNIZ TAŞI gösterir — ad yazılmaz, çünkü üstüne gelince
-           ad ve açıklama tooltip'te zaten çıkıyor (kullanıcı isteği).
-           Varlığı olmayan bir taş kalırsa (bugün yok) kart bomboş kalmasın
-           diye adını yazar; bu dal yeni bir taş eklenene kadar çalışmaz. */
-        const art = SPECIAL_ART.has(def.key);
-        tile2.innerHTML = art
-          ? `<div class="col-sp-art sp-${def.key}"></div>`
-          : `<div class="jt-name">${T.specialName(def.key, def.name)}</div>`;
-        attachTip(tile2, { name: T.specialName(def.key, def.name),
-          rarityText: t('specialTag'),
-          desc: T.specialDesc(def.key, def.desc) }, {});
-        grid.appendChild(tile2);
+        /* Kart kabuğu BİLEREK yok; kart yalnız taşın Figma varlığını gösterir,
+           ad/açıklama tooltip'te (kullanıcı kararları 2026-09-06) — bkz. colSpecialCard. */
+        grid.appendChild(colSpecialCard(def));
       }
       el.colBody.appendChild(grid);
     }
@@ -6465,6 +6475,24 @@
   const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic'];
 
   // Rarity gruplu, tıkla-seç joker ızgarası (kurulum + store filtresi ortak)
+  /* P54 (kullanıcı isteği 2026-09-29: "trainer'da jokerleri koleksiyondaki
+     gibi görelim") — çip listesi yerine KOLEKSİYON KARTLARI. Kart
+     koleksiyonla aynı kurucudan gelir (colJokerCard / colConsumCard /
+     colSpecialCard); üstüne yalnız SEÇİM durumu eklenir: `.tr-pick` +
+     `.on` (yeşil çerçeve + ✓). Çizimli kartta ad görünmez (koleksiyon
+     kuralı), ama `.tp-name` ekran okuyucu için gizli etiket olarak durur. */
+  function trPickCard(card, name, isOn, onClick) {
+    card.classList.add('tr-pick', 'tr-card');
+    card.classList.toggle('on', !!isOn);
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
+    card.insertAdjacentHTML('beforeend',
+      `<span class="tp-name tr-sr">${name}</span><span class="tr-check">✓</span>`);
+    card.addEventListener('click', onClick);
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } });
+    return card;
+  }
+
   function jokerPickGrid(selected, onToggle) {
     const wrap = document.createElement('div');
     wrap.className = 'tr-grid-wrap';
@@ -6476,20 +6504,14 @@
       h.textContent = T.rarity(r);
       wrap.appendChild(h);
       const grid = document.createElement('div');
-      grid.className = 'tr-grid';
+      grid.className = 'tr-grid col-grid ' + (COL_ART_RARITIES.has(r) ? 'col-jk-row' : 'tr-col-tiles');
       for (const d of defs) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'tr-pick' + (selected.has(d.key) ? ' on' : '');
-        b.innerHTML = `<span class="tp-ico">${jokerIcon(d.key)}</span>` +
-          `<span class="tp-name">${T.name({ key: d.key, name: d.name })}</span>`;
-        attachTip(b, { key: d.key, name: d.name, desc: d.desc, rarity: d.rarity,
-          usesLeft: d.uses ?? RARITY[d.rarity].uses }, {});
-        b.addEventListener('click', () => {
-          onToggle(d.key);
-          b.classList.toggle('on', selected.has(d.key));
-        });
-        grid.appendChild(b);
+        const card = trPickCard(colJokerCard(d), T.name({ key: d.key, name: d.name }),
+          selected.has(d.key), () => {
+            onToggle(d.key);
+            card.classList.toggle('on', selected.has(d.key));
+          });
+        grid.appendChild(card);
       }
       wrap.appendChild(grid);
     }
@@ -6544,16 +6566,9 @@
     updCh();
     body.appendChild(ch);
     const cg = document.createElement('div');
-    cg.className = 'tr-grid';
+    cg.className = 'tr-grid col-grid col-cs-row';
     for (const d of Object.values(CONSUMABLES)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'tr-pick';
-      b.innerHTML = `<span class="tp-ico">${d.icon}</span>` +
-        `<span class="tp-name">${T.consumName(d.key, d.name)}</span>`;
-      attachTip(b, { name: T.consumName(d.key, d.name), rarityText: T.rarity(d.rarity),
-        desc: T.consumDesc(d.key, d.desc) }, {});
-      b.addEventListener('click', () => {
+      const b = trPickCard(colConsumCard(d), T.consumName(d.key, d.name), false, () => {
         if (selC.has(d.key)) selC.delete(d.key);
         else if (selC.size < cMax) selC.add(d.key);
         b.classList.toggle('on', selC.has(d.key));
@@ -6576,21 +6591,14 @@
     sh.title = t('trDeckSpHint');
     body.appendChild(sh);
     const sg = document.createElement('div');
-    sg.className = 'tr-grid tr-deck-sp';
+    sg.className = 'tr-grid tr-deck-sp col-grid col-sp-row';
     for (const d of Object.values(SPECIAL_TILES)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'tr-pick';
-      b.dataset.sp = d.key;
-      b.innerHTML = `<span class="tp-ico">${d.icon}</span>` +
-        `<span class="tp-name">${T.specialName(d.key, d.name)}</span>`;
-      attachTip(b, { name: T.specialName(d.key, d.name), rarityText: t('specialTag'),
-        desc: T.specialDesc(d.key, d.desc) }, {});
-      b.addEventListener('click', () => {
+      const b = trPickCard(colSpecialCard(d), T.specialName(d.key, d.name), false, () => {
         selS.has(d.key) ? selS.delete(d.key) : selS.add(d.key);
         b.classList.toggle('on', selS.has(d.key));
         updSh();
       });
+      b.dataset.sp = d.key;
       sg.appendChild(b);
     }
     body.appendChild(sg);

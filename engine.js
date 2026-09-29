@@ -1653,7 +1653,8 @@ const JOKER_DEFS = {
   ikizler: { key: 'ikizler', name: 'İkizler', rarity: 'common',
     desc: 'Çift açarsan +2.0x.',
     effect: (c) => c.hasCift ? { mult: 2.0, flat: 0 } : null },
-  takim: { key: 'takim', name: 'Takım Oyunu', rarity: 'common',
+  /* P54 · Grup E (kullanıcı kararı 2026-09-29): ad "Takım Oyunu" → "SİLAHŞORLAR". Anahtar aynı. */
+  takim: { key: 'takim', name: 'Silahşorlar', rarity: 'common',
     desc: 'Per açarsan +2.0x.',
     effect: (c) => c.hasPer ? { mult: 2.0, flat: 0 } : null },
   uzunKosu: { key: 'uzunKosu', name: 'Uzun Koşu', rarity: 'common',
@@ -1677,7 +1678,8 @@ const JOKER_DEFS = {
      Ruhu) tam karşısında durur ve gerçek bir dizilim kararı üretir.
      (2026-09-10: aradaki üçüncü basamak Renkli Dünya havuzdan çıkarıldı;
      eksen artık iki uçlu — hepsi tek renk ya da dört rengin hepsi.) */
-  renkUstasi: { key: 'renkUstasi', name: 'Renk Ustası', rarity: 'common',
+  /* P54 · Grup E: ad "Renk Ustası" → "RESSAM PALETİ". Anahtar aynı. */
+  renkUstasi: { key: 'renkUstasi', name: 'Ressam Paleti', rarity: 'common',
     desc: 'Açılımında dört rengin hepsi varsa +2.0x.',
     effect: (c) => {
       const seen = new Set(c.tiles.filter(t => !t.jokerTile && t.color).map(t => t.color));
@@ -1727,7 +1729,8 @@ const JOKER_DEFS = {
      üstü güçte ödüllendiriyordu — common flat ailesine çekildi.
      2026-09-10: açıklama "üst üste ikinci turda" yerine oyuncunun
      okuduğu koşulu söylüyor (üst üste İKİ TUR açılım), ödül 80 → 150. */
-  seriAcici: { key: 'seriAcici', name: 'Seri Açıcı', rarity: 'common',
+  /* P54 · Grup E: ad "Seri Açıcı" → "DOMİNO". Anahtar aynı. */
+  seriAcici: { key: 'seriAcici', name: 'Domino', rarity: 'common',
     desc: 'Üst üste iki tur açılım yaparsan +150 puan.',
     effect: (c) => c.consecMelds >= 2 ? { mult: 0, flat: 150 } : null },
   hizliTuketici: { key: 'hizliTuketici', name: 'Hızlı Tüketici', rarity: 'common',
