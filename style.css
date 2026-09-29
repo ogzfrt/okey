@@ -8050,3 +8050,6 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .tile.face-down { background-color: var(--gm-dark, #2E3A2A); }
 .tile.face-down .num { color: var(--gm-light, #EEF3D9); }
 .tile.face-down .dot { opacity: .35; }
+
+/* P54 · Grup C — Satranç Saati rozeti durdurulunca soluklaşır */
+.joker-tile .jt-charge.jt-clock.frozen { opacity: .6; }

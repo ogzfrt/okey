@@ -1347,12 +1347,6 @@
           `<div class="tip-fused tip-legacy"><div class="tip-head">📜 ${t('tipLegacyItem', i + 1, vcap)} ${T.name(r)}</div>` +
           `<div class="tip-desc">${emphNums(T.desc(r), r.key)}</div></div>`).join('')
         : `<div class="tip-fused tip-legacy"><div class="tip-head">📜 ${t('tipLegacyEmpty')}</div></div>`);
-    /* P30 · Grup G — İpotek borç durumu (kartın düğmesiyle aynı üç hâl) */
-    let ipotekLine = '';
-    if (j.id != null && Game._recsOf && Game.ipotekState && Game._recsOf(j).some(r => r.key === 'ipotek')) {
-      const ip = Game.ipotekState();
-      ipotekLine = `<div class="tip-uses">${t('ipotekState_' + (ip.paying ? 'paying' : (ip.owed ? 'owed' : 'ready')))}</div>`;
-    }
     /* P30 · Grup I — KOLEKSİYONDA PANDORA'NIN ÜÇ OLASI VARYANTI. Füzyon'un
        "içerdiği efektler" satırlarının aynısı: oyuncu kutunun neye
        dönüşebileceğini satın almadan inceleyebilsin. */
@@ -1374,7 +1368,7 @@
       `<div class="tip-in">` +
       `<div class="tip-head">${j.key ? T.name(j) : j.name}</div>` + rarityLine +
       `<div class="tip-desc">${emphNums(j.key ? T.desc(j) : T.ev(j.desc), j.key)}</div>` +
-      fusedLines + legacyLines + variantLines + ipotekLine + usesLine + accumNow(j) +
+      fusedLines + legacyLines + variantLines + usesLine + accumNow(j) +
       `</div>`;
     const inner = tip.firstElementChild;
     // Eylem butonları (Grup G2): store açıkken slot jokerlerine Sat / →Ana / Birleştir
@@ -1610,7 +1604,7 @@
     /* legendary */
     sisyphus: '🪨', midas: '👑', kaptan: '⚓', ucuncuTeker: '🛞', truva: '📦',
     kaioken: '🔥', ankaKusu: '🐦‍🔥', theWorld: '🕰️', medusa: '🐍',
-    vasiyet: '📜', ipotek: '🏦', truva: '🐴', atesTuccari: '🔥', rusvet: '💰', hidra: '🐉',
+    vasiyet: '📜', satrancSaati: '♟', truva: '🐴', atesTuccari: '🔥', rusvet: '💰', hidra: '🐉',
     frankenstein: '🧟‍♂️',
     /* mythic */
     seytan: '😈', pinkyWarrior: '🩷', kiyamet: '☄️', tanrininEli: '🤲', ejderha: '🐉',
@@ -1689,8 +1683,9 @@
     render();
   }
 
-  function useIpotekCard() {
-    const res = Game.useIpotek();
+  /* P54 · Grup C — Satranç Saati: kartın sol tıkı saati bu tur için durdurur. */
+  function useClockCard() {
+    const res = Game.clockPause();
     if (!res.ok) { toast(T.ev(res.error)); return; }
     toast(T.ev(res.note), true);
     render();
@@ -1720,7 +1715,7 @@
     else if (!opts.backup && s && s.status === 'playing' && !storeOpen()) {
       const dm = has('ayna') && Game.damgaState && Game.damgaState();
       if (dm && dm.id === j.id && !dm.used) left = { lbl: t(dm.armed ? 'abUndo' : 'abUse'), fn: useDamga };
-      else if (has('ipotek') && Game.ipotekState && Game.ipotekState().canUse) left = { lbl: t('abUse'), fn: useIpotekCard };
+      else if (has('satrancSaati') && Game.clockState && Game.clockState().canUse) left = { lbl: t('abUse'), fn: useClockCard };
       else if (has('otekiDunya') && Game.otekiState && Game.otekiState().canUse) left = { lbl: t('abUse'), fn: useOtekiCard };
       else if (has('rusvet') && Game.canRusvet && Game.canRusvet()) left = { lbl: t('abUse'), fn: doRusvet };
       else if (has('terazi') && Game.canTeraziSacrifice && Game.canTeraziSacrifice()) left = { lbl: t('abUse'), fn: doTerazi };
@@ -1873,6 +1868,16 @@
           : t('vasiyetBadgeEmpty');
         tile2.appendChild(b);
       }
+    }
+    /* P54 · Grup C — SATRANÇ SAATİ: kalan saniye kartta canlı durur (♟N).
+       Saat saniyede bir `tickClock` ile güncellenir; render beklenmez. */
+    if (!opts.backup && (j.key === 'satrancSaati' || (j.fused || []).some(f => f.key === 'satrancSaati'))
+        && Game.state.status === 'playing') {
+      const b = document.createElement('span');
+      b.className = 'jt-charge jt-clock on' + (Game.state.clockFrozen ? ' frozen' : '');
+      b.textContent = `♟${Game.state.clockLeft ?? CLOCK_SECONDS}`;
+      b.title = t('clockBadge', Game.clockMult ? Game.clockMult().toFixed(1) : '0');
+      tile2.appendChild(b);
     }
     /* P54 · Grup B — ÖTEKİ DÜNYA'DA BEKLEYEN EL kartta canlı durur (🌗N).
        Vasiyet / Godzilla rozetiyle aynı kalıp. */
@@ -2835,6 +2840,24 @@
     if (k === 'uzayli') n.push(t('bossAlienExtra', s.hand.filter(x => x.hiddenAlien).length));
     return n;
   }
+
+  /* P54 · Grup C — SATRANÇ SAATİ'NİN GERÇEK ZAMANI. Saat yalnız oyun ekranı
+     görünürken, duraklatma menüsü kapalıyken, sekme öndeyken işler; motor
+     açılım aşaması dışında ve durdurulmuş saatte tiki zaten yok sayar. */
+  setInterval(() => {
+    const s = Game.state;
+    if (!s || !Game.clockOn || !Game.clockOn() || s.status !== 'playing') return;
+    if (document.visibilityState !== 'visible' || el.gameScreen.classList.contains('hidden')) return;
+    if (el.menuPop && !el.menuPop.classList.contains('hidden')) return;
+    if (document.querySelector('.pk-ov') || (el.overlay && !el.overlay.classList.contains('hidden'))) return;
+    const before = s.clockLeft;
+    Game.clockTick(1);
+    if (s.clockLeft === before) return;
+    const b = document.querySelector('#jokerSlots .jt-clock');
+    if (b) b.textContent = `♟${s.clockLeft}`;
+    /* çarpan kademesi değiştiyse önizleme kutusu da güncellensin */
+    if (s.clockLeft % CLOCK_STEP === CLOCK_STEP - 1 && (s.staged.length || s.islemeler.length)) render();
+  }, 1000);
 
   function render() {
     const s = Game.state;

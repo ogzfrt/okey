@@ -1051,7 +1051,18 @@ const VASIYET_CAP = 2;
    raundun başında -N tur olarak tahsil edilir (en az 1 tur kalır).
    Borç kartın değil DURUMUN üstünde durur (s.ipotekDebt): kullanıp
    store'da satmak ya da kartın kırılması borcu silmez. */
-const IPOTEK_TURNS = 2;
+const IPOTEK_TURNS = 2;   // (P54'te kart kaldırıldı — eski dışa aktarım uyumu)
+
+/* P54 · Grup C (kullanıcı kararı 2026-09-29) — İPOTEK → SATRANÇ SAATİ.
+   Boş eksen: GERÇEK ZAMAN. Her tur saat CLOCK_SECONDS'tan geri sayar
+   (UI saniye saniye `clockTick` çağırır; duraklatma menüsünde, gizli
+   sekmede ve açılım aşaması dışında saat işlemez). Onay anında kalan her
+   CLOCK_STEP saniye +CLOCK_MULT_STEP çarpan, tavan CLOCK_MULT_CAP.
+   Raund başına bir kez saat o turun sonuna kadar DURDURULABİLİR. */
+const CLOCK_SECONDS = 30;
+const CLOCK_STEP = 5;
+const CLOCK_MULT_STEP = 0.5;
+const CLOCK_MULT_CAP = 3.0;
 
 /* Grup E/21 — Ahtapot: kol başına çarpan ve feda edilen kolun anlık çarpanı.
    Eski sabit puan değerlerinin (20 / 60) birbirine oranı korundu: feda,
@@ -1958,8 +1969,11 @@ const JOKER_DEFS = {
      karttır (kartın üstündeki düğme, bkz. useIpotek): o raund +2 tur,
      bedeli sonraki raundun başında -2 tur. Borç ödenmeden (yani kullanıldığı
      raund ve ceza raundu boyunca) yeniden kullanılamaz. */
-  ipotek: { key: 'ipotek', name: 'İpotek', rarity: 'legendary', uses: 3,
-    desc: 'Raundda 1 kez elle kullan: o raund +2 tur. Bedeli sonraki raund -2 tur; borç ödenmeden tekrar kullanılamaz.' },
+  /* P54 · GRUP C (kullanıcı kararı 2026-09-29) — İPOTEK BAŞTAN TASARLANDI →
+     SATRANÇ SAATİ (yeni anahtar; `ipotek` kayıtlardan restore() ile düşer).
+     Karar her tur: en iyi açılımı aramak mı, hızlı çarpanı almak mı? */
+  satrancSaati: { key: 'satrancSaati', name: 'Satranç Saati', rarity: 'legendary', uses: 3,
+    desc: 'Her tur 30 saniyelik saat işler; açılımı onayladığında kalan her 5 sn +0.5x (en çok +3.0x). Raundda bir kez saati durdurabilirsin.' },
   /* PLAYTEST 11 · GRUP F (kullanıcı kararı) — TRUVA ATI → PANDORA.
      Eski "Pandora" (her raund iyi/kötü kutu) TAMAMEN KALDIRILDI; ismi ve
      teması bu karta geçti. Store'da gizemli bir KUTU olarak satılır ve
@@ -3156,8 +3170,6 @@ const Game = {
       borsa: null,          // { up: 'per'|'sirali'|'cift', down: ..., flat: ... }
       borsaMelds: 0,        // (eski alan — P29 · Grup H'den beri kullanılmıyor, kayıt uyumu)
       umutRunUsed: false,   // P30 · Grup H — Pandora·Umut kurtarması RUN boyunca 1 kez
-      ipotekDebt: false,    // P30 · Grup G — İpotek: sonraki raundun başında -2 tur borcu
-      ipotekPayRound: null, // P30 · Grup G — borcun ödendiği raund (o raund kullanılamaz)
       graveTiles: [],       // Frankenstein — bu raund atılan taşlar (mezarlık)
       promDebt: 0,          // Ateş Tüccarı (eski Prometheus alanı) — sonraki raundun işlek borcu
       store: null,
@@ -4751,14 +4763,8 @@ const Game = {
        tur sayısını 3'e çeker) SONRA çalışır ki kesinti gerçek tur sayısından
        düşülsün; en az 1 tur kalır. Kart satılmış ya da kırılmış olsa da
        borç ödenir — yoksa "kullan, sonra sat" bedelsiz olurdu. */
-    s.ipotekPayRound = null;
-    if (s.ipotekDebt) {
-      const before = s.maxTurns;
-      s.maxTurns = Math.max(1, s.maxTurns - IPOTEK_TURNS);
-      s.ipotekDebt = false;
-      s.ipotekPayRound = `${s.stage}-${s.roundInStage}`;
-      s.roundStartNotes.push(`🏦 İpotek borcu tahsil edildi: bu raund ${before - s.maxTurns} tur eksik (${s.maxTurns} tur) — bu raund İpotek kullanılamaz`);
-    }
+    /* SATRANÇ SAATİ (P54) — durdurma hakkı her raund yenilenir */
+    s.clockPauseUsed = false;
     /* Nostradamus — kehanet ilan edilir (GDD 12).
        GRUP F/3 (2026-09-06): ilan bayrağı da RUN bazlıydı (`!j.prophecy`),
        yani 2. raundtan itibaren kehanet SESSİZCE yürürlükteydi — ödül
@@ -5128,6 +5134,8 @@ const Game = {
         }
       }
     }
+    s.clockLeft = CLOCK_SECONDS;   // P54 · Grup C — Satranç Saati her tur baştan
+    s.clockFrozen = false;
     this._ucKagitDeal(events);     // P54 · Grup A — Üç Kağıtçı'nın 3 kapalı seçeneği
     this._otekiTick(events);       // P54 · Grup B — Öteki Dünya'da zaman akar
     /* Grup E — Ateş Taşı: elde beklerken yanar. Açılımda kullanılınca büyük
@@ -5942,6 +5950,13 @@ const Game = {
         mult += s.ritimBonus;
         triggered.push({ id: 'ritim', name: 'Ritim', text: `+${s.ritimBonus.toFixed(1)}x (ritim tuttu)` });
       }
+    }
+    /* P54 · Grup C — Satranç Saati: onay anında kalan süre çarpana döner */
+    const clockM = this.clockMult();
+    if (clockM > 0) {
+      mult += clockM;
+      triggered.push({ id: 'satrancSaati', name: 'Satranç Saati',
+        text: `+${clockM.toFixed(1)}x (${s.clockLeft ?? CLOCK_SECONDS} sn kaldı)` });
     }
     if (s.roundMult > 0) mult += s.roundMult;
 
@@ -8944,32 +8959,50 @@ const Game = {
     return strip;
   },
 
-  /* İPOTEK (P30 · Grup G) — kartın düğmesi bu iki fonksiyonu kullanır.
-     Durum üç hâllidir: HAZIR · BORÇLU (bu raund kullanıldı, sonraki raund
-     -2) · ÖDENİYOR (bu raund -2 tahsil edildi). Son ikisinde kullanılamaz. */
-  ipotekState() {
+  /* ===== SATRANÇ SAATİ (P54 · Grup C) =====
+     Motor zamanı ÖLÇMEZ: UI her gerçek saniyede `clockTick(1)` çağırır.
+     Böylece testler/botlar zamanı açıkça verir, kayıttan dönüşte saat
+     "arada geçen süre" yüzünden erimez. */
+  clockOn() {
     const s = this.state;
-    if (!s) return null;
-    const j = this.slotRecs().find(x => x.key === 'ipotek');
-    const owed = !!s.ipotekDebt;
-    const paying = s.ipotekPayRound === `${s.stage}-${s.roundInStage}` && s.status === 'playing';
-    let reason = null;
-    if (!j) reason = 'İpotek slotta değil.';
-    else if (s.jokersDisabled) reason = 'Jokerler bu raund susturuldu.';
-    else if (owed) reason = 'Borcun var: sonraki raund -2 tur ödenmeden tekrar kullanılamaz.';
-    else if (paying) reason = 'Bu raund borç ödeniyor — İpotek kullanılamaz.';
-    else if (s.status !== 'playing') reason = 'İpotek yalnız raund içinde kullanılır.';
-    return { id: j ? j.id : null, owed, paying, canUse: !reason, reason };
+    return !!s && !s.jokersDisabled && this.hasActive('satrancSaati');
   },
 
-  useIpotek() {
+  clockTick(sec) {
     const s = this.state;
-    const st = this.ipotekState();
-    if (!st || !st.canUse) return { ok: false, error: st ? st.reason : 'İpotek slotta değil.' };
-    s.maxTurns += IPOTEK_TURNS;
-    s.ipotekDebt = true;
-    return { ok: true, maxTurns: s.maxTurns,
-      note: `🏦 İpotek: bu raunda +${IPOTEK_TURNS} tur (${s.maxTurns} tur). Borç: sonraki raund -${IPOTEK_TURNS} tur` };
+    if (!this.clockOn() || s.status !== 'playing' || s.phase !== 'meld' || s.clockFrozen) return s && s.clockLeft;
+    s.clockLeft = Math.max(0, (s.clockLeft ?? CLOCK_SECONDS) - (sec || 1));
+    return s.clockLeft;
+  },
+
+  clockMult() {
+    const s = this.state;
+    if (!this.clockOn()) return 0;
+    const left = s.clockLeft ?? CLOCK_SECONDS;
+    return Math.min(CLOCK_MULT_CAP, Math.floor(left / CLOCK_STEP) * CLOCK_MULT_STEP);
+  },
+
+  clockState() {
+    const s = this.state;
+    if (!s) return null;
+    const j = this.slotRecs().find(x => x.key === 'satrancSaati');
+    let reason = null;
+    if (!j) reason = 'Satranç Saati slotta değil.';
+    else if (s.jokersDisabled) reason = 'Jokerler bu raund susturuldu.';
+    else if (s.status !== 'playing' || s.phase !== 'meld') reason = 'Saat yalnız açılım aşamasında durdurulur.';
+    else if (s.clockFrozen) reason = 'Saat bu tur zaten durdu.';
+    else if (s.clockPauseUsed) reason = 'Bu raund saati zaten bir kez durdurdun.';
+    return { id: j ? j.id : null, left: s.clockLeft ?? CLOCK_SECONDS, frozen: !!s.clockFrozen,
+      canUse: !reason, reason };
+  },
+
+  clockPause() {
+    const s = this.state;
+    const st = this.clockState();
+    if (!st || !st.canUse) return { ok: false, error: st ? st.reason : 'Satranç Saati slotta değil.' };
+    s.clockFrozen = true;
+    s.clockPauseUsed = true;
+    return { ok: true, note: `♟ Satranç Saati durdu: bu tur ${s.clockLeft ?? CLOCK_SECONDS} sn'de kaldı` };
   },
 
   /* ATEŞ TÜCCARI (P30 · Grup K) — iki adımlı pazarlık, store başına tek hak.
@@ -10881,8 +10914,9 @@ const Game = {
           if (r.legacy) r.legacy = r.legacy.filter(x => x && JOKER_DEFS[x.key]);
       }
     if (st.umutRunUsed == null) st.umutRunUsed = false;
-    if (st.ipotekDebt == null) st.ipotekDebt = false;
-    if (st.ipotekPayRound === undefined) st.ipotekPayRound = null;
+    if (st.clockLeft == null) st.clockLeft = CLOCK_SECONDS;   // P54 · Grup C
+    st.clockFrozen = !!st.clockFrozen;
+    st.clockPauseUsed = !!st.clockPauseUsed;
     /* GRUP D göçü (P22): taban 3→2, tavan 5→4. Eski kayıtlarda hem
        `consumSlotBonus` hem de envanterin kendisi yeni tavanı aşabilir;
        ikisi de burada kırpılır, yoksa UI kapasiteden fazla kart çizer. */
@@ -11062,7 +11096,7 @@ if (typeof window !== 'undefined') {
     PACK_CHOICES, CONSUM_SLOT_MAX, TUCCAR_MAX_REFUSE, SPECIAL_RARITY_W, FERMAN_MAX,
     MAGNET_MAX,
     /* PLAYTEST 26/30 — kart rozetleri motorun sabitlerinden okunur */
-    VASIYET_CAP, IPOTEK_TURNS, YANKEE_STEP, YANKEE_RESET_KEEP, YANKEE_CAP,
+    VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, CLOCK_STEP, CLOCK_MULT_STEP, CLOCK_MULT_CAP, YANKEE_STEP, YANKEE_RESET_KEEP, YANKEE_CAP,
     /* P29 sabitleri — testler ve denge araçları buradan okur */
     ZINCIR_START, ZINCIR_STEP, ZINCIR_DECAY, ZINCIR_CAP, VAMPIR_MULT,
     PARATONER_MULT, KATALIZOR_STEP, KATALIZOR_CAP, BUNGIE_SNAP, STORE_TILE_PICKS,
@@ -11094,7 +11128,7 @@ if (typeof module !== 'undefined') {
     CONSUM_SELL_RATE, CONSUM_SLOT_MAX, KD_TASI_BASE, KD_TASI_STEP, KD_TASI_MAX,
     YILDIZ_SHOW, SPECIAL_RARITY_W, SHOP_EXTRA_FIXED, FERMAN_MAX, MAGNET_MAX,
     /* PLAYTEST 26 — Yankee birikimi · PLAYTEST 30 — Legendary denge sabitleri */
-    VASIYET_CAP, IPOTEK_TURNS, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
+    VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
     WORLD_PERM_MULT, WORLD_TARGET_UP, KIYAMET_KEEP, EJDERHA_TILE_MULT, VOID_SCORE, VOID_MULT,
     SEYTAN_SCORE, SEYTAN_MULT, PINKY_MAX, APPLE_MULT, APPLE_DRAW_CUT, APPLE_ISLEK, KAGIT_TILES,
     MEDUSA_MULT, MEDUSA_FLAT, NOSTRA_MULT, TEKER_FLAT, ATES_HAGGLE_WIN, ATES_DISCOUNT,
