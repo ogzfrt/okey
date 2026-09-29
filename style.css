@@ -8047,12 +8047,14 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .run-sum .rs-line:last-child { border-bottom: 0; }
 .run-sum .rs-line span { color: var(--muted, #7C8CA0); }
 
-/* P54 · Grup A — ÜÇ KAĞITÇI (BOSS) TERS TAŞI. Figma'da bu hâlin çizimi YOK;
-   geçici görünüm: taş şablonu korunur, yüz koyu, sayı yerine "?".
-   Tasarım gelince bu blok Figma değerleriyle değişecek. */
-.tile.face-down { background-color: var(--gm-dark, #2E3A2A); }
-.tile.face-down .num { color: var(--gm-light, #EEF3D9); }
-.tile.face-down .dot { opacity: .35; }
+/* P55 (kullanıcı kararı 2026-09-30) — TERS TAŞ = TAŞLARIMIZIN ARKA YÜZÜ.
+   Destedeki kapalı taşla (.deck-pile) aynı varlık: deck-back.svg (maskotlu
+   arka yüz). Taş yüzü ve çerçeve katmanlarının yerini tümden alır; sayı ve
+   mühür çizilmez. Üç Kağıtçı jokerinin kapalı seçenekleri de aynı görünür. */
+.tile.face-down {
+  background: url('assets/game/deck-back.svg') no-repeat center / 100% 100%;
+  image-rendering: pixelated;
+}
 
 /* P54 · Grup C — Satranç Saati rozeti durdurulunca soluklaşır */
 .joker-tile .jt-charge.jt-clock.frozen { opacity: .6; }

@@ -759,7 +759,7 @@
     if (tile.faceDown) {
       d.className = 'tile face-down';
       d.dataset.id = tile.id;
-      d.innerHTML = '<div class="num">?</div><div class="dot"></div>';
+      d.innerHTML = '';   // P55: kullanıcı kararı — ters taş destedeki maskotlu ARKA YÜZLE çizilir (bkz. style.css)
       attachTip(d, { name: t('faceDownName'), rarityText: t('bossMarkTag'), desc: t('faceDownDesc') }, {});
       if (interactive) {
         if (selection.has(tile.id)) d.classList.add('selected');
