@@ -466,13 +466,34 @@ const STAGE_TARGETS = [
    yalnız KURTARILMIŞ (zayıf kadrolu) run'larla temsil ediliyor. Temiz run
    örneği n=0 olduğu için S6-S8 bandı bot ile DOĞRULANAMAZ, insan geri
    bildirimi gerekir. */
-  [555,  930, 1300],    // S2 — el 23 · oran 0.43/0.72 · boss ×1.78
-  [815, 1295, 1780],    // S3 — el 25 · oran 0.46/0.73 · boss ×1.37
-  [1095, 1670, 2250],   // S4 — el 27 · oran 0.49/0.74 · boss ×1.26
-  [1440, 2120, 2800],   // S5 — el 29 · oran 0.51/0.76 · boss ×1.24
-  [1820, 2585, 3350],   // S6 — el 30 · oran 0.54/0.77 · boss ×1.20
-  [2255, 3105, 3950],   // S7 — el 30 · oran 0.57/0.79 · boss ×1.18
-  [2760, 3680, 4600],   // S8 — el 30 · FINAL BOSS · oran 0.60/0.80 · ×1.16
+  /* P56 · v14 (2026-09-30, kullanıcı isteği: "hem zorlasın hem kazanılabilir
+     olsun") — ÖLÇÜM ARACI DEĞİŞTİ, EĞRİ ONA GÖRE KALİBRE EDİLDİ.
+     Önceki botlar her tur eldekini HEMEN açıyordu; oysa çarpan aynı anda
+     açılan kombinasyon SAYISIYLA büyür (Per 2.0x → 4.6x) ve iyi oyuncu
+     biriktirip tek büyük açılım yapar. Yeni `tools/expert_audit.js` (uzman:
+     biriktir-patlat + okey-farkında arama + Çift modu + akıllı atış) v13'te
+     boss geçişini S1 %68 · S2 %58 · S3 %52 · S4 %46 · S5 %56 · S6 %47 ·
+     S7 %42 · S8 %35 ölçtü: iyi oyuncu için S2-S5 bir ÇUKURDU ve temiz run
+     %1'di. Boss ekseni kayıp raundların skor/hedef dağılımından
+     hesaplandı (hedef %X inince hangi kayıplar kazanca döner), sonra adımlar
+     azalan kalacak biçimde düzleştirildi. S1 DEĞİŞMEDİ (çekirdek kural:
+     tutumlu bot S1 boss ≈%40-50). Raund oranları v13'teki gibi 0.40→0.60 /
+     0.70→0.80 doğrusal açılır; boss adımı ×1.40 · 1.31 · 1.28 · 1.28 · 1.19 ·
+     1.19 · 1.16 (azalan).
+     SONUÇ (boss geçişi, AUDIT_CONTINUE):
+                 S1   S2   S3   S4   S5   S6   S7   S8
+       uzman    %73  %76  %73  %67  %75  %63  %59  %50   (v13: 68…35)
+       tutumlu  %49  %70  %72  %67  %69  %58  %49  %42   (v13: 47…29)
+       avcı     %52  %65  %71  %67  %65  %59  %56  %43   (≈ tutumlu: reroll avantajı yok)
+     Uzman botun temiz run bitirmesi %1 → %4; asıl eleyen hâlâ S1 (jokersiz
+     başlangıç, kullanıcı kararı) ve joker ömrü varyansı. */
+  [435,  730, 1020],    // S2 — el 23 · oran 0.43/0.72 · boss ×1.40
+  [615,  975, 1340],    // S3 — el 25 · oran 0.46/0.73 · boss ×1.31
+  [835, 1280, 1720],    // S4 — el 27 · oran 0.49/0.74 · boss ×1.28
+  [1130, 1665, 2200],   // S5 — el 29 · oran 0.51/0.76 · boss ×1.28
+  [1420, 2020, 2620],   // S6 — el 30 · oran 0.54/0.77 · boss ×1.19
+  [1785, 2450, 3120],   // S7 — el 30 · oran 0.57/0.79 · boss ×1.19
+  [2170, 2895, 3620],   // S8 — el 30 · FINAL BOSS · oran 0.60/0.80 · ×1.16
 ];
 /* Tablo dışına taşan stage'ler için (Trainer Sonsuz Mod) büyüme çarpanı.
    P51 · Grup B: eğrinin son adımıyla aynı (sonsuz modda yavaşlayan uç). */
