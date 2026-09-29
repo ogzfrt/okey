@@ -5983,7 +5983,8 @@
     /* P54 · Grup F — MYTHIC çizimleri (Figma 379:319, 9 kart; The World yok) */
     'tanrininEli', 'seytan', 'theWorld', 'karaDelik', 'yasakElma',
     'pinkyWarrior', 'kiyamet', 'kagit', 'ejderha',
-    'frankenstein']);                         // P54 · Figma 383:975 — ilk Legendary çizimi
+    'frankenstein',                           // P54 · Figma 383:975 — ilk Legendary çizimi
+    'otekiDunya']);                           // P55 · Figma 387:3 — Mythic 10/10
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',

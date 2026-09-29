@@ -7168,6 +7168,9 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-kiyamet      { --jk-art: url('assets/game/joker/kiyamet.svg'); }
 .jk-kagit        { --jk-art: url('assets/game/joker/kagit.svg'); }
 .jk-ejderha      { --jk-art: url('assets/game/joker/ejderha.svg'); }
+/* P55 (2026-09-30) — frame 379:319'a son Mythic geldi: Öteki_dünya (387:3) → otekiDunya.
+   Mythic rafı 10/10 çizimli; get_variable_defs boş (renkler katman adlarında). */
+.jk-otekiDunya   { --jk-art: url('assets/game/joker/oteki-dunya.svg'); }
 /* P54 (2026-09-29) — LEGENDARY çizimleri: Figma 383:1000 "LEGENDARY_JOKERLER".
    İlk kart: Dr_Frankenstein (383:975) → frankenstein. Koleksiyonun Legendary
    rafı kartlar tamamlanınca görsel dizisine çevrilecek (şimdilik 1/15). */

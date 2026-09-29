@@ -6234,7 +6234,11 @@ const Game = {
     if (tiles.some(t => t.bossSewn))
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur açılımda kullanılamaz (tur bitince serbest kalır).' };
 
-    for (const t of tiles) { delete t.faceDown; delete t.faceDownFresh; }   // P54 · Grup A: açılımda yüz görünür
+    /* P55 · Grup A (bug) — TERS TAŞ DENEMEDE AÇILIYORDU. Eskiden yüz burada,
+       kombinasyon DENETLENMEDEN önce açılıyordu: geçersiz bir deneme
+       ("Geçersiz kombinasyon") bile taşı kalıcı olarak ifşa ediyordu. Denetim
+       zaten gerçek renk+sayıyla yapılır (resolveCombo); yüz yalnız sahneleme
+       BAŞARILI olunca açılır (aşağıda, `_revealTiles`). */
     const freeColors = this._freePerColors();
     // Grup A: okey, ıstakada bırakıldığı hücreye göre değer alır
     const res = resolveCombo(tiles, (t) => this.isOkeyTile(t), freeColors, this._posOpts());
@@ -6258,7 +6262,21 @@ const Game = {
     // Grup E: okey, yerine geçtiği taşın sırasında görünsün
     const ordered = orderComboTiles(type, tiles, res.values, (t) => this.isOkeyTile(t));
     s.staged.push({ type, tiles: ordered, values: res.values, usedOkey: res.usedOkey });
+    this._revealTiles(tiles);   // P55 · Grup A — açılan taş doğal olarak görünür
     return { ok: true, type };
+  },
+
+  /* P55 · Grup A — Üç Kağıtçı'nın ters taşını açar (masaya inince, atılınca).
+     `_revealTiles(tiles, true)` açmadan önceki hâli döndürür (geri alma için). */
+  _revealTiles(tiles) {
+    const was = [];
+    for (const t of tiles || []) {
+      if (t && t.faceDown) { was.push([t, !!t.faceDownFresh]); delete t.faceDown; delete t.faceDownFresh; }
+    }
+    return was;
+  },
+  _restoreFaceDown(was) {
+    for (const [t, fresh] of was || []) { t.faceDown = true; if (fresh) t.faceDownFresh = true; }
   },
 
   /* Çoklu seçim açma: seçim tek kombinasyon değilse otomatik parçalara
@@ -6279,10 +6297,14 @@ const Game = {
       return asOne; // parçalanamadı — orijinal hata gösterilsin
     }
     const before = s.staged.length;
+    /* P55 · Grup A: bölmenin bir parçası reddedilirse sahnelenen parçalar
+       geri alınır — onların ters taşları da yeniden kapanır (deneme ifşa etmez). */
+    const hidden = tiles.filter(t => t.faceDown).map(t => [t, !!t.faceDownFresh]);
     for (const g of groups) {
       const r = this.stageCombo(g.map(t => t.id));
       if (!r.ok) {
         while (s.staged.length > before) this.unstage(s.staged.length - 1);
+        this._restoreFaceDown(hidden);
         return r;
       }
     }
@@ -6500,6 +6522,7 @@ const Game = {
     // Grup E: işlenen taşlar da atanan değerlerine göre dizilir (okey doğru yerde)
     const orderedAdd = orderComboTiles(res.type, tiles, res.values, (t) => this.isOkeyTile(t));
     s.islemeler.push({ comboIndex, tiles: orderedAdd, addSum, usedOkey: res.usedOkey, values: res.values });
+    this._revealTiles(tiles);   // P55 · Grup A — işlenen ters taş masada "?" kalmaz
     return { ok: true };
   },
 
@@ -7301,6 +7324,7 @@ const Game = {
     if (picks.some(t => t.bossSewn))
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur atılamaz (tur bitince serbest kalır).' };
 
+    this._revealTiles(picks);   // P55 · Grup A — atılan taş yere açık düşer
     for (const t of picks) {
       s.hand = s.hand.filter(x => x !== t);
       s.discardPile.push(t);
@@ -10815,10 +10839,13 @@ const Game = {
      ıstakayı soldan itibaren KOMPAKT doldurur (t.slot 0..n-1). */
   applySort(kind) {
     const s = this.state;
-    /* P54 · Grup A — Üç Kağıtçı boss'unun TERS taşları sıralanmaz, sona
-       konur: yoksa dizilim taşın rengini/sayısını ele verirdi. */
-    const specials = s.hand.filter(t => t.jokerTile || t.faceDown);
-    const normal = s.hand.filter(t => !t.jokerTile && !t.faceDown);
+    /* P55 · Grup A (kullanıcı kararı 2026-09-30) — TERS TAŞLAR GERÇEK
+       DEĞERLERİYLE SIRALANIR. P54'te sona konuyordu (dizilim yüzü ele vermesin
+       diye); kullanıcı bunu adaletsiz buldu: oyuncunun tahmin için hiçbir
+       dayanağı kalmıyordu. Görünüm kapalı kalır, SIRA doğrudur — oyuncu
+       taşın komşularından ne olabileceğini okuyabilir. */
+    const specials = s.hand.filter(t => t.jokerTile);
+    const normal = s.hand.filter(t => !t.jokerTile);
     if (kind === 'suit')
       normal.sort((a, b) => colorIdx(a.color) - colorIdx(b.color) || a.number - b.number);
     else // 'rank'
