@@ -1262,6 +1262,9 @@
      aynı punto/kalınlık) ki "S2" tek parça dursun. YALNIZ bu kartta
      uygulanır: `key` godzilla değilse metin hiç dokunulmadan geçer. */
   const GODZILLA_LV_RX = /\bS(<b class="tip-num">)([123])(<\/b>)/g;
+  /* Tur noktası dizisinin en geniş hâli = 5 Figma kutusu (5×40 + 4×10). */
+  const TURN_DOTS_W = 240;
+
   function emphNums(html, key) {
     const out = String(html ?? '')
       .split(/(<[^>]*>)/)
@@ -1309,7 +1312,12 @@
       const risk = Math.round(num(s.cheatRisk) * 100);
       if (risk) out.push('%' + risk);
     }
-    return out.length ? `<div class="tip-now">${t('tipNow', out.join(' · '))}</div>` : '';
+    /* P54 · Bölüm 1 · Madde 1 — birikim artık kartın İÇİNDE, kendi şeridinde:
+       sola etiket, sağa değer; kenar boşlukları açıklama satırlarıyla aynı.
+       (P52'de metin kutunun sağ kenarına yapışık, küçük bir satırdı.) */
+    return out.length
+      ? `<div class="tip-now"><span class="tn-k">${t('tipNowK')}</span><span class="tn-v">${out.join(' · ')}</span></div>`
+      : '';
   }
 
   function showTip(target, j, opts = {}) {
@@ -1790,6 +1798,11 @@
     if (hasArt) tile2.classList.add('has-art', 'jk-' + j.key);
     // P49 · Grup A — uyanmış The Misunderstood Figma V2 çizimine geçer
     if (j.key === 'misunderstood' && j.awakened) tile2.classList.add('misu-v2');
+    /* P54 · Grup F — Tüccar'ın iki çizimi (Figma 380:896 / 380:906): slotta
+       beklerken V1, ekranda açık bir takas teklifi varken V2. Teklif
+       kabul/ret edilince `tuccarOffer` boşalır ve kart V1'e döner. */
+    if (j.key === 'tuccar' && !opts.backup && Game.state.tuccarOffer
+        && !Game.state.tuccarOffer.boss) tile2.classList.add('tuccar-v2');
     /* Çizimli kartta AD YAZILMAZ (kullanıcı kararı 2026-09-10) — çizim
        kartın TAMAMINI kaplar, ad ve açıklama zaten üstüne gelince
        ipucunda çıkar. Koleksiyon rafındaki (.col-jk-card) kuralın
@@ -2893,7 +2906,15 @@
     }
     /* Figma: tur sayacı yazı değil NOKTA dizisi (dolu = geçilen turlar).
        Tur sayısı Nefes İksiri ile artabildiği için nokta sayısı dinamik. */
-    el.turnIndicator.innerHTML = `${t('turn')}<span class="gm-turn-dots">` +
+    /* P54 · Bölüm 1 · Madde 3 (bug) — Uzun Soluk + İpotek ile tur sayısı
+       6-7'ye çıkınca 40px'lik kutular coin paneline (x 1709) taşıyordu.
+       Nokta dizisinin genişliği artık 5 kutuluk Figma genişliğiyle (240px)
+       SINIRLI: 5'e kadar Figma ölçüsü (40px · 10px ara) aynen durur, fazlası
+       kutuları küçülterek aynı alana sığar. Kaç tur olursa olsun taşmaz. */
+    const nT = Math.max(1, s.maxTurns);
+    const tGap = nT <= 5 ? 10 : 6;
+    const tBox = nT <= 5 ? 40 : Math.max(12, Math.floor((TURN_DOTS_W - (nT - 1) * tGap) / nT));
+    el.turnIndicator.innerHTML = `${t('turn')}<span class="gm-turn-dots" style="--td:${tBox}px;--tg:${tGap}px">` +
       Array.from({ length: s.maxTurns }, (_, i) =>
         `<i class="${i < s.turn ? 'on' : ''}"></i>`).join('') + '</span>';
     el.turnIndicator.title = `${s.turn}/${s.maxTurns}`;
@@ -5873,7 +5894,11 @@
   const JOKER_ART = new Set(['aynaKral', 'ahtapot', 'cellat', 'fatality',
     'freedom', 'dervish', 'karaKedi', 'ritim', 'terziIgne', 'zombie',
     'kelebek', 'uzayli', 'misunderstood',     // P49 · Grup C: 13 çizim
-    'kahin', 'kirby', 'corporates']);         // P51 · Grup C: 16 çizim (SIR_BY → kirby)
+    'kahin', 'kirby', 'corporates',           // P51 · Grup C: 16 çizim (SIR_BY → kirby)
+    'avukat', 'godzilla', 'tuccar',           // P54 · Grup F: boss frame 20/20 (Cheating hariç 19)
+    /* P54 · Grup F — MYTHIC çizimleri (Figma 379:319, 9 kart; The World yok) */
+    'tanrininEli', 'seytan', 'crimsonTac', 'karaDelik', 'yasakElma',
+    'pinkyWarrior', 'kiyamet', 'kagit', 'ejderha']);
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
@@ -5940,7 +5965,9 @@
          (krem zemin, çerçeve, gölge) yok, yalnız jokerin kendi çizimi;
          ad ve açıklama hover tooltip'inde. Görseli hazırlanmamış 10 boss
          jokeri BLANK durur (kart arkası) — bilgi yine hover'da tam. */
-      const artRow = rar === 'epic';
+      /* P54 · Grup F: Mythic'in de Figma çizimleri geldi → aynı görsel dizisi
+         (çizimi olmayan The World blank/kart arkası durur). */
+      const artRow = rar === 'epic' || rar === 'mythic';
       grid.className = artRow ? 'col-grid col-jk-row' : 'col-grid';
       for (const def of defs) {
         const tile2 = document.createElement('div');

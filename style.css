@@ -5089,9 +5089,11 @@ body.game-open #overlay { align-items: center; justify-content: center; }
   font: 700 18px/1 var(--gm-font); color: #000; letter-spacing: -2.7px;
   text-transform: uppercase; background: none; border: 0; padding: 0;
 }
-.gm-stage .gm-turn .gm-turn-dots { display: flex; gap: 10px; margin-left: 18px; }
+.gm-stage .gm-turn .gm-turn-dots { display: flex; align-items: center; gap: var(--tg, 10px); margin-left: 18px; }
+/* P54 — kutu ölçüsü tur sayısına göre ui.js'ten gelir (--td); 5 tura kadar 40px */
 .gm-stage .gm-turn i {
-  width: 40px; height: 40px; border-radius: 8px;
+  width: var(--td, 40px); height: var(--td, 40px); flex: 0 0 auto;
+  border-radius: min(8px, calc(var(--td, 40px) / 5));
   background: var(--gm-turn-off); display: block;
 }
 .gm-stage .gm-turn i.on { background: var(--gm-turn-on); }
@@ -7142,6 +7144,31 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-uzayli     { --jk-art: url('assets/game/joker/uzayli.svg'); }
 .jk-misunderstood { --jk-art: url('assets/game/joker/misunderstood-v1.svg'); }
 .jk-misunderstood.misu-v2 { --jk-art: url('assets/game/joker/misunderstood-v2.svg'); }
+/* P54 · GRUP F (2026-09-29) — frame 21 çizime çıktı (20/20 boss; Cheating
+   yeniden tasarlanacağı için bağlanmadı). Yeni: AVUKAT (380:951) → avukat,
+   GODZİLLA (380:930) → godzilla, Tüccar_v1 (380:896) / Tüccar_v2 (380:906)
+   → tuccar (V2 = açık takas teklifi, `.tuccar-v2`). Güncellenen:
+   THE_CORPORATES (345:57) — kartın altına "140.85" borsa rakamı eklendi;
+   corporates.svg yerinde değişti. */
+.jk-avukat     { --jk-art: url('assets/game/joker/avukat.svg'); }
+.jk-godzilla   { --jk-art: url('assets/game/joker/godzilla.svg'); }
+.jk-tuccar     { --jk-art: url('assets/game/joker/tuccar-v1.svg'); }
+.jk-tuccar.tuccar-v2 { --jk-art: url('assets/game/joker/tuccar-v2.svg'); }
+/* P54 · GRUP F — MYTHIC JOKER ÇİZİMLERİ. Kaynak: Figma 379:319
+   "MYTHIC-JOKERLER" (9 kart, 81 × 110). Eşleşme katman adından:
+   Tanrının_eli → tanrininEli · Şeytanın_teklifi → seytan ·
+   Crimson_king → crimsonTac · boşluk → karaDelik · Adem_ile_Havva → yasakElma ·
+   Pinky_warrior → pinkyWarrior · Kıyamet_trompeti → kiyamet · Kâğıt → kagit ·
+   gökyüzü ejderhası → ejderha. The World'ün çizimi YOK (ad değişikliği bekliyor). */
+.jk-tanrininEli  { --jk-art: url('assets/game/joker/tanrinin-eli.svg'); }
+.jk-seytan       { --jk-art: url('assets/game/joker/seytan.svg'); }
+.jk-crimsonTac   { --jk-art: url('assets/game/joker/crimson-king.svg'); }
+.jk-karaDelik    { --jk-art: url('assets/game/joker/bosluk.svg'); }
+.jk-yasakElma    { --jk-art: url('assets/game/joker/adem-havva.svg'); }
+.jk-pinkyWarrior { --jk-art: url('assets/game/joker/pinky-warrior.svg'); }
+.jk-kiyamet      { --jk-art: url('assets/game/joker/kiyamet.svg'); }
+.jk-kagit        { --jk-art: url('assets/game/joker/kagit.svg'); }
+.jk-ejderha      { --jk-art: url('assets/game/joker/ejderha.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
    çizim tamamen başka (sarı/turkuaz nota kartı → mavi çark kartı).
@@ -7906,14 +7933,21 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   padding: 9px 11px 0;
   margin: 0;
 }
-/* P52 · Grup I — birikim yapan jokerin ANLIK değeri (sağ alt köşe) */
+/* P52 · Grup I — birikim yapan jokerin ANLIK değeri.
+   P54 · Madde 1: kartın içinde kendi şeridi — etiket solda, değer sağda,
+   kenar boşlukları .tip-desc / .tip-fused ile aynı hizada. */
 #jokerTip .tip-now {
-  margin-top: 6px;
-  text-align: right;
-  font-family: var(--gm-font);
-  font-size: 14px;
-  color: var(--tip-accent);
-  letter-spacing: .02em;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  margin: 10px 11px 0;
+  padding: 7px 10px 6px;
+  background: rgba(0, 0, 0, .28);
+  border-left: 4px solid var(--tip-accent);
+  font: 700 12px/1.2 'Pixel Operator SC', 'Pixelify Sans', monospace;
+}
+#jokerTip .tip-now .tn-k { color: var(--tip-body); opacity: .75; letter-spacing: .06em; }
+#jokerTip .tip-now .tn-v {
+  color: var(--tip-accent); font-size: 18px; text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 #jokerTip .tip-fused {

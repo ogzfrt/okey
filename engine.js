@@ -1187,6 +1187,8 @@ const FERMAN_MAX = 2;
    yetmez ama bir build'in belkemiğini (ör. iki Altın Taş + okey) garantiler.
    Tavan hem `_consumOfferable` elemesini hem kullanım kapısını besler. */
 const MAGNET_MAX = 3;
+/* Vernik değneği → ürettiği özel taş (tavan kontrolü _consumOfferable'da) */
+const VERNIK_KIND = { gumusVernik: 'gumus', simyaSisesi: 'altin' };
 const KUMBARA_COIN = 8;   // P51 · Grup B: Kumbara 12 → 8
 const CONSUMABLES = {
   /* COMMON — deste marangozluğu */
@@ -2591,7 +2593,10 @@ const UPGRADE_DEFS = {
 function IS_BASE_TILE(t) {
   return !t.jokerTile && !t.fakeOkey && !t.copied && !t.modded
     && !t.revived && !t.alien && !t.special && !t.monster && !t.stitched
-    && !t.retuned;
+    && !t.retuned
+    /* P54 · Madde 5: Pinky taşı okeyin yüzünü taşır ama asıl destenin
+       okey kopyası değildir — 2'lik kopya sınırına girmez. */
+    && !t.pinkyOkey;
 }
 
 /* PLAYTEST 18 · GRUP B — TAŞIN KÖKENİ ARTIK TAŞIN ÜSTÜNDE YAZAR.
@@ -2607,7 +2612,7 @@ function IS_BASE_TILE(t) {
 const TILE_ORIGIN_TR = {
   kirby: 'Sir.by', kirbyBoss: 'Sir.by (boss)', karaKedi: 'Kara Kedi',
   karaKediBoss: 'Kara Kedi (boss)',
-  yasakElma: 'Adem ile Havva (Elma)', kagit: 'Kağıt',
+  yasakElma: 'Adem ile Havva (Elma)', kagit: 'Kağıt', pinky: 'Pinky Warrior',
   pandoraArmagan: 'Pandora — Armağan', cheating: 'The Cheating',
   tuccar: 'Tüccar takası', upgrade: 'Takas (13 yükseltmesi)',
   cekic: 'Değer Çekici', tac: 'Taç', boya: 'Boya Kabı', kopyaci: 'Kopyacı',
@@ -3592,6 +3597,16 @@ const Game = {
     if (key === 'ferman') return (this.state?.fermanUsed || 0) < FERMAN_MAX;
     /* Mıknatıs tavanı doluysa kart ölü teklif olurdu — Ambar/Ferman kuralı. */
     if (key === 'miknatis') return (this.state?.magnets || []).length < MAGNET_MAX;
+    /* P54 · Bölüm 1 · Madde 7 (bug) — VERNİKLER TAVANDA DA TEKLİF EDİLİYORDU.
+       Gümüş Vernik / Altın Vernik destede o özel taştan SPECIAL_MAX_COPIES
+       (5) varken kullanılamaz ("vernik tutmaz"), ama bu süzgeçte yoktular →
+       store'da ve pakette ölü kart olarak çıkmaya devam ediyorlardı. Aynı
+       "işe yaramaz ödül havuza girmez" kuralı. */
+    const vernik = VERNIK_KIND[key];
+    if (vernik) {
+      const def = SPECIAL_TILES[vernik];
+      return (this.state?.specialTiles || []).filter(x => x.kind === vernik).length < def.maxCopies;
+    }
     return true;
   },
 
@@ -4511,7 +4526,15 @@ const Game = {
       let n = 0;
       for (const t of [...s.deck, ...s.hand]) {
         if (t.jokerTile || t.fakeOkey || t.special || t.number > PINKY_MAX) continue;
-        t.isOkeyReal = true; t.pinkyOkey = true; n++;
+        /* P54 · Bölüm 1 · Madde 5 — DİNAMİK OKEY GÖRÜNÜMÜ. Kağıt ve Okey
+           Mührü'nde olduğu gibi dönüşen taş O STAGE'İN okeyinin yüzünü alır
+           (eskiden "Kırmızı 1" yüzüyle okey kalıyordu, oyuncu okey olduğunu
+           yalnız köşedeki 🩷'den anlıyordu). Deste her raund yeniden
+           kurulduğu için yüz değişimi de raundla sınırlıdır; asıl yüz
+           `pinkyFrom`da saklanır (ipucu ve test için). */
+        t.pinkyFrom = { color: t.color, number: t.number };
+        t.color = s.okey.color; t.number = s.okey.number;
+        t.isOkeyReal = true; t.pinkyOkey = true; t.origin = t.origin || 'pinky'; n++;
       }
       s.roundStartNotes.push(`🩷 Pinky Warrior: küçükler ordusu — 1 ve 2'ler bu raund OKEY (${n} taş)`);
     }
@@ -6366,7 +6389,7 @@ const Game = {
 
     const tiles = this._tilesByIds(ids).tiles || [];   // Grup F: cakisan id guvenli
     if (tiles.length !== ids.length) return { ok: false, error: 'Seçim geçersiz.' };
-    const groups = this._partitionCombos(tiles);
+    const groups = this._partitionCombos(tiles, false, this._oraclePrefer());
     if (!groups) {
       // Seçim ancak Çift + Per/Sıralı KARIŞIK bölünebiliyorsa daha net hata ver
       if (!this.hasActive('ucuncuTeker') && this._partitionCombos(tiles, true))
@@ -6392,7 +6415,31 @@ const Game = {
      önce tur türüne uygun tek-tür çözüm (Per/Sıralı serbestçe karışır — GDD'de
      yalnız Çift ile Per/Sıralı karışımı yasak), Üçüncü Teker varsa (veya
      allowMixed bayrağıyla) karışık bölümleme de denenir. */
-  _partitionCombos(tiles, allowMixed) {
+  /* P54 · Bölüm 1 · Madde 6 (bug) — KAHİN "4 TAŞLI SIRALI AÇ" TUTMUYORDU.
+     Kök neden kehanet denetiminde DEĞİL, otomatik bölmedeydi: oyuncu
+     kırmızı 4-5-6-7 + mavi/sarı/siyah 7'yi TEK seçimle açınca
+     _partitionCombos ilk bulduğu geçerli bölmeyi alıyordu → 4-5-6 Sıralı +
+     dört 7'li Per. Oyuncunun gözündeki 4'lü Sıralı masaya 3'lü iniyor,
+     kehanet "tutmadı" deyip açılımı sıfırlıyordu. Aynısı "4 taşlı Per"
+     (4'lü Per 3'lüye bölünüyordu) ve "2 Çift / 2 kombinasyon" için de
+     geçerliydi. Artık bölücü, eşit derecede geçerli bölmeler arasından
+     KEHANETİ TUTANI seçer; hiçbiri tutmuyorsa eskisi gibi ilkini alır. */
+  _oraclePrefer() {
+    const s = this.state;
+    if (!this.bossOn() || s.boss.key !== 'kahin' || !s.bossOracle) return null;
+    const size = (g) => g.use.length + g.okeyUse;
+    const staged = s.staged || [];
+    switch (s.bossOracle.key) {
+      case 'siraliLong': return (sol) => sol.some(g => g.kind === 'sirali' && size(g) >= 4);
+      case 'perFull': return (sol) => sol.some(g => g.kind === 'per' && size(g) >= 4);
+      case 'cift2': return (sol) => staged.filter(c => c.type === 'cift').length
+        + sol.filter(g => g.kind === 'cift').length >= 2;
+      case 'combo2': return (sol) => staged.length + sol.length >= 2;
+      default: return null;
+    }
+  },
+
+  _partitionCombos(tiles, allowMixed, prefer) {
     const okeyFn = (t) => this.isOkeyTile(t);
     const free = this._freePerColors();
     const normals = tiles.filter(t => !okeyFn(t));
@@ -6467,11 +6514,16 @@ const Game = {
     };
 
     const solve = (modes) => {
-      let found = null;
+      let found = null, firstSol = null;
       const search = (rest, okeyN, acc) => {
         if (found || ++nodes > 150000) return;
         if (!rest.length) {
-          if (okeyN === 0) found = acc.map(g => ({ use: [...g.use], okeyUse: g.okeyUse }));
+          if (okeyN === 0) {
+            const sol = acc.map(g => ({ kind: g.kind, use: [...g.use], okeyUse: g.okeyUse }));
+            if (!firstSol) firstSol = sol;
+            // prefer yoksa ilk çözüm yeter; varsa tutan bulunana dek aranır
+            if (!prefer || prefer(sol)) found = sol;
+          }
           return;
         }
         const first = rest[0];
@@ -6485,7 +6537,7 @@ const Game = {
         }
       };
       search(normals, okeyTiles.length, []);
-      return found;
+      return found || firstSol;
     };
 
     // Tercih sırası: mevcut tur türüyle uyumlu tek-tür çözüm önce
@@ -8510,7 +8562,7 @@ const Game = {
       /* Havuz: Legendary + Mythic değnekler. Envanter doluysa coin'e çevrilir
          ki ödül hiçbir koşulda boşa gitmesin. */
       const pool = Object.values(CONSUMABLES).filter(d =>
-        d.rarity === 'legendary' || d.rarity === 'mythic');
+        (d.rarity === 'legendary' || d.rarity === 'mythic') && this._consumOfferable(d.key));
       const def = pool[Math.floor(this.rng() * pool.length)];
       gainCoins(s, UP_VAL.kayipSandik);
       if (s.consumables.length < this.consumCap()) {
@@ -9375,7 +9427,7 @@ const Game = {
       case 'simyaSisesi': {
         const r = findTile();
         if (!r.tile) return { ok: false, error: r.error, needsTarget: r.needsTarget, storePick: r.storePick };
-        const spKind = key === 'gumusVernik' ? 'gumus' : 'altin';
+        const spKind = VERNIK_KIND[key];
         const spDef = SPECIAL_TILES[spKind];
         /* GRUP I: hedef ZATEN özel bir taş olabilir. Aynı türse boşuna
            harcanmasın; farklı türse eski kaydı düşürüp yenisini yazarız
