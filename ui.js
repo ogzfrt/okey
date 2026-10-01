@@ -2849,6 +2849,10 @@
   function liveCorp(j) {
     const s = Game.state;
     if (!j || j.key !== 'corporates' || !s || s.status !== 'playing') return null;
+    /* Kullanıcı kararı (P57): haritada kart ORİJİNAL görüntüsünde durur.
+       Sonraki raund harita gösterilmeden ÖNCE kurulduğu için şirket o anda
+       seçilmiş olur; dönüşüm yalnız oyun ekranında (raunda girince) görünür. */
+    if (curScreen() !== 'game') return null;
     const c = s.corpTask;
     if (!c || c.boss) return null;
     if (j.id != null && !Game.slotRecs().some(r => r.id === j.id)) return null;
