@@ -1059,10 +1059,38 @@ const BOSS_CHEAT_DECK_N = 2;   // desteden çalınan taş sayısı
 const UC_PEEK_COST = 3;
 
 /* P54 · Grup B (kullanıcı kararı 2026-09-29) — ÖTEKİ DÜNYA (yeni Mythic).
-   Raund başında desteden OTEKI_START taşlık ikinci bir el; oynanmayan dünya
-   her tur başında OTEKI_TICK taş alır. Tur başına bir geçiş. */
-const OTEKI_START = 7;
-const OTEKI_TICK = 1;
+   Raund başında desteden OTEKI_START taşlık ikinci bir el.
+   P57 (kullanıcı kararı 2026-10-01) — SİSTEM YENİDEN KURULDU:
+   · geçiş SINIRSIZ (açılım ve atış aşamasında, istediğin an);
+   · "oynanmayan dünya her tur +1 taş" KALKTI → discard edilen taş yere değil
+     öteki ele düşer ve KALICI 🌙 Ay Taşı olur (özel taş, kopya tavanı geçerli);
+   · 👻 hayalet yolcu: turun İLK geçişinde terk edilen elden rastgele bir
+     taşın 1 turluk hayaleti seninle gelir (ileri-geri tıklayıp çoğaltılamaz);
+   · 🌫 unutma sisi: bir dünyada OTEKI_FOG_AFTER tur üst üste turu bitirmezsen
+     oradaki bir taş her tur ters döner (açılımda/atışta yeniden açılır);
+   · 🌕 KAVUŞMA: sahnelenen kombinasyonlar geçişte masada kalır; tek onayda
+     İKİ dünyadan kombinasyon varsa açılım ay evresine göre ×KAVUSMA_MULT
+     alır (raundda bir kez), ardından öteki dünya kapanır ve kalan taşları
+     elinle birleşir;
+   · 🌑 TUTULMA: son tur Kavuşma yapılmadan biterse öteki eldeki en değerli
+     tek kombinasyonun puanı skordan düşer. */
+const OTEKI_START = 7;          // taban; gerçek boy otekiStartFor(stage) — el büyüdükçe öteki el de büyür
+const OTEKI_FOG_AFTER = 2;
+/* P57 · kullanıcı isteği ("Mythic, güçlü olmak zorunda; öteki dünyadan açılım
+   ek bonus almalı") — öteki dünyadan sahnelenen HER kombinasyon açılıma
+   +OTEKI_COMBO_MULT çarpan ekler (Kavuşma'da da, tek başına açılımda da).
+   Ölçüm (uzman bot, tek raund, 150 raund/stage, öteki el = elin üçte biri):
+   +0.5x → S1 +721 · S3 +470 · S5 +694 · S8 +671; +1.0x → +959 · +538 · +884 · +895
+   (Gökyüzü Ejderhası +516 · +587 · +677 · +732). Mythic ölçüsü için 1.0 seçildi. */
+const OTEKI_COMBO_MULT = 1.0;
+const otekiStartFor = (stage) => Math.max(OTEKI_START, Math.round(handSizeFor(stage) / 3));
+const MOON_ICONS = ['🌒', '🌓', '🌕', '🌘'];   // tur 1-4; 5. tur ve sonrası 🌑
+const KAVUSMA_MULT = [1, 1.5, 2, 1.25];        // 5+ → ×1
+const AY_TASI_PTS = [40, 80, 160, 60];         // 5+ → +40
+const moonIdx = (turn) => (turn >= 1 && turn <= 4 ? turn - 1 : -1);
+const moonIcon = (turn) => (moonIdx(turn) >= 0 ? MOON_ICONS[moonIdx(turn)] : '🌑');
+const kavusmaMult = (turn) => (moonIdx(turn) >= 0 ? KAVUSMA_MULT[moonIdx(turn)] : 1);
+const ayTasiPts = (turn) => (moonIdx(turn) >= 0 ? AY_TASI_PTS[moonIdx(turn)] : 40);
 /* PLAYTEST 30 · GRUP F — Robin Hood KALDIRILDI, yerine VASİYET geldi.
    Vasiyet süresi dolan jokerlerin efektini `j.legacy` deposunda taşır;
    depo FIFO'dur, kapasite aşılınca en eski miras düşer. */
@@ -1497,6 +1525,12 @@ const SPECIAL_TILES = {
      ve bir slot işgal eder. Bu ise bir DESTE TAŞIDIR, joker değildir
      (Kıyamet onu susturmaz), yuttuğu şey elin değil kendi geçmişidir ve
      PUAN ekseninde çalışır. Ortak olan yalnız temadır. */
+  /* P57 — AY TAŞI: yalnız Öteki Dünya'nın discard'ı ile doğar (`noStore`:
+     store/paket havuzuna girmez). Puanı turun ay evresine bağlıdır: bekletip
+     dolunayda (3. tur) açmayı ödüllendirir — Ateş Taşı'nın tersi. */
+  ayTasi: { key: 'ayTasi', name: 'Ay Taşı', icon: '🌙', price: 0, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
+    noStore: true,
+    desc: 'Yalnız Öteki Dünya ile doğar, kalıcıdır. Açılımda ay evresine göre: +40 · +80 · 🌕 +160 · +60.' },
   karaDelikTasi: { key: 'karaDelikTasi', name: 'Kara Delik Taşı', icon: '🕳', price: 9, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
     desc: `Destene kalıcı girer. Açılımda +${KD_TASI_BASE} puan — her kullanımda kalıcı +${KD_TASI_STEP} yoğunlaşır (en çok +${KD_TASI_MAX}). Atarsan işlek işlemez.` },
   aynaTasi: { key: 'aynaTasi', name: 'Ayna Taşı', icon: '🪞', price: 13, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
@@ -2143,9 +2177,9 @@ const JOKER_DEFS = {
   /* P54 · GRUP B (kullanıcı kararı 2026-09-29) — ÖTEKİ DÜNYA. The World'ün
      yerine baştan tasarlanan Mythic (yeni anahtar). İkinci, görünmez bir
      ıstaka: kartına tıklayınca iki el yer değiştirir (tur başına bir kez).
-     Oynanmayan dünya her tur başında desteden OTEKI_TICK taş alır. */
+     P57: sistem yeniden kuruldu — bkz. OTEKI_START üstündeki blok. */
   otekiDunya: { key: 'otekiDunya', name: 'Öteki Dünya', rarity: 'mythic', uses: 1,
-    desc: 'Raund başında 7 taşlık ikinci bir el açılır; kartına tıklayıp dünya değiştirirsin. Oynamadığın dünya her tur +1 taş alır.' },
+    desc: 'İkinci el; istediğin an geç. Oradan her kombinasyon +1x, discard oraya 🌙 Ay Taşı düşer. İki dünyadan tek açılım: Kavuşma.' },
   kagit: { key: 'kagit', name: 'Kağıt', rarity: 'mythic', uses: 1,
     desc: 'Her raund başında elindeki en düşük taş KALICI olarak okeye dönüşür (Okey Mührü gibi: her stage o stage’in okeyi olur).' },
 
@@ -4350,7 +4384,10 @@ const Game = {
     s.yildizPick = null;
     s.ucKagit = null;         // P54 · Grup A — Üç Kağıtçı seçimi raunda taşmaz
     s.otekiHand = [];         // P54 · Grup B — Öteki Dünya'nın eli deste kurulmadan boşalır
-    s.otekiSwapTurn = null;
+    s.otekiSide = 0;          // P57 — 0: raunda başladığın dünya, 1: öteki
+    s.otekiAway = [0, 0];     // P57 — sis sayacı (dünya başına, tur sonu konumuna göre)
+    s.otekiGhostTurn = null;  // P57 — hayalet yolcu turda bir kez
+    s.kavusmaDone = false;    // P57 — dünyalar kavuştu mu (raundda bir kez)
     s.storeTilePick = null;   // P29 · Grup O — store seçimi raunda taşmaz
     s.deck = createDeck(s);
     // Sahte okeyler bu stage'in okeyinin normal kopyaları olur:
@@ -4589,15 +4626,7 @@ const Game = {
       s.roundStartNotes.push(`🩷 Pinky Warrior: küçükler ordusu — 1 ve 2'ler bu raund OKEY (${n} taş)`);
     }
     /* ÖTEKİ DÜNYA (P54 · Grup B) — ikinci el desteden kurulur. */
-    if (this.hasActive('otekiDunya')) {
-      const take = Math.min(OTEKI_START, s.deck.filter(t => !t.jokerTile).length);
-      for (let k = 0; k < take; k++) {
-        const i = s.deck.findIndex(t => !t.jokerTile);
-        s.otekiHand.push(s.deck.splice(i, 1)[0]);
-      }
-      s.otekiHand.forEach((t, i) => { t.slot = i; });
-      if (take) s.roundStartNotes.push(`🌗 Öteki Dünya açıldı: orada ${take} taşlık ikinci bir elin var — kartına tıklayıp geç`);
-    }
+    if (this.hasActive('otekiDunya')) this._setupOteki(s.roundStartNotes);
     /* ADEM İLE HAVVA · YASAK ELMA (P31 · Grup I) — ele bir Elma taşı. Kimliği
        okeyin kimliğidir ama `copied` olduğu için asıl destenin 2 kopya
        sınırına girmez; raund bitince destede yeniden kurulmaz. */
@@ -4869,13 +4898,7 @@ const Game = {
       s.roundStartNotes.push(`👹 ${base.name} (BOSS): "${CORPS_BOSS[k].text}" — başaramazsan GAME OVER`);
     }
     const corpJ = !s.corpTask && this.hasActive('corporates') && this.slotRecs().find(j => j.key === 'corporates');
-    if (corpJ) {
-      const pool = CORPS.filter(c => c.key !== corpJ.lastCorp);
-      const c = pool[Math.floor(this.rng() * pool.length)];
-      corpJ.lastCorp = c.key;
-      s.corpTask = { ...c, done: false, failed: false };
-      s.roundStartNotes.push(`🏢 ${c.name}: "${c.text}" → ödül: ${c.rewardText} / ceza: ${c.penaltyText}`);
-    }
+    if (corpJ) this._assignCorp(corpJ, s.roundStartNotes);
     // Dedikodu Masası (Grup F) — 3 açık taşlık yan masa kurulur
     this._setupGossipTable(s.roundStartNotes);
     this._onTurnStart(s.roundStartNotes);
@@ -5137,7 +5160,7 @@ const Game = {
     /* ÜÇ KAĞITÇI (BOSS) — ters gelen taş BİR tur ters kalır: bu turda çekilenler
        (`faceDownFresh`) bekler, bir önceki turun ters taşları şimdi açılır. */
     for (const t of s.hand) {
-      if (!t.faceDown) continue;
+      if (!t.faceDown || t.fog) continue;   // P57 — sisin ters taşı kendiliğinden açılmaz
       if (t.faceDownFresh) delete t.faceDownFresh;
       else delete t.faceDown;
     }
@@ -5161,7 +5184,7 @@ const Game = {
     s.clockLeft = CLOCK_SECONDS;   // P54 · Grup C — Satranç Saati her tur baştan
     s.clockFrozen = false;
     this._ucKagitDeal(events);     // P54 · Grup A — Üç Kağıtçı'nın 3 kapalı seçeneği
-    this._otekiTick(events);       // P54 · Grup B — Öteki Dünya'da zaman akar
+    this._otekiTurnStart(events);  // P57 — Öteki Dünya: unutma sisi
     /* Grup E — Ateş Taşı: elde beklerken yanar. Açılımda kullanılınca büyük
        puan verir (+120), ama elde tutulduğu her tur -15 puan. "Hemen kullan"
        baskısı yaratan tek özel taş. */
@@ -5983,6 +6006,17 @@ const Game = {
         text: `+${clockM.toFixed(1)}x (${s.clockLeft ?? CLOCK_SECONDS} sn kaldı)` });
     }
     if (s.roundMult > 0) mult += s.roundMult;
+    /* P57 — öteki dünyadan gelen her kombinasyon +OTEKI_COMBO_MULT */
+    if (this._otekiOpen()) {
+      const on = s.staged.filter(c => c.world === 1).length;
+      if (on) {
+        const m = round2(OTEKI_COMBO_MULT * on);
+        mult += m;
+        const oj = this.slotRecs().find(j => j.key === 'otekiDunya');
+        triggered.push({ id: oj ? oj.id : 'oteki', name: 'Öteki Dünya',
+          text: `🌗 öteki dünyadan ${on} kombinasyon +${m.toFixed(1)}x` });
+      }
+    }
 
     // Özel Normal Taşlar (GDD 6.5c) — joker değildir, Kıyamet'ten etkilenmez
     const spN = (k) => ctx.tiles.filter(t => t.special === k).length;
@@ -6005,6 +6039,12 @@ const Game = {
     if (atesN) {
       flat += 120 * atesN;
       triggered.push({ id: 'ates', name: 'Ateş Taşı', text: `+${120 * atesN} puan` });
+    }
+    const ayN = spN('ayTasi');   // P57 — ay evresine göre
+    if (ayN) {
+      const p = ayTasiPts(s.turn) * ayN;
+      flat += p;
+      triggered.push({ id: 'ayTasi', name: 'Ay Taşı', text: `${moonIcon(s.turn)} +${p} puan` });
     }
     const bakirN = spN('bakir');
     if (bakirN) {
@@ -6180,6 +6220,16 @@ const Game = {
       final += damgaBonus;
       triggered.push({ id: damgaJ.id, name: damgaJ.name, text: `+${damgaBonus} puan (damga: 2 kat)` });
     }
+    /* P57 — KAVUŞMA: aynı onayda iki dünyadan kombinasyon → ay evresi çarpanı */
+    const kavusma = this._kavusmaNow();
+    if (kavusma && final > 0) {
+      const m = kavusmaMult(s.turn);
+      const b = Math.ceil(final * (m - 1));
+      final += b;
+      const oj = this.slotRecs().find(j => j.key === 'otekiDunya');
+      triggered.push({ id: oj ? oj.id : 'kavusma', name: 'Öteki Dünya',
+        text: `${moonIcon(s.turn)} Kavuşma ×${m}${b ? ` (+${b})` : ''}` });
+    }
     // Boss koşulları — açılım puanına etki edenler (GDD 10)
     if (this.bossOn()) {
       if (s.boss.key === 'kelebek' && s.bossBan && ctx.combos.some(c => c.type === s.bossBan)) {
@@ -6282,7 +6332,8 @@ const Game = {
     s.hand = s.hand.filter(t => !tiles.includes(t));
     // Grup E: okey, yerine geçtiği taşın sırasında görünsün
     const ordered = orderComboTiles(type, tiles, res.values, (t) => this.isOkeyTile(t));
-    s.staged.push({ type, tiles: ordered, values: res.values, usedOkey: res.usedOkey });
+    s.staged.push({ type, tiles: ordered, values: res.values, usedOkey: res.usedOkey,
+      world: s.otekiSide || 0 });   // P57 — hangi dünyadan geldi (geri alınınca oraya döner)
     this._revealTiles(tiles);   // P55 · Grup A — açılan taş doğal olarak görünür
     return { ok: true, type };
   },
@@ -6292,12 +6343,17 @@ const Game = {
   _revealTiles(tiles) {
     const was = [];
     for (const t of tiles || []) {
-      if (t && t.faceDown) { was.push([t, !!t.faceDownFresh]); delete t.faceDown; delete t.faceDownFresh; }
+      if (t && t.faceDown) {
+        was.push([t, !!t.faceDownFresh, !!t.fog]);
+        delete t.faceDown; delete t.faceDownFresh; delete t.fog;
+      }
     }
     return was;
   },
   _restoreFaceDown(was) {
-    for (const [t, fresh] of was || []) { t.faceDown = true; if (fresh) t.faceDownFresh = true; }
+    for (const [t, fresh, fog] of was || []) {
+      t.faceDown = true; if (fresh) t.faceDownFresh = true; if (fog) t.fog = true;
+    }
   },
 
   /* Çoklu seçim açma: seçim tek kombinasyon değilse otomatik parçalara
@@ -6320,7 +6376,7 @@ const Game = {
     const before = s.staged.length;
     /* P55 · Grup A: bölmenin bir parçası reddedilirse sahnelenen parçalar
        geri alınır — onların ters taşları da yeniden kapanır (deneme ifşa etmez). */
-    const hidden = tiles.filter(t => t.faceDown).map(t => [t, !!t.faceDownFresh]);
+    const hidden = tiles.filter(t => t.faceDown).map(t => [t, !!t.faceDownFresh, !!t.fog]);
     for (const g of groups) {
       const r = this.stageCombo(g.map(t => t.id));
       if (!r.ok) {
@@ -6483,7 +6539,7 @@ const Game = {
     const s = this.state;
     if (s.phase !== 'meld') return;
     const combo = s.staged.splice(index, 1)[0];
-    if (combo) s.hand.push(...combo.tiles);
+    if (combo) this._toWorld(combo.tiles, combo.world);
     if (s.staged.length === 0) s.turnMode = null;
     else if (!s.staged.some(c => c.type === 'cift')) s.turnMode = 'per';
     else if (s.staged.every(c => c.type === 'cift')) s.turnMode = 'cift';
@@ -6542,7 +6598,8 @@ const Game = {
     s.hand = s.hand.filter(t => !tiles.includes(t));
     // Grup E: işlenen taşlar da atanan değerlerine göre dizilir (okey doğru yerde)
     const orderedAdd = orderComboTiles(res.type, tiles, res.values, (t) => this.isOkeyTile(t));
-    s.islemeler.push({ comboIndex, tiles: orderedAdd, addSum, usedOkey: res.usedOkey, values: res.values });
+    s.islemeler.push({ comboIndex, tiles: orderedAdd, addSum, usedOkey: res.usedOkey, values: res.values,
+      world: s.otekiSide || 0 });
     this._revealTiles(tiles);   // P55 · Grup A — işlenen ters taş masada "?" kalmaz
     return { ok: true };
   },
@@ -6925,7 +6982,7 @@ const Game = {
     const s = this.state;
     if (s.phase !== 'meld') return;
     const e = s.islemeler.splice(index, 1)[0];
-    if (e) s.hand.push(...e.tiles);
+    if (e) this._toWorld(e.tiles, e.world);
     if (!s.staged.length && !s.islemeler.length) s.turnMode = null;
   },
 
@@ -6959,13 +7016,15 @@ const Game = {
     for (let i = s.islemeler.length - 1; i >= 0; i--) {
       if (!isInfected(s.islemeler[i].tiles)) continue;
       const e = s.islemeler.splice(i, 1)[0];
-      for (const t of e.tiles) { delete t.hiddenAlien; s.hand.push(t); }
+      for (const t of e.tiles) delete t.hiddenAlien;
+      this._toWorld(e.tiles, e.world);
       collapsed++; tiles += e.tiles.length;
     }
     for (let i = s.staged.length - 1; i >= 0; i--) {
       if (!isInfected(s.staged[i].tiles)) continue;
       const c = s.staged.splice(i, 1)[0];
-      for (const t of c.tiles) { delete t.hiddenAlien; s.hand.push(t); }
+      for (const t of c.tiles) delete t.hiddenAlien;
+      this._toWorld(c.tiles, c.world);
       collapsed++; tiles += c.tiles.length;
     }
     if (collapsed) {
@@ -6987,6 +7046,7 @@ const Game = {
     // Grup H: gizli uzaylı taşıyan kombinasyonlar puanlanmadan önce çöker
     const alienEv = [];
     this._bossAlienCollapse(alienEv);
+    const kavusmaNow = this._kavusmaNow();   // P57 — onay öncesi yakalanır (sahne birazdan boşalır)
     if (alienEv.length && !s.staged.length && !s.islemeler.length) {
       // her şey çöktü: tur boşa gitti, açılım aşamasında kalınır
       return { ok: true, collapsed: true, raw: 0, final: 0, count: 0,
@@ -7286,6 +7346,10 @@ const Game = {
     }
     s.opened = s.staged;
     s.staged = [];
+    if (kavusmaNow) {
+      result.kavusma = true;
+      this._otekiClose(events);   // P57 — Kavuşma: öteki dünya kapanır
+    }
     s.lastResult = result;
 
     if (result.tamEl || s.score >= s.target) {
@@ -7346,12 +7410,14 @@ const Game = {
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur atılamaz (tur bitince serbest kalır).' };
 
     this._revealTiles(picks);   // P55 · Grup A — atılan taş yere açık düşer
+    const events = [];
+    const toOteki = this._otekiOpen();   // P57 — discard öteki dünyaya düşer
     for (const t of picks) {
       s.hand = s.hand.filter(x => x !== t);
-      s.discardPile.push(t);
+      if (toOteki && s.otekiHand.length < MAX_HAND) this._otekiFall(t, events);
+      else s.discardPile.push(t);
     }
     const tile = picks[0] || null;   // tekli yollar için geriye dönük kısayol
-    const events = [];
     if (picks.length > 1)
       events.push(`🗑 ${picks.length} taş atıldı: `
         + picks.map(t => `${COLOR_TR[t.color]} ${t.number}`).join(', '));
@@ -7633,6 +7699,7 @@ const Game = {
          bloğu); burada ikinci kez ödenirse çifte sayım olurdu. Son turda
          açılım yapılmadıysa banka ödenmeden söner — kartın riski budur. */
       s.vampirBank = 0;
+      this._otekiEclipse(events);   // P57 — Kavuşma yoksa ay tutulur
       /* Grup I — otomatik kurtarma: hedefin altında kaldıysak, hedefi
          indirebilecek tüketilebilirler ("win" sınıfı) burada KENDİLİĞİNDEN
          kullanılır. Alternatifi Game Over olduğu için oyuncuya sormaya
@@ -8728,8 +8795,8 @@ const Game = {
   _packHasRoom(kind) {
     const s = this.state;
     if (kind === 'special')
-      return Object.values(SPECIAL_TILES).some(k =>
-        s.specialTiles.filter(x => x.kind === k.key).length < k.maxCopies);
+      return Object.values(SPECIAL_TILES).some(k => !k.noStore
+        && s.specialTiles.filter(x => x.kind === k.key).length < k.maxCopies);
     if (kind === 'consum') return s.consumables.length < this.consumCap();
     if (kind === 'joker') return s.jokers.length < this.slotCap() || s.backup.length < MAX_BACKUP;
     return false;
@@ -8744,8 +8811,8 @@ const Game = {
   _packUseful(kind) {
     const s = this.state;
     if (kind === 'special')
-      return Object.values(SPECIAL_TILES).some(k =>
-        s.specialTiles.filter(x => x.kind === k.key).length < k.maxCopies);
+      return Object.values(SPECIAL_TILES).some(k => !k.noStore
+        && s.specialTiles.filter(x => x.kind === k.key).length < k.maxCopies);
     if (kind === 'consum') return true;
     if (kind === 'joker') {
       const owned = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
@@ -8898,8 +8965,8 @@ const Game = {
     const s = this.state;
     const skip = avoid || new Set();
     if (kind === 'special') {
-      let kinds = Object.values(SPECIAL_TILES).filter(k =>
-        s.specialTiles.filter(x => x.kind === k.key).length < k.maxCopies);
+      let kinds = Object.values(SPECIAL_TILES).filter(k => !k.noStore
+        && s.specialTiles.filter(x => x.kind === k.key).length < k.maxCopies);
       if (!kinds.length) return null;
       const fresh = kinds.filter(k => !skip.has(k.key));
       if (fresh.length) kinds = fresh;
@@ -9818,34 +9885,175 @@ const Game = {
      İkinci el `s.otekiHand` bir BÖLGEDİR (tileZones): el denetimi ve bütünlük
      nöbetçisi oradaki taşları görür. Hayalet taşlar dünya değiştirmez
      (bir turluk, oyuncuyla kalır). */
-  _otekiTick(events) {
+  /* P57 — dünya ayrımı yalnız Öteki Dünya slottayken ve Kavuşma olmadıysa vardır */
+  _otekiOpen() {
     const s = this.state;
-    if (!Array.isArray(s.otekiHand) || !s.otekiHand.length) return;
-    if (!this.hasActive('otekiDunya') || s.turn <= 1) return;
-    let n = 0;
-    for (let k = 0; k < OTEKI_TICK; k++) {
-      if (s.otekiHand.length >= MAX_HAND) break;
-      const i = s.deck.findIndex(t => !t.jokerTile);
-      if (i < 0) break;
-      s.otekiHand.push(s.deck.splice(i, 1)[0]);
-      n++;
+    return !!s && this.hasActive('otekiDunya') && !s.kavusmaDone && Array.isArray(s.otekiHand);
+  },
+
+  /* Sahneden/işlemeden geri dönen taş KENDİ dünyasına döner — geçişte masada
+     bekleyen bir kombinasyonu geri alarak taşı öbür ele taşımak mümkün olmasın.
+     Hayalet her zaman oyuncuyla kalır (öteki elde sönmeden beklemesin). */
+  _toWorld(tiles, world) {
+    const s = this.state;
+    const away = this._otekiOpen() && world != null && world !== (s.otekiSide || 0);
+    for (const t of tiles || []) {
+      if (away && !t.ghost) { t.slot = this._freeSlotIn(s.otekiHand); s.otekiHand.push(t); }
+      else s.hand.push(t);
     }
-    if (n) events.push(`🌗 Öteki Dünya'da zaman aktı: orada artık ${s.otekiHand.length} taş var`);
+  },
+
+  _freeSlotIn(list) {
+    const used = new Set((list || []).map(t => t.slot));
+    let i = 0;
+    while (used.has(i)) i++;
+    return i;
+  },
+
+  /* Discard öteki ele düşer; asıl deste taşıysa KALICI Ay Taşı olur
+     (Gümüş Vernik ile aynı defter: tileMods remove + specialTiles kaydı). */
+  _otekiFall(t, events) {
+    const s = this.state;
+    t.slot = this._freeSlotIn(s.otekiHand);
+    s.otekiHand.push(t);
+    const face = `${COLOR_TR[t.color] || t.color} ${t.number}`;
+    const def = SPECIAL_TILES.ayTasi;
+    const room = s.specialTiles.filter(x => x.kind === 'ayTasi').length < def.maxCopies;
+    if (IS_BASE_TILE(t) && !t.ghost && !this.isOkeyTile(t) && room) {
+      const mgRec = this._magnetOf(t);
+      s.tileMods.push({ op: 'remove', color: t.color, number: t.number });
+      const rec = this._addSpecialTile('ayTasi', t.color, t.number);
+      t.special = 'ayTasi';
+      t.sid = rec.sid;
+      if (mgRec) { mgRec.sid = rec.sid; mgRec.color = t.color; mgRec.number = t.number; }
+      events.push(`🌙 ${face} öteki dünyaya düştü ve KALICI Ay Taşı oldu`);
+    } else {
+      events.push(`🌗 ${face} öteki dünyaya düştü`);
+    }
+  },
+
+  /* Tur başı: geçen turu hangi dünyada bitirdiysen orası "ziyaret edilmiş"
+     sayılır; öbür dünyada OTEKI_FOG_AFTER tur üst üste yoksan her tur bir
+     taşın yüzünü unutursun (ters döner, açılımda/atışta açılır). */
+  _otekiTurnStart(events) {
+    const s = this.state;
+    if (!this._otekiOpen() || s.turn <= 1) return;
+    const cur = s.otekiSide || 0;
+    const away = Array.isArray(s.otekiAway) ? s.otekiAway : (s.otekiAway = [0, 0]);
+    away[cur] = 0;
+    away[1 - cur]++;
+    if (away[1 - cur] < OTEKI_FOG_AFTER) return;
+    const pool = s.otekiHand.filter(t => !t.faceDown && !t.jokerTile && !t.ghost);
+    if (!pool.length) return;
+    const t = pool[Math.floor(this.rng() * pool.length)];
+    t.faceDown = true;
+    t.fog = true;
+    events.push(`🌫 Öteki dünyadan ${away[1 - cur]} turdur uzaksın — oradaki bir taşın yüzünü unuttun`);
+  },
+
+  /* Aynı onayda iki dünyadan kombinasyon var mı? (önizleme de aynı yolu kullanır) */
+  _kavusmaNow() {
+    const s = this.state;
+    if (!this._otekiOpen()) return false;
+    const w = new Set([...s.staged, ...s.islemeler].map(c => c.world || 0));
+    return w.has(0) && w.has(1);
+  },
+
+  /* Kavuşma sonrası öteki dünya kapanır: kalan taşları elinle birleşir.
+     Istaka (RACK_COLS × 2) dolarsa taşan taş desteye karışır — kaybolmaz. */
+  _otekiClose(events) {
+    const s = this.state;
+    s.kavusmaDone = true;
+    const back = s.otekiHand || [];
+    s.otekiHand = [];
+    let over = 0;
+    for (const t of back) {
+      if (s.hand.length >= RACK_COLS * 2) {
+        delete t.faceDown; delete t.faceDownFresh; delete t.fog;
+        s.deck.splice(Math.floor(this.rng() * (s.deck.length + 1)), 0, t);
+        over++;
+        continue;
+      }
+      t.slot = this._freeSlotIn(s.hand);
+      s.hand.push(t);
+    }
+    events.push(`🌕 Dünyalar kavuştu! Öteki dünya kapandı, ${back.length - over} taşı eline katıldı`
+      + (over ? ` (${over} taş ıstakaya sığmadı, desteye karıştı)` : ''));
+  },
+
+  /* Öteki eldeki en değerli TEK kombinasyon (okeysiz, yüz değerleriyle):
+     Per = aynı sayı farklı renk (3-4), Sıralı = aynı renk ardışık (3+),
+     Çift = aynı renk+sayı. Değer = ham toplam × o türün tek kombinasyon çarpanı. */
+  _otekiBestCombo(tiles) {
+    const s = this.state;
+    const list = (tiles || []).filter(t => !t.jokerTile && !t.fakeOkey && !t.ghost && t.number);
+    let best = 0, bestType = null;
+    const score = (sum, mode) => Math.ceil(sum * getCarpan(mode, 1, s.permMult || 0));
+    const byNum = {};
+    for (const t of list) (byNum[t.number] = byNum[t.number] || new Set()).add(t.color);
+    for (const n in byNum) {
+      const k = Math.min(4, byNum[n].size);
+      if (k >= 3) { const v = score(k * Number(n), 'per'); if (v > best) { best = v; bestType = 'per'; } }
+    }
+    const byColor = {};
+    for (const t of list) (byColor[t.color] = byColor[t.color] || new Set()).add(t.number);
+    for (const c in byColor) {
+      const nums = [...byColor[c]].sort((a, b) => a - b);
+      let run = [nums[0]];
+      const flush = () => {
+        if (run.length >= 3) {
+          const v = score(run.reduce((a, b) => a + b, 0), 'per');
+          if (v > best) { best = v; bestType = 'sirali'; }
+        }
+      };
+      for (let i = 1; i < nums.length; i++) {
+        if (nums[i] === nums[i - 1] + 1) run.push(nums[i]);
+        else { flush(); run = [nums[i]]; }
+      }
+      flush();
+    }
+    const cnt = {};
+    for (const t of list) {
+      const k = t.color + ':' + t.number;
+      cnt[k] = (cnt[k] || 0) + 1;
+      if (cnt[k] === 2) { const v = score(2 * t.number, 'cift'); if (v > best) { best = v; bestType = 'cift'; } }
+    }
+    return { value: best, type: bestType };
+  },
+
+  /* 🌑 TUTULMA — son tur Kavuşma'sız biterse öteki eldeki en değerli
+     kombinasyonun puanı skordan düşer (kartı alıp öteki dünyayı ihmal etmenin bedeli). */
+  _otekiEclipse(events) {
+    const s = this.state;
+    if (!this._otekiOpen() || !(s.otekiHand || []).length) return 0;
+    const b = this._otekiBestCombo(s.otekiHand);
+    if (!b.value) {
+      events.push('🌑 Tutulma: dünyalar kavuşmadı ama öteki dünyada kombinasyon yoktu — ceza yok');
+      return 0;
+    }
+    const cut = Math.min(s.score, b.value);
+    s.score -= cut;
+    events.push(`🌑 Tutulma: dünyalar kavuşmadı — öteki dünyadaki en değerli kombinasyon (${b.value} puan) skordan düştü`);
+    return cut;
   },
 
   otekiState() {
     const s = this.state;
     if (!s) return null;
     const j = this.slotRecs().find(x => x.key === 'otekiDunya');
-    const turnKey = `${s.stage}-${s.roundInStage}-${s.turn}`;
     let reason = null;
     if (!j) reason = 'Öteki Dünya slotta değil.';
     else if (s.jokersDisabled) reason = 'Jokerler bu raund susturuldu.';
-    else if (s.status !== 'playing' || s.phase !== 'meld') reason = 'Dünya yalnız açılım aşamasında değişir.';
-    else if (s.staged.length || s.islemeler.length) reason = 'Önce bekleyen açılımı onayla ya da geri al.';
+    else if (s.kavusmaDone) reason = 'Dünyalar kavuştu — öteki dünya bu raund kapandı.';
+    else if (s.status !== 'playing' || (s.phase !== 'meld' && s.phase !== 'discard'))
+      reason = 'Dünya yalnız açılım ve atış aşamasında değişir.';
     else if (s.godPick || s.ucKagit) reason = 'Önce bekleyen seçimi yap.';
-    else if (s.otekiSwapTurn === turnKey) reason = 'Bu tur zaten dünya değiştirdin.';
-    return { id: j ? j.id : null, count: (s.otekiHand || []).length, canUse: !reason, reason };
+    return {
+      id: j ? j.id : null, count: (s.otekiHand || []).length, canUse: !reason, reason,
+      side: s.otekiSide || 0, moon: moonIcon(s.turn), kavusmaMult: kavusmaMult(s.turn),
+      kavusmaReady: this._kavusmaNow(), kavusmaDone: !!s.kavusmaDone,
+      fog: (s.otekiHand || []).filter(t => t.fog).length,
+    };
   },
 
   useOteki() {
@@ -9856,10 +10064,27 @@ const Game = {
     const leaving = s.hand.filter(t => !t.ghost);
     s.hand = [...(s.otekiHand || []), ...ghosts];
     s.otekiHand = leaving;
-    s.hand.forEach((t, i) => { t.slot = i; });
+    for (const g of ghosts) if (s.hand.some(t => t !== g && t.slot === g.slot)) g.slot = this._freeSlotIn(s.hand.filter(t => t !== g));
+    s.otekiSide = 1 - (s.otekiSide || 0);
     if (s.paratonerBait != null && !s.hand.some(t => t.id === s.paratonerBait)) s.paratonerBait = null;
-    s.otekiSwapTurn = `${s.stage}-${s.roundInStage}-${s.turn}`;
-    return { ok: true, note: `🌗 Öteki Dünya'ya geçtin: ${s.hand.length} taş önünde, ${s.otekiHand.length} taş geride kaldı` };
+    /* 👻 HAYALET YOLCU — turun İLK geçişinde terk edilen elden rastgele bir
+       taşın 1 turluk hayaleti seninle gelir (okey, joker ve ters taş hariç). */
+    let ghostNote = '';
+    const turnKey = `${s.stage}-${s.roundInStage}-${s.turn}`;
+    if (s.otekiGhostTurn !== turnKey) {
+      s.otekiGhostTurn = turnKey;
+      const pool = leaving.filter(t => !t.jokerTile && !t.fakeOkey && !t.faceDown && !this.isOkeyTile(t));
+      if (pool.length) {
+        const g = pool[Math.floor(this.rng() * pool.length)];
+        const gt = { id: nextTileId(s), color: g.color, number: g.number,
+          ghost: true, copied: true, origin: 'oteki', ghostTurns: 1 };
+        gt.slot = this._freeSlotIn(s.hand);
+        s.hand.push(gt);
+        ghostNote = ` · 👻 ${COLOR_TR[g.color]} ${g.number} hayaleti seninle geldi`;
+      }
+    }
+    const where = s.otekiSide ? 'Öteki Dünya\'ya geçtin' : 'Kendi dünyana döndün';
+    return { ok: true, note: `🌗 ${where}: ${s.hand.length} taş önünde, ${s.otekiHand.length} taş geride${ghostNote}` };
   },
 
   /* RÜŞVET (P34) — taş atma aşamasında, tur başına bir kez. Önce desteden
@@ -10460,6 +10685,37 @@ const Game = {
         + `📉 ${TYPE_TR[down]} DÜŞÜŞTE (hisselerinin yarısı yanar)`);
     }
     if (j.key === 'truva' && !j.revealed) this._revealPandora(j, notes);
+    /* P57 (kullanıcı raporu: "raund içinde hiçbir şirkete dönüşmedi") —
+       raund ortasında ana slota geçen Corporates görevini ANINDA alır;
+       Öteki Dünya ikinci elini anında kurar. Önceden ikisi de yalnız raund
+       başında kuruluyordu ve kart o raund sessiz kalıyordu. */
+    if (j.key === 'corporates' && !s.corpTask && !s.jokersDisabled) this._assignCorp(j, notes);
+    if (j.key === 'otekiDunya' && !s.jokersDisabled && !s.kavusmaDone && !(s.otekiHand || []).length)
+      this._setupOteki(notes);
+  },
+
+  /* The Corporates — şirket seçimi (raund başı ve raund içi aynı yol) */
+  _assignCorp(j, notes) {
+    const s = this.state;
+    const pool = CORPS.filter(c => c.key !== j.lastCorp);
+    const c = pool[Math.floor(this.rng() * pool.length)];
+    j.lastCorp = c.key;
+    s.corpTask = { ...c, done: false, failed: false };
+    notes.push(`🏢 ${c.name}: "${c.text}" → ödül: ${c.rewardText} / ceza: ${c.penaltyText}`);
+    return c;
+  },
+
+  /* Öteki Dünya — ikinci elin kurulumu (raund başı ve raund içi aynı yol) */
+  _setupOteki(notes) {
+    const s = this.state;
+    if (!Array.isArray(s.otekiHand)) s.otekiHand = [];
+    const take = Math.min(otekiStartFor(s.stage), s.deck.filter(t => !t.jokerTile).length);
+    for (let k = 0; k < take; k++) {
+      const i = s.deck.findIndex(t => !t.jokerTile);
+      s.otekiHand.push(s.deck.splice(i, 1)[0]);
+    }
+    s.otekiHand.forEach((t, i) => { t.slot = i; });
+    if (take) notes.push(`🌗 Öteki Dünya açıldı: orada ${take} taşlık ikinci bir elin var — kartına tıklayıp istediğin an geç`);
   },
 
   /* Satış kilidi (Grup B) — Lanetli Kaptan bir kez kurtardıysa artık
@@ -11004,7 +11260,11 @@ const Game = {
     if (st.godPick === undefined) st.godPick = null;        // P31 · Grup E
     if (st.ucKagit === undefined) st.ucKagit = null;        // P54 · Grup A
     if (!Array.isArray(st.otekiHand)) st.otekiHand = [];    // P54 · Grup B
-    if (st.otekiSwapTurn === undefined) st.otekiSwapTurn = null;
+    if (st.otekiSide == null) st.otekiSide = 0;                 // P57
+    if (!Array.isArray(st.otekiAway)) st.otekiAway = [0, 0];
+    if (st.otekiGhostTurn === undefined) st.otekiGhostTurn = null;
+    if (st.kavusmaDone == null) st.kavusmaDone = false;
+    delete st.otekiSwapTurn;
     if (st.appleEaten == null) st.appleEaten = false;       // P31 · Grup I
     /* Grup E (P9): Usta Eli artık carpanStep değil carpanScale. Eski
        kayıtlarda usta ile birikmiş basamaklar carpanStep'te duruyor; onlar
@@ -11162,7 +11422,7 @@ if (typeof module !== 'undefined') {
     sortPer, sortCift, sortSirali, createDeck, resolveCombo,
     COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
-    UC_PEEK_COST, OTEKI_START, OTEKI_TICK,
+    UC_PEEK_COST, OTEKI_START, OTEKI_FOG_AFTER, OTEKI_COMBO_MULT, otekiStartFor, KAVUSMA_MULT, AY_TASI_PTS, moonIcon, kavusmaMult, ayTasiPts,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

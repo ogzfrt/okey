@@ -3020,6 +3020,10 @@ body.menu-open #app {
   justify-content: flex-start;
 }
 #rack.rack-free .rack-empty { display: none; }
+/* P57 — Öteki Dünya'dayken ıstaka mor çerçeve alır (hangi eldesin, bir bakışta) */
+#rack.in-oteki { outline: 3px solid rgba(128, 90, 213, .75); outline-offset: -3px;
+  box-shadow: 0 0 22px rgba(128, 90, 213, .45), 0 8px 26px rgba(60, 70, 52, .18); }
+.jt-charge.oteki-side { background: #6B46C1; color: #fff; }
 .drop-gap {
   position: fixed;
   z-index: 1200;
@@ -4105,6 +4109,10 @@ body.menu-open #app {
 .tile.sp-yildizTasi {
   box-shadow: 0 0 0 2px #5C6BC0, 0 0 14px rgba(92,107,192,.6), 0 3px 6px rgba(0,0,0,.4);
   background: linear-gradient(160deg, #f4f5ff 0%, #DDE1F7 55%, #B7BFEC 100%);
+}
+.tile.sp-ayTasi {   /* P57 — Öteki Dünya'nın Ay Taşı: gece mavisi, gümüş hale */
+  box-shadow: 0 0 0 2px #3C4A8C, 0 0 14px rgba(170,190,255,.65), 0 3px 6px rgba(0,0,0,.4);
+  background: radial-gradient(circle at 70% 25%, #FFFFFF 0%, #E3E8FA 30%, #B9C3EC 70%, #8E9BD4 100%);
 }
 .tile.sp-zamanTasi {
   box-shadow: 0 0 0 2px #7E57C2, 0 0 12px rgba(126,87,194,.55), 0 3px 6px rgba(0,0,0,.4);
@@ -7171,6 +7179,14 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 /* P55 (2026-09-30) — frame 379:319'a son Mythic geldi: Öteki_dünya (387:3) → otekiDunya.
    Mythic rafı 10/10 çizimli; get_variable_defs boş (renkler katman adlarında). */
 .jk-otekiDunya   { --jk-art: url('assets/game/joker/oteki-dunya.svg'); }
+/* P57 — Figma 279:9897: The Corporates raundun şirketine dönüşür */
+.jk-corporates.corp-kizil { --jk-art: url('assets/game/joker/corporates-kurogane.svg'); }
+.jk-corporates.corp-derin { --jk-art: url('assets/game/joker/corporates-abyssal.svg'); }
+.jk-corporates.corp-altin { --jk-art: url('assets/game/joker/corporates-heliox.svg'); }
+.jk-corporates.corp-yesil { --jk-art: url('assets/game/joker/corporates-verdatek.svg'); }
+#kahinChip .kc-fail { color: #E53E3E; }
+/* P57 — Figma 394:507 Öteki_dünya_v2: öteki dünyaya geçince kart ters döner */
+.jk-otekiDunya.oteki-flip { --jk-art: url('assets/game/joker/oteki-dunya-v2.svg'); }
 /* P54 (2026-09-29) — LEGENDARY çizimleri: Figma 383:1000 "LEGENDARY_JOKERLER".
    İlk kart: Dr_Frankenstein (383:975) → frankenstein. Koleksiyonun Legendary
    rafı kartlar tamamlanınca görsel dizisine çevrilecek (şimdilik 1/15). */
@@ -7313,11 +7329,12 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .sp-zamanTasi       { --sp-num-out: #6F3986; }
 .sp-ates            { --sp-num-out: #600909; }
 .sp-yankiTasi       { --sp-num-out: #427BC5; }
+.sp-ayTasi          { --sp-num-out: #3C4A8C; }   /* P57 — Ay Taşı (Figma çizimi bekleniyor) */
 .tile.stoned        { --sp-num-out: #2F3332; }
 .tile.sp-altin .num, .tile.sp-gumus .num, .tile.sp-bakir .num,
 .tile.sp-zumrut .num, .tile.sp-karaDelikTasi .num, .tile.sp-aynaTasi .num,
 .tile.sp-yildizTasi .num, .tile.sp-zamanTasi .num, .tile.sp-ates .num,
-.tile.sp-yankiTasi .num, .tile.stoned .num {
+.tile.sp-yankiTasi .num, .tile.sp-ayTasi .num, .tile.stoned .num {
   /* Alt-piksel (LCD) yumuşatması rakamın kenarına renkli bir tül bırakıyor
      ve konturu bir yöne kaymış gösteriyordu; piksel yazı tipinde zaten
      gereksiz — kapatıldı. */
@@ -7346,7 +7363,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   .tile.sp-altin .num, .tile.sp-gumus .num, .tile.sp-bakir .num,
   .tile.sp-zumrut .num, .tile.sp-karaDelikTasi .num, .tile.sp-aynaTasi .num,
   .tile.sp-yildizTasi .num, .tile.sp-zamanTasi .num, .tile.sp-ates .num,
-  .tile.sp-yankiTasi .num, .tile.stoned .num {
+  .tile.sp-yankiTasi .num, .tile.sp-ayTasi .num, .tile.stoned .num {
     paint-order: stroke fill;
     -webkit-text-stroke: calc(var(--tw) * .0247) var(--sp-num-out);
     text-shadow: none;

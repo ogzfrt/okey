@@ -760,7 +760,9 @@
       d.className = 'tile face-down';
       d.dataset.id = tile.id;
       d.innerHTML = '';   // P55: kullanıcı kararı — ters taş destedeki maskotlu ARKA YÜZLE çizilir (bkz. style.css)
-      attachTip(d, { name: t('faceDownName'), rarityText: t('bossMarkTag'), desc: t('faceDownDesc') }, {});
+      /* P57 — Öteki Dünya'nın sisiyle ters dönen taş başka bir şey anlatır */
+      if (tile.fog) attachTip(d, { name: t('fogName'), rarityText: t('fogTag'), desc: t('fogDesc') }, {});
+      else attachTip(d, { name: t('faceDownName'), rarityText: t('bossMarkTag'), desc: t('faceDownDesc') }, {});
       if (interactive) {
         if (selection.has(tile.id)) d.classList.add('selected');
         if (newTileIds.has(tile.id)) d.classList.add('new');
@@ -1309,9 +1311,15 @@
     if (recs.some((r) => r.key === 'terazi') && num(s.teraziRoundMult)) out.push(x(s.teraziRoundMult));
     if (recs.some((r) => r.key === 'vampir') && num(s.vampirBank)) out.push(t('tipNowDrain', num(s.vampirBank)));
     if (recs.some((r) => r.key === 'godzilla') && num(s.godzillaLevel)) out.push('S' + num(s.godzillaLevel));
-    // P54 · Grup B — Öteki Dünya: geride bekleyen elin taş sayısı
-    if (recs.some((r) => r.key === 'otekiDunya') && (s.otekiHand || []).length)
-      out.push(t('tipNowTiles', s.otekiHand.length));
+    // P54 · Grup B / P57 — Öteki Dünya: geride bekleyen el + ay evresi
+    if (recs.some((r) => r.key === 'otekiDunya') && Game.otekiState) {
+      const o = Game.otekiState();
+      if (o.kavusmaDone) out.push(t('tipNowKavusma'));
+      else {
+        if (o.count) out.push(t('tipNowTiles', o.count));
+        out.push(t('tipNowMoon', o.moon, o.kavusmaMult));
+      }
+    }
     /* P54 · Bölüm 1 · Madde 1 — birikim artık kartın İÇİNDE, kendi şeridinde:
        sola etiket, sağa değer; kenar boşlukları açıklama satırlarıyla aynı.
        (P52'de metin kutunun sağ kenarına yapışık, küçük bir satırdı.) */
@@ -1364,10 +1372,16 @@
        yalnız RENGİ verir, satırın metni değişmez.
        Bkz. style.css "AÇIKLAMA KARTI (TOOLTIP)" bloğu. */
     tip.className = 'tr-' + (j.rarity || j.accent || 'none');
+    /* P57 (kullanıcı isteği) — şirkete dönüşmüş Corporates kartı YALNIZ o
+       şirketi anlatır: başlık şirketin adı, açıklama görev + ödül + ceza. */
+    const corpNow = liveCorp(j);
+    const headTxt = corpNow ? T.ev(corpNow.name) : (j.key ? T.name(j) : j.name);
+    const descTxt = corpNow ? t('corpTipDesc', T.ev(corpNow.text), T.ev(corpNow.rewardText), T.ev(corpNow.penaltyText))
+      : (j.key ? T.desc(j) : T.ev(j.desc));
     tip.innerHTML =
       `<div class="tip-in">` +
-      `<div class="tip-head">${j.key ? T.name(j) : j.name}</div>` + rarityLine +
-      `<div class="tip-desc">${emphNums(j.key ? T.desc(j) : T.ev(j.desc), j.key)}</div>` +
+      `<div class="tip-head">${headTxt}</div>` + rarityLine +
+      `<div class="tip-desc">${emphNums(descTxt, j.key)}</div>` +
       fusedLines + legacyLines + variantLines + usesLine + accumNow(j) +
       `</div>`;
     const inner = tip.firstElementChild;
@@ -1883,12 +1897,24 @@
        Vasiyet / Godzilla rozetiyle aynı kalıp. */
     if (!opts.backup && (j.key === 'otekiDunya' || (j.fused || []).some(f => f.key === 'otekiDunya'))
         && Game.state.status === 'playing') {
+      /* P57 — rozet ay evresini ve öbür eldeki taş sayısını gösterir;
+         öteki dünyadayken mor yanar, Kavuşma'dan sonra 🌕✓ */
+      const o = Game.otekiState ? Game.otekiState() : null;
       const n = (Game.state.otekiHand || []).length;
       const b = document.createElement('span');
-      b.className = 'jt-charge' + (n ? ' on' : '');
-      b.textContent = `🌗${n}`;
-      b.title = t('otekiBadge', n);
+      b.className = 'jt-charge' + (n || (o && o.kavusmaDone) ? ' on' : '') + (o && o.side ? ' oteki-side' : '');
+      /* P57 · Figma 394:507 — öteki dünyadayken kart ters döner (V2 çizimi) */
+      if (j.key === 'otekiDunya') tile2.classList.toggle('oteki-flip', !!(o && o.side && !o.kavusmaDone));
+      b.textContent = o && o.kavusmaDone ? '🌕✓' : `${o ? o.moon : '🌗'}${n}`;
+      b.title = o && o.kavusmaDone ? t('tipNowKavusma') : t('otekiBadge', n, o ? o.moon : '🌗', o ? o.kavusmaMult : 1);
       tile2.appendChild(b);
+    }
+    /* P57 (kullanıcı isteği) — THE CORPORATES ŞİRKETİNE DÖNÜŞÜR: raundun
+       şirketi belli olunca kart o şirketin Figma çizimine geçer
+       (279:9897 → The_Corporates_Kurogane/Abyssal/Heliox/Verdatek). */
+    if (j.key === 'corporates') {
+      const c = liveCorp(j);
+      for (const k of ['kizil', 'derin', 'altin', 'yesil']) tile2.classList.toggle('corp-' + k, !!c && c.key === k);
     }
     /* P43 (kullanıcı isteği 2026-09-14) — DAMGALA / İPOTEK DÜĞMELERİ KALKTI.
        Elle kullanılan jokerler P41'den beri kartın üstüne gelip SOL TIKLA
@@ -2819,6 +2845,16 @@
      Eskiden boss kutusunun altına `bb-extra` satırı olarak ekleniyordu; kutu
      uzadıkça okunmuyordu. Kahin kehanetiyle aynı yere, üst ortadaki kalıcı
      kutuya (#kahinChip) taşındı. Ferman iptali kutuda kalır (kuralın durumu). */
+  /* P57 — slottaki Corporates'in bu raundki şirketi (boss görevi değil) */
+  function liveCorp(j) {
+    const s = Game.state;
+    if (!j || j.key !== 'corporates' || !s || s.status !== 'playing') return null;
+    const c = s.corpTask;
+    if (!c || c.boss) return null;
+    if (j.id != null && !Game.slotRecs().some(r => r.id === j.id)) return null;
+    return c;
+  }
+
   function bossTurnNotes(s) {
     if (!s || !s.boss || s.bossVoided || !(Game.bossOn && Game.bossOn())) return [];
     const n = [];
@@ -3050,6 +3086,11 @@
        taşlar yan yana sıkışık durur. Klasik düzen aşağıdaki `else` dalında
        birebir korunur. */
     el.rack.classList.toggle('rack-free', freeRack());
+    // P57 — Öteki Dünya'dayken ıstaka mor çerçeveyle "öbür taraf" olduğunu söyler
+    {
+      const o = Game.otekiState ? Game.otekiState() : null;
+      el.rack.classList.toggle('in-oteki', !!(o && o.id != null && o.side === 1 && !o.kavusmaDone));
+    }
     if (freeRack()) {
       const [r1, r2] = freeRows();
       r1.forEach(t2 => el.rackRow1.appendChild(tileEl(t2)));
@@ -3309,7 +3350,12 @@
          (ör. "Bu tur susturulan joker: İki Yüzlü") Kahin kehanetiyle AYNI
          kutuda, satır satır. */
       const notes = s.status === 'playing' ? bossTurnNotes(s) : [];
-      const show = s.status === 'playing' && !!(g || bo || notes.length);
+      /* P57 (kullanıcı isteği) — joker Corporates'in görevi de Kahin gibi
+         üst ortadaki kutuda raund boyu durur; tutunca ✓, bozulunca ✗. */
+      const cj = s.corpTask && !s.corpTask.boss && s.status === 'playing'
+        ? Game.slotRecs().find(r => r.key === 'corporates') : null;
+      const corpLine = cj ? s.corpTask : null;
+      const show = s.status === 'playing' && !!(g || bo || notes.length || corpLine);
       el.kahinChip.classList.toggle('hidden', !show);
       if (show) {
         const lines = [];
@@ -3320,6 +3366,11 @@
           const txt = t('kahinChip', T.ev(g ? g.text : bo.text) + reward);
           lines.push(`<div class="kc-line"><span class="kc-ico">🔮</span><span class="kc-val">${txt}</span>`
             + (done ? '<span class="kc-ok">✓</span>' : '') + '</div>');
+        }
+        if (corpLine) {
+          const mark = corpLine.done ? '<span class="kc-ok">✓</span>' : corpLine.failed ? '<span class="kc-ok kc-fail">✗</span>' : '';
+          lines.push(`<div class="kc-line kc-corp"><span class="kc-ico">🏢</span><span class="kc-val">`
+            + t('corpChip', T.ev(corpLine.name), T.ev(corpLine.text), T.ev(corpLine.rewardText)) + `</span>${mark}</div>`);
         }
         for (const x of notes) lines.push(`<div class="kc-line kc-boss"><span class="kc-val">${x}</span></div>`);
         el.kahinChip.classList.toggle('done', done);
