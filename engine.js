@@ -3923,13 +3923,13 @@ const Game = {
   },
   _katlaEligible() {
     const s = this.state;
-    /* Boss raundunda KATLA YOK: boss şartlarının bir kısmı zamana bağlı
-       (Heliox "1-2. turda geç", Kahin tur kehaneti…) — raundu uzatmak şartı
-       bozup Game Over yapabilirdi; "tutmazsa yalnız katlama ödülü yanar"
-       sözü tutulamazdı. Ölçüm: bossta katlayan uzman bot run bitirme %9,
-       katlamayan %18. Bahisin üçü bossta açık kalır (kullanıcı kararı). */
+    /* Boss raundunda da KATLA AÇIK (kullanıcı kararı 2026-10-02). Bilinen
+       risk: boss şartlarının bir kısmı zamana bağlı (Heliox "1-2. turda geç",
+       Kahin tur kehaneti…) — katlayıp raundu uzatan oyuncu şartı bozarsa
+       Game Over olur; "yalnız katlama ödülü yanar" güvencesi bossta şarta
+       tabidir. UI teklifte bunu ayrıca uyarır (katlaBossWarn). */
     return this.kumarhaneOn() && !s.katla && !s.katlaOffer && s.status === 'playing'
-      && !this.isBossRound() && s.turn < s.maxTurns && !this.bossFailReason();
+      && s.turn < s.maxTurns && !this.bossFailReason();
   },
   /* "Kasada kal": ödülü al, raund biter */
   katlaStay() {

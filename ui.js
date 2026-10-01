@@ -3730,6 +3730,7 @@
       `<div class="pk-box">` +
       `<div class="pk-title">🎯 ${t('katlaTitle')}</div>` +
       `<div class="pk-sub-title">${t('katlaBody', s.score, s.katlaOffer.base, next, s.maxTurns - s.turn)}</div>` +
+      (Game.isBossRound() ? `<div class="pk-sub-title katla-warn">${t('katlaBossWarn')}</div>` : '') +
       `<div class="pk-body pk-choice">` +
       `<button class="pk-card bet-card" data-k="stay"><div class="pk-name">💰 ${t('katlaStay')}</div>` +
       `<div class="pk-desc">${t('katlaStayDesc')}</div></button>` +
