@@ -47,7 +47,7 @@ const TOTAL_STAGES = 8;
    · stages 4        — run 24 raund yerine 12 raund.
 
    ┌── PLAYTEST 26 · MADDE D — DENGE REVİZYONU (kullanıcı kararları 2026-09-09)
-   │ ÖLÇÜM (tests/sim_p7.js botu, 120 run/hücre, R1/R2/BOSS geçiş oranı):
+   │ ÖLÇÜM (tools/sim_p7.js botu, 120 run/hücre, R1/R2/BOSS geçiş oranı):
    │     temel:  99/95/69 → 100/93/60 → 100/89/36 → 98/83/17
    │     hızlı:  87/33/ 2 →  73/11/ 0 →  52/ 0/ 1 → 11/ 0/ 0
    │ Yani mod "2 raunddan ileri gidilmiyor" durumundaydı.
@@ -278,7 +278,7 @@ const MAX_HAND = 30;
    (C2 sonrası her adım ~1.35x — eski tabloda C6 boss 1280'di ve kullanıcı
    güçlü build'lerle "hiç zorlanmadığını" bildirdi; C6 artık +%33 daha
    yüksek ve üstüne iki stage daha var).
-   ⚠ KALİBRASYON NOTU: tests/sim_p7.js botu C5'ten sonra bu hedeflere
+   ⚠ KALİBRASYON NOTU: tools/sim_p7.js botu C5'ten sonra bu hedeflere
    ULAŞAMIYOR (bot okey takası, tüketilebilir, taş istifleme ve store
    kullanmıyor; tavanı ~1200-1800 puan). Yani üst bandı sim DOĞRULAYAMAZ,
    yalnız alt bandı doğrular. Gerçek oyuncu geri bildirimi hâlâ "kolay"
@@ -300,7 +300,7 @@ const MAX_HAND = 30;
    Boss ekseni: 265 → 590 → 820 → 1160 → 1665 → 2280 → 3245 → 4650
    (C2 sonrası adımlar ~1.40x; v5'te ~1.35x idi).
    Nefes kuralı ("yeni stage R1 < önceki boss") C1→C2 dışında korunur.
-   ⚠ KALİBRASYON SINIRI DEĞİŞMEDİ: tests/sim_p7.js botu ~1200-1800 puanda
+   ⚠ KALİBRASYON SINIRI DEĞİŞMEDİ: tools/sim_p7.js botu ~1200-1800 puanda
    tavan yapar (okey takası/tüketilebilir/istifleme/store kullanmaz), yani
    C5+ bandını sim DOĞRULAYAMAZ, yalnız C1-C4'ü doğrular.
    ÖLÇÜM (sim_p7.js, N=300, BOSS geçiş oranı — eski → yeni):
@@ -341,7 +341,7 @@ const MAX_HAND = 30;
    NEFES KURALI ("yeni stage R1 < önceki stage boss'u") istisnasız
    sağlanıyor: 310<370 · 460<530 · 680<770 · 990<1100 · 1440<1590 ·
    2080<2290 · 3000<3300.
-   ⚠ KALİBRASYON SINIRI DEĞİŞMEDİ: tests/sim_p7.js botu ~1200-1800 puanda
+   ⚠ KALİBRASYON SINIRI DEĞİŞMEDİ: tools/sim_p7.js botu ~1200-1800 puanda
    tavan yapar, yani C5+ bandını sim doğrulayamaz; C1-C4 doğrulanır. */
 /* v10 (2026-08-23, Grup B — kullanıcı kararı) — STAGE 1 = 200 / 300 / 400.
    Kullanıcı yalnız S1'i sabitledi ("Normal 1 = 200, Normal 2 = 300, Boss =
@@ -361,7 +361,7 @@ const MAX_HAND = 30;
    NEFES KURALI ("yeni stage R1 < önceki stage boss'u") istisnasız
    sağlanıyor: 300<400 · 440<570 · 650<810 · 950<1160 · 1390<1650 ·
    2050<2340 · 3000<3340.
-   ⚠ KALİBRASYON SINIRI DEĞİŞMEDİ: tests/sim_p7.js botu ~1200-1800 puanda
+   ⚠ KALİBRASYON SINIRI DEĞİŞMEDİ: tools/sim_p7.js botu ~1200-1800 puanda
    tavan yapar, yani S5+ bandını sim doğrulayamaz; S1-S4 doğrulanır. */
 /* v11 (2026-09-14, P50 — kullanıcı kararı "normal run 250 ile başlasın,
    bütün tablo orantılı") — STAGE 1 = 250 / 375 / 500.
@@ -428,7 +428,7 @@ const STAGE_TARGETS = [
          → R1 %50 · R2 %75 · Boss %100 (S1 zaten tam bu şekildeydi),
        · boss adımı ÖNE YÜKLÜ: ×1.50 · ×1.45 · ×1.33 · ×1.24 · ×1.18 · ×1.13 · ×1.12.
      S1 aynı (kullanıcı: "hakkıyla zorlu"). Final boss 5765 → 4440 → 3350 → 2680.
-     v7 (KAZANILABİLİRLİK, çekirdek denge kuralı 2026-09-16): tests/sim_p7.js güçlü kadrosu
+     v7 (KAZANILABİLİRLİK, çekirdek denge kuralı 2026-09-16): tools/sim_p7.js güçlü kadrosu
      S4'ten sonra hiçbir boss'u geçemiyordu (S5-S8 %0-3, "tüm bossları geçme" %0) — P51 güç
      kısmalarından sonra oyuncu gücü S4-S8 arasında düzleşiyor, 1.25-1.35x adım oyunu
      kazanılamaz yapıyordu. Balatro'da iyi oyuncu her blind'ı yüksek oranla geçer; risk run
