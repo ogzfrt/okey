@@ -1752,18 +1752,29 @@
   function showUseChooser(j, list) {
     document.getElementById('useChooser')?.remove();
     hideTip(); hideActBadge();
+    /* Paket/bahis seçimiyle AYNI piksel kalıbı (pk-ov · pk-box · pk-card).
+       İlk sürüm .tp-box kullanıyordu; o kalıbın stilleri yalnız #tutResume'a
+       bağlı olduğu için pencere stilsiz, ekranın köşelerine dağılmış çiziliyordu
+       (kullanıcı ekran görüntüsü 2026-10-02). */
     const ov = document.createElement('div');
     ov.id = 'useChooser';
-    ov.className = 'mode-pick';
-    ov.innerHTML = `<div class="tp-box"><h3>${T.name(j)}</h3><p>${t('useChooseBody')}</p>`
-      + `<div class="uc-row"></div><button class="btn ghost" id="ucCancel">${t('backBtn')}</button></div>`;
-    const row = ov.querySelector('.uc-row');
+    ov.className = 'pk-ov tone-violet';
+    ov.innerHTML =
+      `<div class="pk-box">` +
+      `<div class="pk-title">⚗ ${T.name(j)}</div>` +
+      `<div class="pk-sub-title">${t('useChooseBody')}</div>` +
+      `<div class="pk-body pk-choice"></div>` +
+      `<div class="pk-foot"><button class="btn ghost" id="ucCancel">${t('backBtn')}</button></div></div>`;
+    const row = ov.querySelector('.pk-body');
     for (const x of list) {
       const b = document.createElement('button');
-      b.className = 'btn uc-opt';
+      b.className = 'pk-card uc-opt';
       b.dataset.key = x.key;
       const d = JOKER_DEFS[x.key];
-      b.innerHTML = `<b>${(JOKER_ICONS && JOKER_ICONS[x.key]) || ''} ${T.name({ key: x.key, name: d ? d.name : x.key })}</b><span>${x.lbl}</span>`;
+      b.innerHTML = `<div class="pk-ico">${jokerIcon(x.key)}</div>`
+        + `<div class="pk-name">${T.name({ key: x.key, name: d ? d.name : x.key })}</div>`
+        + `<div class="pk-sub">${String(x.lbl).replace(/:\s*$/, '')}</div>`   // rozet etiketi "Kullan:" → "Kullan"
+        + `<div class="pk-desc">${d ? T.desc({ key: x.key, desc: d.desc }) : ''}</div>`;
       b.addEventListener('click', () => { ov.remove(); x.fn(); });
       row.appendChild(b);
     }

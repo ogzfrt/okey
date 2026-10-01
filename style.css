@@ -7155,10 +7155,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-otekiDunya   { --jk-art: url('assets/game/joker/oteki-dunya.svg'); }
 /* P58 · Kumarhane Run — kör bahis katmanı OPAK: el görünmez */
 #betOv { background: rgba(10, 12, 20, .96); }
-/* P58 — füzyonlu kartın efekt seçimi */
-#useChooser .uc-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 12px 0; }
-#useChooser .uc-opt { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
-#useChooser .uc-opt span { font-size: .85em; opacity: .8; }
+/* P58 — füzyonlu kartın efekt seçimi: pk-ov kalıbını kullanır (ek stil gerekmez) */
 #katlaOv .katla-warn { color: #E53E3E; font-weight: 700; }
 .bet-card .bet-target { font-size: 1.15em; font-weight: 700; margin: 6px 0; color: #F5A623; }
 .bet-card.bet-guvenli { box-shadow: 0 0 0 3px #38A169; }
