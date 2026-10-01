@@ -147,11 +147,17 @@ const RUN_MODES = {
        ⚠ P50'de kullanıcının sabitlediği S4 boss 1495 tavanı KORUNAMADI: yeni
        elde bot onu %69 geçiyordu. Ölçüm (100 run, tutumlu): boss %50/59/48/39.
        Nefes: 825<1080 · 1140<1490 · 1470<1880. */
+    /* P58 · KUMARHANE (2026-10-02) — tablo ×0.80. Raund arası store kalkınca
+       oyuncu S1 boss'una store görmeden giriyor (eski modda 2 store vardı):
+       eski tabloyla Güvenli oynayan uzman bot S1 boss %43, run bitirme %3
+       (eski Hızlı Run %67 / %7). ×0.80 + stage sonu store +2 raf ile
+       Güvenli %12 run bitirir. Nefes: 660<865 · 910<1190 · 1175<1505.
+       Bahsin kendisi bu tablonun ÜSTÜNE çarpar (×1 / ×1.5 / ×2). */
     targets: [
-      [ 540,  810, 1080],       // S1
-      [ 825, 1160, 1490],       // S2
-      [1140, 1525, 1880],       // S3
-      [1470, 1875, 2230],       // S4
+      [ 430,  650,  865],       // S1   (eski 540 · 810 · 1080)
+      [ 660,  930, 1190],       // S2   (eski 825 · 1160 · 1490)
+      [ 910, 1220, 1505],       // S3   (eski 1140 · 1525 · 1880)
+      [1175, 1500, 1785],       // S4   (eski 1470 · 1875 · 2230)
     ],
     /* P50 — kullanıcı: "coin kazancını arttırmayalım, normal run'daki gibi
        test edeceğim". ×1.5 → ×1. Diğer güç paketi (el +2, +0.5x, 3 açılış
@@ -159,7 +165,12 @@ const RUN_MODES = {
     coinMult: 1,
     priceMult: 1.0,
     handBonus: 2,
-    startPermMult: 0.5,
+    /* P58 · Grup C (kullanıcı kararı 2026-10-02) — mod KUMARHANE RUN oldu
+       (anahtar kayıt/kilit uyumu için 'hizli' kaldı). Başlangıç çarpanı
+       +0.5x → +1.0x; el +2 ve 3 açılış jokeri aynen. Bkz. BETS. */
+    startPermMult: 1.0,
+    kumarhane: true,
+    storeBonus: 2,          // P58 — stage sonu store'unda +2 joker rafı (raund arası store yok)
     curveStretch: true,
     openJokers: 3,
     openRarity: { common: 0.20, rare: 0.45, legendary: 0.35 },
@@ -168,6 +179,33 @@ const RUN_MODES = {
 function runModeOf(s) {
   return RUN_MODES[s?.runMode] || RUN_MODES.base;
 }
+
+/* ==========================================================================
+   P58 · GRUP C — KUMARHANE RUN (kullanıcı kararları 2026-10-02)
+   · Her raund (boss dahil) el GÖRÜLMEDEN bahis seçilir (kör bahis).
+   · Raund aralarında store YOK: coin kasada birikir; store yalnız STAGE
+     SONUNDA (boss sonrası) açılır ve +KUMAR_STORE_BONUS joker rafı taşır.
+   · KATLA: hedef bir AÇILIMLA tutunca ve önde tur varken "kasada kal /
+     katla" sorulur. Katlarsan hedef ×2; tutarsa bahis ödülü ×2, tutmazsa
+     yalnız katlama ödülü yanar — raund yine kazanılmış sayılır.
+   · Kaybetmek Game Over (can yok).
+   Ödül sayıları bot ölçümüyle seçildi (GDD 22.1b-15).
+   ========================================================================== */
+const BETS = {
+  guvenli: { key: 'guvenli', name: '🟢 Güvenli', targetMult: 1,   coinMult: 1, picks: 0, pick: null,        perm: 0 },
+  riskli:  { key: 'riskli',  name: '🟡 Riskli',  targetMult: 1.5, coinMult: 2, picks: 1, pick: 'any',       perm: 0.5 },
+  olumcul: { key: 'olumcul', name: '🔴 Ölümcül', targetMult: 2,   coinMult: 3, picks: 1, pick: 'legendary', perm: 1.0 },
+};
+/* ÖDÜL KALİBRASYONU (uzman bot, 800 run, KATLA=smart, run bitirme):
+     ilk öneri  (Riskli +0x,   Ölümcül +0.5x): Güvenli %13 · Riskli %3  · Ölümcül %4  — risk cezalı
+     hafif      (+0.25x / +1.0x)              : %13 · %9  · %10 · karışık %11       — risk nötr
+     güçlü      (+0.5x / +1.5x + 2 seçim)     : %13 · %16 · %23                     — "hep Ölümcül" tek doğru
+     SEÇİLEN    (+0.5x / +1.0x)               : %12 · %18 · %9  · karışık %11
+   Seçilenle Riskli ödüllendirilir; Ölümcül erken oynanırsa çok tehlikelidir
+   (S1 R1 %74) ama güçlü kadroyla geç oyunda en yüksek getiriyi verir —
+   "ne zaman yükselteyim" kararı açık kalır. */
+const BET_KEYS = ['guvenli', 'riskli', 'olumcul'];
+const BET_PICK_CHOICES = 3;
 
 /* PLAYTEST 26 · MADDE D — STAGE'İ 8'LİK EĞRİYE TAŞI.
    Oyunun iki tablosu 8 stage için yazılmıştır: BOSS_STAGE_WEIGHTS ve
@@ -3760,6 +3798,7 @@ const Game = {
     // Böylece süresi dolan joker store'a hiç girmez.
     s.roundStartNotes = [];
     this._resolvePendingPacks(s.roundStartNotes); // Grup F güvenlik ağı
+    this._resolveBetPicks(s.roundStartNotes);     // P58 · Kumarhane güvenlik ağı
 
     // Backup slot bekleme (GDD 7.4) — süre dolunca zorla Ana Slot'a
     for (const b of [...s.backup]) {
@@ -3804,7 +3843,9 @@ const Game = {
     } else {
       s.roundInStage++;
     }
-    s.pendingLocks = this._locksFrom(s.store); // kilitli ürünler sonraki store'a
+    /* P58 · Kumarhane: raund arası store yoksa önceki stage sonu store'unun
+       kilitleri sonraki store'a kadar korunur. */
+    if (s.store) s.pendingLocks = this._locksFrom(s.store); // kilitli ürünler sonraki store'a
     s.store = null;
     this._startRound(s.roundStartNotes);
   },
@@ -3847,6 +3888,127 @@ const Game = {
   /* P58 · Grup D — mod listesi tek kaynaktan (Trainer kurulum ekranı okur) */
   runModeKeys() { return Object.keys(RUN_MODES); },
   runModeStages(key) { return (RUN_MODES[key] || RUN_MODES.base).stages; },
+
+  /* ===== P58 · GRUP C — KUMARHANE RUN ===== */
+  kumarhaneOn() { return !!runModeOf(this.state).kumarhane; },
+  needsBet() {
+    const s = this.state;
+    return !!s && this.kumarhaneOn() && s.status === 'playing' && !s.bet;
+  },
+  betOptions() {
+    const s = this.state;
+    const base = s.betBaseTarget ?? s.target;
+    return BET_KEYS.map(k => ({ ...BETS[k], target: Math.ceil(base * BETS[k].targetMult) }));
+  },
+  /* KÖR bahis: raunda girerken, el görülmeden (UI haritadan oyuna geçişte sorar) */
+  placeBet(key) {
+    const s = this.state;
+    const b = BETS[key];
+    if (!b) return { ok: false, error: 'Geçersiz bahis.' };
+    if (!this.kumarhaneOn()) return { ok: false, error: 'Bahis yalnız Kumarhane Run\'da konur.' };
+    if (!s || s.status !== 'playing') return { ok: false, error: 'Şu an oynanan bir raund yok.' };
+    if (s.bet) return { ok: false, error: 'Bu raundun bahsi zaten konuldu.' };
+    s.bet = key;
+    s.betBaseTarget = s.target;
+    s.target = Math.ceil(s.target * b.targetMult);
+    return { ok: true, note: `🎰 Bahis: ${b.name} — hedef ${s.target}` };
+  },
+  betState() {
+    const s = this.state;
+    if (!s || !this.kumarhaneOn()) return null;
+    const b = s.bet ? BETS[s.bet] : null;
+    return { bet: s.bet, name: b ? b.name : null, target: s.target, base: s.betBaseTarget,
+      katla: s.katla ? { ...s.katla } : null, katlaOffer: s.katlaOffer ? { ...s.katlaOffer } : null,
+      picks: (s.betPicks || []).length };
+  },
+  _katlaEligible() {
+    const s = this.state;
+    /* Boss raundunda KATLA YOK: boss şartlarının bir kısmı zamana bağlı
+       (Heliox "1-2. turda geç", Kahin tur kehaneti…) — raundu uzatmak şartı
+       bozup Game Over yapabilirdi; "tutmazsa yalnız katlama ödülü yanar"
+       sözü tutulamazdı. Ölçüm: bossta katlayan uzman bot run bitirme %9,
+       katlamayan %18. Bahisin üçü bossta açık kalır (kullanıcı kararı). */
+    return this.kumarhaneOn() && !s.katla && !s.katlaOffer && s.status === 'playing'
+      && !this.isBossRound() && s.turn < s.maxTurns && !this.bossFailReason();
+  },
+  /* "Kasada kal": ödülü al, raund biter */
+  katlaStay() {
+    const s = this.state;
+    if (!s.katlaOffer) return { ok: false, error: 'Açık bir Katla teklifi yok.' };
+    s.katlaOffer = null;
+    if (s.wonOnTurn == null) s.wonOnTurn = s.turn;
+    this._finishWin();
+    return { ok: true, won: s.status === 'won' };
+  },
+  /* "Katla": hedef ×2, raund sürer; tutarsa bahis ödülü ×2 */
+  katlaDouble() {
+    const s = this.state;
+    if (!s.katlaOffer) return { ok: false, error: 'Açık bir Katla teklifi yok.' };
+    s.katla = { base: s.katlaOffer.base, burned: false };
+    s.katlaOffer = null;
+    s.target = s.katla.base * 2;
+    return { ok: true, note: `🎲 KATLA! Yeni hedef ${s.target} — tutarsa bahis ödülü ×2` };
+  },
+  _betPayout(notes) {
+    const s = this.state;
+    const b = BETS[s.bet] || BETS.guvenli;
+    const kat = s.katla && !s.katla.burned && s.score >= s.target ? 2 : 1;
+    const coinMult = b.coinMult * kat;
+    const perm = round2(b.perm * kat);
+    if (perm) s.permMult = round2(s.permMult + perm);
+    const picks = b.picks * kat;
+    if (!Array.isArray(s.betPicks)) s.betPicks = [];
+    const avoid = new Set();
+    for (let i = 0; i < picks; i++) {
+      const p = this._rollBetPick(b.pick, avoid);
+      if (p) { s.betPicks.push(p); p.options.forEach(o => avoid.add(o.key)); }
+    }
+    notes.push(`🎰 ${b.name} bahis: coin ×${coinMult}`
+      + (perm ? ` · +${perm.toFixed(1)}x kalıcı` : '')
+      + (picks ? ` · ${picks} joker seçimi` : '')
+      + (kat > 1 ? ' (KATLA tuttu: ödül ×2)' : ''));
+    return { key: b.key, name: b.name, coinMult, kat, perm, picks };
+  },
+  /* Bahis ödülü: 3 jokerden 1'i. 'legendary' → yalnız Legendary, 'any' → paket eğrisi */
+  _rollBetPick(kind, avoid) {
+    const s = this.state;
+    const options = [];
+    const skip = new Set(avoid || []);
+    const owned = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
+    for (let i = 0; i < BET_PICK_CHOICES; i++) {
+      let o = null;
+      if (kind === 'legendary') {
+        let pool = this.jokerPool(d => d.rarity === 'legendary' && !owned.has(d.key) && !skip.has(d.key));
+        if (!pool.length) pool = this.jokerPool(d => d.rarity === 'legendary' && !skip.has(d.key));
+        if (pool.length) {
+          const d = pool[Math.floor(this.rng() * pool.length)];
+          o = { type: 'joker', key: d.key, name: d.name, rarity: d.rarity, desc: d.desc };
+        }
+      } else o = this._rollPackOption('joker', skip);
+      if (!o) break;
+      skip.add(o.key);
+      options.push(o);
+    }
+    return options.length ? { kind, options } : null;
+  },
+  chooseBetPick(optIndex = 0) {
+    const s = this.state;
+    const p = (s.betPicks || [])[0];
+    if (!p) return { ok: false, error: 'Bekleyen bir seçim yok.' };
+    const opt = p.options[optIndex];
+    if (!opt) return { ok: false, error: 'Geçersiz seçim.' };
+    const got = this._grantPackOption(opt, 6);
+    s.betPicks.shift();
+    return { ok: true, got, left: s.betPicks.length };
+  },
+  /* Güvenlik ağı: seçilmeden geçilen ödül boşa gitmesin — ilk seçenek verilir */
+  _resolveBetPicks(notes) {
+    const s = this.state;
+    while ((s.betPicks || []).length) {
+      const r = this.chooseBetPick(0);
+      if (r.got && notes) notes.push(`🎰 Seçilmeyen bahis ödülü otomatik alındı: ${r.got.name}`);
+    }
+  },
 
   /* ---------- TRAINER MODU (Grup H, 2026-08; genişletildi 2026-08-07) ----------
      DMC "Void" tarzı sandbox: normal stage yapısı (2 normal + boss).
@@ -4408,6 +4570,10 @@ const Game = {
     s.otekiFresh = [];        // geçen tur öteki ele düşen taşlar (o turun sisine girmez)
     s.otekiGhostTurn = null;  // P57 — hayalet yolcu turda bir kez
     s.kavusmaDone = false;    // P57 — dünyalar kavuştu mu (raundda bir kez)
+    s.bet = null;             // P58 · Kumarhane — bu raundun bahsi (kör, raunda girerken)
+    s.betBaseTarget = null;
+    s.katla = null;           // P58 · Kumarhane — katlandıysa { base, burned }
+    s.katlaOffer = null;
     s.storeTilePick = null;   // P29 · Grup O — store seçimi raunda taşmaz
     s.deck = createDeck(s);
     // Sahte okeyler bu stage'in okeyinin normal kopyaları olur:
@@ -7059,6 +7225,10 @@ const Game = {
 
   confirmMelds() {
     const s = this.state;
+    if (s.katlaOffer) return { ok: false, error: 'Önce Katla kararını ver.' };
+    /* Kumarhane: UI bahsi raunda girerken MUTLAKA sorar; bahissiz bir yol
+       (bot, eski test, kayıttan dönüş) kalırsa raund Güvenli oynanır. */
+    if (this.needsBet()) this.placeBet('guvenli');
     if (s.godPick) return { ok: false, error: 'Önce Tanrının Eli ile destenden taşlarını seç.' };
     if (s.ucKagit) return { ok: false, error: 'Önce Üç Kağıtçı\'dan bir taş seç.' };
     if (s.phase !== 'meld' || (!s.staged.length && !s.islemeler.length)) return { ok: false };
@@ -7372,7 +7542,13 @@ const Game = {
     }
     s.lastResult = result;
 
-    if (result.tamEl || s.score >= s.target) {
+    if (!result.tamEl && s.score >= s.target && this._katlaEligible()) {
+      /* P58 · Kumarhane — KATLA teklifi: raund henüz bitmez; oyuncu
+         katlaStay() ya da katlaDouble() ile karar verir. */
+      s.katlaOffer = { base: s.target };
+      s.phase = 'discard';
+      result.katlaOffer = true;
+    } else if (result.tamEl || s.score >= s.target) {
       this._finishWin();
       result.won = true;
     } else {
@@ -7407,6 +7583,9 @@ const Game = {
   discard(id) {
     const s = this.state;
     if (s.phase !== 'discard') return { ok: false };
+    /* Kumarhane: Katla teklifi açıkken taş atmak = "kasada kal" (UI teklifi
+       modal olarak sorar; bu yol bot/eski çağrılar içindir). */
+    if (s.katlaOffer) { this.katlaStay(); return { ok: true, roundOver: true, events: [] }; }
     // tek id (eski imza, tüm çağrı yerleri çalışmaya devam eder) ya da dizi
     const ids = Array.isArray(id) ? [...new Set(id)] : (id == null ? [] : [id]);
     if (ids.length > this.MAX_DISCARD)
@@ -7720,6 +7899,17 @@ const Game = {
          açılım yapılmadıysa banka ödenmeden söner — kartın riski budur. */
       s.vampirBank = 0;
       this._otekiEclipse(events);   // P57 — Kavuşma yoksa ay tutulur
+      /* P58 · Kumarhane — katlanan hedef tutmadı ama asıl hedef zaten
+         geçilmişti: katlama ödülü yanar, raund kazanılır. */
+      if (s.katla && !s.katla.burned && s.score < s.target) {
+        /* Katlama asıl hedefi zaten GEÇMİŞ bir raundda yapılır: skor sonradan
+           (Ateş Taşı yanığı, Tutulma…) asıl hedefin altına düşse bile raund
+           kazanılmış sayılır — bedeli yalnız katlama ödülüdür. */
+        s.target = s.katla.base;
+        if (s.score < s.target) s.score = s.target;
+        s.katla.burned = true;
+        events.push('🎲 Katla tutmadı — katlama ödülü yandı, raund yine de kazanıldı');
+      }
       /* Grup I — otomatik kurtarma: hedefin altında kaldıysak, hedefi
          indirebilecek tüketilebilirler ("win" sınıfı) burada KENDİLİĞİNDEN
          kullanılır. Alternatifi Game Over olduğu için oyuncuya sormaya
@@ -8323,6 +8513,9 @@ const Game = {
        Artık her durumda aynı merdiven işler; ceza yalnız tabandan düşer. */
     let net = Math.max(1, base + bonus - penalty);
     if (corpCoinHalf) net = Math.max(1, Math.floor(net / 2));
+    /* P58 · Kumarhane — bahis ödülü: raund coini ×bahis, katlama tuttuysa ×2 daha */
+    const kumar = runModeOf(s).kumarhane ? this._betPayout(extraNotes) : null;
+    if (kumar) net = net * kumar.coinMult;
 
     s.coinReport = { base, bonus, penalty, net, jokerCoins, permCoin, bondCoin: 0, noMeldTurns: s.noMeldTurns, boss, extraNotes };   // P52: Tahvil kaldırıldı
     gainCoins(s, net + jokerCoins + permCoin);
@@ -8330,8 +8523,10 @@ const Game = {
        ödenir: "store açılışında cebinde ne varsa" onun üzerinden. */
     s.coinReport.interest = interestFor(s.coins);
     gainCoins(s, s.coinReport.interest);
-    s.store = this._generateStore(s.pendingLocks);
-    s.pendingLocks = null;
+    if (kumar) s.coinReport.bet = kumar;
+    /* P58 · Kumarhane — raund arası store YOK; yalnız stage sonu (boss) */
+    if (runModeOf(s).kumarhane && !boss) s.store = null;
+    else { s.store = this._generateStore(s.pendingLocks); s.pendingLocks = null; }
 
     // Boss ödülü: Epic joker + stage geçiş yükseltmesi (GDD 5.3, 13.3)
     if (boss) {
@@ -8444,8 +8639,8 @@ const Game = {
        cezalandırılan bir raund, birikimi de cezalandırmamalı. */
     s.coinReport.interest = interestFor(s.coins);
     gainCoins(s, s.coinReport.interest);
-    s.store = this._generateStore(s.pendingLocks);
-    s.pendingLocks = null;
+    if (runModeOf(s).kumarhane && !this.isBossRound()) s.store = null;   // P58
+    else { s.store = this._generateStore(s.pendingLocks); s.pendingLocks = null; }
     if (this.isBossRound()) {
       /* PLAYTEST 26 · GRUP D — sıyrılarak geçilen boss da Epic ödülünü ALIR.
          (Eskiden yalnız yükseltme çarkı açılıyordu; GDD 5.4 böyle bir
@@ -8658,7 +8853,8 @@ const Game = {
   _generateStore(locks) {
     const s = this.state;
     const items = [];
-    const slotCount = this.shopJokerSlots();   // 2 taban, tavan 3 (Eskici Rafı) — P51
+    const slotCount = this.shopJokerSlots()   // 2 taban, tavan 3 (Eskici Rafı) — P51
+      + (runModeOf(s).storeBonus || 0);   // P58 · Kumarhane: tek, büyük store
     let pool = this.jokerPool(d => d.rarity !== 'epic');
     // Trainer: opsiyonel store filtresi — yalnız seçilen jokerler çıkabilir
     if (this.trainerMode && s.trainerStoreFilter?.length) {
@@ -11287,6 +11483,7 @@ const Game = {
     if (st.godPick === undefined) st.godPick = null;        // P31 · Grup E
     if (st.ucKagit === undefined) st.ucKagit = null;        // P54 · Grup A
     if (!Array.isArray(st.otekiHand)) st.otekiHand = [];    // P54 · Grup B
+    if (!Array.isArray(st.betPicks)) st.betPicks = [];      // P58 · Kumarhane
     if (st.otekiSide == null) st.otekiSide = 0;                 // P57
     if (!Array.isArray(st.otekiAway)) st.otekiAway = [0, 0];
     if (!Array.isArray(st.otekiFresh)) st.otekiFresh = [];
@@ -11450,7 +11647,7 @@ if (typeof module !== 'undefined') {
     sortPer, sortCift, sortSirali, createDeck, resolveCombo,
     COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
-    CIFT_EXTRA_STEP, UC_PEEK_COST, OTEKI_START, OTEKI_FOG_AFTER, OTEKI_COMBO_MULT, otekiStartFor, KAVUSMA_MULT, AY_TASI_PTS, moonIcon, kavusmaMult, ayTasiPts,
+    CIFT_EXTRA_STEP, BETS, BET_KEYS, RUN_MODES, UC_PEEK_COST, OTEKI_START, OTEKI_FOG_AFTER, OTEKI_COMBO_MULT, otekiStartFor, KAVUSMA_MULT, AY_TASI_PTS, moonIcon, kavusmaMult, ayTasiPts,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

@@ -1036,9 +1036,14 @@
       btn.title = done ? t(folded ? 'mcExpand' : 'mcCollapse') : '';
       if (active) btn.addEventListener('click', () => {
         if (boss) SFX.boss();              // boss girişi (GDD 14.5)
-        markInRound();                     // raund içine girildi
-        showScreen('game');
-        flushRoundStart();                 // raund başı olayları + pop-up'lar
+        const go = () => {
+          markInRound();                   // raund içine girildi
+          showScreen('game');
+          flushRoundStart();               // raund başı olayları + pop-up'lar
+        };
+        /* P58 · Kumarhane — KÖR BAHİS: el görülmeden, oyun ekranına geçmeden önce */
+        if (Game.needsBet && Game.needsBet()) showBetPicker(go);
+        else go();
       });
       else if (done) {
         /* Pasif düğme `disabled` olduğu için tıklamayı yutar — katla/aç
@@ -3336,7 +3341,9 @@
       const cj = s.corpTask && !s.corpTask.boss && s.status === 'playing'
         ? Game.slotRecs().find(r => r.key === 'corporates') : null;
       const corpLine = cj ? s.corpTask : null;
-      const show = s.status === 'playing' && !!(g || bo || notes.length || corpLine);
+      const bs = s.status === 'playing' && Game.betState ? Game.betState() : null;
+      const betLine = bs && bs.bet ? bs : null;   // P58 · Kumarhane
+      const show = s.status === 'playing' && !!(g || bo || notes.length || corpLine || betLine);
       el.kahinChip.classList.toggle('hidden', !show);
       if (show) {
         const lines = [];
@@ -3347,6 +3354,12 @@
           const txt = t('kahinChip', T.ev(g ? g.text : bo.text) + reward);
           lines.push(`<div class="kc-line"><span class="kc-ico">🔮</span><span class="kc-val">${txt}</span>`
             + (done ? '<span class="kc-ok">✓</span>' : '') + '</div>');
+        }
+        if (betLine) {
+          lines.push(`<div class="kc-line kc-bet"><span class="kc-ico">🎰</span><span class="kc-val">`
+            + t('betChip', T.ev(betLine.name), betLine.target)
+            + (betLine.katla ? ' · ' + t(betLine.katla.burned ? 'betChipBurned' : 'betChipKatla', betLine.katla.base) : '')
+            + `</span></div>`);
         }
         if (corpLine) {
           const mark = corpLine.done ? '<span class="kc-ok">✓</span>' : corpLine.failed ? '<span class="kc-ok kc-fail">✗</span>' : '';
@@ -3662,8 +3675,125 @@
     /* GRUP H — KUZEY YILDIZI. Açılımda Yıldız Taşı kullanıldıysa motor
        3 taş açtı; seçim penceresi burada belirir. */
     if (Game.state.yildizPick) setTimeout(showYildizPick, 520);
+    if (res.katlaOffer) setTimeout(showKatlaOffer, 650);   // P58 · Kumarhane
     if (Game.state.status !== 'playing') setTimeout(showRoundEnd, 900);
   };
+
+  /* ============================================================
+     P58 · GRUP C — KUMARHANE RUN arayüzü
+     · showBetPicker : raunda girerken kör bahis (opak katman: el görünmez)
+     · showKatlaOffer: hedef açılımla tuttu → "Kasada kal / Katla"
+     · showBetPicks  : bahis ödülü — 3 jokerden 1'i (sırayla)
+     ============================================================ */
+  function showBetPicker(done) {
+    if (document.getElementById('betOv')) return;
+    const ov = document.createElement('div');
+    ov.id = 'betOv';
+    ov.className = 'pk-ov tone-gold bet-ov';
+    const opts = Game.betOptions();
+    ov.innerHTML =
+      `<div class="pk-box">` +
+      `<div class="pk-title">🎰 ${t('betTitle')}</div>` +
+      `<div class="pk-sub-title">${t('betSub')}</div>` +
+      `<div class="pk-body pk-choice"></div>` +
+      `<div class="pk-foot"><span class="pk-hint">${t('betKatlaHint')}</span></div></div>`;
+    const body = ov.querySelector('.pk-body');
+    opts.forEach((o, i) => {
+      const c = document.createElement('button');
+      c.className = `pk-card bet-card bet-${o.key}`;
+      c.dataset.bet = o.key;
+      c.style.animationDelay = `${i * 0.11}s`;
+      c.innerHTML = `<div class="pk-name">${T.ev(o.name)}</div>` +
+        `<div class="bet-target">${t('betTarget', o.target)}</div>` +
+        `<div class="pk-desc">${t('betReward_' + o.key)}</div>`;
+      c.addEventListener('click', () => {
+        const r = Game.placeBet(o.key);
+        if (!r.ok) { toast(r.error); return; }
+        SFX.coin();
+        ov.remove();
+        toast(T.ev(r.note), true);
+        if (done) done(); else render();
+      });
+      body.appendChild(c);
+    });
+    document.body.appendChild(ov);
+  }
+
+  function showKatlaOffer() {
+    const s = Game.state;
+    if (!s.katlaOffer || document.getElementById('katlaOv')) return;
+    const ov = document.createElement('div');
+    ov.id = 'katlaOv';
+    ov.className = 'pk-ov tone-gold';
+    const next = s.katlaOffer.base * 2;
+    ov.innerHTML =
+      `<div class="pk-box">` +
+      `<div class="pk-title">🎯 ${t('katlaTitle')}</div>` +
+      `<div class="pk-sub-title">${t('katlaBody', s.score, s.katlaOffer.base, next, s.maxTurns - s.turn)}</div>` +
+      `<div class="pk-body pk-choice">` +
+      `<button class="pk-card bet-card" data-k="stay"><div class="pk-name">💰 ${t('katlaStay')}</div>` +
+      `<div class="pk-desc">${t('katlaStayDesc')}</div></button>` +
+      `<button class="pk-card bet-card bet-olumcul" data-k="double"><div class="pk-name">🎲 ${t('katlaDouble')}</div>` +
+      `<div class="bet-target">${t('betTarget', next)}</div>` +
+      `<div class="pk-desc">${t('katlaDoubleDesc')}</div></button>` +
+      `</div></div>`;
+    ov.querySelector('[data-k="stay"]').addEventListener('click', () => {
+      ov.remove();
+      Game.katlaStay();
+      render();
+      if (Game.state.status !== 'playing') setTimeout(showRoundEnd, 300);
+    });
+    ov.querySelector('[data-k="double"]').addEventListener('click', () => {
+      ov.remove();
+      const r = Game.katlaDouble();
+      if (r.ok) { SFX.boss(); toast(T.ev(r.note), true); }
+      render();
+    });
+    document.body.appendChild(ov);
+  }
+
+  function showBetPicks(done) {
+    const s = Game.state;
+    const p = (s.betPicks || [])[0];
+    if (!p) { if (done) done(); return; }
+    const ov = packOverlay('joker', 'betPickTitle');
+    ov.querySelector('.pk-sub-title').textContent = t(p.kind === 'legendary' ? 'betPickSubLeg' : 'betPickSub');
+    const body = ov.querySelector('.pk-body');
+    body.className = 'pk-body pk-choice';
+    ov.querySelector('.pk-foot').innerHTML = `<span class="pk-hint">${t('packChoiceHint')}</span>`;
+    p.options.forEach((opt, oi) => {
+      const c = document.createElement('button');
+      c.className = `pk-card r-${opt.rarity || 'special'}`;
+      c.style.animationDelay = `${oi * 0.11}s`;
+      c.innerHTML = packFaceHtml(opt) + `<div class="pk-desc">${packFaceDesc(opt)}</div>`;
+      c.addEventListener('click', () => {
+        if (ov.dataset.done) return;
+        ov.dataset.done = '1';
+        const r = Game.chooseBetPick(oi);
+        if (!r.ok) { toast(r.error); delete ov.dataset.done; return; }
+        SFX.coin();
+        [...body.children].forEach((el2, i) => el2.classList.add(i === oi ? 'pk-won' : 'pk-lost'));
+        notify([packOutLine(r.got)], true, { quiet: true });
+        setTimeout(() => {
+          ov.remove();
+          render();
+          if (r.got && !r.got.converted) onJokerGained(r.got.key, r.got.jokerId);
+          showBetPicks(done);   // sıradaki ödül (katlama tuttuysa iki seçim)
+        }, 780);
+      });
+      body.appendChild(c);
+    });
+  }
+
+  /* Store'suz raund geçişi (Kumarhane) — store "Devam" düğmesinin işi */
+  function goNextRound() {
+    Game.nextRound();
+    selection.clear();
+    newTileIds.clear();
+    if (Game.state.status === 'runComplete' || Game.state.runFinished) { showRunComplete(); return; }
+    showScreen('map');
+    if (Game.state.roundInStage === 1) showOkeyBanner();
+  }
 
   /* TANRININ ELİ (P31 · Grup E) — desteden seçimli çekiş penceresi.
      Deste açılır pop-up'ının (#pilePopup) kabuğu ve renk gruplaması
@@ -5089,12 +5219,19 @@
           rarity: 'common', price: 3, discounted: true, sold: false };
         if (s.coins < 3) s.coins = 4;
       }
-      /* Grup M — son stage'in boss'u geçildiyse run BURADA biter:
-         güçlendirme ekranı da store da açılmaz, doğrudan zafer ekranı. */
-      if (s.runFinished) { showRunComplete(); return; }
-      // Grup H: boss geçildiyse zafer ekranından SONRA ayrı güçlendirme adımı
-      if (s.upgradeOffer) { showUpgradeScene(); return; }
-      openStore();
+      const after = () => {
+        /* Grup M — son stage'in boss'u geçildiyse run BURADA biter:
+           güçlendirme ekranı da store da açılmaz, doğrudan zafer ekranı. */
+        if (s.runFinished) { showRunComplete(); return; }
+        // Grup H: boss geçildiyse zafer ekranından SONRA ayrı güçlendirme adımı
+        if (s.upgradeOffer) { showUpgradeScene(); return; }
+        /* P58 · Kumarhane — raund arası store yok: doğrudan haritaya */
+        if (!s.store && Game.kumarhaneOn && Game.kumarhaneOn()) { goNextRound(); return; }
+        openStore();
+      };
+      /* P58 · Kumarhane — bahis ödülü (3 jokerden 1'i) önce alınır */
+      if ((s.betPicks || []).length) { showBetPicks(after); return; }
+      after();
     } else if (s.status === 'runComplete') {
       clearSave();
       showScreen('menu');
@@ -6259,19 +6396,11 @@
       }
     }
     el.storeOverlay.classList.add('hidden');
-    Game.nextRound();
-    selection.clear();
-    newTileIds.clear();
-    /* Emniyet ağı: normalde buraya HİÇ gelinmez — son boss geçildiğinde
-       store zaten açılmıyor (Grup M, Game._sealRunIfFinished). Eski
-       kayıtlardan devam eden bir run bu yoldan biterse zafer ekranına
-       düşsün diye duruyor. */
-    if (Game.state.status === 'runComplete' || Game.state.runFinished) {
-      showRunComplete();
-      return;
-    }
-    showScreen('map');
-    if (Game.state.roundInStage === 1) showOkeyBanner(); // yeni stage — okey ilanı
+    /* Emniyet ağı (goNextRound içinde): normalde son boss geçildiğinde
+       store zaten açılmıyor (Grup M, Game._sealRunIfFinished); eski
+       kayıtlardan devam eden bir run bu yoldan biterse zafer ekranına düşer.
+       Yeni stage'de okey ilanı da orada. */
+    goNextRound();
   });
 
   /* pencere boyutu değişince oyun ekranını yeniden ölçekle */

@@ -7153,6 +7153,12 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 /* P55 (2026-09-30) — frame 379:319'a son Mythic geldi: Öteki_dünya (387:3) → otekiDunya.
    Mythic rafı 10/10 çizimli; get_variable_defs boş (renkler katman adlarında). */
 .jk-otekiDunya   { --jk-art: url('assets/game/joker/oteki-dunya.svg'); }
+/* P58 · Kumarhane Run — kör bahis katmanı OPAK: el görünmez */
+#betOv { background: rgba(10, 12, 20, .96); }
+.bet-card .bet-target { font-size: 1.15em; font-weight: 700; margin: 6px 0; color: #F5A623; }
+.bet-card.bet-guvenli { box-shadow: 0 0 0 3px #38A169; }
+.bet-card.bet-riskli  { box-shadow: 0 0 0 3px #D69E2E; }
+.bet-card.bet-olumcul { box-shadow: 0 0 0 3px #E53E3E; }
 /* P57 — Figma 279:9897: The Corporates raundun şirketine dönüşür */
 .jk-corporates.corp-kizil { --jk-art: url('assets/game/joker/corporates-kurogane.svg'); }
 .jk-corporates.corp-derin { --jk-art: url('assets/game/joker/corporates-abyssal.svg'); }
