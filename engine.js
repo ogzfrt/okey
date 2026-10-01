@@ -509,6 +509,18 @@ const TARGET_GROWTH = 1.16;   // P53 v13: eğrinin son adımıyla aynı (Sonsuz 
    en büyük tekil ödülleri (4-6 stage yükseltmesine denk) ama run'ı
    tek başına bitirmiyor. */
 const BONUS_7_CIFT = 1.5;   // P51 · Grup B: 2.0 → 1.5
+/* P58 · Grup A (bug, kullanıcı raporu 2026-10-02) — 7'DEN FAZLA ÇİFT.
+   Eskiden stageCombo "aynı turda en fazla 7 Çift" diye sabit bir sınır
+   koyuyordu; kaynağı çarpan tablosunun 7 kademede bitmesiydi (GDD 4.2,
+   klasik Okey'in "7 çift" eli). El artık 21-30 taş olduğu için 8+ Çift
+   mümkün; sınır KALKTI. Tablonun devamı: 7. kademeden sonra her ek Çift
+   +CIFT_EXTRA_STEP (tablonun son adımı 3.8 → 4.2 ile aynı eğim) — 8 Çift
+   4.6x, 9 Çift 5.0x … Ek, kombinasyon SAYISINA (Usta Eli/Altın Oran'ın
+   kaydırdığı basamağa değil) bağlıdır; o kartlar tablonun içinde kalır,
+   böylece Usta Eli ile çiftlerin çarpanı katlanarak patlamaz.
+   7 ÇİFT REKORU artık "7 ve üstü" açılımda verilir. */
+const CIFT_EXTRA_STEP = 0.4;
+const ciftExtra = (n) => (n > 7 ? round2(CIFT_EXTRA_STEP * (n - 7)) : 0);
 const BONUS_TAM_EL = 2.0;   // P51 · Grup B: 3.0 → 2.0
 
 /* ==========================================================================
@@ -3832,6 +3844,9 @@ const Game = {
 
   /* MADDE D4 — aktif run modunun tanımı (UI ve testler için tek kaynak). */
   runMode() { return runModeOf(this.state); },
+  /* P58 · Grup D — mod listesi tek kaynaktan (Trainer kurulum ekranı okur) */
+  runModeKeys() { return Object.keys(RUN_MODES); },
+  runModeStages(key) { return (RUN_MODES[key] || RUN_MODES.base).stages; },
 
   /* ---------- TRAINER MODU (Grup H, 2026-08; genişletildi 2026-08-07) ----------
      DMC "Void" tarzı sandbox: normal stage yapısı (2 normal + boss).
@@ -3841,7 +3856,11 @@ const Game = {
      store havuzunu filtreler ve dilediği stage'e atlar.
      cfg: { stages, jokers:[key], consumables:[key], coins, handSize } */
   newTrainerRun(cfg = {}) {
-    this.newRun();
+    /* P58 · Grup D (kullanıcı isteği 2026-10-02) — Trainer hangi oyun
+       modunda test edileceğini seçer (cfg.mode). Seçilmezse / bilinmeyen
+       anahtar gelirse temel run (newRun zaten 'base'e düşer). Yeni bir mod
+       RUN_MODES'a eklendiği anda Trainer listesinde de görünür. */
+    this.newRun(cfg.mode);
     this.trainerMode = true;
     const s = this.state;
     /* P52: temel run'ın AÇILIŞ JOKERİ trainer'da verilmez. Trainer bir
@@ -6144,7 +6163,8 @@ const Game = {
     if (mixed && teker) {
       const ciftCombos = ctx.combos.filter(c => c.type === 'cift');
       const perCombos = ctx.combos.filter(c => c.type !== 'cift');
-      let cCar = round2(getCarpan('cift', step(ciftCombos.length), s.permMult) + mult + TEKER_MULT);
+      let cCar = round2(getCarpan('cift', step(ciftCombos.length), s.permMult) + mult + TEKER_MULT
+        + ciftExtra(ciftCombos.length));   // P58 · Grup A — 8+ Çift
       let pCar = round2(getCarpan('per', step(perCombos.length), s.permMult) + mult + TEKER_MULT);
       if (s.kumarbazRoll) { cCar = round2(cCar * s.kumarbazRoll); pCar = round2(pCar * s.kumarbazRoll); }
       const cRaw = ciftCombos.reduce((a, c) => a + this.comboSum(c), 0) * ejMul;
@@ -6163,7 +6183,8 @@ const Game = {
     } else {
       // yalnız işleme varsa per tablosu tek-açılım çarpanı esas alınır (tasarım kararı)
       const mode = ctx.count === 0 ? 'per' : s.turnMode;
-      carpan = round2(getCarpan(mode, step(Math.max(ctx.count, 1)), s.permMult) + mult);
+      carpan = round2(getCarpan(mode, step(Math.max(ctx.count, 1)), s.permMult) + mult
+        + (mode === 'cift' ? ciftExtra(ctx.count) : 0));   // P58 · Grup A — 8+ Çift
       if (s.kumarbazRoll) {
         carpan = round2(carpan * s.kumarbazRoll);
         const kj = this.slotRecs().find(j => j.key === 'kumarbaz');
@@ -6325,8 +6346,6 @@ const Game = {
           ? 'Bu turda Çift açılımı başlattın — Per/Sıralı ile karıştırılamaz (GDD 3.1).'
           : 'Bu turda Per/Sıralı açılımı başlattın — Çift ile karıştırılamaz (GDD 3.1).',
       };
-    if (mode === 'cift' && s.staged.filter(c => c.type === 'cift').length >= 7)
-      return { ok: false, error: 'Aynı turda en fazla 7 Çift açılabilir.' };
 
     if (!s.turnMode) s.turnMode = mode;
 
@@ -7310,7 +7329,7 @@ const Game = {
       bonuses: [], triggered: r.triggered, events,
     };
 
-    if (r.ctx.ciftCount === 7) {
+    if (r.ctx.ciftCount >= 7) {   // P58 · Grup A: 8+ Çift de rekordur
       s.permMult += BONUS_7_CIFT;
       result.bonuses.push(`7 ÇİFT REKORU! +${BONUS_7_CIFT.toFixed(1)}x kalıcı çarpan`);
     }
@@ -8084,7 +8103,7 @@ const Game = {
     // MADDE D3 — run sonu özeti: süresi dolarak kaybedilen joker sayısı
     s.statExpired = (s.statExpired || 0) + s.lastExpired.length;
     if (s.lastExpired.length)
-      notes.push(`💥 Süresi dolan joker: ${s.lastExpired.join(', ')} — kırılıp yok oldu`);
+      notes.push(`⌛ Süresi dolan joker: ${s.lastExpired.join(', ')} — oyundan çıktı`);
   },
 
   /* GRUP F — "hedefe ulaşsan bile kaybettiren" boss koşulları (GDD 13.4).
@@ -11431,7 +11450,7 @@ if (typeof module !== 'undefined') {
     sortPer, sortCift, sortSirali, createDeck, resolveCombo,
     COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
-    UC_PEEK_COST, OTEKI_START, OTEKI_FOG_AFTER, OTEKI_COMBO_MULT, otekiStartFor, KAVUSMA_MULT, AY_TASI_PTS, moonIcon, kavusmaMult, ayTasiPts,
+    CIFT_EXTRA_STEP, UC_PEEK_COST, OTEKI_START, OTEKI_FOG_AFTER, OTEKI_COMBO_MULT, otekiStartFor, KAVUSMA_MULT, AY_TASI_PTS, moonIcon, kavusmaMult, ayTasiPts,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

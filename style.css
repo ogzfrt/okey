@@ -367,18 +367,11 @@ body::before {
   100%{ box-shadow: none; transform: none; }
 }
 
-/* GDD 7.3 — parçalanma: süre azaldıkça çatlaklar belirir */
-.joker-tile.worn { border-style: dashed; }
-.joker-tile.worn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 8px;
-  background:
-    linear-gradient(25deg, transparent 47%, rgba(0,0,0,.2) 48.5%, transparent 50%),
-    linear-gradient(-40deg, transparent 63%, rgba(0,0,0,.16) 64.5%, transparent 66%);
-}
+/* P58 · Grup B (kullanıcı kararı 2026-10-02) — KIRILMA EFEKTİ KALKTI.
+   GDD 7.3'ün "süre azaldıkça çatlaklar" görseli (.worn: kesikli çerçeve +
+   çatlak çizgileri) ve parçalanma animasyonu (shatterEl / .shard /
+   cardBreak) silindi. Kullanıcı yeni bir tasarım hazırlayacak; o gelene
+   kadar süresi dolan joker/değnek animasyonsuz, doğrudan kalkar. */
 .joker-tile.dying { filter: saturate(.75); }
 
 .joker-slot-empty {
@@ -1119,25 +1112,6 @@ body::before {
 /* Tooltip kuralları 2026-09-07'de PİKSEL-ART tasarıma geçti ve tek bir
    yerde toplandı: dosyanın sonundaki "AÇIKLAMA KARTI (TOOLTIP)" bloğu.
    Buradaki eski (yuvarlak köşeli, ince çerçeveli) kurallar kaldırıldı. */
-
-/* ---------- Kirilma efekti (GDD 7.3 - sure dolumu) ---------- */
-.shard {
-  position: fixed;
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  z-index: 190;
-  pointer-events: none;
-  box-shadow: 0 1px 3px rgba(0,0,0,.4);
-  transition: transform .72s cubic-bezier(.25,.6,.3,1), opacity .72s ease;
-}
-.shattering { animation: cardBreak .7s ease forwards; }
-@keyframes cardBreak {
-  0%   { transform: none; opacity: 1; }
-  20%  { transform: translateX(-3px) rotate(-2deg); }
-  40%  { transform: translateX(3px) rotate(2deg); }
-  100% { transform: scale(.25) rotate(9deg); opacity: 0; }
-}
 
 /* ---------- Deste jokeri taslari (GDD 10) ---------- */
 .tile.deck-joker {

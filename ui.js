@@ -1573,29 +1573,7 @@
     });
   }
 
-  /* ---------- Kırılma efekti (GDD 7.3 — süre dolumu) ---------- */
-
-  function shatterEl(card) {
-    const r = card.getBoundingClientRect();
-    const color = getComputedStyle(card).borderLeftColor;
-    for (let i = 0; i < 14; i++) {
-      const p = document.createElement('div');
-      p.className = 'shard';
-      p.style.left = (r.left + Math.random() * r.width) + 'px';
-      p.style.top = (r.top + Math.random() * r.height) + 'px';
-      p.style.background = i % 3 === 0 ? color : '#efe8d6';
-      document.body.appendChild(p);
-      const dx = (Math.random() - .5) * 150;
-      const dy = 50 + Math.random() * 130;
-      const rot = (Math.random() - .5) * 560;
-      requestAnimationFrame(() => {
-        p.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg) scale(.4)`;
-        p.style.opacity = '0';
-      });
-      setTimeout(() => p.remove(), 800);
-    }
-    card.classList.add('shattering');
-  }
+  /* P58 · Grup B — kırılma efekti (shatterEl) kaldırıldı; bkz. style.css. */
 
   /* ---------- Grup G (2026-08): görsel-odaklı kart dili ----------
      Kartlar artık büyük ikon + kısa vurgu çipleri + rozetlerle okunur;
@@ -1794,7 +1772,6 @@
     // sınıfları da rozet de sayı yerine ∞ ile çalışır.
     const runLong = !!(Game.isRunLong && Game.isRunLong(j));
     tile2.className = `joker-tile r-${j.rarity}`
-      + (!opts.backup && !runLong && j.usesLeft <= 2 ? ' worn' : '')
       + (!opts.backup && !runLong && j.usesLeft <= 1 ? ' dying' : '')
       + (runLong ? ' run-long' : '');
     tile2.dataset.jid = j.id;
@@ -6677,9 +6654,17 @@
 
     const row = document.createElement('div');
     row.className = 'tr-opts';
+    /* P58 · Grup D — OYUN MODU: liste motorun RUN_MODES'undan gelir, yeni
+       mod eklenince burada kendiliğinden belirir. Varsayılan Temel Run.
+       Mod değişince stage seçimi o modun stage sayısına çekilir. */
+    const modeKeys = Game.runModeKeys ? Game.runModeKeys() : ['base'];
+    const modeName = (k) => { const v = t('modeName_' + k); return v && v !== 'modeName_' + k ? v : k; };
     row.innerHTML =
+      `<label>${t('trMode')} <select id="trMode">` +
+      modeKeys.map(k => `<option value="${k}"${k === 'base' ? ' selected' : ''}>${modeName(k)}</option>`).join('') +
+      `</select></label>` +
       `<label>${t('trStages')} <select id="trStages">` +
-      `<option value="1">1</option><option value="3">3</option>` +
+      `<option value="1">1</option><option value="3">3</option><option value="4">4</option>` +
       `<option value="6">6</option><option value="8" selected>8</option>` +
       `<option value="12">12</option>` +
       `<option value="inf">${t('trInfinite')}</option>` +
@@ -6711,6 +6696,13 @@
       Array.from({ length: 13 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('') +
       `</select></label>`;
     foot.appendChild(row);
+    row.querySelector('#trMode').addEventListener('change', (e) => {
+      const n = Game.runModeStages ? Game.runModeStages(e.target.value) : 8;
+      const sel = row.querySelector('#trStages');
+      if (![...sel.options].some(o => o.value === String(n)))
+        sel.insertAdjacentHTML('beforeend', `<option value="${n}">${n}</option>`);
+      sel.value = String(n);
+    });
 
     const acts = document.createElement('div');
     acts.className = 'tr-acts';
@@ -6721,6 +6713,7 @@
       hideTip();
       const chSel = panel.querySelector('#trStages').value;
       Game.newTrainerRun({
+        mode: panel.querySelector('#trMode').value || 'base',   // P58 · Grup D
         stages: chSel === 'inf' ? Infinity : parseInt(chSel, 10),
         jokers: [...selJ],
         consumables: [...selC],
