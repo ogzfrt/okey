@@ -4386,6 +4386,7 @@ const Game = {
     s.otekiHand = [];         // P54 · Grup B — Öteki Dünya'nın eli deste kurulmadan boşalır
     s.otekiSide = 0;          // P57 — 0: raunda başladığın dünya, 1: öteki
     s.otekiAway = [0, 0];     // P57 — sis sayacı (dünya başına, tur sonu konumuna göre)
+    s.otekiFresh = [];        // geçen tur öteki ele düşen taşlar (o turun sisine girmez)
     s.otekiGhostTurn = null;  // P57 — hayalet yolcu turda bir kez
     s.kavusmaDone = false;    // P57 — dünyalar kavuştu mu (raundda bir kez)
     s.storeTilePick = null;   // P29 · Grup O — store seçimi raunda taşmaz
@@ -9916,6 +9917,10 @@ const Game = {
     const s = this.state;
     t.slot = this._freeSlotIn(s.otekiHand);
     s.otekiHand.push(t);
+    /* Az önce attığın taşın yüzünü bir sonraki tur başında "unutamazsın":
+       o turun sis zarına girmez, bir tur sonra normal havuza katılır
+       (kullanıcı kararı 2026-10-01; bkz. _otekiTurnStart). */
+    (s.otekiFresh = s.otekiFresh || []).push(t.id);
     const face = `${COLOR_TR[t.color] || t.color} ${t.number}`;
     const def = SPECIAL_TILES.ayTasi;
     const room = s.specialTiles.filter(x => x.kind === 'ayTasi').length < def.maxCopies;
@@ -9942,8 +9947,11 @@ const Game = {
     const away = Array.isArray(s.otekiAway) ? s.otekiAway : (s.otekiAway = [0, 0]);
     away[cur] = 0;
     away[1 - cur]++;
+    // geçen tur öteki ele düşen taşlar bu zara girmez; liste yalnız bir tur yaşar
+    const fresh = new Set(s.otekiFresh || []);
+    s.otekiFresh = [];
     if (away[1 - cur] < OTEKI_FOG_AFTER) return;
-    const pool = s.otekiHand.filter(t => !t.faceDown && !t.jokerTile && !t.ghost);
+    const pool = s.otekiHand.filter(t => !t.faceDown && !t.jokerTile && !t.ghost && !fresh.has(t.id));
     if (!pool.length) return;
     const t = pool[Math.floor(this.rng() * pool.length)];
     t.faceDown = true;
@@ -11262,6 +11270,7 @@ const Game = {
     if (!Array.isArray(st.otekiHand)) st.otekiHand = [];    // P54 · Grup B
     if (st.otekiSide == null) st.otekiSide = 0;                 // P57
     if (!Array.isArray(st.otekiAway)) st.otekiAway = [0, 0];
+    if (!Array.isArray(st.otekiFresh)) st.otekiFresh = [];
     if (st.otekiGhostTurn === undefined) st.otekiGhostTurn = null;
     if (st.kavusmaDone == null) st.kavusmaDone = false;
     delete st.otekiSwapTurn;
