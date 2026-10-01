@@ -1540,9 +1540,12 @@
   /* Karta sol/sağ tık eylemlerini bağlar. `getActs()` her olayda yeniden
      okunur (store açık mı, damga basılı mı… anlık durum). attachTip'ten
      ÖNCE çağrılmalı: tooltip rozetin kenarından açılmak için rozeti okur.
-     Haritadaki joker paneli yalnız bilgi amaçlı — orada eylem yok. */
+     P58 (kullanıcı isteği 2026-10-02): haritadaki joker paneli artık EYLEMLİ —
+     sağ tık satış, sol tık Füzyon. Raund içi eylemler (Damga, Satranç Saati,
+     Öteki Dünya…) jokerActs'te oyun ekranına kilitlidir: haritadayken
+     sonraki raund kurulmuş ve status 'playing' olsa da oyuncu henüz raundda değil. */
   function attachActs(card, getActs) {
-    const acts = () => (card.closest('#mapScreen') ? { left: null, right: null } : getActs());
+    const acts = () => getActs();
     card.addEventListener('mouseenter', () => showActBadge(card, acts()));
     card.addEventListener('mouseleave', () => { if (actBadgeFor === card) hideActBadge(); });
     card.addEventListener('transitionend', () => { if (actBadgeFor === card) placeActBadge(card); });
@@ -1662,6 +1665,7 @@
     const res = Game.sellJoker(j.id);
     if (!res.ok) { toast(res.error || t('sellFail')); return; }
     toast(t('sellToast', T.name(res), res.gain), true); SFX.coin(); renderStore(); render();
+    if (curScreen() === 'map') { hideActBadge(); renderMap(); }   // P58: haritadan satış
   }
 
   function useDamga() {
@@ -1709,50 +1713,63 @@
     let left = null;
     if (has('fuzyon')) left = { lbl: t('abUse'), fn: () => pickFuzyon(j.id) };
     else if (opts.backup) left = { lbl: t('abToMain'), fn: () => moveBackupToMain(j) };
-    else if (!opts.backup && s && s.status === 'playing' && !storeOpen()) {
+    else if (!opts.backup && s && s.status === 'playing' && !storeOpen() && curScreen() === 'game') {
+      /* P58 (kullanıcı raporu 2026-10-02) — FÜZYONLU KARTTA ELLE KULLANILAN
+         EFEKTLER ÇAKIŞIYORDU: Damga + Öteki Dünya birleşince sol tık yalnız
+         ilk eşleşeni (Damga) çalıştırıyordu, Öteki Dünya'ya ulaşılamıyordu.
+         Artık kullanılabilir TÜM efektler toplanır: tek efekt doğrudan çalışır,
+         birden fazlaysa sol tık bir seçim penceresi açar (showUseChooser). */
+      const list = [];
+      const add = (key, lbl, fn) => list.push({ key, lbl, fn });
       const dm = has('ayna') && Game.damgaState && Game.damgaState();
-      if (dm && dm.id === j.id && !dm.used) left = { lbl: t(dm.armed ? 'abUndo' : 'abUse'), fn: useDamga };
-      else if (has('satrancSaati') && Game.clockState && Game.clockState().canUse) left = { lbl: t('abUse'), fn: useClockCard };
-      else if (has('otekiDunya') && Game.otekiState && Game.otekiState().canUse) left = { lbl: t('abUse'), fn: useOtekiCard };
-      else if (has('rusvet') && Game.canRusvet && Game.canRusvet()) left = { lbl: t('abUse'), fn: doRusvet };
-      else if (has('terazi') && Game.canTeraziSacrifice && Game.canTeraziSacrifice()) left = { lbl: t('abUse'), fn: doTerazi };
-      else if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
-        left = { lbl: t(s.paratonerBait != null ? 'abUndo' : 'abUse'), fn: doParatoner };
+      if (dm && dm.id === j.id && !dm.used) add('ayna', t(dm.armed ? 'abUndo' : 'abUse'), useDamga);
+      if (has('satrancSaati') && Game.clockState && Game.clockState().canUse) add('satrancSaati', t('abUse'), useClockCard);
+      if (has('otekiDunya') && Game.otekiState && Game.otekiState().canUse) add('otekiDunya', t('abUse'), useOtekiCard);
+      if (has('rusvet') && Game.canRusvet && Game.canRusvet()) add('rusvet', t('abUse'), doRusvet);
+      if (has('terazi') && Game.canTeraziSacrifice && Game.canTeraziSacrifice()) add('terazi', t('abUse'), doTerazi);
+      if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
+        add('paratoner', t(s.paratonerBait != null ? 'abUndo' : 'abUse'), doParatoner);
+      if (list.length === 1) left = { lbl: list[0].lbl, fn: list[0].fn };
+      else if (list.length > 1) left = { lbl: t('abChoose'), fn: () => showUseChooser(j, list) };
     }
     /* P46 (kullanıcı isteği 2026-09-14): jokerler RAUND İÇİNDE de sağ tıkla
        satılır (P41'de satış yalnız store'daydı). Değnek satışı store'da kalır —
-       istek jokerler içindi. Harita panelinde eylem yok (attachActs). */
+       istek jokerler içindi. P58: harita panelinde de satılır (attachActs). */
     const right = !j.noSell && j.id != null
       ? { lbl: t('abSell', sellPrice(j.rarity, j.key)), fn: () => sellJokerNow(j) } : null;
     return { left, right };
   }
 
-  function jokerActions(j, backup) {
-    // Store açıkken tooltip üzerinden satış (ve Füzyon/→Ana) — Grup G2
-    return () => {
-      /* PLAYTEST 26 · GRUP E2 (bug) — FÜZYON HER AN, HER RAFTAN.
-         GDD 9.5: "Füzyon hangi rafta olursa olsun çalışır." Motor bunu
-         zaten karşılıyordu (fusableJokers = ana slot + backup), ama UI
-         tooltip eylemlerini `storeOpen()` koşuluna bağlıyordu: store
-         kapalıyken kart hiç eylem göstermiyordu. Sonuç: Füzyon'u ilk
-         geldiğinde kullanmayıp bir rafa koyan oyuncu, raund içinde ona
-         bir daha ulaşamıyordu. Satış/takas gibi eylemler store'a bağlı
-         KALIR (orası pazarın yeri); "Birleştir" store'dan bağımsızdır. */
-      const fuseAct = j.key === 'fuzyon'
-        ? [{ label: t('fuseBtn'), fn: () => pickFuzyon(j.id) }] : [];
-      if (!storeOpen()) return fuseAct;
-      /* P43 (kullanıcı isteği 2026-09-14) — tooltip'teki "Sat" ve "Takas"
-         düğmeleri KALKTI: satış kartın üstünde SAĞ TIKLA (P41 eylem rozeti),
-         takas satın alırken hedef seçiminde (pickBuyDest) yapılıyor; tooltip
-         düğmeleri aynı işin işlevsiz kopyasıydı. "→ Ana" ve "Birleştir" kalır. */
-      const acts = [];
-      // P45: "→ Ana" de kalktı — backup kartı sol tıkla ana slota geçer (moveBackupToMain)
-      /* Grup A (bug): "Birleştir" eylemi eskiden YALNIZ ana slot kartında
-         vardı; Füzyon backup'a düşünce erişilemez oluyordu. Artık her iki
-         raftaki Füzyon kartından da açılır. */
-      acts.push(...fuseAct);
-      return acts;
-    };
+  /* P58 (kullanıcı isteği 2026-10-02) — tooltip eylem düğmeleri tamamen
+     KALKTI. Son kalan "⚗ Birleştir" de gereksizdi: Füzyon kartı her raftan,
+     haritada da, SOL TIKLA kullanılıyor (jokerActs → pickFuzyon). Sat/Takas
+     P43'te, →Ana P45'te zaten kalkmıştı. İmza çağıranlar için korunur. */
+  function jokerActions() {
+    return () => [];
+  }
+
+  /* P58 — füzyonlu kartta birden fazla elle kullanılan efekt: hangisi? */
+  function showUseChooser(j, list) {
+    document.getElementById('useChooser')?.remove();
+    hideTip(); hideActBadge();
+    const ov = document.createElement('div');
+    ov.id = 'useChooser';
+    ov.className = 'mode-pick';
+    ov.innerHTML = `<div class="tp-box"><h3>${T.name(j)}</h3><p>${t('useChooseBody')}</p>`
+      + `<div class="uc-row"></div><button class="btn ghost" id="ucCancel">${t('backBtn')}</button></div>`;
+    const row = ov.querySelector('.uc-row');
+    for (const x of list) {
+      const b = document.createElement('button');
+      b.className = 'btn uc-opt';
+      b.dataset.key = x.key;
+      const d = JOKER_DEFS[x.key];
+      b.innerHTML = `<b>${(JOKER_ICONS && JOKER_ICONS[x.key]) || ''} ${T.name({ key: x.key, name: d ? d.name : x.key })}</b><span>${x.lbl}</span>`;
+      b.addEventListener('click', () => { ov.remove(); x.fn(); });
+      row.appendChild(b);
+    }
+    ov.querySelector('#ucCancel').addEventListener('click', () => ov.remove());
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
   }
 
   /* GİRİŞ ANİMASYONU YALNIZ YENİ KARTTA (hata raporu 2026-09-10).
@@ -2460,6 +2477,7 @@
           SFX.coin();
           if (storeOpen()) renderStore();
           render();
+          if (curScreen() === 'map') renderMap();   // P58: haritadan Füzyon
         }
       });
       row.appendChild(b);
@@ -3371,6 +3389,14 @@
         el.kahinChip.innerHTML = lines.join('');
         el.kahinChip.title = el.kahinChip.textContent;
       }
+      /* P58 (kullanıcı raporu 2026-10-02) — ÜST KUTU ÇAKIŞMASI. Kutu üst
+         ortada 640…1280 aralığını kaplıyor; Trade Jokeri'nin borsa çipi
+         (x 470→) ve Fatality çipi (x 1040) aynı şeritte (top 41) durduğu için
+         kutunun altında kalıyordu. Kutu görünürken iki çip kutunun HEMEN
+         ALTINA iner; kutu yokken CSS'teki yerlerine döner. */
+      const below = show ? `${el.kahinChip.offsetTop + el.kahinChip.offsetHeight + 10}px` : '';
+      el.borsaChip.style.top = below;
+      el.fatalityChip.style.top = below;
     }
     if (s.tuccarOffer && meldPhase) {
       const b = document.createElement('button');
