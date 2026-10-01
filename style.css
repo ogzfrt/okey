@@ -7175,6 +7175,10 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
    İlk kart: Dr_Frankenstein (383:975) → frankenstein. Koleksiyonun Legendary
    rafı kartlar tamamlanınca görsel dizisine çevrilecek (şimdilik 1/15). */
 .jk-frankenstein { --jk-art: url('assets/game/joker/frankenstein.svg'); }
+/* P57 (2026-10-01) — Legendary 2/15: Lanetli_kaptan (390:2) → kaptan.
+   Boss-Epic frame 279:9897'a Üçkağıtçı (390:44) geldi → ucKagitci (boss 20/20). */
+.jk-kaptan       { --jk-art: url('assets/game/joker/lanetli-kaptan.svg'); }
+.jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
    çizim tamamen başka (sarı/turkuaz nota kartı → mavi çark kartı).
