@@ -796,6 +796,11 @@
     if (tile.apple) d.classList.add('apple-tile');        // P31 · Grup I — Yasak Elma
     if (tile.pinkyOkey) d.classList.add('pinky-okey');    // P31 · Grup C — Pinky Warrior
     if (tile.special) d.classList.add('sp-' + tile.special);
+    /* P59 · Ay Takvimi — Ay Taşı (kalıcı ya da raund içi) evre simgesini taşır */
+    if (Game.isMoonTile && Game.isMoonTile(tile)) {
+      d.classList.add('moon-tile');
+      d.dataset.moon = Game.moonIconNow ? Game.moonIconNow() : '🌙';
+    }
     if (tile.stoned) d.classList.add('stoned');
     if (tile.bungie) d.classList.add('bungie-back');   // Grup Q: sakızdan geri dönen taş
     // P29 · Grup B — Hayalet jokerinin bir turluk taşı
@@ -1318,12 +1323,8 @@
     if (recs.some((r) => r.key === 'godzilla') && num(s.godzillaLevel)) out.push('S' + num(s.godzillaLevel));
     // P54 · Grup B / P57 — Öteki Dünya: geride bekleyen el + ay evresi
     if (recs.some((r) => r.key === 'otekiDunya') && Game.otekiState) {
-      const o = Game.otekiState();
-      if (o.kavusmaDone) out.push(t('tipNowKavusma'));
-      else {
-        if (o.count) out.push(t('tipNowTiles', o.count));
-        out.push(t('tipNowMoon', o.moon, o.kavusmaMult));
-      }
+      const o = Game.otekiState();   // P59 · Ay Takvimi
+      out.push(t('tipNowWell', o.count, o.max, o.moon, t('moonName' + o.phase)));
     }
     /* P54 · Bölüm 1 · Madde 1 — birikim artık kartın İÇİNDE, kendi şeridinde:
        sola etiket, sağa değer; kenar boşlukları açıklama satırlarıyla aynı.
@@ -1675,15 +1676,6 @@
     render();
   }
 
-  /* P54 · Grup B — Öteki Dünya: kartın sol tıkı iki eli yer değiştirir. */
-  function useOtekiCard() {
-    const res = Game.useOteki();
-    if (!res.ok) { toast(T.ev(res.error)); return; }
-    selection.clear();
-    toast(T.ev(res.note), true);
-    render();
-  }
-
   /* P54 · Grup C — Satranç Saati: kartın sol tıkı saati bu tur için durdurur. */
   function useClockCard() {
     const res = Game.clockPause();
@@ -1724,7 +1716,6 @@
       const dm = has('ayna') && Game.damgaState && Game.damgaState();
       if (dm && dm.id === j.id && !dm.used) add('ayna', t(dm.armed ? 'abUndo' : 'abUse'), useDamga);
       if (has('satrancSaati') && Game.clockState && Game.clockState().canUse) add('satrancSaati', t('abUse'), useClockCard);
-      if (has('otekiDunya') && Game.otekiState && Game.otekiState().canUse) add('otekiDunya', t('abUse'), useOtekiCard);
       if (has('rusvet') && Game.canRusvet && Game.canRusvet()) add('rusvet', t('abUse'), doRusvet);
       if (has('terazi') && Game.canTeraziSacrifice && Game.canTeraziSacrifice()) add('terazi', t('abUse'), doTerazi);
       if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
@@ -1746,6 +1737,46 @@
      P43'te, →Ana P45'te zaten kalkmıştı. İmza çağıranlar için korunur. */
   function jokerActions() {
     return () => [];
+  }
+
+  /* ============================================================
+     P59 · ÖTEKİ DÜNYA — AY KUYUSU paneli (sol sütun, boss kutusunun altı).
+     Takas: elinden bir taş seç, sonra kuyudan bir Ay Taşına tıkla.
+     ============================================================ */
+  function renderWell() {
+    const box = document.getElementById('ayWell');
+    if (!box) return;
+    const s = Game.state;
+    const o = s && s.status === 'playing' && Game.otekiState ? Game.otekiState() : null;
+    const show = !!(o && o.id != null);
+    box.classList.toggle('hidden', !show);
+    if (!show) return;
+    box.innerHTML =
+      `<div class="aw-head"><span class="aw-title">🌙 ${t('wellTitle')}</span>`
+      + `<span class="aw-count">${o.count}/${o.max}</span></div>`
+      + `<div class="aw-phase"><b>${o.moon} ${t('moonName' + o.phase)}</b> · ${t('moonEffect' + o.phase)}</div>`
+      + `<div class="aw-slots"></div>`
+      + `<div class="aw-hint">${o.canSwap ? t('wellHint') : T.ev(o.reason || '')}</div>`;
+    const slots = box.querySelector('.aw-slots');
+    const list = s.otekiHand || [];
+    for (let i = 0; i < o.max; i++) {
+      const tl = list[i];
+      if (!tl) { const e = document.createElement('div'); e.className = 'aw-empty'; slots.appendChild(e); continue; }
+      const te = tileEl(tl, false);
+      te.classList.add('aw-tile');
+      if (o.canSwap) te.classList.add('aw-can');
+      te.addEventListener('click', () => {
+        const sel = [...selection];
+        if (sel.length !== 1) { toast(t('wellPickOne')); return; }
+        const r = Game.ayTakas(sel[0], tl.id);
+        if (!r.ok) { toast(T.ev(r.error)); return; }
+        selection.clear();
+        SFX.coin();
+        toast(T.ev(r.note), true);
+        render();
+      });
+      slots.appendChild(te);
+    }
   }
 
   /* P58 — füzyonlu kartta birden fazla elle kullanılan efekt: hangisi? */
@@ -1909,14 +1940,15 @@
         && Game.state.status === 'playing') {
       /* P57 — rozet ay evresini ve öbür eldeki taş sayısını gösterir;
          öteki dünyadayken mor yanar, Kavuşma'dan sonra 🌕✓ */
+      /* P59 · Ay Takvimi — rozet: ay evresi + kuyudaki taş sayısı. Figma
+         394:507 V2 çizimi (180° dönük kart) artık DOLUNAY turunda görünür. */
       const o = Game.otekiState ? Game.otekiState() : null;
       const n = (Game.state.otekiHand || []).length;
       const b = document.createElement('span');
-      b.className = 'jt-charge' + (n || (o && o.kavusmaDone) ? ' on' : '') + (o && o.side ? ' oteki-side' : '');
-      /* P57 · Figma 394:507 — öteki dünyadayken kart ters döner (V2 çizimi) */
-      if (j.key === 'otekiDunya') tile2.classList.toggle('oteki-flip', !!(o && o.side && !o.kavusmaDone));
-      b.textContent = o && o.kavusmaDone ? '🌕✓' : `${o ? o.moon : '🌗'}${n}`;
-      b.title = o && o.kavusmaDone ? t('tipNowKavusma') : t('otekiBadge', n, o ? o.moon : '🌗', o ? o.kavusmaMult : 1);
+      b.className = 'jt-charge' + (n ? ' on' : '');
+      if (j.key === 'otekiDunya') tile2.classList.toggle('oteki-flip', !!(o && o.phase === 2));
+      b.textContent = `${o ? o.moon : '🌙'}${n}`;
+      b.title = o ? t('tipNowWell', n, o.max, o.moon, t('moonName' + o.phase)) : '';
       tile2.appendChild(b);
     }
     /* P57 (kullanıcı isteği) — THE CORPORATES ŞİRKETİNE DÖNÜŞÜR: raundun
@@ -3101,11 +3133,7 @@
        taşlar yan yana sıkışık durur. Klasik düzen aşağıdaki `else` dalında
        birebir korunur. */
     el.rack.classList.toggle('rack-free', freeRack());
-    // P57 — Öteki Dünya'dayken ıstaka mor çerçeveyle "öbür taraf" olduğunu söyler
-    {
-      const o = Game.otekiState ? Game.otekiState() : null;
-      el.rack.classList.toggle('in-oteki', !!(o && o.id != null && o.side === 1 && !o.kavusmaDone));
-    }
+    renderWell();   // P59 · Öteki Dünya — Ay Kuyusu
     if (freeRack()) {
       const [r1, r2] = freeRows();
       r1.forEach(t2 => el.rackRow1.appendChild(tileEl(t2)));
