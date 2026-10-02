@@ -11609,6 +11609,79 @@ for (const [fn, key] of [['buyJoker', 'statBought'], ['buyConsumable', 'statBoug
   };
 }
 
+/* P60 — RUN KAYDI (arkadaş testi için). Oyun tarayıcıda çalıştığı için
+   oyuncunun nerede/neden kaybettiğini göremiyoruz; oyun sonu panelindeki
+   "Raporu kopyala" düğmesi bu kaydı düz metne çevirir, oyuncu mesajla
+   gönderir. Kayıt YALNIZ raporlama içindir, hiçbir kural okumaz.
+     raund başı ve sonu: son kayıttan beri eklenen/çıkan jokerler
+     raund sonu (_finishWin / _finishWinSurvived / discard'daki kayıp):
+       hedef, puan, kazandı mı, tur, boss, bahis, Katla, boss şartı ihlali
+   Aynı raunda ikinci kez yazılırsa (İkinci Şans, sıyrılma) kayıt güncellenir. */
+const RUNLOG_MAX = 60;
+function runLogOf(s) {
+  if (!s.runLog || !Array.isArray(s.runLog.rounds))
+    s.runLog = { mode: s.runMode || 'base', start: Date.now(), rounds: [], keys: [] };
+  return s.runLog;
+}
+function runLogKeys(s) {
+  return [...(s.jokers || []), ...(s.deckJokers || []), ...(s.backup || [])].map(j => j.key).sort();
+}
+/* son kayıttan beri eklenen / çıkan joker anahtarları (kopyalar sayılır) */
+function runLogDiff(L, s) {
+  const now = runLogKeys(s), left = L.keys.slice(), add = [];
+  for (const k of now) { const i = left.indexOf(k); if (i >= 0) left.splice(i, 1); else add.push(k); }
+  L.keys = now;
+  return { add, rem: left };
+}
+/* yeni state (newRun) runLog taşımaz → ilk _startRound taze kayıt açar */
+Game._logRoundStart = function () {
+  const s = this.state; if (!s) return;
+  const L = runLogOf(s);
+  const { add, rem } = runLogDiff(L, s);
+  const last = L.rounds[L.rounds.length - 1];
+  if (last && last.st === s.stage && last.r === s.roundInStage && last.won == null) {
+    last.add.push(...add); last.rem.push(...rem);   // aynı raund yeniden kuruldu
+    return;
+  }
+  L.rounds.push({ st: s.stage, r: s.roundInStage, add, rem, won: null });
+  if (L.rounds.length > RUNLOG_MAX) L.rounds.splice(0, L.rounds.length - RUNLOG_MAX);
+};
+Game._logRoundEnd = function () {
+  const s = this.state; if (!s || (s.status !== 'won' && s.status !== 'lost')) return;
+  const L = runLogOf(s);
+  let e = L.rounds[L.rounds.length - 1];
+  if (!e || e.st !== s.stage || e.r !== s.roundInStage) {
+    e = { st: s.stage, r: s.roundInStage, add: [], rem: [], won: null }; L.rounds.push(e);
+  }
+  const d = runLogDiff(L, s);
+  e.add.push(...d.add); e.rem.push(...d.rem);
+  e.won = s.status === 'won';
+  e.sc = s.score; e.tgt = s.target; e.turn = s.turn;
+  if (s.boss && this.isBossRound && this.isBossRound()) e.boss = s.boss.key;
+  if (s.bet) { e.bet = s.bet; e.base = s.betBaseTarget; }
+  if (s.katla) e.katla = s.katla.base;
+  if (s.bossFail) e.fail = s.bossFail;
+};
+{
+  const orig = Game._startRound;
+  Game._startRound = function (...args) {
+    const r = orig.apply(this, args);
+    this._logRoundStart();
+    return r;
+  };
+}
+for (const fn of ['_finishWin', '_finishWinSurvived', 'discard']) {
+  const orig = Game[fn];
+  Game[fn] = function (...args) {
+    const before = this.state && this.state.status;
+    const r = orig.apply(this, args);
+    const st = this.state && this.state.status;
+    if (fn !== 'discard' || (before === 'playing' && st === 'lost')) this._logRoundEnd();
+    return r;
+  };
+}
+Game.runLog = function () { return this.state ? runLogOf(this.state) : null; };
+
 /* Node smoke-test desteği */
 if (typeof module !== 'undefined') {
   module.exports = {

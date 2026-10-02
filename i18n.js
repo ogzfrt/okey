@@ -30,6 +30,18 @@
       epMult: 'Kalıcı Çarpan', epDefeatedBy: 'Kaybettiren', epTarget: 'Raund Hedefi',
       epScoreOf: (sc, tg) => `Puanın ${sc} / hedef ${tg}`,
       epNewRun: 'Yeni Run', epMainMenu: 'Ana Menü', epWinTitle: 'KAZANDIN!', epEndless: 'Sonsuz Mod',
+      epCopy: '📋 Raporu kopyala', epCopied: '✔ Kopyalandı', epCopiedToast: 'Run raporu panoya kopyalandı — mesaja yapıştırabilirsin',
+      epCopyHint: 'Geri bildirim için raporu kopyalayıp gönder.',
+      rpTitle: '🀄 OKEY Roguelike — run raporu',
+      rpMeta: (m, w, mins) => `Mod: ${m} · ${w} · ${mins} dk`,
+      rpResultLose: (where, sc, tg) => `Sonuç: GAME OVER — ${where} · ${sc}/${tg}`,
+      rpResultWin: (where) => `Sonuç: KAZANDI — ${where}`,
+      rpWhy: (w) => `Sebep: ${w}`,
+      rpTotals: (sc, best, mult, coins) => `Toplam puan ${sc} · en iyi açılım ${best} · kalıcı çarpan ${mult} · coin ${coins}`,
+      rpCounts: (ti, di, bo, re, most) => `Açılan taş ${ti} · atılan ${di} · alışveriş ${bo} · yenileme ${re} · en çok ${most}`,
+      rpRounds: 'Raundlar', rpBuild: 'Son dizilim', rpTurn: (n) => `${n}. tur`, rpBoss: 'Boss',
+      rpBet: 'bahis', rpKatla: (b) => `Katla (asıl hedef ${b})`, rpFail: 'şart:',
+      rpSlot: 'Slot', rpDeck: 'Deste', rpBackup: 'Yedek',
       bungieChipPending: (n) => `🍬 Sakızda ${n} taş — sonraki tur ıstakana döner`,
       bungieChipSnap: (n) => `💥 Sakız koptu — bu turun ${n} taşı geri dönmeyecek`,
       useChooseBody: 'Bu kartta birden fazla elle kullanılan efekt var. Hangisini kullanacaksın?',
@@ -133,15 +145,30 @@
       sumExpired: 'Süresi dolan joker',
       sumBestMeld: 'En yüksek tekli açılım',
       /* MADDE D5 — kademeli ipuçları. Her biri ömür boyu BİR KEZ görünür. */
-      hint_store: 'Store her raund sonunda açılır. Bir ürünü KİLİTLEYEBİLİRSİN '
-        + '(ücretsiz) — kilitli ürün yenilemede ve sonraki store’da kaybolmaz.',
-      hint_jokerAge: 'Jokerlerin bir SÜRESİ var: her raund sonunda azalır, bitince '
-        + 'kart kırılıp yok olur. Kartın üstündeki ⏳ rozeti kalan raundu gösterir.',
+      hintTitle: 'İPUCU', hintOk: 'Anladım',
+      hint_store: 'Store raund sonunda açılır (Kumarhane Run’da yalnız stage sonunda). Bir ürünü '
+        + '<b>KİLİTLEYEBİLİRSİN</b> (ücretsiz) — kilitli ürün yenilemede ve sonraki store’da kaybolmaz.',
+      hint_jokerAge: 'Jokerlerin bir <b>SÜRESİ</b> var: her raund sonunda azalır, bitince '
+        + 'kart yok olur. Kartın köşesindeki sayı kalan raundu gösterir.',
       hint_expired: 'Bir jokerinin süresi doldu. Tahtayı dolu tutmak sürekli '
         + 'harcama ister — bu yüzden ucuz kartlar da işe yarar, hepsini Legendary '
         + 'yapmak zorunda değilsin.',
-      hint_interest: 'FAİZ: store açılırken cebinde tuttuğun her 5 coin sana +1 coin '
-        + 'kazandırır (en çok +5). Yani 25 coin biriktirmenin somut bir ödülü var.',
+      hint_interest: '<b>FAİZ</b>: store açılırken cebinde tuttuğun her 5 coin sana +1 coin '
+        + 'kazandırır (en çok +3). Yani 15 coin biriktirmenin somut bir ödülü var.',
+      hint_kumarhane: '<b>KUMARHANE</b>: her raunddan önce elini görmeden <b>KÖR BAHİS</b> koyarsın.\n'
+        + '🟢 Güvenli — normal hedef, normal ödül.\n'
+        + '🟡 Riskli — hedef ×1.5; ödül coin ×2 + kalıcı +0.5x + 3 jokerden 1’i.\n'
+        + '🔴 Ölümcül — hedef ×2; ödül coin ×3 + kalıcı +1.0x + Legendary seçimi.\n'
+        + 'Raundlar arasında store YOK: store yalnız stage sonunda, 2 ürün fazlasıyla açılır. Kaybetmek Game Over.',
+      hint_katla: '<b>KATLA</b>: hedefi tutturdun ama hâlâ turun var.\n'
+        + '💰 Kasada kal — ödülünü al, raund biter.\n'
+        + '🎲 Katla — hedef ×2 olur; tutarsa bahis ödülü ×2, tutmazsa <b>GAME OVER</b>.\n'
+        + 'Puanın hedefin çok üstündeyse ve önünde en az 2 tur varsa düşünmeye değer.',
+      hint_ayKuyusu: '<b>AY KUYUSU</b> (Öteki Dünya): her tur desteden kuyuya 1 taş düşer. Attığın taş da '
+        + 'buraya düşer ve <b>KALICI</b> 🌙 Ay Taşı olur.\n'
+        + 'Turda 1 takas: ıstakandan bir taş seç, sonra kuyudaki taşa tıkla.\n'
+        + 'Ay Taşları evreye göre değişir: 🌒 renk serbest · 🌓 sayı ±1 · 🌕 OKEY (kuyu ıstakana akar) · '
+        + '🌘 kapalı, açılımda ×2. Açılımdaki her Ay Taşı +1x.',
       hint_catchUp: 'ACİL RAF: paran azaldığı için en ucuz kart indirime girdi ve bu '
         + 'store’da yenileme bedava. Stage başına bir kez olur.',
       hint_tradeUp: 'TAKAS: bir jokerine tıklayıp farkı ödeyerek onu bir üst '
@@ -801,6 +828,18 @@
       epMult: 'Perm. Mult', epDefeatedBy: 'Defeated By', epTarget: 'Round Target',
       epScoreOf: (sc, tg) => `Your score ${sc} / target ${tg}`,
       epNewRun: 'New Run', epMainMenu: 'Main Menu', epWinTitle: 'YOU WIN!', epEndless: 'Endless Mode',
+      epCopy: '📋 Copy run report', epCopied: '✔ Copied', epCopiedToast: 'Run report copied — paste it into a message',
+      epCopyHint: 'Copy the report and send it as feedback.',
+      rpTitle: '🀄 OKEY Roguelike — run report',
+      rpMeta: (m, w, mins) => `Mode: ${m} · ${w} · ${mins} min`,
+      rpResultLose: (where, sc, tg) => `Result: GAME OVER — ${where} · ${sc}/${tg}`,
+      rpResultWin: (where) => `Result: WON — ${where}`,
+      rpWhy: (w) => `Reason: ${w}`,
+      rpTotals: (sc, best, mult, coins) => `Total score ${sc} · best meld ${best} · permanent mult ${mult} · coins ${coins}`,
+      rpCounts: (ti, di, bo, re, most) => `Tiles melded ${ti} · discarded ${di} · purchases ${bo} · rerolls ${re} · most ${most}`,
+      rpRounds: 'Rounds', rpBuild: 'Final build', rpTurn: (n) => `turn ${n}`, rpBoss: 'Boss',
+      rpBet: 'bet', rpKatla: (b) => `Double (base target ${b})`, rpFail: 'rule:',
+      rpSlot: 'Slots', rpDeck: 'Deck', rpBackup: 'Backup',
       bungieChipPending: (n) => `🍬 ${n} tiles on the gum — back on your rack next turn`,
       bungieChipSnap: (n) => `💥 The gum snapped — this turn's ${n} tiles won't come back`,
       useChooseBody: 'This card carries more than one manual effect. Which one do you use?',
@@ -893,14 +932,29 @@
       sumCoinFlow: 'Coins in / out',
       sumExpired: 'Jokers lost to expiry',
       sumBestMeld: 'Best single meld',
-      hint_store: 'The shop opens after every round. You can LOCK an item for free — '
-        + 'locked items survive rerolls and carry to the next shop.',
-      hint_jokerAge: 'Jokers have a LIFESPAN: it drops every round and the card breaks '
-        + 'when it runs out. The ⏳ badge shows the rounds left.',
+      hintTitle: 'TIP', hintOk: 'Got it',
+      hint_store: 'The shop opens after a round (in Casino Run only at the end of a stage). You can '
+        + '<b>LOCK</b> an item for free — locked items survive rerolls and carry to the next shop.',
+      hint_jokerAge: 'Jokers have a <b>LIFESPAN</b>: it drops every round and the card is gone '
+        + 'when it runs out. The number in the card corner shows the rounds left.',
       hint_expired: 'One of your jokers expired. Keeping the board full costs money '
         + 'continuously — cheap cards earn their place too, you do not need all Legendaries.',
-      hint_interest: 'INTEREST: every 5 coins you hold when the shop opens earns +1 coin '
-        + '(max +5). Saving up to 25 has a concrete payoff.',
+      hint_interest: '<b>INTEREST</b>: every 5 coins you hold when the shop opens earns +1 coin '
+        + '(max +3). Saving up to 15 has a concrete payoff.',
+      hint_kumarhane: '<b>CASINO</b>: before every round you place a <b>BLIND BET</b> without seeing your hand.\n'
+        + '🟢 Safe — normal target, normal reward.\n'
+        + '🟡 Risky — target ×1.5; reward coins ×2 + permanent +0.5x + pick 1 of 3 jokers.\n'
+        + '🔴 Deadly — target ×2; reward coins ×3 + permanent +1.0x + a Legendary pick.\n'
+        + 'NO shop between rounds: it only opens at the end of a stage, with 2 extra items. Losing is Game Over.',
+      hint_katla: '<b>DOUBLE</b>: you hit the target and still have turns left.\n'
+        + '💰 Cash out — take your reward, the round ends.\n'
+        + '🎲 Double — the target doubles; hit it and the bet reward is ×2, miss it and it is <b>GAME OVER</b>.\n'
+        + 'Worth it when your score is far above the target and you have at least 2 turns left.',
+      hint_ayKuyusu: '<b>MOON WELL</b> (Other World): every turn 1 tile falls from the deck into the well. '
+        + 'Your discard falls in too and becomes a <b>PERMANENT</b> 🌙 Moon Tile.\n'
+        + '1 swap per turn: select a tile on your rack, then click a tile in the well.\n'
+        + 'Moon Tiles change with the phase: 🌒 any colour · 🌓 number ±1 · 🌕 OKEY (the well flows to your rack) · '
+        + '🌘 face down, ×2 when melded. Every Moon Tile in a meld gives +1x.',
       hint_catchUp: 'RELIEF SHELF: you were low on coins, so the cheapest card is '
         + 'discounted and this shop\'s reroll is free. Once per stage.',
       hint_tradeUp: 'TRADE UP: click one of your jokers and pay the difference to swap it '

@@ -1751,6 +1751,7 @@
     const show = !!(o && o.id != null);
     box.classList.toggle('hidden', !show);
     if (!show) return;
+    if (!Hints.seen('ayKuyusu')) setTimeout(() => Hints.show('ayKuyusu'), 200);   // P60
     box.innerHTML =
       `<div class="aw-head"><span class="aw-title">🌙 ${t('wellTitle')}</span>`
       + `<span class="aw-count">${o.count}/${o.max}</span></div>`
@@ -3790,6 +3791,7 @@
       body.appendChild(c);
     });
     document.body.appendChild(ov);
+    Hints.show('kumarhane');   // P60 — ilk bahiste kuralların özeti
   }
 
   function showKatlaOffer() {
@@ -3824,6 +3826,7 @@
       render();
     });
     document.body.appendChild(ov);
+    Hints.show('katla');   // P60 — ilk Katla teklifinde ne zaman katlanır
   }
 
   function showBetPicks(done) {
@@ -4624,24 +4627,56 @@
      koleksiyon/istatistik sayaçları gibi trainer'a bulaşmamalıdır.
      ============================================================ */
   const HINTS_KEY = 'okeyHintsSeen';
+  /* P60 — İPUCU PENCERESİ. İpuçları eskiden bildirim kartıyla (notify)
+     açılıyordu; P37'de bildirim kartları kapatılınca (NOTES_ENABLED=false)
+     ipuçları SESSİZCE "görüldü" işaretlenip hiç gösterilmedi. Artık kendi
+     penceresi var: paket/bahis seçimiyle aynı pk-ov kalıbı, "Anladım" ile
+     kapanır, aynı anda gelen ipuçları sıraya girer. */
+  const hintQueue = [];
+  function showHintCard(key) {
+    if (document.getElementById('hintOv')) { if (!hintQueue.includes(key)) hintQueue.push(key); return; }
+    const ov = document.createElement('div');
+    ov.id = 'hintOv';
+    ov.className = 'pk-ov tone-gold hint-ov';
+    ov.dataset.hint = key;
+    ov.innerHTML =
+      `<div class="pk-box">` +
+      `<div class="pk-title">💡 ${t('hintTitle')}</div>` +
+      `<div class="hint-body">${t('hint_' + key)}</div>` +
+      `<div class="pk-foot"><button class="btn primary" id="hintOk">${t('hintOk')}</button></div></div>`;
+    const close = () => {
+      ov.remove();
+      const next = hintQueue.shift();
+      if (next) setTimeout(() => showHintCard(next), 120);
+    };
+    ov.querySelector('#hintOk').addEventListener('click', close);
+    document.body.appendChild(ov);
+  }
   const Hints = {
+    /* Otomasyon tarayıcısında (playwright: navigator.webdriver) kapalı — yoksa
+       ilk store/bahis ipucu eski testlerin tıklamalarını keser. İpucu testi
+       (browser_p60) `__test.Hints.enabled = true` ile açar. */
+    enabled: !(typeof navigator !== 'undefined' && navigator.webdriver),
+    _cache: null,
     _read() {
-      try { return new Set(JSON.parse(localStorage.getItem(HINTS_KEY) || '[]')); }
-      catch (e) { return new Set(); }
+      if (this._cache) return this._cache;
+      try { this._cache = new Set(JSON.parse(localStorage.getItem(HINTS_KEY) || '[]')); }
+      catch (e) { this._cache = new Set(); }
+      return this._cache;
     },
     seen(key) { return this._read().has(key); },
     /* Bir ipucunu bir kez göster. `key` i18n'de `hint_<key>` olarak durur. */
     show(key) {
-      if (Game.trainerMode || TUT.active) return false;
+      if (!this.enabled || Game.trainerMode || TUT.active) return false;
       const set = this._read();
       if (set.has(key)) return false;
       set.add(key);
       try { localStorage.setItem(HINTS_KEY, JSON.stringify([...set])); } catch (e) {}
-      notify([`💡 ${t('hint_' + key)}`], true, { hold: true });
+      showHintCard(key);
       return true;
     },
     /* Ayarlardan "ipuçlarını sıfırla" için (ileride bağlanabilir). */
-    reset() { try { localStorage.removeItem(HINTS_KEY); } catch (e) {} },
+    reset() { this._cache = null; try { localStorage.removeItem(HINTS_KEY); } catch (e) {} },
   };
 
   /* ============================================================
@@ -6039,6 +6074,76 @@
     startNewRun(mode);
   }
 
+  /* P60 — RUN RAPORU (arkadaş testi). Motor her raundu kaydeder
+     (Game.runLog); burada mesajla gönderilebilecek düz metne çevrilir.
+     Biçim hem okunur hem de denge ölçümüne geri beslenebilir: her raund
+     tek satır, joker girişleri "+", çıkışları "−". */
+  function runReport(kind, why) {
+    const s = Game.state;
+    if (Game._logRoundEnd) Game._logRoundEnd();   // son raund açık kaldıysa sonucunu yaz (idempotent)
+    const L = (Game.runLog && Game.runLog()) || { rounds: [], start: Date.now() };
+    const st = endStats(s);
+    const jn = (k) => { const d = JOKER_DEFS[k]; return d ? T.name(d) : k; };
+    const two = (n) => String(n).padStart(2, '0');
+    const d = new Date();
+    const when = `${two(d.getDate())}.${two(d.getMonth() + 1)}.${d.getFullYear()} ${two(d.getHours())}:${two(d.getMinutes())}`;
+    const mins = Math.max(1, Math.round((Date.now() - (L.start || Date.now())) / 60000));
+    const mode = Game.trainerMode ? t('modeName_trainer') : t('modeName_' + (s.runMode || 'base'));
+    const out = [];
+    out.push(t('rpTitle'));
+    out.push(t('rpMeta', mode, when, mins));
+    const where = `S${s.stage} R${s.roundInStage}`;
+    const bossTxt = s.boss && Game.isBossRound && Game.isBossRound() ? ` · ${t('rpBoss')} ${T.bossName(s.boss.key, s.boss.name)}` : '';
+    out.push(kind === 'win' ? t('rpResultWin', where) : t('rpResultLose', where + bossTxt, s.score, s.target));
+    if (why) out.push(t('rpWhy', String(why).replace(/<[^>]+>/g, '')));
+    out.push(t('rpTotals', st.score, st.best, st.mult, s.coins));
+    out.push(t('rpCounts', st.tiles, st.discarded, st.bought, st.rerolls, String(st.most).replace(/<[^>]+>/g, '')));
+    out.push('— ' + t('rpRounds') + ' —');
+    for (const e of L.rounds) {
+      const parts = [`S${e.st}R${e.r} ${e.won == null ? '…' : e.won ? '✔' : '✘'}`];
+      if (e.sc != null) parts.push(`${e.sc}/${e.tgt}`);
+      if (e.turn != null) parts.push(t('rpTurn', e.turn));
+      if (e.boss) parts.push(`${t('rpBoss')} ${T.bossName(e.boss, (JOKER_DEFS[e.boss] || {}).name || e.boss)}`);
+      if (e.bet) parts.push(`${t('rpBet')} ${T.ev(BETS[e.bet] ? BETS[e.bet].name : e.bet)}`);
+      if (e.katla) parts.push(t('rpKatla', e.katla));
+      if (e.fail) parts.push(`${t('rpFail')} ${String(T.ev(e.fail)).replace(/<[^>]+>/g, '')}`);
+      if (e.add && e.add.length) parts.push('+' + e.add.map(jn).join(', +'));
+      if (e.rem && e.rem.length) parts.push('−' + e.rem.map(jn).join(', −'));
+      out.push(parts.join(' · '));
+    }
+    out.push('— ' + t('rpBuild') + ' —');
+    const list = (a) => (a && a.length ? a.map(j => T.name(j)).join(', ') : '—');
+    out.push(`${t('rpSlot')}: ${list(s.jokers)}`);
+    if ((s.deckJokers || []).length) out.push(`${t('rpDeck')}: ${list(s.deckJokers)}`);
+    if ((s.backup || []).length) out.push(`${t('rpBackup')}: ${list(s.backup)}`);
+    return out.join('\n');
+  }
+  function copyText(text) {
+    let done = false;
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      done = document.execCommand('copy');
+      ta.remove();
+    } catch (e) { /* file:// ya da izin yok */ }
+    if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+    return done || !!navigator.clipboard;
+  }
+  /* Oyun sonu panelindeki "Raporu kopyala" düğmesi. Rapor panel AÇILIRKEN
+     üretilir (sonra state değişse bile oyuncunun gördüğü sonuç gider). */
+  function wireReport(ov, kind, why) {
+    const text = runReport(kind, why);
+    ov.dataset.report = text;
+    const b = ov.querySelector('#epCopy');
+    if (b) b.addEventListener('click', () => {
+      copyText(text);
+      b.textContent = t('epCopied');
+      toast(t('epCopiedToast'), true);
+    });
+  }
+
   /* GAME OVER — kullanıcı örneği 2 */
   function showGameOver() {
     const s = Game.state;
@@ -6065,8 +6170,11 @@
       + `<div class="ep-def-name">${boss ? T.bossName(s.boss.key, s.boss.name) : (s.katla ? t('katlaLostTitle') : t('epTarget'))}</div>`
       + art + `<div class="ep-def-why">${why}</div></div>`;
     const foot = `<button class="ep-btn" id="epNewRun">${t('epNewRun')}</button>`
-      + `<button class="ep-btn" id="epMenu">${t('epMainMenu')}</button>`;
+      + `<button class="ep-btn" id="epMenu">${t('epMainMenu')}</button>`
+      + `<button class="ep-btn ep-ghost" id="epCopy">${t('epCopy')}</button>`
+      + `<div class="ep-note">${t('epCopyHint')}</div>`;
     const ov = endPanel('lose', t('gameOver'), left, right, foot);
+    wireReport(ov, 'lose', why);
     ov.querySelector('#epMenu').addEventListener('click', () => endToMenu(ov));
     ov.querySelector('#epNewRun').addEventListener('click', () => endNewRun(ov));
   }
@@ -6107,8 +6215,11 @@
       (openedModes.length ? `<div class="ep-note">${t('modeUnlocked', openedModes.map(m => t('modeName_' + m.key)).join(', '))}</div>` : '') +
       /* Sonsuz Mod AYRI BİR MOD DEĞİL (P53): menüde düğmesi yok, yalnız burada bir SEÇİM. */
       (canEndless ? `<button class="ep-btn ep-blue" id="rcEndless">${t('epEndless')}</button>`
-        + `<div class="ep-note">${t('rcEndlessHint')}</div>` : '');
+        + `<div class="ep-note">${t('rcEndlessHint')}</div>` : '')
+      + `<button class="ep-btn ep-ghost" id="epCopy">${t('epCopy')}</button>`
+      + `<div class="ep-note">${t('epCopyHint')}</div>`;
     const ov = endPanel('win', t('epWinTitle'), left, right, foot);
+    wireReport(ov, 'win');
     ov.querySelector('#rcMenu').addEventListener('click', () => endToMenu(ov));
     ov.querySelector('#epNewRun').addEventListener('click', () => endNewRun(ov));
     /* Devam: motor mührü kaldırır ve son boss'un ÜRETİLMEYEN iki ödülünü
@@ -7165,5 +7276,7 @@
     // Playtest 18 — Grup E: dil değişimini test tarafında da gerçek akışla uygula
     applyStaticTexts, fitPauseMenu,
     // Playtest 20 — Grup R: mod kilit sistemi
-    Modes };
+    Modes,
+    // P60 — run raporu + ipucu penceresi
+    Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell };
 })();
