@@ -5241,6 +5241,10 @@
       // P59 · Kumarhane: raund arası store yok → düğme "Devam" der
       el.modalBtn.textContent = (Game.kumarhaneOn && Game.kumarhaneOn() && !s.store && !s.upgradeOffer && !s.runFinished)
         ? t('okBtn') : t('goStore');
+    } else if (!TUT.active) {
+      /* P59 — Game Over artık ayrı, Balatro tarzı panel (showGameOver) */
+      showGameOver();
+      return;
     } else {
       clearSave(); // run bitti — devam edilecek bir şey kalmadı
       // Grup F: hedefe ulaşsan bile kaybettiren boss şartları neden kaybettiğini söylesin
@@ -5925,76 +5929,137 @@
      Son stage'in boss'u geçildiğinde store'a HİÇ geçilmez; run burada
      gerçekten biter. Tam ekran bir kutlama + istatistik özeti + bitiş
      kadrosu + ana menüye dönüş. */
+  /* ============================================================
+     P59 (kullanıcı isteği 2026-10-02) — OYUN SONU PANELLERİ
+     Game Over ve Run Tamamlandı tek bir panel dilini paylaşır (kullanıcının
+     verdiği Balatro örnekleri): büyük piksel başlık, solda etiket/değer
+     satırları, sağda stage/raund + "kaybettiren" kutusu ya da düğmeler,
+     altta eylemler. Renkler aktif TEMADAN gelir (--gm-dark / --gm-light).
+     Eski sürümde "Ana Menüye Dön" düğmesi açık zeminde beyaz yazıyla
+     görünmüyordu (kullanıcı ekran görüntüsü).
+     ============================================================ */
+  function endStats(s) {
+    const ty = s.statTypes || {};
+    const most = Object.entries(ty).sort((x, y) => y[1] - x[1])[0];
+    const fmt = (n) => Number(n || 0).toLocaleString(T.lang === 'en' ? 'en-US' : 'tr-TR');
+    return {
+      best: fmt(s.statBestMeld),
+      most: most && most[1] > 0 ? `${T.typeName(most[0])} <i>(${most[1]})</i>` : '—',
+      tiles: fmt(s.statTilesMelded), discarded: fmt(s.statDiscarded),
+      bought: fmt(s.statBought), rerolls: fmt(s.statRerolls),
+      score: fmt(s.totalScore), coins: `${s.coins}`,
+      stage: `${s.stage}`, stageOf: Number.isFinite(chCount()) ? `/${chCount()}` : '',
+      round: `${(s.stage - 1) * 3 + s.roundInStage}`,
+      mult: `+${(s.permMult || 0).toFixed(1)}x`,
+    };
+  }
+  const epRow = (label, value, cls = '', wide = false) =>
+    `<div class="ep-row${wide ? ' ep-wide' : ''}"><span class="ep-lbl">${label}</span>`
+    + `<span class="ep-val ${cls}">${value}</span></div>`;
+
+  function endPanel(kind, title, leftHtml, rightHtml, footHtml) {
+    for (const id of ['runCompleteOv', 'gameOverOv']) document.getElementById(id)?.remove();
+    const ov = document.createElement('div');
+    ov.id = kind === 'win' ? 'runCompleteOv' : 'gameOverOv';
+    ov.className = `ep-ov ep-${kind}`;
+    ov.innerHTML = `<div class="ep-box"><h2 class="ep-title">${title}</h2>`
+      + `<div class="ep-body"><div class="ep-left">${leftHtml}</div><div class="ep-right">${rightHtml}</div></div>`
+      + (footHtml ? `<div class="ep-foot">${footHtml}</div>` : '') + `</div>`;
+    document.body.appendChild(ov);
+    return ov;
+  }
+
+  function endToMenu(ov) {
+    ov.remove();
+    el.overlay.classList.add('hidden');
+    el.storeOverlay.classList.add('hidden');
+    el.upgradeOverlay.classList.add('hidden');
+    clearSave();
+    Game.trainerMode = false;
+    showScreen('menu');
+  }
+  function endNewRun(ov) {
+    const trainer = Game.trainerMode;
+    const mode = Game.state && Game.state.runMode;
+    endToMenu(ov);
+    if (trainer) { showTrainerSetup(); return; }
+    startNewRun(mode);
+  }
+
+  /* GAME OVER — kullanıcı örneği 2 */
+  function showGameOver() {
+    const s = Game.state;
+    const st = endStats(s);
+    clearSave();
+    SFX.lose();
+    const boss = Game.isBossRound && Game.isBossRound() && s.boss;
+    const art = boss && JOKER_ART.has(s.boss.key)
+      ? `<div class="ep-def-art art-joker jk-${s.boss.key}"></div>` : `<div class="ep-def-ico">${boss ? '👹' : '🎯'}</div>`;
+    const why = s.bossFail ? T.ev(s.bossFail)
+      : s.katla ? t('katlaLostBody', s.katla.base, s.target)
+      : t('epScoreOf', s.score, s.target);
+    const left =
+      epRow(t('epBest'), st.best, 'c-red', true) +
+      epRow(t('epMost'), st.most, '', true) +
+      epRow(t('epTiles'), st.tiles, 'c-blue') +
+      epRow(t('epDiscarded'), st.discarded, 'c-red') +
+      epRow(t('epBought'), st.bought, 'c-orange') +
+      epRow(t('epRerolls'), st.rerolls, 'c-green');
+    const right =
+      epRow(t('epStage'), st.stage + `<small>${st.stageOf}</small>`, 'c-orange') +
+      epRow(t('epRound'), st.round, 'c-orange') +
+      `<div class="ep-defeat"><div class="ep-def-title">${t('epDefeatedBy')}</div>`
+      + `<div class="ep-def-name">${boss ? T.bossName(s.boss.key, s.boss.name) : (s.katla ? t('katlaLostTitle') : t('epTarget'))}</div>`
+      + art + `<div class="ep-def-why">${why}</div></div>`;
+    const foot = `<button class="ep-btn" id="epNewRun">${t('epNewRun')}</button>`
+      + `<button class="ep-btn" id="epMenu">${t('epMainMenu')}</button>`;
+    const ov = endPanel('lose', t('gameOver'), left, right, foot);
+    ov.querySelector('#epMenu').addEventListener('click', () => endToMenu(ov));
+    ov.querySelector('#epNewRun').addEventListener('click', () => endNewRun(ov));
+  }
+
+  /* RUN TAMAMLANDI — kullanıcı örneği 3 */
   function showRunComplete() {
     const res = Game.completeRun();
-    const st = res.stats || Game.runStats();
+    const st0 = res.stats || Game.runStats();
     clearSave();
     SFX.win();
     /* GRUP R (P20) — İLK TEMEL RUN TAMAMLANDI: kilitler açılır.
-       Trainer run'ı kayıt yazmaz, bu yüzden kilidi de açmaz (sandbox'ta
-       "run bitirmek" bir başarı değildir). */
+       Trainer run'ı kayıt yazmaz, bu yüzden kilidi de açmaz. */
     let openedModes = [];
     if (!Game.trainerMode) openedModes = Modes.complete('base');
-
-    /* P53 — "Sonsuz Mod'a devam" seçeneği yalnız TEMEL run'ın sonunda çıkar:
-       trainer sandbox'ında stage sayısı zaten seçiliyor, Hızlı Run ise kendi
-       kısalığı için tasarlandı. */
-    const canEndless = !Game.trainerMode && !Game.state.endless
-      && Game.state.runMode !== 'hizli';
-
-    let ov = document.getElementById('runCompleteOv');
-    if (ov) ov.remove();
-    ov = document.createElement('div');
-    ov.id = 'runCompleteOv';
-
-    const stat = (label, value) =>
-      `<div class="rc-stat"><span class="rc-val">${value}</span><span class="rc-lbl">${label}</span></div>`;
-
-    const build = st.jokers.length
-      ? st.jokers.map(j => `<span class="rc-joker r-${j.rarity}">` +
-          `${JOKER_ICONS[j.key] || '🃏'} ${T.name(j)}</span>`).join('')
-      : `<span class="rc-none">${t('rcNoJokers')}</span>`;
-
-    ov.innerHTML =
-      `<div class="rc-box">` +
-        `<div class="rc-trophy">🏆</div>` +
-        `<h2 class="rc-title">${t('runCompleteTitle').replace(/^🏆\s*/, '')}</h2>` +
-        `<p class="rc-headline">${t('rcHeadline')}</p>` +
-        `<p class="rc-sub">${t('rcSub', chCount())}</p>` +
-        `<div class="rc-stats">` +
-          stat(t('rcStatRounds'), st.rounds) +
-          stat(t('rcStatBosses'), st.bosses) +
-          stat(t('rcStatScore'), st.totalScore.toLocaleString('tr-TR')) +
-          stat(t('rcStatCoins'), `${COIN} ${st.coins}`) +
-          stat(t('rcStatMult'), `+${st.permMult.toFixed(1)}x`) +
-        `</div>` +
-        `<div class="rc-build-title">${t('rcFinalBuild')}</div>` +
-        `<div class="rc-build">${build}</div>` +
-        (openedModes.length
-          ? `<div class="rc-unlock">${t('modeUnlocked',
-              openedModes.map(m => t('modeName_' + m.key)).join(', '))}</div>` : '') +
-        /* P53 (kullanıcı kararı 2026-09-19) — SONSUZ MOD AYRI BİR MOD DEĞİL.
-           Menüde düğmesi YOKTUR; yalnız burada, run özeti okunduktan sonra bir
-           SEÇİM olarak çıkar. Trainer run'ında gösterilmez (orada zaten stage
-           sayısı seçiliyor) ve run zaten sonsuzsa tekrar gösterilmez. */
-        (canEndless
-          ? `<button class="btn primary rc-btn rc-endless" id="rcEndless">${t('rcEndless')}</button>` +
-            `<div class="rc-endless-hint">${t('rcEndlessHint')}</div>`
-          : '') +
-        `<button class="btn${canEndless ? '' : ' primary'} rc-btn" id="rcMenu">${t('rcMenu')}</button>` +
-      `</div>`;
-    document.body.appendChild(ov);
-    ov.querySelector('#rcMenu').addEventListener('click', () => {
-      ov.remove();
-      el.overlay.classList.add('hidden');
-      el.storeOverlay.classList.add('hidden');
-      el.upgradeOverlay.classList.add('hidden');
-      Game.trainerMode = false;
-      showScreen('menu');
-    });
+    /* P53 — "Sonsuz Mod'a devam" yalnız TEMEL run'ın sonunda (trainer'da ve
+       Kumarhane Run'da yok; run zaten sonsuzsa tekrar gösterilmez). */
+    const canEndless = !Game.trainerMode && !Game.state.endless && Game.state.runMode !== 'hizli';
+    const s = Game.state;
+    const st = endStats(s);
+    const build = st0.jokers.length
+      ? `<div class="ep-build">${st0.jokers.map(j => `<span class="rc-joker r-${j.rarity}" title="${T.name(j)}">`
+          + `${JOKER_ICONS[j.key] || '🃏'} ${T.name(j)}</span>`).join('')}</div>` : '';
+    const left =
+      epRow(t('epBest'), st.best, 'c-red', true) +
+      epRow(t('epMost'), st.most, '', true) +
+      epRow(t('epScore'), st.score, 'c-blue') +
+      epRow(t('epTiles'), st.tiles, 'c-blue') +
+      epRow(t('epDiscarded'), st.discarded, 'c-red') +
+      epRow(t('epBought'), st.bought, 'c-orange') +
+      epRow(t('epRerolls'), st.rerolls, 'c-green');
+    const right =
+      epRow(t('epStage'), st.stage + `<small>${st.stageOf}</small>`, 'c-orange') +
+      epRow(t('epRound'), st.round, 'c-orange') +
+      epRow(t('epMult'), st.mult, 'c-green') +
+      `<button class="ep-btn" id="epNewRun">${t('epNewRun')}</button>` +
+      `<button class="ep-btn" id="rcMenu">${t('epMainMenu')}</button>`;
+    const foot = build +
+      (openedModes.length ? `<div class="ep-note">${t('modeUnlocked', openedModes.map(m => t('modeName_' + m.key)).join(', '))}</div>` : '') +
+      /* Sonsuz Mod AYRI BİR MOD DEĞİL (P53): menüde düğmesi yok, yalnız burada bir SEÇİM. */
+      (canEndless ? `<button class="ep-btn ep-blue" id="rcEndless">${t('epEndless')}</button>`
+        + `<div class="ep-note">${t('rcEndlessHint')}</div>` : '');
+    const ov = endPanel('win', t('epWinTitle'), left, right, foot);
+    ov.querySelector('#rcMenu').addEventListener('click', () => endToMenu(ov));
+    ov.querySelector('#epNewRun').addEventListener('click', () => endNewRun(ov));
     /* Devam: motor mührü kaldırır ve son boss'un ÜRETİLMEYEN iki ödülünü
-       (yükseltme çarkı + store) üretir — oyuncu sıradan bir stage geçişine
-       düşer, run kaldığı yerden sürer. */
+       (yükseltme çarkı + store) üretir — run kaldığı yerden sürer. */
     const endBtn = ov.querySelector('#rcEndless');
     if (endBtn) endBtn.addEventListener('click', () => {
       const r = Game.continueEndless();

@@ -3304,6 +3304,12 @@ const Game = {
       statCoinOut: 0,       // run boyunca harcanan toplam coin
       statExpired: 0,       // süresi dolarak kaybedilen joker sayısı
       statBestMeld: 0,      // en yüksek tekli açılım puanı
+      /* P59 — oyun sonu ekranı (Balatro tarzı istatistik paneli) sayaçları */
+      statTilesMelded: 0,   // açılımda/işlemede kullanılan taş
+      statDiscarded: 0,     // atılan taş
+      statBought: 0,        // store'dan alınan joker / değnek / paket
+      statRerolls: 0,       // store yenilemesi
+      statTypes: { per: 0, sirali: 0, cift: 0 },   // açılan kombinasyon türleri
       status: 'playing',
     };
     this.state.okey = this._rollOkey();
@@ -7302,6 +7308,11 @@ const Game = {
        (Kahin sıfırlama, Ritim, Ayna Kral borcu) uygulandıktan SONRAKİ
        değer sayılır; oyuncunun gerçekten aldığı puan budur. */
     if (r.final > (s.statBestMeld || 0)) s.statBestMeld = r.final;
+    /* P59 — oyun sonu istatistikleri */
+    s.statTilesMelded = (s.statTilesMelded || 0) + r.ctx.tiles.length
+      + s.islemeler.reduce((a, e) => a + e.tiles.length, 0);
+    if (!s.statTypes) s.statTypes = { per: 0, sirali: 0, cift: 0 };
+    for (const c of s.staged) if (s.statTypes[c.type] != null) s.statTypes[c.type]++;
     s.openedThisTurn = true;
 
     /* DAMGA — hak yalnız GERÇEKTEN 2 kat verdiğinde harcanır; basış
@@ -7618,6 +7629,7 @@ const Game = {
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur atılamaz (tur bitince serbest kalır).' };
 
     this._revealTiles(picks);   // P55 · Grup A — atılan taş yere açık düşer
+    s.statDiscarded = (s.statDiscarded || 0) + picks.length;   // P59 — oyun sonu istatistiği
     const events = [];
     const toOteki = this._otekiOpen();   // P57 — discard öteki dünyaya düşer
     for (const t of picks) {
@@ -11644,6 +11656,18 @@ if (typeof window !== 'undefined') {
     PARATONER_MULT, KATALIZOR_STEP, KATALIZOR_CAP, BUNGIE_SNAP, STORE_TILE_PICKS,
     TERAZI_HEAVY_MIN, TERAZI_LIGHT_MULT, TERAZI_HEAVY_TARGET,
   });
+}
+
+/* P59 — oyun sonu ekranı sayaçları: store işlemleri BAŞARILI döndüğünde sayılır. */
+for (const [fn, key] of [['buyJoker', 'statBought'], ['buyConsumable', 'statBought'],
+                         ['buyPack', 'statBought'], ['rerollStore', 'statRerolls']]) {
+  const orig = Game[fn];
+  if (typeof orig !== 'function') continue;
+  Game[fn] = function (...args) {
+    const r = orig.apply(this, args);
+    if (r && r.ok && this.state) this.state[key] = (this.state[key] || 0) + 1;
+    return r;
+  };
 }
 
 /* Node smoke-test desteği */

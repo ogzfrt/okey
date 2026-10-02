@@ -3881,69 +3881,9 @@ body.menu-open #app {
 
 /* ==================== GRUP M (Playtest 7) — ZAFER EKRANI ====================
    Son stage'in boss'u geçilince store yerine bu gelir; run burada biter. */
-#runCompleteOv {
-  position: fixed;
-  inset: 0;
-  z-index: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background:
-    radial-gradient(circle at 50% 30%, rgba(255, 214, 120, .35), transparent 60%),
-    linear-gradient(180deg, #1B2A3A, #0E1822);
-  animation: fadeIn .35s ease;
-  overflow-y: auto;
-}
-#runCompleteOv .rc-box {
-  width: min(620px, 96vw);
-  background: linear-gradient(180deg, #FFFDF6, #F3EEDF);
-  border: 3px solid var(--gold, #E0B968);
-  border-radius: 22px;
-  padding: 26px 30px 30px;
-  text-align: center;
-  box-shadow: 0 26px 70px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .8);
-  animation: modalIn .45s cubic-bezier(.2, .9, .3, 1.15);
-}
-#runCompleteOv .rc-trophy { font-size: 54px; line-height: 1; animation: rcFloat 2.4s ease-in-out infinite; }
+/* P59: eski zafer ekranının (beyaz kart, 5 istatistik kutusu) kuralları kalktı —
+   yeni panel .ep-* kurallarındadır. Kadro çipleri (.rc-joker) aşağıda kalır. */
 @keyframes rcFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-#runCompleteOv .rc-title {
-  margin: 6px 0 2px;
-  font-size: 26px;
-  letter-spacing: 2px;
-  color: #8A6516;
-}
-#runCompleteOv .rc-headline { margin: 4px 0 2px; font-weight: 800; color: #22384A; font-size: 15px; }
-#runCompleteOv .rc-sub { margin: 0 0 16px; color: #7C8CA0; font-size: 12.5px; }
-#runCompleteOv .rc-stats {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-bottom: 18px;
-}
-#runCompleteOv .rc-stat {
-  min-width: 0;
-  padding: 10px 6px;
-  background: #fff;
-  border: 1px solid #E4DCC5;
-  border-radius: 12px;
-  box-shadow: 0 2px 0 rgba(180, 140, 60, .18);
-}
-#runCompleteOv .rc-val { display: block; font-size: 18px; white-space: nowrap; font-weight: 900; color: #22384A; }
-#runCompleteOv .rc-lbl { display: block; font-size: 10px; letter-spacing: .6px; color: #8B98A8; margin-top: 2px; }
-#runCompleteOv .rc-build-title {
-  font-size: 11px;
-  letter-spacing: 1.4px;
-  color: #8B98A8;
-  margin-bottom: 8px;
-}
-#runCompleteOv .rc-build {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  margin-bottom: 20px;
-}
 #runCompleteOv .rc-joker {
   font-size: 11.5px;
   font-weight: 700;
@@ -3963,13 +3903,6 @@ body.menu-open #app {
 }
 #runCompleteOv .rc-none { font-size: 12px; color: #8B98A8; }
 /* P53 — Sonsuz Mod düğmesi ve altındaki tek satırlık açıklama */
-#runCompleteOv .rc-endless { margin-bottom: 6px; }
-#runCompleteOv .rc-endless-hint {
-  font-size: 11px; line-height: 1.5; opacity: .75;
-  margin: 0 auto 14px; max-width: 420px; text-align: center;
-}
-#runCompleteOv .rc-btn { min-width: 220px; font-size: 14px; padding: 12px 20px; }
-
 /* ============================================================
    PLAYTEST 8 — GRUP B1: FREEDOM FIGHTERS İŞARETİ
    Sorun: işaret (ince altın halka + küçük ⚔ rozeti) okeyin altın halkası,
@@ -7156,6 +7089,94 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 /* P58 · Kumarhane Run — kör bahis katmanı OPAK: el görünmez */
 #betOv { background: rgba(10, 12, 20, .96); }
 /* P58 — füzyonlu kartın efekt seçimi: pk-ov kalıbını kullanır (ek stil gerekmez) */
+
+/* ============================================================
+   P59 — OYUN SONU PANELLERİ (Game Over · Run Tamamlandı)
+   Kullanıcının Balatro örnekleri: koyu panel, büyük piksel başlık,
+   etiket (açık hap) + değer (koyu kutu) satırları, kalın piksel düğmeler.
+   Panel rengi temadan (--gm-dark / --gm-light) gelir.
+   ============================================================ */
+.ep-ov {
+  position: fixed; inset: 0; z-index: 400;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; box-sizing: border-box; overflow: auto;
+  font-family: var(--gm-font);
+}
+.ep-ov.ep-lose { background: rgba(150, 28, 28, .62); }
+.ep-ov.ep-win  { background: rgba(10, 30, 26, .66); }
+.ep-box {
+  width: min(900px, 100%); box-sizing: border-box;
+  background: #2B3134;
+  border: 4px solid var(--gm-light);
+  border-radius: 12px;
+  box-shadow: 0 0 0 4px var(--gm-dark), 0 22px 50px rgba(0, 0, 0, .55);
+  padding: 14px 22px 22px;
+  animation: modalIn .35s cubic-bezier(.2, .9, .3, 1.15);
+}
+.ep-title {
+  margin: 0 0 12px; text-align: center;
+  font: 400 76px/1 'Edit Undo BRK', var(--gm-font); letter-spacing: 2px;
+}
+.ep-lose .ep-title { color: #FF5A50; text-shadow: 0 5px 0 #6E1410; }
+.ep-win  .ep-title { color: #CFC8FF; text-shadow: 0 5px 0 #3C2F86; }
+.ep-body {
+  display: grid; grid-template-columns: 1.55fr 1fr; gap: 12px;
+  background: rgba(0, 0, 0, .22); border-radius: 10px; padding: 12px;
+}
+.ep-left { display: flex; flex-direction: column; gap: 10px; }
+.ep-right { display: flex; flex-direction: column; gap: 10px; }
+.ep-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--gm-light); color: var(--gm-dark);
+  border-radius: 8px; padding: 4px 4px 4px 12px;
+  font: 700 17px/1 var(--gm-font); letter-spacing: -1px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+.ep-row.ep-wide { grid-column: 1 / -1; font-size: 20px; }
+.ep-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ep-val {
+  background: #191E21; color: #F4F1E8; border-radius: 6px;
+  padding: 7px 10px; min-width: 52px; text-align: center;
+  font: 700 19px/1 var(--gm-font); white-space: nowrap;
+}
+.ep-wide .ep-val { min-width: 42%; font-size: 24px; }
+.ep-left .ep-row:not(.ep-wide) .ep-val { min-width: 42%; }
+.ep-right .ep-row { font-size: 16px; }
+.ep-val i { font-style: normal; opacity: .7; font-size: .8em; }
+.ep-val small { opacity: .7; font-size: .75em; }
+.ep-val.c-red { color: #FF5A50; } .ep-val.c-blue { color: #5AB0FF; }
+.ep-val.c-orange { color: #FEA727; } .ep-val.c-green { color: #5ED38A; }
+.ep-defeat {
+  flex: 1; background: #191E21; border: 3px solid var(--gm-light); border-radius: 10px;
+  padding: 8px; text-align: center; color: #F4F1E8;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.ep-def-title { font: 700 17px/1 var(--gm-font); color: var(--gm-light); }
+.ep-def-name { font: 700 18px/1.1 var(--gm-font); }
+.ep-def-art { width: 66px; height: 90px; background: var(--jk-art) no-repeat center / 100% 100%; image-rendering: pixelated; }
+.ep-def-ico { font-size: 46px; line-height: 1; }
+.ep-def-why { font-size: 12px; line-height: 1.3; opacity: .85; }
+.ep-btn {
+  display: block; width: 100%; box-sizing: border-box; cursor: pointer;
+  background: #E5484D; color: #fff; border: 0; border-radius: 8px;
+  padding: 11px 10px; font: 700 24px/1 var(--gm-font); letter-spacing: -1px;
+  box-shadow: 0 5px 0 #8E1F23; transition: transform .08s, box-shadow .08s;
+}
+.ep-btn:hover { filter: brightness(1.08); }
+.ep-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #8E1F23; }
+.ep-btn.ep-blue { background: #2F8CF0; box-shadow: 0 5px 0 #1B4F8A; font-size: 34px; padding: 14px; }
+.ep-btn.ep-blue:active { box-shadow: 0 2px 0 #1B4F8A; }
+.ep-foot { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 14px; }
+.ep-lose .ep-foot .ep-btn { width: min(380px, 100%); }
+.ep-win .ep-foot .ep-btn { width: 100%; }
+.ep-note { color: #E8E3D3; font-size: 12px; text-align: center; opacity: .85; }
+.ep-build { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.ep-build .rc-joker { font-size: 12px; }
+@media (max-width: 700px) {
+  .ep-title { font-size: 52px; }
+  .ep-body { grid-template-columns: 1fr; }
+  .ep-left { grid-template-columns: 1fr; }
+}
 #katlaOv .katla-warn { color: #E53E3E; font-weight: 700; }
 .bet-card .bet-target { font-size: 1.15em; font-weight: 700; margin: 6px 0; color: #F5A623; }
 .bet-card.bet-guvenli { box-shadow: 0 0 0 3px #38A169; }
