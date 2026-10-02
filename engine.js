@@ -4570,6 +4570,7 @@ const Game = {
     s.otekiFresh = [];        // geçen tur öteki ele düşen taşlar (o turun sisine girmez)
     s.otekiGhostTurn = null;  // P57 — hayalet yolcu turda bir kez
     s.kavusmaDone = false;    // P57 — dünyalar kavuştu mu (raundda bir kez)
+    s.bungieSnap = null;      // P58 — Bungie Gum'ın son kopması (üst kutuda gösterilir)
     s.bet = null;             // P58 · Kumarhane — bu raundun bahsi (kör, raunda girerken)
     s.betBaseTarget = null;
     s.katla = null;           // P58 · Kumarhane — katlandıysa { base, burned }
@@ -7417,6 +7418,11 @@ const Game = {
       const used = [...r.ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)]
         .filter(t => !t.jokerTile && !this.isOkeyTile(t) && !t.ghost);
       if (this.rng() < BUNGIE_SNAP) {
+        /* P58 (kullanıcı raporu "Katla'dan sonra Bungie çalışmıyor"): kopma
+           yalnız olay listesine yazılıyordu ve bildirim kartları kapalı (P37) —
+           oyuncu %50'lik kopmayı hiç görmüyor, hata sanıyordu. Durum artık
+           üst kutuda kalıcı yazılır (ui.js kahinChip, bungieSnap). */
+        s.bungieSnap = { turn: s.turn, n: used.length };
         events.push(`🍬 Bungie Gum koptu — bu turun ${used.length} taşı geri dönmeyecek`);
       } else if (used.length) {
         /* PLAYTEST 16 · GRUP E — KUYRUKTA ARTIK TAŞIN KENDİSİ DURUR.

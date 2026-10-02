@@ -3371,8 +3371,15 @@
         ? Game.slotRecs().find(r => r.key === 'corporates') : null;
       const corpLine = cj ? s.corpTask : null;
       const bs = s.status === 'playing' && Game.betState ? Game.betState() : null;
+      /* P58 — Bungie Gum'ın durumu (sakızda bekleyen taş / bu tur koptu) */
+      let gumLine = null;
+      if (s.status === 'playing' && Game.slotRecs().some(r => r.key === 'bungieGum')) {
+        const n = (s.bungiePending || []).length;
+        if (n) gumLine = t('bungieChipPending', n);
+        else if (s.bungieSnap && s.bungieSnap.turn === s.turn) gumLine = t('bungieChipSnap', s.bungieSnap.n);
+      }
       const betLine = bs && bs.bet ? bs : null;   // P58 · Kumarhane
-      const show = s.status === 'playing' && !!(g || bo || notes.length || corpLine || betLine);
+      const show = s.status === 'playing' && !!(g || bo || notes.length || corpLine || betLine || gumLine);
       el.kahinChip.classList.toggle('hidden', !show);
       if (show) {
         const lines = [];
@@ -3384,6 +3391,7 @@
           lines.push(`<div class="kc-line"><span class="kc-ico">🔮</span><span class="kc-val">${txt}</span>`
             + (done ? '<span class="kc-ok">✓</span>' : '') + '</div>');
         }
+        if (gumLine) lines.push(`<div class="kc-line kc-gum"><span class="kc-val">${gumLine}</span></div>`);
         if (betLine) {
           lines.push(`<div class="kc-line kc-bet"><span class="kc-ico">🎰</span><span class="kc-val">`
             + t('betChip', T.ev(betLine.name), betLine.target)
