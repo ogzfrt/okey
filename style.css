@@ -8138,3 +8138,148 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
    olmayan rafta, çizimsiz kart çizimli kartla AYNI kutuda durur. */
 .col-tile.col-sized { width: 110px; height: 150px; min-height: 0; box-sizing: border-box; justify-content: center; }
 #trainerSetup .col-tile.col-sized, #trainerFilter .col-tile.col-sized { width: 81px; height: 110px; padding: 6px 4px; }
+
+
+/* ============================================================
+   P59 (kullanıcı isteği 2026-10-02, "Piece Wheels" örneği) — SLOT MAKİNESİ
+   Paket çarkı + açılış çarkı (.slot-ov). Renkler aktif TEMADAN gelir:
+   panel --gm-dark, çerçeve/yazı --gm-light. Başlık çerçevenin üstüne taşan
+   bir plaka; makaralar koyu yuvada, pencere 3 sembol (üst/alt soluk, orta
+   kazanan + iki yanda oklar); altta "STOP !!" düğmesi.
+   ============================================================ */
+.pk-ov.slot-ov { --sym-h: 96px; }
+.pk-ov.slot-ov .pk-box {
+  background: var(--gm-dark);
+  border: 4px solid var(--gm-light);
+  border-radius: 10px;
+  padding: 0 26px 20px;
+  margin-top: 30px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45), 0 22px 50px rgba(0, 0, 0, .5);
+  font-family: var(--gm-font);
+}
+.pk-ov.slot-ov .pk-title {
+  display: inline-block; position: relative; top: -26px; margin-bottom: -14px;
+  background: var(--gm-dark); color: var(--gm-light);
+  border: 4px solid var(--gm-light); border-radius: 8px;
+  padding: 8px 26px;
+  font: 700 26px/1 var(--gm-font); letter-spacing: -1px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+.pk-ov.slot-ov .pk-sub-title { color: var(--gm-light); opacity: .85; font: 700 13px/1.3 var(--gm-font); letter-spacing: 0; }
+.pk-ov.slot-ov .pk-body.pk-slot {
+  gap: 26px; padding: 14px 24px;
+  background: rgba(0, 0, 0, .28); border-radius: 8px;
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35);
+}
+.pk-ov.slot-ov .pk-reel {
+  width: 150px; height: calc(var(--sym-h) * 3);
+  border: 4px solid var(--gm-light); border-radius: 6px;
+  background: #1B1618;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .5);
+}
+.pk-ov.slot-ov .pk-sym { height: var(--sym-h); border-bottom: 0; }
+/* üst ve alt hücreler soluk — göz ortadaki kazanana gider */
+.pk-ov.slot-ov .pk-reel::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,.62) 0, rgba(0,0,0,.62) 33.3%, transparent 33.3%,
+    transparent 66.7%, rgba(0,0,0,.62) 66.7%, rgba(0,0,0,.62) 100%);
+}
+/* orta bant: kazanan hücrenin çerçevesi */
+.pk-ov.slot-ov .pk-reel-line {
+  top: var(--sym-h); height: var(--sym-h); box-sizing: border-box;
+  border: 0; border-top: 3px solid var(--gm-light); border-bottom: 3px solid var(--gm-light);
+  background: rgba(255, 255, 255, .05); z-index: 1;
+}
+.pk-ov.slot-ov .pk-reel.landed .pk-reel-line { display: block; }
+.pk-arrow { display: none; }
+.pk-ov.slot-ov .pk-arrow {
+  display: block; position: absolute; top: calc(var(--sym-h) * 1.5 - 10px); z-index: 2;
+  width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent;
+}
+.pk-ov.slot-ov .pk-arrow-l { left: 0; border-left: 12px solid var(--gm-light); }
+.pk-ov.slot-ov .pk-arrow-r { right: 0; border-right: 12px solid var(--gm-light); }
+.pk-ov.slot-ov .pk-reel.landed {
+  border-color: var(--gm-turn-on);
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .5), 0 0 0 3px rgba(254, 167, 39, .45), 0 0 22px rgba(254, 167, 39, .55);
+}
+.pk-ov.slot-ov .pk-stop { z-index: 3; }
+.pk-stop-btn {
+  cursor: pointer; background: var(--gm-dark); color: var(--gm-light);
+  border: 4px solid var(--gm-light); border-radius: 8px;
+  padding: 10px 26px; font: 700 26px/1 var(--gm-font); letter-spacing: -1px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+.pk-stop-btn:hover { filter: brightness(1.12); }
+.pk-stop-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.pk-stop-btn:disabled { opacity: .55; cursor: default; }
+.pk-ov.slot-ov .pk-foot .btn.primary {
+  background: var(--gm-light); color: var(--gm-dark); border: 4px solid var(--gm-light);
+  font: 700 22px/1 var(--gm-font); border-radius: 8px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+/* sonuç kartları da tema dilinde; açıklama metni okunaklı yazı tipinde */
+.pk-ov.slot-ov .pk-rcard {
+  background: var(--gm-light); color: var(--gm-dark);
+  border: 3px solid var(--gm-light); border-top-width: 6px; border-radius: 8px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .4);
+}
+.pk-ov.slot-ov .pk-rcard .pk-name { color: var(--gm-dark); font: 700 14px/1.1 var(--gm-font); }
+.pk-ov.slot-ov .pk-rcard .pk-desc { color: var(--gm-dark); font-family: system-ui, 'Segoe UI', sans-serif; font-size: 11.5px; }
+.pk-ov.slot-ov .pk-sym .pk-name { font: 700 12px/1.1 var(--gm-font); }
+
+/* P59 — STAGE SONU ÖDÜL ÇARKI da slot makinesi dilinde (yalnız görünüm;
+   çark mantığı Playtest 9 · Grup J'deki gibi). Tema renkleriyle panel,
+   başlık plakası, koyu yuva, makara penceresinde iki yandan oklar. */
+#upgradeOverlay {
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(14, 22, 32, .78); backdrop-filter: blur(3px);
+}
+#upgradeScene {
+  height: auto; max-width: 92vw; box-sizing: border-box;
+  margin-top: 30px; padding: 0 28px 22px; gap: 10px;
+  background: var(--gm-dark);
+  border: 4px solid var(--gm-light); border-radius: 10px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45), 0 22px 50px rgba(0, 0, 0, .5);
+  font-family: var(--gm-font);
+}
+#upgradeScene h2 {
+  position: relative; top: -26px; margin: 0 0 -18px;
+  background: var(--gm-dark); color: var(--gm-light);
+  border: 4px solid var(--gm-light); border-radius: 8px;
+  padding: 8px 26px; font: 700 26px/1 var(--gm-font); letter-spacing: -1px;
+  text-shadow: none; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+#upgradeScene .store-sub { color: var(--gm-light); opacity: .85; font: 700 13px/1.3 var(--gm-font); }
+#upgradeScene #upCoins { color: var(--gm-turn-on); font-family: var(--gm-font); }
+#upgradeScene #upOptions {
+  margin: 4px 0; padding: 14px 22px; gap: 22px;
+  background: rgba(0, 0, 0, .28); border-radius: 8px;
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35);
+}
+#upgradeScene .up-card {
+  background: var(--gm-light); color: var(--gm-dark);
+  border: 4px solid var(--gm-light); border-radius: 8px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .4);
+}
+#upgradeScene .up-card.landed { border-color: var(--gm-turn-on); }
+#upgradeScene .up-reel {
+  border: 4px solid var(--gm-dark); border-radius: 6px; background: #1B1618;
+}
+#upgradeScene .up-reel::before, #upgradeScene .up-reel::after {
+  content: ''; position: absolute; top: calc(50% - 10px); z-index: 2; width: 0; height: 0;
+  border-top: 10px solid transparent; border-bottom: 10px solid transparent;
+}
+#upgradeScene .up-reel::before { left: 0; border-left: 12px solid var(--gm-light); }
+#upgradeScene .up-reel::after { right: 0; border-right: 12px solid var(--gm-light); }
+#upgradeScene .up-card.landed .up-reel::before, #upgradeScene .up-card.landed .up-reel::after { display: none; }
+#upgradeScene .up-card.landed .up-reel { border-color: transparent; background: transparent; }
+#upgradeScene .up-name { font: 700 14px/1.15 var(--gm-font); }
+#upgradeScene .up-card.landed .up-sym .up-name { color: var(--gm-dark); }
+#upgradeScene .up-desc { color: var(--gm-dark); font-family: system-ui, 'Segoe UI', sans-serif; }
+#upgradeScene #btnUpContinue {
+  background: var(--gm-light); color: var(--gm-dark);
+  border: 4px solid var(--gm-light); border-radius: 8px;
+  font: 700 22px/1 var(--gm-font); letter-spacing: -1px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+/* sekme animasyonu (pkBounce) şeridi bir an tepeye atıyordu — slot penceresinde kapalı */
+.pk-ov.slot-ov .pk-reel.landed .pk-strip { animation: none; }

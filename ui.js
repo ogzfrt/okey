@@ -4685,11 +4685,95 @@
      yalnız o sonucu seyredilir kılar. Eski kayıtlarda `openingReels`
      bulunmayabilir; o durumda tek sembollü şeritle sessizce çalışır.
      ============================================================ */
+  /* ============================================================
+     P59 (kullanıcı isteği 2026-10-02, "Piece Wheels" örneği) — SLOT MAKİNESİ
+     Paket çarkı ve açılış çarkı aynı makarayı kullanır:
+       · pencere 3 sembol gösterir — üst/alt soluk, ORTADAKİ kazanan, iki
+         yanda içe bakan oklar;
+       · altta işleyen "STOP !!" düğmesi: basınca makaralar hemen durur.
+     Kazanan motorun verdiği şeridin SON sembolüdür; pencere ortasına
+     oturması için sonuna bir dolgu sembolü eklenir ve şerit (hücre − 3)
+     kaydırılır (üstte bir önceki sembol, ortada kazanan, altta dolgu).
+     ============================================================ */
+  function buildReel(reel) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pk-reel';
+    const strip = document.createElement('div');
+    strip.className = 'pk-strip';
+    const cell = (sym) => {
+      const c = document.createElement('div');
+      c.className = `pk-sym r-${sym.rarity || 'special'}`;
+      c.innerHTML = packFaceHtml(sym);
+      return c;
+    };
+    reel.forEach(sym => strip.appendChild(cell(sym)));
+    strip.appendChild(cell(reel[0]));   // dolgu: kazananın altında görünen sembol
+    wrap.appendChild(strip);
+    wrap.insertAdjacentHTML('beforeend', '<div class="pk-reel-line"></div>'
+      + '<i class="pk-arrow pk-arrow-l"></i><i class="pk-arrow pk-arrow-r"></i>'
+      + `<div class="pk-stop">${t('packSlotStop')}</div>`);
+    return wrap;
+  }
+
+  /* strips: .pk-strip öğeleri · onDone: hepsi durunca BİR kez · dönüş: stop() */
+  function spinReels(strips, onDone) {
+    const timers = [];
+    let left = strips.length, finished = false;
+    const land = (strip) => {
+      if (strip.dataset.landed) return;
+      strip.dataset.landed = '1';
+      strip.parentElement.classList.add('landed');
+      SFX.coin();
+      if (--left === 0 && !finished) { finished = true; onDone(); }
+    };
+    const target = (strip) => {
+      const cellH = strip.firstElementChild.offsetHeight || 84;
+      // şerit = semboller + 1 dolgu; kazanan (sondan 2.) pencerenin ORTASINA oturur
+      return -cellH * (strip.children.length - 3);
+    };
+    requestAnimationFrame(() => {
+      strips.forEach((strip, i) => {
+        const dur = 2.1 + i * 0.75;
+        strip.style.transition = `transform ${dur}s cubic-bezier(.10,.62,.16,1)`;
+        strip.style.transform = `translateY(${target(strip)}px)`;
+        let ticks = 0;
+        const tick = setInterval(() => { SFX.tick(); if (++ticks > 22) clearInterval(tick); }, dur * 1000 / 26);
+        timers.push(tick, setTimeout(() => { clearInterval(tick); land(strip); }, dur * 1000 + 60));
+      });
+    });
+    return function stop() {
+      timers.forEach(x => { clearTimeout(x); clearInterval(x); });
+      strips.forEach((strip, i) => {
+        if (strip.dataset.landed) return;
+        /* Hedef aynı kaldığı için yalnız süreyi kısaltmak çalışan uzun
+           geçişi DURDURMAZ (makara 2-3 sn kaymaya devam ediyordu): önce o
+           anki konumda dondur, sonra kısa geçişle kazanana oturt. */
+        const now = getComputedStyle(strip).transform;
+        strip.style.transition = 'none';
+        strip.style.transform = now === 'none' ? 'translateY(0px)' : now;
+        void strip.offsetHeight;
+        strip.style.transition = 'transform .22s cubic-bezier(.2,.9,.3,1.2)';
+        strip.style.transform = `translateY(${target(strip)}px)`;
+        setTimeout(() => land(strip), 240 + i * 90);
+      });
+    };
+  }
+
+  /* "STOP !!" düğmesi — çarklar dururken basılır, sonra kaybolur */
+  function stopButton(foot, stop) {
+    foot.innerHTML = '';
+    const b = document.createElement('button');
+    b.className = 'pk-stop-btn';
+    b.textContent = t('slotStopBtn');
+    b.addEventListener('click', () => { b.disabled = true; stop(); });
+    foot.appendChild(b);
+  }
+
   function showOpeningReel(list, reels, done) {
     const strips = (reels && reels.length === list.length) ? reels : list.map(j => [j]);
     const ov = document.createElement('div');
     ov.id = 'packOv';
-    ov.className = 'pk-ov tone-azure open-reel';
+    ov.className = 'pk-ov tone-azure open-reel slot-ov';
     ov.innerHTML =
       `<div class="pk-box">` +
       `<div class="pk-title">🎰 ${t('openReelTitle')}</div>` +
@@ -4699,41 +4783,12 @@
     document.body.appendChild(ov);
     const body = ov.querySelector('.pk-body');
     const foot = ov.querySelector('.pk-foot');
-    const els = [];
-    strips.forEach((reel) => {
-      const wrap = document.createElement('div');
-      wrap.className = 'pk-reel';
-      const strip = document.createElement('div');
-      strip.className = 'pk-strip';
-      reel.forEach(sym => {
-        const cell = document.createElement('div');
-        cell.className = `pk-sym r-${sym.rarity || 'special'}`;
-        cell.innerHTML = packFaceHtml(sym);
-        strip.appendChild(cell);
-      });
-      wrap.appendChild(strip);
-      wrap.innerHTML += '<div class="pk-reel-line"></div>' +
-        `<div class="pk-stop">${t('packSlotStop')}</div>`;
+    const els = strips.map((reel) => {
+      const wrap = buildReel(reel);
       body.appendChild(wrap);
-      els.push(wrap.querySelector('.pk-strip'));
+      return wrap.querySelector('.pk-strip');
     });
-    requestAnimationFrame(() => {
-      els.forEach((strip, i) => {
-        const cellH = strip.firstElementChild.offsetHeight || 106;
-        const dist = cellH * (strip.children.length - 1);
-        const dur = 2.1 + i * 0.75;
-        strip.style.transition = `transform ${dur}s cubic-bezier(.10,.62,.16,1)`;
-        strip.style.transform = `translateY(${-dist}px)`;
-        let ticks = 0;
-        const tick = setInterval(() => { SFX.tick(); if (++ticks > 22) clearInterval(tick); }, dur * 1000 / 26);
-        setTimeout(() => {
-          clearInterval(tick);
-          strip.parentElement.classList.add('landed');
-          SFX.coin();
-          if (i === els.length - 1) finish();
-        }, dur * 1000 + 60);
-      });
-    });
+    stopButton(foot, spinReels(els, finish));
     function finish() {
       foot.innerHTML = '';
       // açıklamalı sonuç kartları — paket çarkındakiyle aynı
@@ -5519,47 +5574,17 @@
      kazandığını okumadan sahneyi kapatmasın). */
   function showPackSlot(res) {
     const ov = packOverlay(res.kind, 'packSlotTitle');
+    ov.classList.add('slot-ov');
     const body = ov.querySelector('.pk-body');
     body.className = 'pk-body pk-slot';
     const foot = ov.querySelector('.pk-foot');
-    foot.innerHTML = `<span class="pk-hint">${t('packSlotSpin')}</span>`;
-    const strips = [];
-    res.reels.forEach((reel) => {
-      const wrap = document.createElement('div');
-      wrap.className = 'pk-reel';
-      const strip = document.createElement('div');
-      strip.className = 'pk-strip';
-      reel.forEach(sym => {
-        const cell = document.createElement('div');
-        cell.className = `pk-sym r-${sym.rarity || 'special'}`;
-        cell.innerHTML = packFaceHtml(sym);
-        strip.appendChild(cell);
-      });
-      wrap.appendChild(strip);
-      wrap.innerHTML += '<div class="pk-reel-line"></div>' +
-        `<div class="pk-stop">${t('packSlotStop')}</div>`;
-      body.appendChild(wrap);
-      strips.push(wrap.querySelector('.pk-strip'));
-    });
     // dönüş: her çark biraz daha geç durur (2 çarkta sıralı "tak…tak" hissi)
-    requestAnimationFrame(() => {
-      strips.forEach((strip, i) => {
-        // offsetHeight: transform'lu ata (fitScale) altında da doğru ölçer
-        const cellH = strip.firstElementChild.offsetHeight || 106;
-        const dist = cellH * (strip.children.length - 1);
-        const dur = 2.1 + i * 0.75;
-        strip.style.transition = `transform ${dur}s cubic-bezier(.10,.62,.16,1)`;
-        strip.style.transform = `translateY(${-dist}px)`;
-        let ticks = 0;
-        const tick = setInterval(() => { SFX.tick(); if (++ticks > 22) clearInterval(tick); }, dur * 1000 / 26);
-        setTimeout(() => {
-          clearInterval(tick);
-          strip.parentElement.classList.add('landed');
-          SFX.coin();
-          if (i === strips.length - 1) finish();
-        }, dur * 1000 + 60);
-      });
+    const strips = res.reels.map((reel) => {
+      const wrap = buildReel(reel);
+      body.appendChild(wrap);
+      return wrap.querySelector('.pk-strip');
     });
+    stopButton(foot, spinReels(strips, finish));
     function finish() {
       foot.innerHTML = '';
       notify(res.contents.map(packOutLine), true, { quiet: true });   // çark zaten gösterdi
