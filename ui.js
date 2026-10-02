@@ -5238,12 +5238,16 @@
         t('wonOnTurn', s.wonOnTurn) +
         (s.permMult > 0 ? `<br>${t('permMultLine', s.permMult.toFixed(1))}` : '') +
         coinHtml;
-      el.modalBtn.textContent = t('goStore');
+      // P59 · Kumarhane: raund arası store yok → düğme "Devam" der
+      el.modalBtn.textContent = (Game.kumarhaneOn && Game.kumarhaneOn() && !s.store && !s.upgradeOffer && !s.runFinished)
+        ? t('okBtn') : t('goStore');
     } else {
       clearSave(); // run bitti — devam edilecek bir şey kalmadı
       // Grup F: hedefe ulaşsan bile kaybettiren boss şartları neden kaybettiğini söylesin
       el.modalBody.innerHTML =
         (s.bossFail ? `<div class="boss-fail"><b>${t('bossFailTitle')}</b><br>${T.ev(s.bossFail)}</div>` : '') +
+        /* P59 · Kumarhane — Katla ya hep ya hiç: neden kaybettiğini söyle */
+        (!s.bossFail && s.katla ? `<div class="boss-fail"><b>${t('katlaLostTitle')}</b><br>${t('katlaLostBody', s.katla.base, s.target)}</div>` : '') +
         t('loseBody', s.score, s.target,
           s.stage, t('resumeRoundName', s.roundInStage)) +
         runSummaryHtml(s);

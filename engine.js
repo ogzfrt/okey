@@ -205,6 +205,9 @@ const BETS = {
    (S1 R1 %74) ama güçlü kadroyla geç oyunda en yüksek getiriyi verir —
    "ne zaman yükselteyim" kararı açık kalır. */
 const BET_KEYS = ['guvenli', 'riskli', 'olumcul'];
+/* Katla tutarsa bahis ödülünün katsayısı (coin, kalıcı çarpan, seçim sayısı).
+   Nesne içinde: denge araçları bellekte değiştirebilsin. */
+const KATLA = { reward: 2 };
 const BET_PICK_CHOICES = 3;
 
 /* PLAYTEST 26 · MADDE D — STAGE'İ 8'LİK EĞRİYE TAŞI.
@@ -3952,7 +3955,7 @@ const Game = {
   _betPayout(notes) {
     const s = this.state;
     const b = BETS[s.bet] || BETS.guvenli;
-    const kat = s.katla && !s.katla.burned && s.score >= s.target ? 2 : 1;
+    const kat = s.katla && !s.katla.burned && s.score >= s.target ? KATLA.reward : 1;
     const coinMult = b.coinMult * kat;
     const perm = round2(b.perm * kat);
     if (perm) s.permMult = round2(s.permMult + perm);
@@ -7905,17 +7908,14 @@ const Game = {
          açılım yapılmadıysa banka ödenmeden söner — kartın riski budur. */
       s.vampirBank = 0;
       this._otekiEclipse(events);   // P57 — Kavuşma yoksa ay tutulur
-      /* P58 · Kumarhane — katlanan hedef tutmadı ama asıl hedef zaten
-         geçilmişti: katlama ödülü yanar, raund kazanılır. */
-      if (s.katla && !s.katla.burned && s.score < s.target) {
-        /* Katlama asıl hedefi zaten GEÇMİŞ bir raundda yapılır: skor sonradan
-           (Ateş Taşı yanığı, Tutulma…) asıl hedefin altına düşse bile raund
-           kazanılmış sayılır — bedeli yalnız katlama ödülüdür. */
-        s.target = s.katla.base;
-        if (s.score < s.target) s.score = s.target;
-        s.katla.burned = true;
-        events.push('🎲 Katla tutmadı — katlama ödülü yandı, raund yine de kazanıldı');
-      }
+      /* P59 · Grup B (kullanıcı kararı 2026-10-02) — KATLA = YA HEP YA HİÇ.
+         P58'de "tutmazsa yalnız katlama ödülü yanar, raund kazanılır"
+         kuralı vardı; kullanıcı Katla'nın riskinin sıfır olduğunu fark etti
+         (tutmazsan Kasada kal'ın ödülü zaten cebindeydi). Artık katlanan
+         hedef tutmazsa raund KAYBEDİLİR: aşağıdaki normal kayıp zinciri
+         (kurtarıcı jokerler/değnekler → yoksa Game Over) işler. */
+      if (s.katla && s.score < s.target)
+        events.push(`🎲 Katla tutmadı — katlanan hedef ${s.target}, puanın ${s.score}`);
       /* Grup I — otomatik kurtarma: hedefin altında kaldıysak, hedefi
          indirebilecek tüketilebilirler ("win" sınıfı) burada KENDİLİĞİNDEN
          kullanılır. Alternatifi Game Over olduğu için oyuncuya sormaya
@@ -11653,7 +11653,7 @@ if (typeof module !== 'undefined') {
     sortPer, sortCift, sortSirali, createDeck, resolveCombo,
     COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
-    CIFT_EXTRA_STEP, BETS, BET_KEYS, RUN_MODES, UC_PEEK_COST, OTEKI_START, OTEKI_FOG_AFTER, OTEKI_COMBO_MULT, otekiStartFor, KAVUSMA_MULT, AY_TASI_PTS, moonIcon, kavusmaMult, ayTasiPts,
+    CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES, UC_PEEK_COST, OTEKI_START, OTEKI_FOG_AFTER, OTEKI_COMBO_MULT, otekiStartFor, KAVUSMA_MULT, AY_TASI_PTS, moonIcon, kavusmaMult, ayTasiPts,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,
