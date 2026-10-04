@@ -4971,7 +4971,9 @@
      Klavye: ←/→ mod değiştirir, Enter oynar / devam eder, Esc kapatır.
      ============================================================ */
   const RUN_PAGES = [
-    { key: 'base', ico: '🀄' }, { key: 'hizli', ico: '🎰' },
+    /* Figma 241:970 / 245:101 (kullanıcı 2026-10-04) — mod ikonları */
+    { key: 'base', ico: '🀄', img: 'assets/game/mode/temel-run.svg' },
+    { key: 'hizli', ico: '🎰', img: 'assets/game/mode/kumarhane-run.svg' },
     { key: 'soon3', soon: true }, { key: 'soon4', soon: true },
     { key: 'soon5', soon: true }, { key: 'soon6', soon: true },
   ];
@@ -5010,7 +5012,8 @@
       const desc = p.soon ? t('rpSoonDesc') : (open ? t('rpDesc_' + p.key) : t('modeLockedTip'));
       return `<div class="rp-slide${i === runPickIdx ? ' on' : ''}${open ? ' mp-card' : ' rp-locked'}"`
         + (open ? ` data-mode="${p.key}"` : '') + ` data-i="${i}">`
-        + `<div class="rp-art${p.soon ? ' rp-art-soon' : ''}"><span>${p.soon ? '?' : p.ico}</span>`
+        + (p.img ? `<div class="rp-art rp-art-img" style="--mode-art:url('${p.img}')">`
+          : `<div class="rp-art${p.soon ? ' rp-art-soon' : ''}"><span>${p.soon ? '?' : p.ico}</span>`)
         + (p.soon || !open ? `<i class="rp-lock">🔒</i>` : '') + `</div>`
         + `<div class="rp-info"><div class="rp-name">${name}</div>`
         + (p.soon ? `<div class="rp-ribbon">${t('rpSoon')}</div>` : '')
@@ -5037,7 +5040,7 @@
         const pg = RUN_PAGES.find(q => q.key === mode) || RUN_PAGES[0];
         const total = (typeof RUN_MODES !== 'undefined' && RUN_MODES[mode]) ? RUN_MODES[mode].stages : 8;
         const where = save.where === 'inStore' ? 'inStore' : save.where === 'inRound' ? 'inRound' : 'map';
-        body = `<div class="rp-slide on rp-cont"><div class="rp-art"><span>${pg.ico || '🀄'}</span></div>`
+        body = `<div class="rp-slide on rp-cont">` + (pg.img ? `<div class="rp-art rp-art-img" style="--mode-art:url('${pg.img}')"></div>` : `<div class="rp-art"><span>${pg.ico || '🀄'}</span></div>`)
           + `<div class="rp-info"><div class="rp-name">${t('rpName_' + mode)}</div>`
           + `<div class="rp-desc rp-sum">`
           + `<div><span>${t('rpStage')}</span><b>${sv.stage}/${total}</b></div>`
@@ -5106,7 +5109,9 @@
       return c;
     };
     reel.forEach(sym => strip.appendChild(cell(sym)));
-    strip.appendChild(cell(reel[0]));   // dolgu: kazananın altında görünen sembol
+    /* P63: makara SÜREKLİ döner → şeridin ilk 3 sembolü sona tekrar eklenir,
+       sarma noktasında pencere boş kalmaz */
+    reel.slice(0, 3).forEach(sym => strip.appendChild(cell(sym)));
     wrap.appendChild(strip);
     wrap.insertAdjacentHTML('beforeend', '<div class="pk-reel-line"></div>'
       + '<i class="pk-arrow pk-arrow-l"></i><i class="pk-arrow pk-arrow-r"></i>'
@@ -5114,48 +5119,89 @@
     return wrap;
   }
 
-  /* strips: .pk-strip öğeleri · onDone: hepsi durunca BİR kez · dönüş: stop() */
-  function spinReels(strips, onDone) {
-    const timers = [];
-    let left = strips.length, finished = false;
-    const land = (strip) => {
-      if (strip.dataset.landed) return;
-      strip.dataset.landed = '1';
-      strip.parentElement.classList.add('landed');
+  /* ============================================================
+     P63 — ETKİLİ STOP: SÜREKLİ DÖNEN MAKARA (kullanıcı kararı 2026-10-04,
+     "kaymalı zamanlama"). Makara şeridi durmadan döner; STOP'a basınca
+     frene basılır ve 1-3 sembol daha kayar (rastgele) — ORTA çizgide duran
+     sembol motora bildirilir (`pick`), motor onu verir. Basılmazsa her
+     makara eskisi gibi kendi süresinde yavaşlar ve ÖNCEDEN seçilen ödülde
+     (şeridin son elemanı) durur; o yol motora hiç uğramaz.
+     items: [{ strip, n, mid, cellH(), pick(sym) → motorun kabul ettiği sıra }]
+     dönüş: stop() — dönen bütün makaraları kaymalı durdurur
+     ============================================================ */
+  function loopReels(items, { onDone, onLand, auto = (i) => 1.5 + i * 0.6, speed = 8.5 } = {}) {
+    const st = items.map((it, i) => ({ ...it, i, p: 0, v: speed + i * 0.7, mode: 'spin' }));
+    let left = st.length, done = false, last = performance.now();
+    const mod = (x, n) => ((x % n) + n) % n;
+    const draw = (r) => { r.strip.style.transform = `translateY(${-mod(r.p, r.n) * r.cellH()}px)`; };
+    const land = (r) => {
+      r.mode = 'landed';
+      const cells = r.strip.children;
+      for (const c of cells) c.classList.remove('hit');
+      const hitIdx = Math.round(mod(r.p, r.n)) + r.mid;
+      if (cells[hitIdx]) cells[hitIdx].classList.add('hit');
+      r.strip.parentElement.classList.add('landed');
       SFX.coin();
-      if (--left === 0 && !finished) { finished = true; onDone(); }
+      if (onLand) onLand(r.i, r.landed);
+      if (--left === 0 && !done) { done = true; if (onDone) onDone(); }
     };
-    const target = (strip) => {
-      const cellH = strip.firstElementChild.offsetHeight || 84;
-      // şerit = semboller + 1 dolgu; kazanan (sondan 2.) pencerenin ORTASINA oturur
-      return -cellH * (strip.children.length - 3);
+    /* üst hücre T öyle seçilir ki (T + mid) mod n = sym ve T >= p + ileri */
+    const brake = (r, sym, ahead, maxMs = 1000) => {
+      let T = Math.ceil(r.p + ahead - 1e-6);
+      while (mod(T + r.mid, r.n) !== sym) T++;
+      r.from = r.p; r.to = T; r.t0 = performance.now();
+      r.dur = Math.min(maxMs, Math.max(320, (T - r.p) / r.v * 1700));
+      r.mode = 'brake';
     };
-    requestAnimationFrame(() => {
-      strips.forEach((strip, i) => {
-        const dur = 2.1 + i * 0.75;
-        strip.style.transition = `transform ${dur}s cubic-bezier(.10,.62,.16,1)`;
-        strip.style.transform = `translateY(${target(strip)}px)`;
-        let ticks = 0;
-        const tick = setInterval(() => { SFX.tick(); if (++ticks > 22) clearInterval(tick); }, dur * 1000 / 26);
-        timers.push(tick, setTimeout(() => { clearInterval(tick); land(strip); }, dur * 1000 + 60));
-      });
+    const frame = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      for (const r of st) {
+        if (r.mode === 'spin') {
+          const before = Math.floor(r.p);
+          r.p += r.v * dt;
+          if (Math.floor(r.p) !== before && r.i === 0) SFX.tick();
+        } else if (r.mode === 'brake') {
+          const k = Math.min(1, (now - r.t0) / r.dur);
+          const e = 1 - Math.pow(1 - k, 3);
+          const before = Math.floor(r.p);
+          r.p = r.from + (r.to - r.from) * e;
+          if (Math.floor(r.p) !== before) SFX.tick();
+          if (k >= 1) { r.p = r.to; draw(r); land(r); continue; }
+        }
+        if (r.mode !== 'landed') draw(r);
+      }
+      if (left > 0) requestAnimationFrame(frame);
+    };
+    st.forEach((r) => {
+      draw(r);
+      r.timer = setTimeout(() => {
+        if (r.mode !== 'spin') return;
+        r.landed = r.n - 1;            // basılmadı → önceden seçilen ödül
+        brake(r, r.n - 1, 3);
+      }, auto(r.i) * 1000);
     });
+    requestAnimationFrame(frame);
     return function stop() {
-      timers.forEach(x => { clearTimeout(x); clearInterval(x); });
-      strips.forEach((strip, i) => {
-        if (strip.dataset.landed) return;
-        /* Hedef aynı kaldığı için yalnız süreyi kısaltmak çalışan uzun
-           geçişi DURDURMAZ (makara 2-3 sn kaymaya devam ediyordu): önce o
-           anki konumda dondur, sonra kısa geçişle kazanana oturt. */
-        const now = getComputedStyle(strip).transform;
-        strip.style.transition = 'none';
-        strip.style.transform = now === 'none' ? 'translateY(0px)' : now;
-        void strip.offsetHeight;
-        strip.style.transition = 'transform .22s cubic-bezier(.2,.9,.3,1.2)';
-        strip.style.transform = `translateY(${target(strip)}px)`;
-        setTimeout(() => land(strip), 240 + i * 90);
-      });
+      for (const r of st) {
+        if (r.mode !== 'spin') continue;
+        clearTimeout(r.timer);
+        const slip = 1 + Math.floor(Math.random() * 3);   // fren: 1-3 sembol kayar
+        const cur = Math.floor(r.p);
+        let sym = mod(cur + slip + r.mid, r.n);
+        const res = r.pick ? r.pick(sym) : sym;
+        if (Number.isInteger(res)) sym = res;               // motorun kabul ettiği
+        r.landed = sym;
+        brake(r, sym, cur + slip - r.p);
+      }
     };
+  }
+  /* pk makaraları (açılış + paket): pencere 3 sembol, ORTA kazanan */
+  function pkItems(stripEls, pick) {
+    return stripEls.map((strip, i) => ({
+      strip, n: strip.children.length - 3, mid: 1,
+      cellH: () => strip.firstElementChild.offsetHeight || 84,
+      pick: pick ? (sym) => pick(i, sym) : null,
+    }));
   }
 
   /* "STOP !!" düğmesi — çarklar dururken basılır, sonra kaybolur */
@@ -5187,7 +5233,14 @@
       body.appendChild(wrap);
       return wrap.querySelector('.pk-strip');
     });
-    stopButton(foot, spinReels(els, finish));
+    /* P63: STOP basıldığında orta çizgideki joker motorda değiştirilir */
+    const canPick = !!(reels && reels.length === list.length && Game.reelStop);
+    const pick = canPick ? (i, sym) => {
+      const r = Game.reelStop('opening', i, sym);
+      if (r && r.ok && r.got) { list[i] = r.got; return r.landed; }
+      return null;
+    } : null;
+    stopButton(foot, loopReels(pkItems(els, pick), { onDone: finish }));
     function finish() {
       foot.innerHTML = '';
       // açıklamalı sonuç kartları — paket çarkındakiyle aynı
@@ -5966,7 +6019,12 @@
       body.appendChild(wrap);
       return wrap.querySelector('.pk-strip');
     });
-    stopButton(foot, spinReels(strips, finish));
+    const pick = (Game.reelStop && res.index != null) ? (i, sym) => {
+      const r = Game.reelStop('pack', res.index, i, sym);
+      if (r && r.ok && r.got) { res.contents[i] = r.got; return r.landed; }
+      return null;
+    } : null;
+    stopButton(foot, loopReels(pkItems(strips, pick), { onDone: finish }));
     function finish() {
       foot.innerHTML = '';
       notify(res.contents.map(packOutLine), true, { quiet: true });   // çark zaten gösterdi
@@ -6617,11 +6675,19 @@
          Dönmeyecekse (kayıttan geri dönüş — ödül zaten verilmiş) sahte
          sembol KOYULMAZ; yoksa şerit kaydırılmadığı için pencerede rastgele
          bir sembol donup kalırdı. */
+      /* P63 — şerit MOTORDAN (upgradeOffer.strips): STOP'ta inen güçlendirme
+         gerçekten verilir. Eski kayıtta şerit yoksa eski sahte şerit. */
+      const ri = s.upgradeOffer.rolled.indexOf(key);
+      const eng = willSpin && s.upgradeOffer.strips && s.upgradeOffer.strips[ri];
       const strip = [];
-      if (willSpin)
-        for (let i = 0; i < UP_REEL_LEN - 1; i++)
-          strip.push(allKeys[Math.floor(Math.random() * allKeys.length)]);
-      strip.push(key);
+      if (eng) strip.push(...eng, eng[0]);          // + sarma hücresi
+      else {
+        if (willSpin)
+          for (let i = 0; i < UP_REEL_LEN - 1; i++)
+            strip.push(allKeys[Math.floor(Math.random() * allKeys.length)]);
+        strip.push(key);
+      }
+      card.dataset.engine = eng ? '1' : '';
       card.innerHTML =
         `<div class="up-reel"><div class="up-strip">` +
         strip.map(k => `<div class="up-sym">${upFaceHtml(k)}</div>`).join('') +
@@ -6649,6 +6715,7 @@
     openScene(el.upgradeOverlay);
     if (spin && !already) spinUpgradeReels(reels);
     else if (!already) grantUpgrades();
+    else reels.forEach(c => c.querySelector('.up-sym:last-child')?.classList.add('hit'));
     updateTrainerBadge(); // trainer çipi upgrade sahnesinde de görünsün
     saveGame('inStore'); // ödül ekranında çıkılırsa buraya dönülür
     if (TUT.active) TUT.update();
@@ -6671,48 +6738,45 @@
      (0.45s) — "ikinci ödül" anı ayrı bir vuruş olarak duyulsun.
      SON ÇARK DURUNCA ödüller uygulanır (grantUpgrades). */
   function spinUpgradeReels(cards) {
-    let done = 0;
-    const timers = [];
-    const land = (card) => {
-      if (!card.classList.contains('spinning')) return;
-      card.classList.remove('spinning');
-      card.classList.add('landed');
+    /* P63 — sürekli dönen makara + STOP (kaymalı); pencere TEK sembol */
+    const s = Game.state;
+    el.upgradeOverlay.classList.add('spin-lock');
+    const refreshInfo = (card, key) => {
+      const def = UPGRADE_DEFS[key];
+      if (!def) return;
+      const chips = (def.stats || statChips(def.desc)).map(c => `<span class="s-chip">${T.ev(c)}</span>`).join('');
+      const info = card.querySelector('.up-info');
+      if (info) info.innerHTML = `<div class="up-won">${t('upWon')}</div>`
+        + (chips ? `<div class="s-chips up-chips">${chips}</div>` : '')
+        + `<div class="up-desc">${emphNums(T.upDesc(key, def.desc))}</div>`;
+    };
+    const items = cards.map((card, i) => {
       const strip = card.querySelector('.up-strip');
-      strip.style.transition = 'none';
-      strip.style.transform = `translateY(${-cellH(card) * (strip.children.length - 1)}px)`;
-      SFX.coin();
-      if (++done === cards.length) {
+      const engine = card.dataset.engine === '1';
+      return {
+        strip, n: strip.children.length - (engine ? 1 : 0), mid: 0,
+        cellH: () => card.querySelector('.up-sym').offsetHeight || 118,
+        pick: engine ? (sym) => {
+          const r = Game.reelStop('upgrade', i, sym);
+          if (r && r.ok) { refreshInfo(card, r.key); return r.landed; }
+          return null;
+        } : null,
+      };
+    });
+    const stopBtn = document.createElement('button');
+    stopBtn.className = 'pk-stop-btn up-stop-btn';
+    stopBtn.textContent = t('slotStopBtn');
+    el.btnUpContinue.parentElement.insertBefore(stopBtn, el.btnUpContinue);
+    const stop = loopReels(items, {
+      auto: (i) => 1.2 + i * 0.5,
+      onLand: (i) => { cards[i].classList.remove('spinning'); cards[i].classList.add('landed'); },
+      onDone: () => {
+        stopBtn.remove();
         el.upgradeOverlay.classList.remove('spin-lock');
         grantUpgrades();
-      }
-    };
-    /* offsetHeight (getBoundingClientRect DEĞİL): upgrade sahnesi #app
-       içinde ve #app fitScale()'in transform:scale'ini taşıyor. Rect
-       ÖLÇEKLENMİŞ piksel döndürür, translateY ise elemanin KENDİ
-       koordinatında çalışır — ikisini karıştırınca çark yanlış yerde
-       duruyor ve sembol yarım görünüyordu. */
-    const cellH = (card) => card.querySelector('.up-sym').offsetHeight || 118;
-    el.upgradeOverlay.classList.add('spin-lock');
-    requestAnimationFrame(() => {
-      cards.forEach((card, i) => {
-        const strip = card.querySelector('.up-strip');
-        const dist = cellH(card) * (strip.children.length - 1);
-        const dur = 1.25 + i * 0.45;   // iki çark: ikincisi belirgin gecikmeli
-        strip.style.transition = `transform ${dur}s cubic-bezier(.10,.62,.16,1)`;
-        strip.style.transform = `translateY(${-dist}px)`;
-        let ticks = 0;
-        const tick = setInterval(() => { SFX.tick(); if (++ticks > 14) clearInterval(tick); }, dur * 1000 / 16);
-        timers.push(tick);
-        setTimeout(() => { clearInterval(tick); land(card); }, dur * 1000 + 40);
-      });
+      },
     });
-    // sabırsız oyuncu: sahneye tıkla → hepsi anında otursun
-    const skip = () => {
-      timers.forEach(clearInterval);
-      cards.forEach(land);
-      el.upgradeOverlay.removeEventListener('click', skip, true);
-    };
-    el.upgradeOverlay.addEventListener('click', skip, true);
+    stopBtn.addEventListener('click', () => { stopBtn.disabled = true; stop(); });
   }
 
   /* Playtest 10: yenileme (reroll) kaldırıldı — seçim yokken "yeniden

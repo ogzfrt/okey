@@ -9011,8 +9011,20 @@ const Game = {
     const pool = [...avail];
     while (rolled.length < this.UPGRADE_PICKS && pool.length)
       rolled.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0].key);
+    /* P63 — ETKİLİ STOP: her makaranın şeridi motorda. Kalan havuz makaralara
+       AYRIK dağıtılır → iki makara asla aynı güçlendirmede duramaz. Şeridin
+       SON elemanı önceden seçilen ödüldür (STOP'a basılmazsa o gelir). */
+    const parts = rolled.map(k => [k]);
+    pool.forEach((u, i) => parts[i % Math.max(1, parts.length)].push(u.key));
+    const strips = rolled.map((k, i) => {
+      const own = parts[i];
+      const strip = [];
+      for (let n = 0; n < PACK_REEL_LEN - 1; n++) strip.push(own[Math.floor(this.rng() * own.length)]);
+      strip.push(k);
+      return strip;
+    });
     // `options` eski alan adı — kayıt uyumu ve dış okuyucular için korunur
-    return { rolled, options: rolled, applied: false };
+    return { rolled, options: rolled, applied: false, strips, stopped: [] };
   },
 
   /* İki çarkın sonucunu UYGULA. UI çarklar durunca çağırır; ikinci çağrı
@@ -9433,7 +9445,96 @@ const Game = {
     pack.sold = true;
     pack.contents = contents; // store kartında "açıldı" görünümü için
     const reels = contents.map(c => this._packReel(pack.kind, c));
+    pack.reels = reels;          // P63 — STOP hangi sembolde durduğunu buradan doğrular
+    pack.stopped = [];
     return { ok: true, mode: 'slot', kind: pack.kind, index, contents, reels };
+  },
+
+  /* ============================================================
+     P63 — ETKİLİ STOP (kullanıcı kararı 2026-10-04: "kaymalı zamanlama",
+     üç çarkta: açılış, store paketi, stage sonu güçlendirme).
+     Makara sürekli döner; STOP'a basınca 1-3 sembol kayar ve ORTA ÇİZGİDE
+     duran sembol oyuncunun olur. Basılmazsa çark eskisi gibi kendisi
+     yavaşlar ve önceden seçilen ödülde (şeridin son elemanı) durur — o yol
+     motora hiç uğramaz. Önceden verilen ödül geri alınıp yenisi verilir
+     (`_ungrantGot`); her makara bir kez durdurulur.
+     ============================================================ */
+  _ungrantGot(got) {
+    const s = this.state;
+    if (!got) return;
+    if (got.converted) { spendCoins(s, Math.min(got.coins || 0, s.coins)); return; }
+    if (got.type === 'special') {
+      const i = s.specialTiles.findIndex(x => got.sid != null ? x.sid === got.sid : (x.kind === got.kind && x.color === got.color && x.number === got.number));
+      if (i >= 0) s.specialTiles.splice(i, 1);
+      return;
+    }
+    if (got.type === 'consum') {
+      const i = s.consumables.lastIndexOf(got.key);
+      if (i >= 0) s.consumables.splice(i, 1);
+      return;
+    }
+    if (got.type === 'joker' && got.jokerId != null) {
+      if (s.fuzyonPending && s.fuzyonPending.id === got.jokerId) { s.fuzyonPending = null; return; }
+      for (const arr of [s.jokers, s.backup, s.deckJokers]) {
+        const i = arr.findIndex(j => j.id === got.jokerId);
+        if (i >= 0) { arr.splice(i, 1); return; }
+      }
+    }
+  },
+  /* where: 'opening' (a = makara) · 'pack' (a = paket, b = makara) · 'upgrade' (a = makara)
+     sym: şeritteki sembolün sırası. Dönüş: { ok, got | key, landed } */
+  reelStop(where, a, b, c) {
+    const s = this.state;
+    if (where === 'opening') {
+      const i = a, sym = b;
+      const strip = (s.openingReels || [])[i], cur = (s.openingJokers || [])[i];
+      if (!strip || !cur || !Number.isInteger(sym) || sym < 0 || sym >= strip.length) return { ok: false };
+      s.openingStopped = s.openingStopped || [];
+      if (s.openingStopped[i]) return { ok: false, error: 'Bu makara zaten durdu.' };
+      s.openingStopped[i] = true;
+      if (sym === strip.length - 1) return { ok: true, got: cur, landed: sym };
+      const o = strip[sym];
+      const def = JOKER_DEFS[o.key];
+      if (!def) return { ok: true, got: cur, landed: strip.length - 1 };
+      this._ungrantGot({ ...cur, type: 'joker' });
+      const j = this._initJoker({ id: ++_jokerId, key: def.key, name: def.name, desc: def.desc,
+        rarity: o.rarity, usesLeft: this._usesFor(def, o.rarity), fresh: true });
+      if (def.mech === 'deck') s.deckJokers.push(j); else s.jokers.push(j);
+      const got = { type: 'joker', key: def.key, name: def.name, desc: def.desc, rarity: o.rarity,
+        jokerId: j.id, placed: def.mech === 'deck' ? 'deck' : 'slot' };
+      s.openingJokers[i] = got;
+      /* 1. raund açılış jokerleriyle zaten kurulmuştu (oyuncu henüz elini
+         görmedi): yeni kadroyla BAŞTAN kurulur — raund başı etkileri ve
+         deste jokerinin taşı doğru jokerden gelsin. */
+      if (s.stage === 1 && s.roundInStage === 1 && s.turn <= 1) this._startRound();
+      return { ok: true, got, landed: sym };
+    }
+    if (where === 'pack') {
+      const pack = s.store?.packs?.[a], ci = b, sym = c;
+      const strip = pack && (pack.reels || [])[ci];
+      if (!strip || !pack.contents || !Number.isInteger(sym) || sym < 0 || sym >= strip.length) return { ok: false };
+      pack.stopped = pack.stopped || [];
+      if (pack.stopped[ci]) return { ok: false, error: 'Bu makara zaten durdu.' };
+      pack.stopped[ci] = true;
+      if (sym === strip.length - 1) return { ok: true, got: pack.contents[ci], landed: sym };
+      const old = pack.contents[ci];
+      this._ungrantGot(old);
+      const got = this._grantPackOption(strip[sym], Math.floor((pack.price || 8) / 2));
+      if (!got) { pack.contents[ci] = this._grantPackOption(strip[strip.length - 1], Math.floor((pack.price || 8) / 2)) || old; return { ok: true, got: pack.contents[ci], landed: strip.length - 1 }; }
+      pack.contents[ci] = got;
+      return { ok: true, got, landed: sym };
+    }
+    if (where === 'upgrade') {
+      const off = s.upgradeOffer, i = a, sym = b;
+      const strip = off && (off.strips || [])[i];
+      if (!strip || off.applied || !Number.isInteger(sym) || sym < 0 || sym >= strip.length) return { ok: false };
+      off.stopped = off.stopped || [];
+      if (off.stopped[i]) return { ok: false, error: 'Bu makara zaten durdu.' };
+      off.stopped[i] = true;
+      off.rolled[i] = strip[sym];
+      return { ok: true, key: strip[sym], landed: sym };
+    }
+    return { ok: false };
   },
 
   /* Seçimli paketten bir seçeneği al; kalanlar kaybolur (Grup F). */
@@ -9560,8 +9661,8 @@ const Game = {
       if (!def) return null;
       if (s.specialTiles.filter(x => x.kind === opt.kind).length >= def.maxCopies)
         return toCoins('specialFull');
-      this._addSpecialTile(opt.kind, opt.color, opt.number);
-      return { ...opt };
+      const rec = this._addSpecialTile(opt.kind, opt.color, opt.number);
+      return { ...opt, sid: rec.sid };
     }
     if (opt.type === 'consum') {
       if (s.consumables.length >= this.consumCap()) return toCoins('consumFull');
