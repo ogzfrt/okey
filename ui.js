@@ -4011,7 +4011,11 @@
     Hints.show('yanBahis');
   }
 
-  /* Yüksek mi Alçak mı — raund sonu; `done` akışı sürdürür */
+  /* Yüksek mi Alçak mı — raund sonu; `done` akışı sürdürür.
+     P64 (kullanıcı: "ilk karşıma çıktığında anlayamadım") — daha anlaşılır:
+     teklifte 3 adımlık "nasıl oynanır" kartı + coin MERDİVENİ (gerçek
+     miktarlar), oyunda AÇIK TAŞ yanında kapalı "SIRADAKİ" taş, düğmelerde
+     tutma ihtimali yüzde olarak, "şimdi çekilirsen / bilirsen" satırı. */
   function showHiLo(done) {
     const ov = document.createElement('div');
     ov.id = 'hiloOv';
@@ -4022,43 +4026,54 @@
       te.classList.add('hl-tile'); if (cls) te.classList.add(cls);
       return te.outerHTML;
     };
+    const hm = () => (typeof HILO !== 'undefined' ? HILO.mult : 1.5);
+    const pots = (h) => { const out = [h.stake]; for (let k = 0; k < h.max; k++) out.push(Math.round(out[out.length - 1] * hm())); return out; };
+    const ladderHtml = (h) => pots(h).map((v, k) => `<span class="hl-rung${k === h.step ? ' on' : ''}${k < h.step ? ' past' : ''}">🪙 ${v}</span>`)
+      .join('<i class="hl-arr">→</i>');
     const finish = () => { Game.hiLoClose(); ov.remove(); render(); done(); };
     const draw = (flash) => {
       const h = Game.hiLoState();
       if (!h) { finish(); return; }
-      const hm = (typeof HILO !== 'undefined' ? HILO.mult : 1.5);
-      const mx = (k) => Number((hm ** k).toFixed(2));
-      const ladder = [1, 2, 3].map(k => `<span class="hl-step${h.step >= k ? ' on' : ''}">×${mx(k)}</span>`).join('');
       let body = '', foot = '';
       if (h.phase === 'offer') {
-        body = `<div class="hl-big">${hiTile(h.cur)}</div>`
-          + `<div class="hl-text">${t('hiloOffer', h.stake, mx(1), mx(3))}</div>`;
-        foot = `<button class="btn primary" data-a="accept">${t('hiloAccept')}</button>`
+        const p = pots(h);
+        body = `<div class="hl-win">${t('hiloWinLine', h.stake)}</div>`
+          + `<div class="hl-how"><div class="hl-how-t">${t('hiloHowTitle')}</div>`
+          + `<ol><li>${t('hiloHow1')}</li><li>${t('hiloHow2')}</li><li>${t('hiloHow3', p[1], p[p.length - 1], h.stake)}</li></ol></div>`
+          + `<div class="hl-ladder">${ladderHtml(h)}</div>`;
+        foot = `<button class="btn primary" data-a="accept">🎲 ${t('hiloAccept')}</button>`
           + `<button class="btn ghost" data-a="skip">${t('hiloSkip', h.stake)}</button>`;
-      } else if (h.phase === 'play') {
-        const n = h.cur.number;
-        /* doğru tahminden sonra: soluk ÖNCEKİ taş → yeni taş */
-        body = `<div class="hl-big">${flash && flash.prev ? hiTile(flash.prev, 'hl-prev') + '<span class="hl-arrow">→</span>' : ''}${hiTile(h.cur)}</div>`
-          + `<div class="hl-ladder">${ladder}</div>`
-          + `<div class="hl-pot">${t('hiloPot', h.pot)}</div>`
-          + (flash ? `<div class="hl-flash ${flash.cls}">${flash.text}</div>` : '');
-        foot = `<button class="btn primary hl-hi" data-a="hi">⬆ ${t('hiloHi')} <small>${13 - n}/13</small></button>`
-          + `<button class="btn primary hl-lo" data-a="lo">⬇ ${t('hiloLo')} <small>${n - 1}/13</small></button>`
-          + (h.step > 0 ? `<button class="btn ghost" data-a="cash">💰 ${t('hiloCash', h.pot)}</button>` : '');
-      } else if (h.phase === 'undo') {
-        body = `<div class="hl-big">${hiTile(h.cur)}${hiTile(h.last, 'hl-bad')}</div>`
-          + `<div class="hl-text">${t('hiloUndoAsk')}</div>`;
-        foot = `<button class="btn primary" data-a="undo">🎰 ${t('hiloUndo')}</button>`
-          + `<button class="btn ghost" data-a="lose">${t('hiloAcceptLoss')}</button>`;
+      } else if (h.phase === 'play' || h.phase === 'undo') {
+        const n = h.cur.number, pHi = Math.round(100 * (13 - n) / 13), pLo = Math.round(100 * (n - 1) / 13);
+        const next = h.step < h.max ? Math.round(h.pot * hm()) : h.pot;
+        body = `<div class="hl-table">`
+          + (flash && flash.prev ? `<div class="hl-slot hl-old"><div class="hl-lbl">${t('hiloPrev')}</div>${hiTile(flash.prev, 'hl-prev')}</div>` : '')
+          + `<div class="hl-slot"><div class="hl-lbl">${t('hiloOpen')}</div>${hiTile(h.cur)}</div>`
+          + (h.phase === 'undo' ? `<div class="hl-slot"><div class="hl-lbl">${t('hiloCame')}</div>${hiTile(h.last, 'hl-bad')}</div>`
+            : `<div class="hl-slot"><div class="hl-lbl">${t('hiloNext')}</div><div class="tile hl-tile hl-back">?</div></div>`)
+          + `</div>`
+          + (flash ? `<div class="hl-flash ${flash.cls}">${flash.text}</div>` : '')
+          + `<div class="hl-ladder">${ladderHtml(h)}</div>`
+          + (h.phase === 'play' ? `<div class="hl-now">${h.step > 0 ? t('hiloNowCash', h.pot) + ' · ' : ''}${t('hiloIfRight', next)}</div>` : '');
+        if (h.phase === 'undo') {
+          body += `<div class="hl-text">${t('hiloUndoAsk')}</div>`;
+          foot = `<button class="btn primary" data-a="undo">🎰 ${t('hiloUndo')}</button>`
+            + `<button class="btn ghost" data-a="lose">${t('hiloAcceptLoss')}</button>`;
+        } else {
+          foot = `<button class="btn primary hl-hi" data-a="hi">⬆ ${t('hiloHi')}<small>%${pHi}</small></button>`
+            + `<button class="btn primary hl-lo" data-a="lo">⬇ ${t('hiloLo')}<small>%${pLo}</small></button>`
+            + (h.step > 0 ? `<button class="btn ghost" data-a="cash">💰 ${t('hiloCash', h.pot)}</button>` : '')
+            + `<div class="hl-tie">${t('hiloTieNote')}</div>`;
+        }
       } else {
         const won = h.phase === 'done';
-        body = `<div class="hl-big">${h.last ? hiTile(h.last, won ? '' : 'hl-bad') : hiTile(h.cur)}</div>`
-          + `<div class="hl-ladder">${ladder}</div>`
+        body = `<div class="hl-table"><div class="hl-slot">${h.last ? hiTile(h.last, won ? '' : 'hl-bad') : hiTile(h.cur)}</div></div>`
+          + `<div class="hl-ladder">${ladderHtml(h)}</div>`
           + `<div class="hl-result ${won ? 'ok' : 'bad'}">${won ? t('hiloWon', h.pot - h.stake) : t('hiloLost', h.stake)}</div>`;
         foot = `<button class="btn primary" data-a="close">${t('okBtn')}</button>`;
       }
       ov.innerHTML = `<div class="pk-box"><div class="pk-title">🃏 ${t('hiloTitle')}</div>`
-        + `<div class="pk-sub-title">${t('hiloSub')}</div>${body}<div class="pk-foot hl-foot">${foot}</div></div>`;
+        + `<div class="hl-body">${body}</div><div class="pk-foot hl-foot">${foot}</div></div>`;
       ov.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => act(b.dataset.a)));
     };
     const act = (a) => {
@@ -4074,7 +4089,7 @@
         if (!r.ok) return;
         if (r.win) { SFX.coin(); if (r.done) SFX.jackpot(); }
         else if (!r.canUndo) SFX.lose();
-        draw(r.win && !r.done ? { cls: 'ok', prev, text: r.tie ? t('hiloTieWin') : t('hiloRight') } : null);
+        draw(r.win && !r.done ? { cls: 'ok', prev, text: (r.tie ? t('hiloTieWin') : t('hiloRight')) + ' ' + t('hiloCameN', r.next.number) } : null);
       }
     };
     draw();
@@ -4966,8 +4981,8 @@
        · Devam Et: kayıtlı run'ın özeti (mod, stage, raund, coin, en iyi
          açılım, kalıcı çarpan, nerede bırakıldı) + DEVAM ET
      Görsel dil: oyun sonu panelleriyle aynı (ep-ov / ep-box, tema renkleri,
-     piksel başlık). Açık mod kartı `.mp-card[data-mode]` sınıfını taşır:
-     karta tıklamak da o modu başlatır (testler bu yolu kullanır).
+     piksel başlık). Açık mod kartı `.mp-card[data-mode]` sınıfını taşır;
+     karta tıklamak yalnız SEÇER, oyunu OYNA başlatır.
      Klavye: ←/→ mod değiştirir, Enter oynar / devam eder, Esc kapatır.
      ============================================================ */
   const RUN_PAGES = [
@@ -5057,7 +5072,8 @@
       ov.querySelectorAll('.rp-tab').forEach(b => b.addEventListener('click', () => { if (!b.disabled) { tab = b.dataset.tab; draw(); } }));
       ov.querySelectorAll('.rp-arrow').forEach(b => b.addEventListener('click', () => go(+b.dataset.d)));
       ov.querySelectorAll('.rp-dots i').forEach(b => b.addEventListener('click', () => { runPickIdx = +b.dataset.i; draw(); }));
-      ov.querySelectorAll('.rp-slide.mp-card').forEach(b => b.addEventListener('click', () => play(b.dataset.mode)));
+      /* kullanıcı (2026-10-04): karta/açıklamaya tıklamak oyunu BAŞLATMAZ — yalnız seçer; başlatan OYNA */
+      ov.querySelectorAll('.rp-slide.mp-card').forEach(b => b.addEventListener('click', () => { runPickIdx = +b.dataset.i; draw(); }));
       ov.querySelector('#rpBack').addEventListener('click', close);
       const goBtn = ov.querySelector('#rpGo');
       if (goBtn) goBtn.addEventListener('click', () => {
@@ -6575,9 +6591,10 @@
     const canEndless = !Game.trainerMode && !Game.state.endless && Game.state.runMode !== 'hizli';
     const s = Game.state;
     const st = endStats(s);
-    const build = st0.jokers.length
-      ? `<div class="ep-build">${st0.jokers.map(j => `<span class="rc-joker r-${j.rarity}" title="${T.name(j)}">`
-          + `${JOKER_ICONS[j.key] || '🃏'} ${T.name(j)}</span>`).join('')}</div>` : '';
+    /* P64 (kullanıcı 2026-10-04) — KAZANMA EKRANI DÜZENİ: düğmeler sağ
+       sütunda kayboluyordu ("kafa karıştırıcı") → kaybetme ekranındaki gibi
+       ALTTA, ortalı, alt alta. Joker listesi kalktı ("görmemize gerek yok").
+       Sağda Game Over'daki "Kaybettiren" kutusunun eşi: yenilen son boss. */
     const left =
       epRow(t('epBest'), st.best, 'c-red', true) +
       epRow(t('epMost'), st.most, '', true) +
@@ -6586,17 +6603,22 @@
       epRow(t('epDiscarded'), st.discarded, 'c-red') +
       epRow(t('epBought'), st.bought, 'c-orange') +
       epRow(t('epRerolls'), st.rerolls, 'c-green');
+    const lb = s.boss;
+    const lbArt = lb && JOKER_ART.has(lb.key)
+      ? `<div class="ep-def-art art-joker jk-${lb.key}"></div>` : `<div class="ep-def-ico">🏆</div>`;
     const right =
       epRow(t('epStage'), st.stage + `<small>${st.stageOf}</small>`, 'c-orange') +
       epRow(t('epRound'), st.round, 'c-orange') +
       epRow(t('epMult'), st.mult, 'c-green') +
-      `<button class="ep-btn" id="epNewRun">${t('epNewRun')}</button>` +
-      `<button class="ep-btn" id="rcMenu">${t('epMainMenu')}</button>`;
-    const foot = build +
+      `<div class="ep-defeat ep-trophy"><div class="ep-def-title">${t('epLastBoss')}</div>`
+      + `<div class="ep-def-name">${lb ? T.bossName(lb.key, lb.name) : '—'}</div>` + lbArt + `</div>`;
+    const foot =
       (openedModes.length ? `<div class="ep-note">${t('modeUnlocked', openedModes.map(m => t('modeName_' + m.key)).join(', '))}</div>` : '') +
       /* Sonsuz Mod AYRI BİR MOD DEĞİL (P53): menüde düğmesi yok, yalnız burada bir SEÇİM. */
       (canEndless ? `<button class="ep-btn ep-blue" id="rcEndless">${t('epEndless')}</button>`
         + `<div class="ep-note">${t('rcEndlessHint')}</div>` : '')
+      + `<button class="ep-btn" id="epNewRun">${t('epNewRun')}</button>`
+      + `<button class="ep-btn" id="rcMenu">${t('epMainMenu')}</button>`
       + `<button class="ep-btn ep-ghost" id="epCopy">${t('epCopy')}</button>`
       + `<div class="ep-note">${t('epCopyHint')}</div>`;
     const ov = endPanel('win', t('epWinTitle'), left, right, foot);
@@ -6907,13 +6929,119 @@
     return tile2;
   }
 
-  function showCollection() {
-    const order = ['common', 'rare', 'epic', 'legendary', 'mythic'];
-    const all = Object.values(JOKER_DEFS);
+  /* ============================================================
+     P64 — KOLEKSİYON, OYUNUN UI DİLİNDE (kullanıcı 2026-10-04; Balatro
+     koleksiyonu yalnız İLHAM: kategori girişi + sayfalı ızgara).
+     · Giriş: kategori düğmeleri (sayılarıyla)
+     · Kategori: nadirlik filtresi (jokerler), sayfa başına 12 kart,
+       "Sayfa x/y" + oklar; Geri → girişe döner
+     Kart bileşenleri (colJokerCard / colConsumCard / colSpecialCard) ve
+     hover ipuçları aynen kullanılır. Eski "hepsi alt alta" çizimi
+     renderCollectionAll olarak durur (`__test.collectionView('all')`).
+     ============================================================ */
+  const COL_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+  const COL_PAGE = 12;
+  let colView = 'hub', colPage = 0, colFilter = 'all';
+  const byRarity = (arr) => arr.map((d, i) => ({ d, i }))
+    .sort((a, b) => (COL_ORDER.indexOf(a.d.rarity || 'common') - COL_ORDER.indexOf(b.d.rarity || 'common')) || a.i - b.i)
+    .map(x => x.d);
+  function colUpgradeTile(def) {
+    const tile2 = document.createElement('div');
+    tile2.className = 'joker-tile r-legendary col-tile';
+    tile2.innerHTML = `<div class="col-icon">${def.icon}</div><div class="jt-name">${T.upName(def.key, def.name)}</div>`;
+    attachTip(tile2, { name: T.upName(def.key, def.name), rarityText: t('upgradeTag'), desc: T.upDesc(def.key, def.desc) }, {});
+    return tile2;
+  }
+  const COL_CATS = [
+    { key: 'jokers', ico: '🃏', big: true, filters: ['all', 'common', 'rare', 'legendary', 'mythic'],
+      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => !d.casino && d.rarity !== 'epic')), card: (d) => colJokerCard(d) },
+    { key: 'boss', ico: '👹', items: () => Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic'), card: (d) => colJokerCard(d) },
+    { key: 'casino', ico: '🎰', items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.casino)), card: (d) => colJokerCard(d) },
+    { key: 'consum', ico: '🪄', items: () => byRarity(Object.values(CONSUMABLES)), card: (d) => colConsumCard(d) },
+    { key: 'special', ico: '💠', items: () => Object.values(SPECIAL_TILES), card: (d) => colSpecialCard(d) },
+    { key: 'upgrade', ico: '⭐', items: () => Object.values(UPGRADE_DEFS), card: (d) => colUpgradeTile(d) },
+    { key: 'modes', ico: '🎮', items: () => Modes.statusRows(), card: null },
+  ];
+  function showCollection(view) {
+    colView = view || 'hub';
+    hideTip();
     $('colTitle').textContent = t('colTitle');
-    $('colSub').textContent = t('colSub', all.length);
     el.btnColBack.textContent = t('colBack');
     el.colBody.innerHTML = '';
+    el.colBody.className = 'col-v-' + (colView === 'all' ? 'all' : colView === 'hub' ? 'hub' : 'cat');
+    if (colView === 'all') { renderCollectionAll(); openScene(el.collectionOverlay); return; }
+    if (colView === 'hub') {
+      $('colSub').textContent = t('colHubSub');
+      const hub = document.createElement('div');
+      hub.className = 'col-hub';
+      for (const c of COL_CATS) {
+        const b = document.createElement('button');
+        b.className = 'col-cat' + (c.big ? ' big' : '');
+        b.dataset.cat = c.key;
+        b.innerHTML = `<span class="cc-ico">${c.ico}</span><span class="cc-name">${t('colCat_' + c.key)}</span>`
+          + `<span class="cc-count">${c.items().length}</span>`;
+        b.addEventListener('click', () => { colPage = 0; colFilter = 'all'; showCollection('cat:' + c.key); });
+        hub.appendChild(b);
+      }
+      el.colBody.appendChild(hub);
+      openScene(el.collectionOverlay);
+      return;
+    }
+    const cat = COL_CATS.find(c => 'cat:' + c.key === colView) || COL_CATS[0];
+    $('colSub').textContent = t('colCatSub_' + cat.key);
+    const bar = document.createElement('div');
+    bar.className = 'col-bar';
+    bar.innerHTML = `<div class="col-plate">${cat.ico} ${t('colCat_' + cat.key)}</div>`;
+    if (cat.filters) {
+      const chips = document.createElement('div');
+      chips.className = 'col-chips';
+      for (const f of cat.filters) {
+        const b = document.createElement('button');
+        b.className = 'col-chip tr-' + f + (colFilter === f ? ' on' : '');
+        b.textContent = f === 'all' ? t('colAll') : T.rarity(f);
+        b.addEventListener('click', () => { colFilter = f; colPage = 0; showCollection(colView); });
+        chips.appendChild(b);
+      }
+      bar.appendChild(chips);
+    }
+    el.colBody.appendChild(bar);
+    if (!cat.card) {   // oyun modları: durum satırları
+      const wrap = document.createElement('div');
+      wrap.className = 'col-modes col-well';
+      for (const m of cat.items()) {
+        const row = document.createElement('div');
+        row.className = 'cm-row' + (m.open ? '' : ' locked');
+        row.innerHTML = `<span class="cm-ico">${m.open ? '🔓' : '🔒'}</span><span class="cm-name">${t('modeName_' + m.key)}</span>`
+          + `<span class="cm-note">${m.never ? t('modeAlwaysOpen') : m.open ? (m.done ? t('modeDone') : t('modeOpen')) : t('modeLockedTip')}</span>`;
+        wrap.appendChild(row);
+      }
+      el.colBody.appendChild(wrap);
+      openScene(el.collectionOverlay);
+      return;
+    }
+    let items = cat.items();
+    if (cat.filters && colFilter !== 'all') items = items.filter(d => d.rarity === colFilter);
+    const pages = Math.max(1, Math.ceil(items.length / COL_PAGE));
+    colPage = Math.min(Math.max(0, colPage), pages - 1);
+    const grid = document.createElement('div');
+    grid.className = 'col-page-grid col-well col-cat-' + cat.key;
+    for (const d of items.slice(colPage * COL_PAGE, (colPage + 1) * COL_PAGE)) grid.appendChild(cat.card(d));
+    el.colBody.appendChild(grid);
+    const pager = document.createElement('div');
+    pager.className = 'col-pager';
+    pager.innerHTML = `<button class="rp-arrow col-prev" ${pages < 2 ? 'disabled' : ''}>‹</button>`
+      + `<div class="col-pages">${t('colPage', colPage + 1, pages)}</div>`
+      + `<button class="rp-arrow col-next" ${pages < 2 ? 'disabled' : ''}>›</button>`;
+    pager.querySelector('.col-prev').addEventListener('click', () => { colPage = (colPage - 1 + pages) % pages; showCollection(colView); });
+    pager.querySelector('.col-next').addEventListener('click', () => { colPage = (colPage + 1) % pages; showCollection(colView); });
+    el.colBody.appendChild(pager);
+    openScene(el.collectionOverlay);
+  }
+
+  function renderCollectionAll() {
+    const order = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+    const all = Object.values(JOKER_DEFS);
+    $('colSub').textContent = t('colSub', all.length);
     /* PLAYTEST 20 · GRUP R — MODLAR durum listesi.
        Kilit sistemi ana menü tasarımına düğme EKLEMEDEN kuruldu (Figma
        birebir kuralı); durumu oyuncunun görebileceği yer burasıdır. */
@@ -7048,12 +7176,13 @@
       }
       el.colBody.appendChild(grid);
     }
-    openScene(el.collectionOverlay);
   }
 
-  el.btnCollection.addEventListener('click', showCollection);
+  el.btnCollection.addEventListener('click', () => showCollection('hub'));
   el.btnColBack.addEventListener('click', () => {
     hideTip();
+    /* P64: kategoriden önce girişe döner, girişten kapanır */
+    if (colView !== 'hub' && colView !== 'all') { showCollection('hub'); return; }
     el.collectionOverlay.classList.add('hidden');
   });
 
@@ -7679,5 +7808,6 @@
     // P60 — run raporu + ipucu penceresi
     Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell,
     // P61 — Kumarhane hissi
-    showHiLo, showSideBet, showRuletPick, kumarStartPanels, showJackpot, pickRunMode, showSettings, showRunPick };
+    showHiLo, showSideBet, showRuletPick, kumarStartPanels, showJackpot, pickRunMode, showSettings, showRunPick,
+    collectionView: (v) => showCollection(v) };
 })();

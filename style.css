@@ -8420,7 +8420,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 .ep-lose .ep-title { color: var(--gm-turn-on); }
 .ep-body {
-  display: grid; grid-template-columns: 1.55fr 1fr; gap: 12px; text-align: left;
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; text-align: left;
   background: rgba(0, 0, 0, .28); border-radius: 8px; padding: 14px;
   box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35);
 }
@@ -8471,7 +8471,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .ep-btn.ep-ghost:active { transform: translateY(2px); box-shadow: none; }
 .ep-foot { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 16px; }
 .ep-lose .ep-foot .ep-btn, .ep-foot .ep-btn.ep-ghost { width: min(380px, 100%); }
-.ep-win .ep-foot .ep-btn:not(.ep-ghost) { width: 100%; }
+.ep-win .ep-foot .ep-btn { width: min(380px, 100%); }
 .ep-note { color: var(--gm-light); opacity: .85; font: 700 12px/1.35 var(--gm-font); text-align: center; letter-spacing: -.3px; }
 .ep-build { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .ep-build .rc-joker { font-size: 12px; }
@@ -8513,8 +8513,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 .rp-slide.on { display: flex; animation: rpIn .2s ease; }
 @keyframes rpIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
-.rp-slide.mp-card { cursor: pointer; }
-.rp-slide.mp-card:hover { border-color: var(--gm-turn-on); }
+.rp-slide.mp-card { cursor: default; }
+
 /* mod görseli bir OKEY TAŞI: taş yüzü + taş kenarı tonları */
 .rp-art {
   flex: 0 0 104px; position: relative; display: flex; align-items: center; justify-content: center;
@@ -8611,8 +8611,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .rp-tab + .rp-tab { border-left: 4px solid var(--gm-light); }
 .rp-tab.on { background-color: var(--gm-light); color: var(--gm-dark); }
 .rp-slide.mp-card { transition: transform .1s ease, box-shadow .1s ease; }
-.rp-slide.mp-card:hover { filter: brightness(1.05); }
-.rp-slide.mp-card:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+
+
 /* sağ sütun dar: etiket kısalmasın ("Kalıcı Çarpan") */
 .ep-right .ep-row { font-size: 13.5px; letter-spacing: -.8px; padding-left: 10px; }
 .ep-right .ep-val { min-width: 0; padding: 7px 8px; }
@@ -8624,3 +8624,236 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   aspect-ratio: 110 / 150; align-self: center; image-rendering: pixelated;
 }
 @media (max-width: 700px) { .rp-art.rp-art-img { width: 72px; height: auto; } }
+
+/* ============================================================
+   P64 — BÜTÜN POP-UP'LAR OYUNUN UI DİLİNDE (kullanıcı 2026-10-04:
+   "tüm pop-up çıkan sekansları bizim ui design'a uygun yeniden oluştur").
+   Ortak dil: tema koyu panel (--gm-dark) + 4px açık kenar (--gm-light),
+   başlık PLAKASI, gömme koyu iç alan, açık yeşil kartlar (koyu yazı),
+   STOP gibi basılan tema düğmeleri. Kutuların iç metin değişkenleri
+   (--ink/--muted/--soft/--line) temaya bağlanır → eski kurallar kendiliğinden
+   okunur hale gelir. Kapsam: pk-ov ailesi (bahis, Katla, bahis ödülü, yan
+   bahis, Rulet, ipucu, Yüksek mi Alçak mı, paket seçimi, Üç Kağıtçı, Yıldız,
+   efekt seçimi), raund sonu kutusu (#modal), tp-box pencereleri (devam,
+   ayarlar, Füzyon, Terzi, okey slotu, takas, Şeytan, Boşluk), okey ilanı,
+   Ritim, Kumarbaz, Pandora, deste penceresi, jackpot.
+   ============================================================ */
+.pk-ov:not(.dock-ov), #pilePopup, #settingsOv, #tutResume, .offer-pop,
+#okeyBanner, #ritimOv, #kumarOv, #pandoraOv, #fuzyonMenu, #fuzyonPick,
+#terziPick, #okeySlotPick, #buyDest, #buySwap {
+  background: rgba(14, 22, 32, .78); backdrop-filter: blur(3px);
+}
+#overlay { background: rgba(14, 22, 32, .72); }
+.pk-ov .pk-box, #modal, .tp-box, .pp-box, .ob-box, .rt-box, .km-box, .pd-box {
+  --ink: var(--gm-light); --muted: color-mix(in srgb, var(--gm-light) 78%, transparent);
+  --soft: color-mix(in srgb, var(--gm-light) 55%, transparent); --line: var(--gm-light);
+  --gold: var(--gm-turn-on); --gold-ink: var(--gm-turn-on); --accent: var(--gm-turn-on);
+  background: var(--gm-dark) !important; color: var(--gm-light);
+  border: 4px solid var(--gm-light) !important; border-radius: 10px !important;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45), 0 22px 50px rgba(0, 0, 0, .5) !important;
+  font-family: var(--gm-font);
+}
+/* başlık plakası */
+.pk-ov .pk-box, .tp-box, .pp-box { padding-top: 0 !important; margin-top: 30px; }
+.pk-ov .pk-title, .tp-box > h3:first-child, .pp-box > h3:first-child {
+  display: inline-block; position: relative; top: -26px; margin: 0 0 -12px;
+  background: var(--gm-dark); color: var(--gm-light);
+  border: 4px solid var(--gm-light); border-radius: 8px;
+  padding: 8px 24px; font: 700 22px/1 var(--gm-font); letter-spacing: -1px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+#modal h2#modalTitle {
+  display: inline-block; background: rgba(0, 0, 0, .25); color: var(--gm-light);
+  border: 4px solid var(--gm-light); border-radius: 8px; padding: 8px 22px;
+  font: 700 24px/1 var(--gm-font); letter-spacing: -1px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+#modal h2.win { color: var(--gm-turn-on); }
+#modal h2.lose { color: var(--gm-turn-on); }
+#modalBody { color: var(--gm-light) !important; font-family: var(--gm-font); font-size: 14px; }
+#modalBody b { color: var(--gm-turn-on) !important; }
+#modalBody hr { border-color: color-mix(in srgb, var(--gm-light) 35%, transparent) !important; }
+.pk-ov .pk-sub-title, .tp-box p, .pp-box p { color: var(--gm-light) !important; opacity: .9; font: 700 13px/1.4 var(--gm-font); letter-spacing: 0; }
+.pk-ov .pk-hint { color: var(--gm-light); opacity: .85; font: 700 12px/1.3 var(--gm-font); }
+.pk-ov .pk-body.pk-choice {
+  background: rgba(0, 0, 0, .28); border-radius: 8px; padding: 14px;
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35);
+}
+.pk-ov .pk-card {
+  background: var(--gm-light); color: var(--gm-dark);
+  border: 4px solid var(--gm-light); border-top-width: 7px; border-radius: 8px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .4); transition: transform .06s ease, box-shadow .06s ease;
+}
+.pk-ov .pk-card:hover { transform: none; filter: brightness(1.06); box-shadow: 0 4px 0 rgba(0, 0, 0, .4); }
+.pk-ov .pk-card:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.pk-ov .pk-name { color: var(--gm-dark); font: 700 14px/1.15 var(--gm-font); }
+.pk-ov .pk-sub { color: var(--gm-dark); opacity: .7; }
+.pk-ov .pk-desc { color: var(--gm-dark); font: 12px/1.4 system-ui, 'Segoe UI', sans-serif; }
+/* bahis türü = kartın üst kenar rengi (eski renkli halkanın yerine) */
+.pk-ov .bet-card { box-shadow: 0 4px 0 rgba(0, 0, 0, .4); }
+.pk-ov .bet-card.bet-guvenli { border-top-color: #2FAE6B; }
+.pk-ov .bet-card.bet-riskli  { border-top-color: #F0A92A; }
+.pk-ov .bet-card.bet-olumcul { border-top-color: #E5484D; }
+.pk-ov .bet-card .bet-target { color: var(--gm-dark); font: 700 18px/1.1 var(--gm-font); }
+.pk-ov .side-odds { color: var(--gm-dark); }
+.pk-ov .bet-peek .bp-lbl { color: var(--gm-light); }
+#katlaOv .katla-warn { color: var(--gm-turn-on) !important; }
+.hint-ov .hint-body { color: var(--gm-light); font-family: system-ui, 'Segoe UI', sans-serif; }
+.hint-ov .hint-body b { color: var(--gm-turn-on); }
+/* düğmeler: STOP gibi basılır */
+.pk-ov .btn, .tp-box .btn, .pp-box .btn, #modal .btn, .ob-box .btn, .rt-box .btn, .km-box .btn, .pd-box .btn {
+  background: var(--gm-light); color: var(--gm-dark);
+  border: 4px solid var(--gm-light); border-radius: 8px;
+  font: 700 17px/1 var(--gm-font); letter-spacing: -.5px; padding: 10px 20px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45); transition: transform .06s ease, box-shadow .06s ease; text-shadow: none;
+}
+.pk-ov .btn.ghost, .tp-box .btn.ghost, .pp-box .btn.ghost, #modal .btn.ghost {
+  background: transparent; color: var(--gm-light); border: 3px solid var(--gm-light); box-shadow: 0 4px 0 rgba(0, 0, 0, .35);
+}
+.pk-ov .btn:hover, .tp-box .btn:hover, .pp-box .btn:hover, #modal .btn:hover { transform: none; filter: brightness(1.12); }
+.pk-ov .btn:active, .tp-box .btn:active, .pp-box .btn:active, #modal .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.pk-ov .btn[disabled], .tp-box .btn[disabled] { opacity: .45; transform: none; }
+/* ayarlar: dil/tema seçenekleri açık kartlar */
+#settingsOv .set-lang, #settingsOv .set-theme {
+  background: var(--gm-light); color: var(--gm-dark); border: 3px solid var(--gm-light);
+  font-family: var(--gm-font); font-weight: 700; box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+#settingsOv .set-lang.on, #settingsOv .set-theme.on { border-color: var(--gm-turn-on); background: var(--gm-light); box-shadow: 0 0 0 2px var(--gm-turn-on), 0 3px 0 rgba(0, 0, 0, .35); }
+#settingsOv .set-label { color: var(--gm-light); font-family: var(--gm-font); }
+/* deste penceresi: taşlar koyu gömme alanda */
+#pilePopup .pp-tiles { background: rgba(0, 0, 0, .25); border-radius: 8px; padding: 8px; }
+#pilePopup .pp-group-label { color: var(--gm-light) !important; font-family: var(--gm-font); }
+/* okey ilanı */
+.ob-box { color: var(--gm-light); }
+.ob-box * { color: inherit; }
+
+/* JACKPOT (Kumarhane) — yeşil çuha yerine tema paneli; fiş yağmuru kalır */
+.jp-ov { background: rgba(14, 22, 32, .78); backdrop-filter: blur(3px); padding-top: 44px; }
+.jp-box {
+  background: var(--gm-dark) !important; border: 4px solid var(--gm-light) !important; border-radius: 10px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45), 0 22px 50px rgba(0, 0, 0, .5) !important; padding: 0 24px 22px;
+}
+.jp-title {
+  display: inline-block; position: relative; top: -26px; margin: 0 0 -12px;
+  background: var(--gm-dark); color: var(--gm-turn-on) !important; text-shadow: none !important;
+  border: 4px solid var(--gm-light); border-radius: 8px; padding: 8px 24px;
+  font: 700 26px/1 var(--gm-font) !important; letter-spacing: -1px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+.jp-score { color: var(--gm-light); opacity: .9; font: 700 14px/1 var(--gm-font); margin-top: 0; }
+.jp-count { color: var(--gm-turn-on); font: 700 42px/1 var(--gm-font); }
+.jp-rows { background: rgba(0, 0, 0, .28); border-radius: 8px; padding: 10px; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35); }
+.jp-row { background: var(--gm-light); color: var(--gm-dark); border: 0; border-radius: 6px; font: 700 16px/1.2 var(--gm-font); box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+.jp-more { color: var(--gm-light); }
+.jp-more > div { background: rgba(0, 0, 0, .28); }
+.jp-more b { color: var(--gm-turn-on); }
+
+/* P64 — Yüksek mi Alçak mı, anlaşılır ve tema dilinde */
+.hilo-ov .pk-box { width: min(600px, calc(100vw - 32px)); }
+.hilo-ov .pk-title { font-size: 20px; white-space: nowrap; }
+.hl-body { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.hl-win { font: 700 18px/1.2 var(--gm-font); color: var(--gm-light); }
+.hl-win b { color: var(--gm-turn-on); }
+.hl-how { background: var(--gm-light); color: var(--gm-dark); border-radius: 8px; padding: 10px 14px; text-align: left; width: 100%; box-sizing: border-box; box-shadow: 0 4px 0 rgba(0,0,0,.35); }
+.hl-how-t { font: 700 14px/1 var(--gm-font); margin-bottom: 6px; }
+.hl-how ol { margin: 0; padding-left: 20px; font: 13px/1.45 system-ui, 'Segoe UI', sans-serif; }
+.hl-table { display: flex; justify-content: center; align-items: flex-end; gap: 22px; background: rgba(0,0,0,.28); border-radius: 8px; padding: 12px 20px; box-shadow: inset 0 3px 0 rgba(0,0,0,.35); }
+.hl-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.hl-lbl { font: 700 11px/1 var(--gm-font); color: var(--gm-light); opacity: .85; letter-spacing: .5px; }
+.hl-body .hl-tile { transform: scale(1.35); margin: 16px 18px 12px; pointer-events: none; }
+.hl-body .hl-old .hl-tile { transform: scale(1); opacity: .6; margin: 6px 4px; }
+.hl-body .hl-back { display: flex; align-items: center; justify-content: center; background: var(--gm-light); color: var(--gm-dark); border: 3px dashed var(--gm-dark); font: 700 30px/1 var(--gm-font); }
+.hl-body .hl-bad { outline: 3px solid var(--gm-turn-on); outline-offset: 2px; filter: grayscale(.4); }
+.hl-ladder { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.hl-rung { font: 700 14px/1 var(--gm-font); color: var(--gm-light); border: 3px solid var(--gm-light); border-radius: 6px; padding: 5px 8px; opacity: .55; }
+.hl-rung.past { opacity: .8; }
+.hl-rung.on { background: var(--gm-turn-on); border-color: var(--gm-turn-on); color: var(--gm-dark); opacity: 1; }
+.hl-arr { color: var(--gm-light); opacity: .6; font-style: normal; }
+.hl-now { font: 700 13px/1.3 var(--gm-font); color: var(--gm-light); }
+.hl-flash { font: 700 15px/1.2 var(--gm-font); }
+.hl-flash.ok { color: var(--gm-turn-on); }
+.hl-text { color: var(--gm-light); font: 700 13px/1.4 var(--gm-font); }
+.hl-result { font: 700 22px/1.2 var(--gm-font); }
+.hl-result.ok { color: var(--gm-turn-on); } .hl-result.bad { color: var(--gm-light); }
+.hl-foot { gap: 10px; flex-wrap: wrap; }
+.hl-foot .hl-hi, .hl-foot .hl-lo { min-width: 150px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.hl-foot small { font-size: 12px; opacity: .8; }
+.hl-tie { width: 100%; text-align: center; color: var(--gm-light); opacity: .8; font: 700 11px/1 var(--gm-font); margin-top: 2px; }
+/* raund sonu kutusu: daha geniş, okunur */
+#modal { max-width: 560px !important; }
+#modalBody { font-size: 13px !important; line-height: 1.55 !important; }
+/* deste penceresi kayar → plaka içeride, düz */
+.pp-box { padding-top: 14px !important; }
+.pp-box > h3:first-child { top: 0; margin: 0 0 8px; }
+
+/* ============================================================
+   P64 — KOLEKSİYON SAHNESİ (oyunun UI dili)
+   ============================================================ */
+#collectionOverlay { background: rgba(14, 22, 32, .78); backdrop-filter: blur(3px); }
+#collectionScene {
+  background: var(--gm-dark) !important; color: var(--gm-light);
+  border: 4px solid var(--gm-light) !important; border-radius: 10px !important;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45), 0 22px 50px rgba(0, 0, 0, .5) !important;
+  font-family: var(--gm-font);
+  --ink: var(--gm-light); --muted: color-mix(in srgb, var(--gm-light) 78%, transparent);
+  --soft: color-mix(in srgb, var(--gm-light) 55%, transparent); --line: var(--gm-light);
+}
+#collectionScene .col-head h2 {
+  display: inline-block; background: rgba(0, 0, 0, .22); color: var(--gm-light);
+  border: 4px solid var(--gm-light); border-radius: 8px; padding: 8px 20px;
+  font: 700 24px/1 var(--gm-font); letter-spacing: -1px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+#collectionScene #colSub { color: var(--gm-light); opacity: .85; font: 700 12px/1.4 var(--gm-font); margin-top: 8px; }
+#collectionScene #btnColBack {
+  background: transparent; color: var(--gm-light); border: 3px solid var(--gm-light); border-radius: 8px;
+  font: 700 16px/1 var(--gm-font); padding: 9px 16px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35);
+}
+#collectionScene #btnColBack:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.col-well { background: rgba(0, 0, 0, .28); border-radius: 8px; padding: 14px; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35); }
+/* giriş */
+.col-hub { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 6px 2px; }
+.col-cat {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: var(--gm-light); color: var(--gm-dark); border: 4px solid var(--gm-light); border-radius: 10px;
+  padding: 18px 10px; cursor: pointer; font-family: var(--gm-font);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45); transition: transform .06s ease, box-shadow .06s ease;
+}
+.col-cat:hover { filter: brightness(1.08); }
+.col-cat:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.col-cat.big { grid-row: span 2; }
+.col-cat .cc-ico { font-size: 34px; line-height: 1; }
+.col-cat.big .cc-ico { font-size: 56px; }
+.col-cat .cc-name { font: 700 19px/1.1 var(--gm-font); letter-spacing: -1px; }
+.col-cat.big .cc-name { font-size: 26px; }
+.col-cat .cc-count { font: 700 13px/1 var(--gm-font); background: var(--gm-dark); color: var(--gm-light); border-radius: 6px; padding: 5px 10px; }
+/* kategori */
+.col-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.col-plate { font: 700 20px/1 var(--gm-font); color: var(--gm-light); letter-spacing: -1px; }
+.col-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.col-chip {
+  background: transparent; color: var(--gm-light); border: 3px solid var(--gm-light); border-radius: 8px;
+  font: 700 14px/1 var(--gm-font); padding: 7px 12px; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+.col-chip.on { background: var(--gm-light); color: var(--gm-dark); }
+.col-chip:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.col-page-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; justify-items: center; align-content: start;
+  min-height: 340px;
+}
+.col-page-grid .col-tile { width: 100%; }
+.col-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 14px; }
+.col-pager .rp-arrow { flex: 0 0 40px; height: 40px; }
+.col-pager .rp-arrow[disabled] { opacity: .4; }
+.col-pages {
+  min-width: 180px; text-align: center; background: var(--gm-light); color: var(--gm-dark);
+  border-radius: 8px; padding: 10px 16px; font: 700 16px/1 var(--gm-font); box-shadow: 0 4px 0 rgba(0, 0, 0, .4);
+}
+#collectionScene .cm-row { background: var(--gm-light); color: var(--gm-dark); border: 0; border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+#collectionScene .cm-row .cm-note { color: var(--gm-dark); opacity: .75; }
+@media (max-width: 700px) {
+  .col-hub { grid-template-columns: repeat(2, 1fr); }
+  .col-page-grid { grid-template-columns: repeat(3, 1fr); }
+}
+/* koleksiyon sahnesi: ortada, içerik kadar yüksek (tam ekran değil) */
+#collectionOverlay { display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+#collectionOverlay.hidden { display: none; }
+#collectionScene { height: auto !important; max-height: calc(100vh - 40px); width: min(1180px, 100%); box-sizing: border-box; overflow: auto; }
+#colBody.col-v-all { max-height: calc(100vh - 200px); overflow: auto; }
