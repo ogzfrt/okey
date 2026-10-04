@@ -4285,6 +4285,7 @@ const Game = {
     const s = this.state, h = s.hiLo;
     spendCoins(s, Math.min(h.stake, Math.max(0, s.coins)));
     h.phase = 'lost';
+    if (this._logHiLo) this._logHiLo(h, -h.stake);
     s.statHiLo = s.statHiLo || { won: 0, lost: 0, net: 0 };
     s.statHiLo.lost++; s.statHiLo.net -= h.stake;
   },
@@ -4293,6 +4294,7 @@ const Game = {
     if (!h || h.phase !== 'play') return { ok: false };
     gainCoins(s, h.pot - h.stake);
     h.phase = 'done';
+    if (this._logHiLo && h.step > 0) this._logHiLo(h, h.pot - h.stake);
     s.statHiLo = s.statHiLo || { won: 0, lost: 0, net: 0 };
     if (h.step > 0) { s.statHiLo.won++; s.statHiLo.net += h.pot - h.stake; }
     return { ok: true, pot: h.pot };
@@ -11961,6 +11963,16 @@ Game._logRoundEnd = function () {
   if (s.bet) { e.bet = s.bet; e.base = s.betBaseTarget; }
   if (s.katla) e.katla = s.katla.base;
   if (s.bossFail) e.fail = s.bossFail;
+  /* P61 — Kumarhane kararları da rapora girer */
+  if (s.ruletColor) e.rulet = s.ruletColor;
+  if (s.sideBet) e.side = { key: s.sideBet.key, odds: s.sideBet.odds, stake: s.sideBet.stake,
+    hit: s.sideBet.resolved ? !!s.sideBet.hit : null, paid: s.sideBet.paid || 0 };
+};
+/* Yüksek mi Alçak mı raund kapandıktan SONRA oynanır → son kayda işlenir */
+Game._logHiLo = function (h, net) {
+  const s = this.state; if (!s || !s.runLog) return;
+  const e = s.runLog.rounds[s.runLog.rounds.length - 1];
+  if (e) e.hl = { step: h.step, net };
 };
 {
   const orig = Game._startRound;
@@ -12008,6 +12020,7 @@ Game.runLog = function () { return this.state ? runLogOf(this.state) : null; };
       const notes = (s.coinReport && s.coinReport.extraNotes) || [];
       this._sideBetResolve(notes, false);
       this._hiLoOffer();
+      if (this._logRoundEnd) this._logRoundEnd();   // yan bahis sonucu rapora girsin
     }
     return r;
   };
@@ -12018,6 +12031,7 @@ Game.runLog = function () { return this.state ? runLogOf(this.state) : null; };
     if (s && this.kumarhaneOn()) {
       this._sideBetResolve((s.coinReport && s.coinReport.extraNotes) || [], true);
       s.hiLo = null;
+      if (this._logRoundEnd) this._logRoundEnd();
     }
     return r;
   };

@@ -6378,6 +6378,10 @@
       if (e.boss) parts.push(`${t('rpBoss')} ${T.bossName(e.boss, (JOKER_DEFS[e.boss] || {}).name || e.boss)}`);
       if (e.bet) parts.push(`${t('rpBet')} ${T.ev(BETS[e.bet] ? BETS[e.bet].name : e.bet)}`);
       if (e.katla) parts.push(t('rpKatla', e.katla));
+      if (e.rulet) parts.push(t('rpRulet', e.rulet === 'red' ? '🔴' : '⚫'));
+      if (e.side) parts.push(t('rpSide', String(T.ev(SIDE_NAME(e.side.key))), e.side.odds,
+        e.side.hit == null ? '…' : e.side.hit ? `✔ +${e.side.paid}` : `✘ −${e.side.stake}`));
+      if (e.hl) parts.push(t('rpHiLo', e.hl.step, e.hl.net >= 0 ? `+${e.hl.net}` : `${e.hl.net}`));
       if (e.fail) parts.push(`${t('rpFail')} ${String(T.ev(e.fail)).replace(/<[^>]+>/g, '')}`);
       if (e.add && e.add.length) parts.push('+' + e.add.map(jn).join(', +'));
       if (e.rem && e.rem.length) parts.push('−' + e.rem.map(jn).join(', −'));
