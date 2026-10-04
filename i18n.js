@@ -201,6 +201,7 @@
       hiloTieNote: 'Eşit gelirse kasa kazanır.', hiloCameN: (n) => `(${n} geldi)`,
       colCasino: 'KUMARHANE JOKERLERİ', colCasinoNote: 'Yalnız Kumarhane Run’da çıkar',
       hintsLabel: 'İpuçları', hintsReset: 'Yeniden göster', hintsResetDone: 'İpuçları sıfırlandı — yeniden görünecekler',
+      sfxSetLabel: 'SES EFEKTLERİ',
       musicLabel: 'MÜZİK', musicOn: 'Açık', musicOff: 'Kapalı',
       musicSetLabel: 'TEMA MÜZİĞİ', musicSet1: 'Müzik 1', musicSet2: 'Müzik 2', musicSet3: 'Müzik 3',
       musicPreview: (n) => `${n} çalıyor — menüde ve oyunda bu çalacak`,
@@ -324,7 +325,6 @@
       deckLbl: 'DESTE', discardLbl: 'ATILAN',
       /* Figma oyun ekranı (2026-08-23) etiketleri */
       /* Figma "i" butonu = RUN BİLGİSİ; ses kontrolü duraklat menüsünde */
-      sfxLbl: 'Ses',
       riTitle: 'RUN BİLGİSİ', riStage: 'Stage', riRound: 'Raund', riTurn: 'Tur',
       riScore: 'Puan / Hedef', riCoins: 'Coin', riPerm: 'Kalıcı çarpan',
       riOkey: 'Okey', riJokers: 'Jokerler', riTotem: 'Değnek',
@@ -1068,6 +1068,7 @@
       hiloTieNote: 'A tie goes to the house.', hiloCameN: (n) => `(${n} came)`,
       colCasino: 'CASINO JOKERS', colCasinoNote: 'Only appear in Casino Run',
       hintsLabel: 'Tips', hintsReset: 'Show again', hintsResetDone: 'Tips reset — they will show again',
+      sfxSetLabel: 'SOUND EFFECTS',
       musicLabel: 'MUSIC', musicOn: 'On', musicOff: 'Off',
       musicSetLabel: 'THEME MUSIC', musicSet1: 'Music 1', musicSet2: 'Music 2', musicSet3: 'Music 3',
       musicPreview: (n) => `Playing ${n} — this plays in the menu and in game`,
@@ -1163,7 +1164,6 @@
       jokersTitle: 'JOKERS', backupTitle: 'BACKUP', consumTitle: 'WANDS',
       sortLbl: 'Sort Hand', sortRank: 'Rank', sortSuit: 'Suit',
       deckLbl: 'DECK', discardLbl: 'DISCARD',
-      sfxLbl: 'Sound',
       riTitle: 'RUN INFO', riStage: 'Stage', riRound: 'Round', riTurn: 'Turn',
       riScore: 'Score / Target', riCoins: 'Coins', riPerm: 'Perm. multiplier',
       riOkey: 'Okey', riJokers: 'Jokers', riTotem: 'Wand',

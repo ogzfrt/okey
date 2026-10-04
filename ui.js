@@ -16,7 +16,7 @@
       tasarımda karşılığı olmadığı için KALDIRILDI. */
    'mapStage','mapRound','mapScoreVal','mapCoinVal','mapOkey','mapCards',
    'mapJokerSlots','mapDeckCount','mapDiscardSlot',
-   'btnMapPause','btnMapInfo','mapMenuPop','btnMapGoMenu','btnMapSettings','btnMapSfx',
+   'btnMapPause','btnMapInfo','mapMenuPop','btnMapGoMenu','btnMapSettings',
    'roundChip','coinChip','okeyChip','bossChip','turnIndicator','kahinChip',
    'scoreNow','scoreTarget','progressFill','permMult',
    'jokerSlots','slotCount','backupSlots','backupCount','btnTerazi','btnParatoner','btnRusvet','fatalityChip','borsaChip',
@@ -33,7 +33,7 @@
    'btnReroll','btnStoreContinue',
    'upgradeOverlay','upOptions','upCoins','btnUpContinue',
    'collectionOverlay','colBody','btnColBack',
-   'btnMenu','menuPop','btnGoMenu','btnPauseSettings','btnSfx','btnTutorial','btnRunInfo','coinVal',
+   'btnMenu','menuPop','btnGoMenu','btnPauseSettings','btnTutorial','btnRunInfo','coinVal',
    'btnAddCombo','btnConfirm','btnSkip','btnDiscard',
    'btnSortRank','btnSortSuit',
   ].forEach(id => el[id] = $(id));
@@ -2077,10 +2077,15 @@
   /* ---------- Ses (GDD 14.5) — WebAudio mini synth ---------- */
 
   let sfxOn = localStorage.getItem('okeySfx') !== '0';
+  /* P67 — efekt sesi ayarlarda (aç/kapa + seviye); duraklat menüsündeki
+     "Ses" düğmesi kaldırıldı. Seviye %100 = eski ses düzeyi. */
+  let sfxVol = parseInt(localStorage.getItem('okeySfxVol'), 10);
+  if (isNaN(sfxVol)) sfxVol = 100;
   let actx = null;
 
   function beep(freq, dur = 0.08, type = 'triangle', vol = 0.1, when = 0) {
-    if (!sfxOn) return;
+    if (!sfxOn || sfxVol <= 0) return;
+    vol *= sfxVol / 100;
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
       const o = actx.createOscillator(), g = actx.createGain();
@@ -5364,10 +5369,6 @@
 
   el.btnTutorial.addEventListener('click', () => TUT.start());
 
-  /* Grup E kancası: gerçek uygulaması aşağıda (ses düğmesi kurulurken)
-     atanır; o ana kadar sessizce hiçbir şey yapmaz. */
-  let refreshSfxLabel = () => {};
-
   /* ---------- Menüler / pause (Grup D) ---------- */
 
   function startNewRun(mode) {
@@ -5834,8 +5835,8 @@
 
   /* GRUP I (2026-09-07): haritadaki "Ana Menü" düğmesi kaldırıldı —
      tasarımda yok. Ana menüye artık haritanın DURAKLAT düğmesindeki
-     menüden gidilir; menü oyun ekranındakinin birebir eşi, ses düğmesi
-     de aynı anahtarı çevirir (tek kaynak: #btnSfx). */
+     menüden gidilir; menü oyun ekranındakinin birebir eşi. Ses ayarları
+     P67'den beri yalnız Ayarlar penceresinde. */
   el.btnMapPause.addEventListener('click', (e) => {
     e.stopPropagation();
     el.mapMenuPop.classList.toggle('hidden');
@@ -5852,10 +5853,6 @@
   el.btnMapSettings.addEventListener('click', () => {
     el.mapMenuPop.classList.add('hidden');
     showSettings();
-  });
-  el.btnMapSfx.addEventListener('click', () => {
-    el.btnSfx.click();                       // ses anahtarı TEK yerde durur
-    el.btnMapSfx.textContent = el.btnSfx.textContent;
   });
   el.btnMapInfo.addEventListener('click', showRunInfo);
   /* P65 — store sahnesinin duraklat/bilgi düğmeleri haritadakinin eşi */
@@ -5874,10 +5871,6 @@
       showScreen('menu');
     });
     $('btnStoreSettings').addEventListener('click', () => { pop.classList.add('hidden'); showSettings(); });
-    $('btnStoreSfx').addEventListener('click', () => {
-      el.btnSfx.click();
-      $('btnStoreSfx').textContent = el.btnSfx.textContent;
-    });
     $('btnStoreInfo').addEventListener('click', showRunInfo);
     const deck = document.querySelector('#storePileCol .deck-pile');
     deck.addEventListener('click', () => showPilePopup('deck'));
@@ -6093,6 +6086,12 @@
         `<span class="sw">${th.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span>` +
         `<span>${t('theme_' + th.key)}</span></button>`).join('') +
       `</div></div>` +
+      /* P67 — ses efektleri (düğme/taş sesleri): aç/kapa + seviye */
+      `<div class="set-row"><span class="set-label">${t('sfxSetLabel')}</span>` +
+      `<div class="set-langs set-music"><button class="set-lang${sfxOn ? ' on' : ''}" id="setSfxOn">` +
+      `${sfxOn ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff')}</button>` +
+      `<input type="range" id="setSfxVol" min="0" max="100" step="5" value="${sfxVol}" aria-label="${t('sfxSetLabel')}">` +
+      `<b id="setSfxPct">${sfxVol}%</b></div></div>` +
       /* P66 — müzik: aç/kapa + ses seviyesi */
       `<div class="set-row"><span class="set-label">${t('musicLabel')}</span>` +
       `<div class="set-langs set-music"><button class="set-lang${Music.on ? ' on' : ''}" id="setMusicOn">` +
@@ -6109,6 +6108,21 @@
       `<button class="btn ghost" id="setClose">${t('close')}</button></div>`;
     document.body.appendChild(ov);
     ov.querySelector('#setHintsReset').addEventListener('click', () => { Hints.reset(); toast(t('hintsResetDone'), true); });
+    const sOn = ov.querySelector('#setSfxOn'), sVol = ov.querySelector('#setSfxVol');
+    const sfxBtn = () => { sOn.classList.toggle('on', sfxOn); sOn.textContent = sfxOn ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff'); };
+    sOn.addEventListener('click', () => {
+      sfxOn = !sfxOn;
+      localStorage.setItem('okeySfx', sfxOn ? '1' : '0');
+      sfxBtn();
+      if (sfxOn) SFX.tick();
+    });
+    sVol.addEventListener('input', () => {
+      sfxVol = Math.max(0, Math.min(100, +sVol.value || 0));
+      localStorage.setItem('okeySfxVol', String(sfxVol));
+      ov.querySelector('#setSfxPct').textContent = sfxVol + '%';
+      if (!sfxOn && sfxVol > 0) { sfxOn = true; localStorage.setItem('okeySfx', '1'); sfxBtn(); }
+    });
+    sVol.addEventListener('change', () => SFX.tick());   // bırakınca örnek ses
     const mOn = ov.querySelector('#setMusicOn'), mVol = ov.querySelector('#setMusicVol');
     mOn.addEventListener('click', () => {
       Music.setOn(!Music.on);
@@ -6197,7 +6211,6 @@
     $('lblMapOkeyBox').innerHTML = t('mapOkeyBoxLbl');
     el.btnMapGoMenu.textContent = t('pauseMainMenu');
     el.btnMapSettings.textContent = t('pauseSettings');
-    el.btnMapSfx.textContent = sfxLabel();
     $('lblJokers').textContent = t('jokersTitle');
     $('lblBackup').textContent = t('backupTitle').toLowerCase();
     // Figma: ıstakanın sağ omzu "Değnek" (oyun içi tüketilebilir alanı)
@@ -6220,12 +6233,6 @@
     el.btnDiscard.textContent = t('btnDiscardS'); el.btnDiscard.title = t('btnDiscard');
     el.btnGoMenu.textContent = t('pauseMainMenu');
     el.btnPauseSettings.textContent = t('pauseSettings');
-    /* PLAYTEST 18 · GRUP E — ses düğmesi dil değişiminde Türkçe kalıyordu:
-       etiketi yalnız kendi tıklama işleyicisi yazıyordu, `applyStaticTexts`
-       ona hiç dokunmuyordu. Etiket üreteci dosyanın çok altında tanımlı
-       olduğu için (TDZ) buradan doğrudan çağrılamaz; bir kanca üzerinden
-       bağlanır ve o hazır olduğunda çalışır. */
-    refreshSfxLabel();
     // Grup E: dil değişince etiket uzunluğu da değişir → yeniden ölç
     fitPauseMenu();
     $('storeTitle').textContent = t('storeTitle');
@@ -6238,7 +6245,6 @@
     $('lblStoreOkeyBox').innerHTML = t('mapOkeyBoxLbl');
     $('btnStoreGoMenu').textContent = t('pauseMainMenu');
     $('btnStoreSettings').textContent = t('pauseSettings');
-    $('btnStoreSfx').textContent = el.btnSfx.textContent;
     $('ssSlotsTitle').textContent = t('storeSlotsTitle');
     $('ssBackupTitle').textContent = t('backupTitle').toLowerCase();
     $('ssConsumTitle').textContent = t('totemTitle');
@@ -7584,6 +7590,12 @@
     { key: 'upgrade', ico: '⭐', items: () => Object.values(UPGRADE_DEFS), card: (d) => colUpgradeTile(d) },
     { key: 'modes', ico: '🎮', items: () => Modes.statusRows(), card: null },
   ];
+  /* P67 — sayfa/kategori değişimi pencereyi YENİDEN açmaz: openScene giriş
+     animasyonunu sıfırdan oynatıyordu, ekran bir an kaybolup geri geliyordu. */
+  function colOpen() {
+    if (el.collectionOverlay.classList.contains('hidden')) openScene(el.collectionOverlay);
+  }
+
   function showCollection(view) {
     colView = view || 'hub';
     hideTip();
@@ -7591,7 +7603,7 @@
     el.btnColBack.textContent = t('colBack');
     el.colBody.innerHTML = '';
     el.colBody.className = 'col-v-' + (colView === 'all' ? 'all' : colView === 'hub' ? 'hub' : 'cat');
-    if (colView === 'all') { renderCollectionAll(); openScene(el.collectionOverlay); return; }
+    if (colView === 'all') { renderCollectionAll(); colOpen(); return; }
     if (colView === 'hub') {
       $('colSub').textContent = t('colHubSub');
       const hub = document.createElement('div');
@@ -7606,7 +7618,7 @@
         hub.appendChild(b);
       }
       el.colBody.appendChild(hub);
-      openScene(el.collectionOverlay);
+      colOpen();
       return;
     }
     const cat = COL_CATS.find(c => 'cat:' + c.key === colView) || COL_CATS[0];
@@ -7638,7 +7650,7 @@
         wrap.appendChild(row);
       }
       el.colBody.appendChild(wrap);
-      openScene(el.collectionOverlay);
+      colOpen();
       return;
     }
     let items = cat.items();
@@ -7657,7 +7669,7 @@
     pager.querySelector('.col-prev').addEventListener('click', () => { colPage = (colPage - 1 + pages) % pages; showCollection(colView); });
     pager.querySelector('.col-next').addEventListener('click', () => { colPage = (colPage + 1) % pages; showCollection(colView); });
     el.colBody.appendChild(pager);
-    openScene(el.collectionOverlay);
+    colOpen();
   }
 
   function renderCollectionAll() {
@@ -7840,22 +7852,8 @@
   /* toast gizli başlasın */
   el.toast.classList.add('hidden');
 
-  /* Ses ac/kapa (GDD 14.5) - 2026-08-23: Figma oyun ekraninda ses butonu
-     YOKTUR ("i" butonu RUN BILGISI butonudur), bu yuzden ses kontrolu
-     duraklat menusune tasindi. */
-  const sfxLabel = () => `${sfxOn ? '🔊' : '🔇'} ${t('sfxLbl')}`;
-  refreshSfxLabel = () => {                                        // Grup E
-    el.btnSfx.textContent = sfxLabel();
-    el.btnMapSfx.textContent = sfxLabel();                         // GRUP I
-  };
-  el.btnSfx.textContent = sfxLabel();
-  el.btnMapSfx.textContent = sfxLabel();
-  el.btnSfx.addEventListener('click', () => {
-    sfxOn = !sfxOn;
-    localStorage.setItem('okeySfx', sfxOn ? '1' : '0');
-    el.btnSfx.textContent = sfxLabel();
-    if (sfxOn) SFX.tick();
-  });
+  /* Ses efektleri (GDD 14.5) — P67: aç/kapa + seviye Ayarlar penceresinde
+     (duraklat menülerindeki "Ses" düğmesi kaldırıldı). */
 
   /* RUN BILGISI ("i" butonu, Figma 210:3805) - o anki run'in ozeti.
      Deste/atilan yigini pop-up'iyla ayni gorsel dili kullanir. */
