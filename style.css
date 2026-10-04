@@ -8580,3 +8580,49 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   .rp-sum > div { font-size: 13px; }
   .rp-go { font-size: 22px; }
 }
+
+/* ============================================================
+   P62c — DÜĞME HİSSİ (kullanıcı 2026-10-04: "buton hissiyatı yok, hafif
+   3 boyut") + sekmeler ayrı düğme (birleşik şeritte sağ uç düz kalıyordu).
+   Kabartma: üstte ışık çizgisi (inset beyaz), altta koyu kenar (inset
+   siyah), altında katı gölge; üzerine gelince 1px yükselir, basınca 3px
+   çöker ve ışık çizgisi gölgeye döner. Renkler temadan — 4 temada da aynı.
+   ============================================================ */
+.ep-btn, .rp-arrow, .rp-tab {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, .06));
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, .38), inset 0 -4px 0 rgba(0, 0, 0, .16), 0 5px 0 rgba(0, 0, 0, .45);
+  transition: transform .08s ease, box-shadow .08s ease, filter .12s ease;
+}
+.ep-btn:hover:not([disabled]), .rp-arrow:hover, .rp-tab:hover:not([disabled]) {
+  transform: translateY(-1px); filter: brightness(1.05);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, .42), inset 0 -4px 0 rgba(0, 0, 0, .16), 0 6px 0 rgba(0, 0, 0, .45);
+}
+.ep-btn:active:not([disabled]), .rp-arrow:active, .rp-tab:active:not([disabled]) {
+  transform: translateY(3px);
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, .18), inset 0 -1px 0 rgba(0, 0, 0, .1), 0 2px 0 rgba(0, 0, 0, .45);
+}
+/* çerçeveli ikincil düğme: koyu zeminde de kabartma */
+.ep-btn.ep-ghost {
+  background-color: rgba(0, 0, 0, .18);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .14), inset 0 -3px 0 rgba(0, 0, 0, .25), 0 4px 0 rgba(0, 0, 0, .4);
+}
+.ep-btn.ep-ghost:hover { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .18), inset 0 -3px 0 rgba(0, 0, 0, .25), 0 5px 0 rgba(0, 0, 0, .4); }
+.ep-btn.ep-ghost:active { box-shadow: inset 0 3px 0 rgba(0, 0, 0, .3), 0 1px 0 rgba(0, 0, 0, .4); }
+.ep-btn[disabled], .rp-go[disabled] {
+  transform: none !important; filter: saturate(.5) !important; opacity: .5;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .12), 0 3px 0 rgba(0, 0, 0, .3) !important;
+}
+/* sekmeler artık AYRI düğmeler: iki ucu da yuvarlak, kendi kenarı ve gölgesi */
+.rp-tabs { display: inline-flex; gap: 10px; border: 0; border-radius: 0; overflow: visible; box-shadow: none; margin-bottom: 14px; }
+.rp-tab { border: 4px solid var(--gm-light); border-radius: 8px; background-color: var(--gm-dark); color: var(--gm-light); }
+.rp-tab + .rp-tab { border-left: 4px solid var(--gm-light); }
+.rp-tab.on { background-color: var(--gm-light); color: var(--gm-dark); }
+.rp-tab:not(.on):not([disabled]) { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .12), inset 0 -3px 0 rgba(0, 0, 0, .25), 0 5px 0 rgba(0, 0, 0, .45); }
+/* satırlar ve mod kartı: hafif kabartma (basılmazlar, yalnız derinlik) */
+.ep-row { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .3), inset 0 -3px 0 rgba(0, 0, 0, .1), 0 3px 0 rgba(0, 0, 0, .35); }
+.ep-val { box-shadow: inset 0 2px 0 rgba(0, 0, 0, .3); }
+.rp-slide { box-shadow: inset 0 3px 0 rgba(255, 255, 255, .3), inset 0 -4px 0 rgba(0, 0, 0, .1), 0 5px 0 rgba(0, 0, 0, .4); }
+.rp-slide.mp-card:hover { transform: translateY(-2px); }
+/* sağ sütun dar: etiket kısalmasın ("Kalıcı Çarpan") */
+.ep-right .ep-row { font-size: 13.5px; letter-spacing: -.8px; padding-left: 10px; }
+.ep-right .ep-val { min-width: 0; padding: 7px 8px; }
