@@ -345,54 +345,107 @@
     </div>
   </div>
 
-  <!-- ==================== STORE SAHNESİ (Grup B) ====================
-       Artık pop-up değil: kendi arka planı ve düzeni olan TAM EKRAN sahne.
-       Sol: dükkan tabelası + run istatistikleri + slotların (hover→Sat).
-       Sağ: ürün rafları + aksiyonlar. Referans: Balatro SHOP / Gambonanza. -->
+  <!-- ==================== STORE SAHNESİ (P65) ====================
+       Kullanıcının Figma taslakları (OKEY-101 · UI_GÜNCEL_STORE v1 240:455,
+       v2 278:9273, v3 279:11494): store artık haritanın 1920×1080 tuvalinde
+       yaşar. Sol sütun, $ kutusu, joker paneli ve deste haritayla BİREBİR
+       aynı yerde; ortada STORE plakası + panel (üst satır jokerler, alt satır
+       değnek ve paketler), panelin üstüne Değnek (sol) ve backup (sağ)
+       omuzları oturur. Satır genişliği ürün sayısına göre değişir (taslaktaki
+       3/4 joker, 4/5/6 ürün varyantları). Eski id'ler korunuyor. -->
   <div id="storeOverlay" class="hidden">
-    <div id="storeScene">
-      <aside id="storeSide">
-        <div id="storeSign">
-          <h2 id="storeTitle">STORE</h2>
-          <div id="storeSub" class="store-sub">Raund arası alışveriş</div>
+    <div id="storeStage" class="gm-stage">
+      <div class="brand">
+        <button id="btnStorePause" class="gm-icon gm-pause" title="Menü"></button>
+        <button id="btnStoreInfo" class="gm-icon gm-info" title="Run bilgisi">i</button>
+        <div id="storeMenuPop" class="hidden">
+          <button id="btnStoreGoMenu" class="btn ghost">Ana Menüye Dön</button>
+          <button id="btnStoreSettings" class="btn ghost">⚙ Ayarlar</button>
+          <button id="btnStoreSfx" class="btn ghost">🔊 Ses</button>
         </div>
-        <div class="ss-block">
-          <div id="ssRoundLbl" class="ss-label">STAGE · RAUND</div>
-          <div id="ssRound" class="ss-value"></div>
+      </div>
+
+      <!-- sol sütun: haritanın aynısı, başlık "UPGRADE YOUR RUN!" (Figma 240:492) -->
+      <aside id="storeSide" class="gm-left">
+        <div id="storeSign" class="gm-map-title">
+          <span id="storeSign1">UPGRADE YOUR</span>
+          <span id="storeSign2">RUN!</span>
         </div>
-        <div class="ss-block">
-          <div id="ssCoinLbl" class="ss-label">COİN</div>
-          <div id="storeCoins" class="ss-value gold"><span class="coin-ico"></span> 0</div>
+        <div id="storeScorePanel" class="gm-score">
+          <div class="gm-score-lbl" id="lblStoreScoreBox">Raund<br>Score</div>
+          <div class="gm-score-body">
+            <div class="gm-score-val"><span id="storeScoreVal">0</span></div>
+          </div>
         </div>
-        <div class="ss-block">
-          <div id="ssPermLbl" class="ss-label">KALICI ÇARPAN</div>
-          <div id="ssPerm" class="ss-value">+0.0x</div>
+        <div class="gm-statrow">
+          <div class="gm-stat">
+            <div class="gm-stat-h" id="lblStoreStageBox">STAGE</div>
+            <div class="gm-stat-v" id="storeStageVal">1/8</div>
+          </div>
+          <div class="gm-stat">
+            <div class="gm-stat-h" id="lblStoreRoundBox">RAUND</div>
+            <div class="gm-stat-v" id="ssRound">1/3</div>
+          </div>
         </div>
-        <div class="panel-title"><span id="ssSlotsTitle">SLOTLARIN</span> <span id="ssSlotsCount" class="pt-count">0/5</span></div>
-        <div id="storeSlotsRow" class="store-slots"></div>
-        <div class="panel-title"><span id="ssBackupTitle">BACKUP</span> <span id="ssBackupCount" class="pt-count">0/2</span></div>
-        <div id="storeBackupRow" class="store-slots"></div>
-        <div id="storeDeckRow"></div>
-        <div class="panel-title"><span id="ssConsumTitle">DEĞNEK</span> <span id="ssConsumCount" class="pt-count">0/3</span></div>
-        <div id="storeConsumRow"></div>
+        <div class="gm-map-okey">
+          <div class="mo-lbl" id="lblStoreOkeyBox">STAGE<br>OKEY</div>
+          <div id="storeOkey" class="mo-tile"></div>
+        </div>
       </aside>
-      <main id="storeMain">
-        <!-- Grup D: üst satır JOKERLER, alt satır TÜKETİLEBİLİR + GİZLİ PAKETLER -->
+
+      <div id="storeCoins" class="gm-coin"><span class="gm-cur">$</span><span id="storeCoinVal">0</span></div>
+
+      <!-- sağ: joker ızgarası (haritayla aynı, Figma 240:479) -->
+      <aside id="storeJokerPanel" class="gm-jokers">
+        <div class="gm-jk-head"><span id="ssSlotsTitle">SLOTLARIN</span> <span id="ssSlotsCount">0/5</span></div>
+        <div id="storeSlotsRow"></div>
+      </aside>
+      <!-- deste jokerleri slotta görünmez — satış erişimi için mini şerit -->
+      <div id="storeDeckRow"></div>
+
+      <div id="storePileCol">
+        <div class="deck-pile"></div>
+        <div id="storeDeckCount" class="gm-deck-count"></div>
+        <div id="storeDiscardSlot" class="discard-slot"></div>
+      </div>
+
+      <!-- omuzlar: panelin üst kenarına oturur (Figma 240:456 / 240:468) -->
+      <div id="storeTotemShoulder" class="st-shoulder st-sh-left open">
+        <button class="st-sh-tab" id="btnStoreTotem" aria-expanded="true">
+          <span id="ssConsumTitle">Değnek</span>
+          <span id="ssConsumCount" class="gm-sh-count">0/3</span>
+          <span class="gm-chev" aria-hidden="true"></span>
+        </button>
+        <div class="gm-sh-body st-sh-body"><div id="storeConsumRow"></div></div>
+      </div>
+      <div id="storeBackupShoulder" class="st-shoulder st-sh-right open">
+        <button class="st-sh-tab" id="btnStoreBackup" aria-expanded="true">
+          <span id="ssBackupTitle">backup</span>
+          <span id="ssBackupCount" class="gm-sh-count">0/2</span>
+          <span class="gm-chev" aria-hidden="true"></span>
+        </button>
+        <div class="gm-sh-body st-sh-body"><div id="storeBackupRow"></div></div>
+      </div>
+
+      <!-- ana panel (Figma 240:478, 449,307 · 1132×720) -->
+      <main id="storeScene" class="st-oct st-panel">
         <div id="storeItems">
-          <div class="store-row">
+          <div class="store-row st-oct" id="storeRowA">
             <div class="sr-head" id="srJokersLbl">JOKERLER</div>
             <div class="sr-grid" id="storeRowJokers"></div>
           </div>
-          <div class="store-row">
-            <div class="sr-head" id="srExtrasLbl">TÜKETİLEBİLİR &amp; GİZLİ PAKETLER</div>
+          <div class="store-row st-oct" id="storeRowB">
+            <div class="sr-head" id="srExtrasLbl">DEĞNEK &amp; PAKETLER</div>
             <div class="sr-grid" id="storeRowExtras"></div>
           </div>
         </div>
         <div class="store-actions">
-          <button id="btnReroll" class="btn ghost">🎲 Yenile — 3 <span class="coin-ico"></span></button>
-          <button id="btnStoreContinue" class="btn confirm">Haritaya Dön →</button>
+          <button id="btnReroll" class="st-btn st-oct">Yenile</button>
+          <button id="btnStoreContinue" class="st-btn st-oct">Devam</button>
         </div>
       </main>
+      <!-- STORE plakası (Figma 241:799, 800,188 · 430×160) -->
+      <div id="storePlate" class="st-oct"><h2 id="storeTitle">STORE</h2></div>
     </div>
   </div>
 

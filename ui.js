@@ -28,7 +28,7 @@
    'toast','overlay','modalTitle','modalBody','modalBtn','bossBanner',
    'storeOverlay','storeItems','storeCoins','storeDeckRow',
    'storeRowJokers','storeRowExtras','srJokersLbl','srExtrasLbl',
-   'ssRound','ssPerm','storeSlotsRow','storeBackupRow','storeConsumRow',
+   'ssRound','storeSlotsRow','storeBackupRow','storeConsumRow',
    'ssSlotsCount','ssBackupCount','ssConsumCount',
    'btnReroll','btnStoreContinue',
    'upgradeOverlay','upOptions','upCoins','btnUpContinue',
@@ -234,8 +234,8 @@
        (kullanıcı kararı 2026-08-26): raundun içindeyken atlamak istenmiyor,
        atlama kararı raunda girmeden önce veriliyor. Bkz. renderMap(). */
     document.querySelector('#gameScreen .gm-left')?.appendChild(mk());
-    // Store sahnesi başlık bloğu
-    document.getElementById('storeSign')?.appendChild(mk());
+    // Store sahnesi: sol sütunun akışına (haritadaki gibi başlığın altına)
+    document.getElementById('storeSide')?.appendChild(mk());
     // Upgrade sahnesi başlığın üstüne
     const up = document.getElementById('upgradeScene');
     if (up) up.insertBefore(mk(), up.firstChild);
@@ -1107,6 +1107,9 @@
       card.appendChild(tgt);
 
       el.mapCards.appendChild(card);
+      /* P65 rötuş — uzun boss adları (TERZİ'NİN İĞNESİ) şeridin dışına
+         taşıyordu: yazı şeride sığana kadar küçülür. */
+      fitText(pill, 24, 13);
 
       /* TRAINER — RAUND ATLAMA. Düğme kartların ARASINDAKİ boşlukta durur
          ve solundaki raundu atlar; her tıklama TEK raund ilerletir.
@@ -2064,7 +2067,8 @@
   function lockBtn(locked, onToggle) {
     const b = document.createElement('button');
     b.className = 's-lock' + (locked ? ' on' : '');
-    b.textContent = locked ? '🔒' : '🔓';
+    /* P65 — taslaktaki piksel asma kilit (açık/kapalı), tema vurgusuyla boyanır */
+    b.innerHTML = '<span class="lk-ico" aria-hidden="true"></span>';
     b.title = locked ? t('lockOn') : t('lockOff');
     b.addEventListener('click', onToggle);
     return b;
@@ -2508,8 +2512,15 @@
       const b = document.createElement('button');
       const inBackup = Game.state.backup.some(x => x.id === j.id);
       b.className = `fz-opt r-${j.rarity}` + (inBackup ? ' fz-backup' : '');
-      b.innerHTML = `<b>${T.name(j)}</b><span>${Game.isRunLong(j) ? t('tipUsesRun') : t('fzRounds', j.usesLeft)}`
+      /* P65 (kullanıcı isteği 2026-10-04: "jokerlerin kendilerini görebilelim")
+         — seçenek artık jokerin KENDİSİ: çizimi varsa çizimi, yoksa slottaki
+         gibi büyük ikonu taş yüzünde; adı ve kalan süresi altında. Tam
+         açıklama üstüne gelince tooltip'te. */
+      const fzArt = JOKER_ART.has(j.key);
+      b.innerHTML = `<div class="fz-card${fzArt ? ' fz-art jk-' + j.key : ''}">${fzArt ? '' : jokerIcon(j.key)}</div>`
+        + `<b>${T.name(j)}</b><span>${Game.isRunLong(j) ? t('tipUsesRun') : t('fzRounds', j.usesLeft)}`
         + (inBackup ? ` · ${t('fzInBackup')}` : '') + `</span>`;
+      attachTip(b, { name: T.name(j), desc: T.desc(j), accent: j.rarity, rarityText: T.rarity(j.rarity), key: j.key }, {});
       b.addEventListener('click', () => {
         if (!keepId) {
           keepId = j.id;
@@ -5339,6 +5350,40 @@
     el.btnMapSfx.textContent = el.btnSfx.textContent;
   });
   el.btnMapInfo.addEventListener('click', showRunInfo);
+  /* P65 — store sahnesinin duraklat/bilgi düğmeleri haritadakinin eşi */
+  {
+    const pop = $('storeMenuPop');
+    $('btnStorePause').addEventListener('click', (e) => {
+      e.stopPropagation();
+      pop.classList.toggle('hidden');
+      pop.querySelectorAll('.btn').forEach(b => fitText(b, PAUSE_BASE, PAUSE_MIN, true));
+    });
+    document.addEventListener('click', (e) => { if (!pop.contains(e.target)) pop.classList.add('hidden'); });
+    $('btnStoreGoMenu').addEventListener('click', () => {
+      pop.classList.add('hidden');
+      el.storeOverlay.classList.add('hidden');
+      Game.trainerMode = false;
+      showScreen('menu');
+    });
+    $('btnStoreSettings').addEventListener('click', () => { pop.classList.add('hidden'); showSettings(); });
+    $('btnStoreSfx').addEventListener('click', () => {
+      el.btnSfx.click();
+      $('btnStoreSfx').textContent = el.btnSfx.textContent;
+    });
+    $('btnStoreInfo').addEventListener('click', showRunInfo);
+    const deck = document.querySelector('#storePileCol .deck-pile');
+    deck.addEventListener('click', () => showPilePopup('deck'));
+    deck.style.cursor = 'pointer';
+    /* omuzlar: sekmeye tıkla → aç/kapa (oyun ekranındaki omuzlarla aynı his) */
+    for (const [btn, node] of [['btnStoreTotem', 'storeTotemShoulder'], ['btnStoreBackup', 'storeBackupShoulder']]) {
+      $(btn).addEventListener('click', () => {
+        const open = !$(node).classList.contains('open');
+        $(node).classList.toggle('open', open);
+        $(btn).setAttribute('aria-expanded', String(open));
+        SFX.tick();
+      });
+    }
+  }
   function fitMapPauseMenu() {
     if (!el.mapMenuPop || el.mapMenuPop.classList.contains('hidden')) return;
     el.mapMenuPop.querySelectorAll('.btn').forEach(b => fitText(b, PAUSE_BASE, PAUSE_MIN, true));
@@ -5648,14 +5693,20 @@
     // Grup E: dil değişince etiket uzunluğu da değişir → yeniden ölç
     fitPauseMenu();
     $('storeTitle').textContent = t('storeTitle');
-    $('storeSub').textContent = t('storeImprove');
-    $('ssRoundLbl').textContent = t('storeStatsRound');
-    $('ssCoinLbl').textContent = t('mapCoinLbl');
-    $('ssPermLbl').textContent = t('mapPermLbl');
+    /* P65 — store sahnesi haritanın tuvalinde: aynı anahtarlar */
+    $('storeSign1').textContent = t('storeSign1');
+    $('storeSign2').textContent = t('storeSign2');
+    $('lblStoreScoreBox').innerHTML = t('scoreBoxLbl');
+    $('lblStoreStageBox').textContent = t('stageBoxLbl');
+    $('lblStoreRoundBox').textContent = t('roundBoxLbl');
+    $('lblStoreOkeyBox').innerHTML = t('mapOkeyBoxLbl');
+    $('btnStoreGoMenu').textContent = t('pauseMainMenu');
+    $('btnStoreSettings').textContent = t('pauseSettings');
+    $('btnStoreSfx').textContent = el.btnSfx.textContent;
     $('ssSlotsTitle').textContent = t('storeSlotsTitle');
-    $('ssBackupTitle').textContent = t('backupTitle');
-    $('ssConsumTitle').textContent = t('consumTitle');
-    el.btnStoreContinue.textContent = t('storeContinue');
+    $('ssBackupTitle').textContent = t('backupTitle').toLowerCase();
+    $('ssConsumTitle').textContent = t('totemTitle');
+    el.btnStoreContinue.innerHTML = `<b>${t('stNext')}</b>`;
   }
 
   /* ---------- Raund sonu ---------- */
@@ -5680,32 +5731,35 @@
         : s.coinReport.boss ? t('bossWin') : t('roundWin'))
       : t('gameOver');
     el.modalTitle.className = won ? 'win' : 'lose';
+    el.overlay.classList.remove('rw-open');
 
     if (won) {
       const over = s.score - s.target;
       const pct = Math.round((over / s.target) * 100);
       const cr = s.coinReport;
-      let coinHtml = `<hr style="border-color:#3a3a5e;margin:10px 0">`;
+      /* P65 (kullanıcı: "çok karışık, ilk görünce bu ne be diyorsun") —
+         ortalanmış yazı yığını yerine üç net blok:
+           1) iki kutu: SKOR (hedef + aşım yüzdesi) · TUR (kaçıncı turda bitti)
+           2) COIN FİŞİ: solda kalem, sağda tutar, altta büyük TOPLAM
+           3) varsa küçük notlar (Kaptan, boss ödülü, joker notları)
+         Tutarlar motorun coinReport'undan aynen gelir; hesap değişmedi. */
+      const row = (lbl, v, cls = '') => `<div class="rw-row ${cls}"><span>${lbl}</span><b>${v}</b></div>`;
+      const sg = (n) => (n < 0 ? `−${-n}` : `+${n}`);
+      let rows = '';
+      let total = 0;
       if (cr.survived) {
-        coinHtml += `${t('kaptanSaved')}<br>${t('coinNet')} <b style="color:#F5A623">${COIN} +${cr.net}</b>`;
+        rows += row(t('kaptanSaved'), sg(cr.net));
+        total += cr.net;
       } else {
-        coinHtml +=
-          `${t('coinBase', s.wonOnTurn, cr.boss)} <b>+${cr.base}</b><br>` +
-          `${t('coinBonus', pct)} <b>+${cr.bonus}</b>`;
-        /* MADDE C2 (2026-09-09): "4+ tur → tümü" uçurumu kalktı; ceza artık
-           her zaman merdivenin bir basamağıdır. */
-        if (cr.penalty > 0)
-          coinHtml += `<br>${t('coinPenalty', cr.penalty)}`;
-        coinHtml += `<br>${t('coinNet')} <b style="color:#F5A623">${COIN} +${cr.net}</b>`;
+        rows += row(t('rwBase', s.wonOnTurn, cr.boss), sg(cr.base));
+        if (cr.bonus) rows += row(t('rwBonus', pct), sg(cr.bonus));
+        if (cr.penalty > 0) rows += row(t('rwPenalty', cr.penalty), sg(-cr.penalty), 'rw-neg');
+        total += cr.net;
       }
-      if (cr.jokerCoins > 0)
-        coinHtml += `<br>${t('coinJoker')} <b style="color:#F5A623">${COIN} +${cr.jokerCoins}</b>`;
-      if (cr.permCoin > 0)
-        coinHtml += `<br>${t('coinPerm')} <b style="color:#F5A623">${COIN} +${cr.permCoin}</b>`;
-      // MADDE E9 — tahvil geliri
+      if (cr.jokerCoins > 0) { rows += row(t('rwJoker'), sg(cr.jokerCoins)); total += cr.jokerCoins; }
+      if (cr.permCoin > 0) { rows += row(t('rwPerm'), sg(cr.permCoin)); total += cr.permCoin; }
       // MADDE E1 — faiz (raund gelirinden SONRA, cebindeki toplam üzerinden)
-      if (cr.interest > 0)
-        coinHtml += `<br>${t('coinInterest')} <b style="color:#F5A623">${COIN} +${cr.interest}</b>`;
+      if (cr.interest > 0) { rows += row(t('rwInterest'), sg(cr.interest)); total += cr.interest; }
       /* MADDE D5 — raund sonuna bağlı ipuçları. Modal kapanınca görünsünler
          diye bir sonraki tik'e ertelenir; aksi hâlde kartlar modalın
          ARKASINDA açılır ve oyuncu hiç görmez. */
@@ -5714,23 +5768,30 @@
         if ((s.lastExpired || []).length && Hints.show('expired')) return;
         if (s.jokers.length && Hints.show('jokerAge')) return;
       }, 60);
-      if (cr.savedBy)
-        coinHtml += `<br>${t('savedBy', T.ev(cr.savedBy))}`;
+      const notes = [];
+      if (cr.savedBy) notes.push(t('savedBy', T.ev(cr.savedBy)));
       if (cr.epicReward) {
         const p = cr.epicReward.placed;
-        coinHtml += `<br><b style="color:#9B59B6">${t('epicReward', T.ev(cr.epicReward.name))}</b> ` +
-          (p === 'slot' ? t('placedSlot')
-            : p === 'backup' ? t('placedBackup')
-            : p === 'deck' ? t('placedDeck')
-            : t('placedSold'));
+        notes.push(`<b>${t('epicReward', T.ev(cr.epicReward.name))}</b> ` +
+          (p === 'slot' ? t('placedSlot') : p === 'backup' ? t('placedBackup')
+            : p === 'deck' ? t('placedDeck') : t('placedSold')));
       }
-      if (cr.extraNotes && cr.extraNotes.length)
-        coinHtml += `<br><span style="color:#8f8fb4">${T.evAll(cr.extraNotes).join('<br>')}</span>`;
-      el.modalBody.innerHTML =
-        `${t('winBody', s.score, over, pct)}<br>` +
-        t('wonOnTurn', s.wonOnTurn) +
-        (s.permMult > 0 ? `<br>${t('permMultLine', s.permMult.toFixed(1))}` : '') +
-        coinHtml;
+      if (cr.extraNotes && cr.extraNotes.length) notes.push(...T.evAll(cr.extraNotes));
+      const coinHtml =
+        `<div class="rw-receipt"><div class="rw-rh">${t('rwCoins')}</div>${rows}` +
+        `<div class="rw-total"><span>${t('rwTotal')}</span><b>${total < 0 ? '−' : '+'}$${Math.abs(total)}</b></div></div>` +
+        `<div class="rw-foot"><span class="rw-wallet">${t('rwWallet', s.coins)}</span>` +
+        (s.permMult > 0 ? `<span class="rw-chip">${t('rwPermMult', s.permMult.toFixed(1))}</span>` : '') + `</div>` +
+        (notes.length ? `<div class="rw-notes">${notes.map(n => `<div>${n}</div>`).join('')}</div>` : '');
+      const heroHtml =
+        `<div class="rw-hero">` +
+          `<div class="rw-box rw-score"><div class="rw-bh">${t('rwScore')}</div>` +
+            `<div class="rw-big">${s.score}</div><div class="rw-sub">${t('rwTargetLine', s.target, pct)}</div></div>` +
+          `<div class="rw-box rw-turn"><div class="rw-bh">${t('rwTurn')}</div>` +
+            `<div class="rw-big">${s.wonOnTurn}.</div><div class="rw-sub">${t('rwTurnSub')}</div></div>` +
+        `</div>`;
+      el.modalBody.innerHTML = `<div class="rw">${heroHtml}${coinHtml}</div>`;
+      el.overlay.classList.add('rw-open');
       // P59 · Kumarhane: raund arası store yok → düğme "Devam" der
       el.modalBtn.textContent = (Game.kumarhaneOn && Game.kumarhaneOn() && !s.store && !s.upgradeOffer && !s.runFinished)
         ? t('okBtn') : t('goStore');
@@ -5739,7 +5800,7 @@
       const jb = cr.bet;
       if (jb && !cr.survived && !TUT.active && (jb.key !== 'guvenli' || jb.kat > 1)) {
         el.modalBody.innerHTML = '';
-        showJackpot(`${t('winBody', s.score, over, pct)}<br>${t('wonOnTurn', s.wonOnTurn)}${coinHtml}`);
+        showJackpot(`<div class="rw">${heroHtml}${coinHtml}</div>`);
         return;
       }
     } else if (!TUT.active) {
@@ -5764,6 +5825,7 @@
   el.modalBtn.addEventListener('click', () => {
     const s = Game.state;
     el.overlay.classList.add('hidden');
+    el.overlay.classList.remove('rw-open');
     if (TUT.active && s.status === 'lost') { TUT.retryRound(); return; }
     if (s.status === 'won') {
       // Öğreticide ilk store: ucuz bir Bereket Taşı garanti (joker alma anı)
@@ -6131,29 +6193,37 @@
     const s = Game.state;
     if (!s.store) return;
     hideTip();
-    // Sol kenar: run istatistikleri (Grup B — Balatro SHOP kenar paneli)
-    el.storeCoins.innerHTML = `${COIN} ${s.coins}`;
-    el.ssRound.textContent = t('stageChip', s.stage, chCount(), s.roundInStage);
-    el.ssPerm.textContent = `+${s.permMult.toFixed(1)}x`;
-    /* PLAYTEST 9 · GRUP M — kapasite bilgisi açıklama metninde değil
-       BAŞLIĞIN YANINDA. Oyun içi sol panelde zaten böyleydi; store
-       sahnesindeki üç şeritte eksikti. */
+    /* P65 — haritanın sol sütunu, $ kutusu, joker paneli ve destesiyle
+       BİREBİR aynı içerik (bkz. renderMap). Kalıcı çarpan satırı haritada
+       olduğu gibi burada da yok — Figma taslağında yer almıyor. */
+    $('storeCoinVal').textContent = String(s.coins);
+    $('storeStageVal').textContent = `${s.stage}/${chCount()}`;
+    el.ssRound.textContent = `${s.roundInStage}/3`;
+    $('storeScoreVal').textContent = String(s.score ?? 0);
+    const okBox = $('storeOkey');
+    okBox.innerHTML = '';
+    okBox.appendChild(tileEl({ id: -901, color: s.okey.color, number: s.okey.number, isOkeyReal: true }, false));
+    okBox.title = okeyLabel();
+    $('storeDeckCount').textContent = `${(s.deck || []).length}/${Game.totalTilesInPlay()}`;
+    /* PLAYTEST 9 · GRUP M — kapasite bilgisi BAŞLIĞIN YANINDA (omuz sekmeleri). */
     el.ssSlotsCount.textContent = `${s.jokers.length}/${Game.slotCap()}`;
     el.ssBackupCount.textContent = `${s.backup.length}/2`;
     el.ssConsumCount.textContent = `${s.consumables.length}/${Game.consumCap()}`;
-    // Slot şeritleri: hover → tooltip'ten Sat / →Ana / Birleştir
+    // Slotlar: hover → tooltip'ten Sat / →Ana / Birleştir; boş yuvalar taş arkası
+    const emptySlot = () => { const d = document.createElement('div'); d.className = 'joker-slot-empty'; return d; };
     el.storeSlotsRow.innerHTML = '';
-    if (!s.jokers.length)
-      el.storeSlotsRow.innerHTML = `<span class="ss-empty">${t('noJokers')}</span>`;
     s.jokers.forEach(j => el.storeSlotsRow.appendChild(jokerCard(j)));
+    for (let k = s.jokers.length; k < Game.slotCap(); k++) el.storeSlotsRow.appendChild(emptySlot());
     el.storeBackupRow.innerHTML = '';
-    if (!s.backup.length)
-      el.storeBackupRow.innerHTML = `<span class="ss-empty">${t('backupEmpty')}</span>`;
     s.backup.forEach(j => el.storeBackupRow.appendChild(jokerCard(j, { backup: true })));
+    for (let k = s.backup.length; k < 2; k++) el.storeBackupRow.appendChild(emptySlot());
     el.storeConsumRow.innerHTML = '';
-    if (!s.consumables.length)
-      el.storeConsumRow.innerHTML = `<span class="ss-empty">${t('inventoryEmpty')}</span>`;
     s.consumables.forEach((key, i) => el.storeConsumRow.appendChild(consumCard(key, i, { sell: true })));
+    for (let k = s.consumables.length; k < Game.consumCap(); k++) el.storeConsumRow.appendChild(emptySlot());
+    /* Omuz yuva sayısı: 4+ değnek yuvası taslak v3'teki gibi İKİ SATIR */
+    const cCap = Math.max(Game.consumCap(), s.consumables.length);
+    $('storeTotemShoulder').dataset.slots = String(cCap);
+    $('storeBackupShoulder').dataset.slots = String(Math.max(2, s.backup.length));
 
     /* Grup D: iki satır — ÜST jokerler, ALT tüketilebilir + gizli paketler.
        Kartlar artık el.storeItems'a değil ilgili satırın grid'ine gider. */
@@ -6179,9 +6249,14 @@
         `${item.leaked ? ' · 🗣' : ''}${item.locked ? ' · 🔒' : ''}${s.store.anarchist ? ' · ⚡' : ''}`;
       const jArt = !disguised && JOKER_ART.has(item.key);
       card.classList.add('art-card');
+      /* P65 — Figma taslağı: sekizgen çerçeve içinde kart görseli, sol üstte
+         kilit sekmesi, çerçevenin alt kenarında fiyat etiketi (= satın al). */
+      card.classList.add('st-jk');
       card.innerHTML =
+        `<div class="st-frame st-oct">` +
         (jArt ? `<div class="s-ico s-jk-art jk-${item.key}"></div>`
           : `<div class="s-ico ico-${item.rarity}">${disguised ? '🀫' : jokerIcon(item.key)}</div>`) +
+        `</div>` +
         (!item.sold && !ownedEver.has(item.key) ? `<span class="badge-new">${t('newBadge')}</span>` : '');
       attachTip(card, { name: T.name(item), desc: T.desc(item), accent: item.rarity,
         rarityText: `${T.rarity(item.rarity)}${JOKER_DEFS[item.key]?.mech === 'deck' ? ' · ' + t('deckJokerTag') : ''}${tags}`,
@@ -6192,7 +6267,8 @@
         card.appendChild(lockBtn(item.locked, () => { Game.toggleLock(i); renderStore(); }));
         const btn = document.createElement('button');
         btn.className = 'btn primary s-buy';
-        btn.innerHTML = `${anarOld(item)}${t('buyBtn', item.price, COIN)}${item.haggled ? ' 🤝' : ''}`;
+        btn.innerHTML = `${anarOld(item)}${t('stBuy', item.price)}${item.haggled ? ' 🤝' : ''}`;
+        btn.title = t('buyBtn', item.price, 'coin');
         const isDeckJ = JOKER_DEFS[item.key]?.mech === 'deck';
         /* PLAYTEST 26 · MADDE C (bug) — DOLU RAF ARTIK DÜĞMEYİ ÖLDÜRMÜYOR.
            Eski satır iki ayrı hata taşıyordu:
@@ -6255,10 +6331,11 @@
          tooltip'te zaten yazıyor. Altta Satın Al kalır; Anarşist işareti
          (⚡) tooltip'in kategori satırına geçti. Çizimi olmayan değnek eski
          kart düzeninde kalır. */
+      card.classList.add('st-it');
       card.innerHTML = cArt
-        ? `<div class="s-ico ico-consum cs-art cs-${c.key}"></div>`
+        ? `<div class="st-frame st-oct"><div class="s-ico ico-consum cs-art cs-${c.key}"></div></div>`
         : `<div class="s-rarity">${T.rarity(c.rarity || 'common')} · ${t('consumRarity')}${s.store.anarchist ? ' · ⚡' : ''}</div>` +
-          `<div class="s-ico ico-consum">${c.icon}</div>` +
+          `<div class="st-frame st-oct"><div class="s-ico ico-consum">${c.icon}</div></div>` +
           `<div class="s-name">${T.consumName(c.key, c.name)}</div>` +
           chipsHtml(T.consumDesc(c.key, c.desc));
       /* PLAYTEST 9 · GRUP M: "envanterde en fazla 3 taşınır" cümlesi
@@ -6273,7 +6350,8 @@
       } else {
         const btn = document.createElement('button');
         btn.className = 'btn primary s-buy';
-        btn.innerHTML = anarOld(c) + t('buyBtn', c.price, COIN);
+        btn.innerHTML = anarOld(c) + t('stBuy', c.price);
+        btn.title = t('buyBtn', c.price, 'coin');
         btn.disabled = s.coins < c.price || s.consumables.length >= Game.consumCap();
         btn.addEventListener('click', () => {
           const res = Game.buyConsumable();
@@ -6301,19 +6379,24 @@
     (s.store.packs || []).forEach((pk, pi) => {
       const def = PACK_DEFS[pk.kind] || PACK_DEFS.special;
       const card = document.createElement('div');
-      card.className = `store-item r-pack pack-${pk.kind} tone-${def.tone}`
+      card.className = `store-item st-it r-pack pack-${pk.kind} tone-${def.tone}`
         + (pk.sold ? ' sold-out' : '');
       if (pk.sold) {
         /* Grup F: seçimli paket alındıysa ama seçim henüz yapılmadıysa kart
            "seçim bekleniyor" der — satın alma butonu bir daha çıkmaz. */
         card.innerHTML =
           `<div class="s-rarity">${t('packRarity_' + pk.kind)}</div>` +
-          `<div class="s-name">${pk.pending ? t('packPending') : t('opened')}</div>` +
+          `<div class="st-frame st-oct"><div class="s-ico ico-pack">${def.icon}</div></div>` +
+          `<div class="s-name s-sold">${pk.pending ? t('packPending') : t('opened')}</div>` +
           (pk.contents ? `<div class="s-pack-out">${pk.contents.map(packOutHtml).join('<hr>')}</div>` : '');
+        /* P65: çerçeve küçük — paketten çıkanlar üstüne gelince tooltip'te */
+        if (pk.contents) attachTip(card, { name: t('packTipName_' + pk.kind),
+          rarityText: pk.pending ? t('packPending') : t('opened'),
+          desc: pk.contents.map(packOutLine).join(' · ') }, {});
       } else {
         card.innerHTML =
           `<div class="s-rarity">${t('packRarity_' + pk.kind)}${s.store.anarchist ? ' · ⚡' : ''}</div>` +
-          `<div class="s-ico ico-pack">${def.icon}</div>` +
+          `<div class="st-frame st-oct"><div class="s-ico ico-pack">${def.icon}</div></div>` +
           /* GRUP G (2026-09-07): `.pack-q` gizem tipografisidir (19px,
              harf arası 2px, sallanma) ve yalnız "???" adlı paketlere
              yakışır. 2'li Özel Taş Paketi'nin ADI VAR — normal kart adı
@@ -6324,7 +6407,8 @@
           desc: t('packTipDesc_' + pk.kind) }, {});
         const btn = document.createElement('button');
         btn.className = 'btn primary s-buy';
-        btn.innerHTML = anarOld(pk) + t('packOpenBtn', pk.price, COIN);
+        btn.innerHTML = anarOld(pk) + t('stOpen', pk.price);
+        btn.title = t('packOpenBtn', pk.price, 'coin');
         btn.disabled = s.coins < pk.price;
         btn.addEventListener('click', () => {
           const res = Game.buyPack(pi);
@@ -6345,7 +6429,7 @@
     if (s.deckJokers.length) {
       const title = document.createElement('div');
       title.className = 'panel-title';
-      title.textContent = t('deckJokersTitle');
+      title.textContent = t('stDeckJokers');
       el.storeDeckRow.appendChild(title);
       const row = document.createElement('div');
       row.className = 'sd-row';
@@ -6353,35 +6437,36 @@
       el.storeDeckRow.appendChild(row);
     }
 
-    /* Grup C: her satır kendi kart sayısı kadar sütun kullansın — sabit 4
-       sütunda az kartlı satırın sonunda boşluk "eksik kart" gibi duruyordu. */
-    for (const row of [el.storeRowJokers, el.storeRowExtras]) {
-      const n = Math.max(1, Math.min(5, row.children.length));
-      row.style.gridTemplateColumns = `repeat(${n}, minmax(0, 1fr))`;
-    }
+    /* P65 — taslak varyantları: satır genişliği ÜRÜN SAYISINA göre (3/4 joker,
+       4/5/6 ürün). Izgara değil yan yana dizi; CSS satırı panelde ortalar. */
+    $('storeRowA').dataset.n = String(el.storeRowJokers.children.length);
+    $('storeRowB').dataset.n = String(el.storeRowExtras.children.length);
+    for (const row of [el.storeRowJokers, el.storeRowExtras]) row.style.gridTemplateColumns = '';
 
-    /* Grup E: Trainer'da reroll bedava ve sınırsız — buton hiç kilitlenmez
-       ve fiyat yazmaz (bkz. Game.rerollFree()). */
+    /* Düğmeler taslaktaki gibi tek büyük kelime (YENİLE / DEVAM); fiyat ve
+       kalan hak altında küçük satır. Grup E: Trainer'da reroll bedava ve
+       sınırsız. P52 · Grup B — store başına 2 hak, düz 3 coin. MADDE E2 —
+       catch-up'ın ilk yenilemesi bedava ve hakkı tüketmez. */
+    const rr = (sub) => `<b>${t('stReroll')}</b><small>${sub}</small>`;
     if (Game.rerollFree()) {
       el.btnReroll.disabled = false;
-      el.btnReroll.innerHTML = t('rerollFree');
+      el.btnReroll.innerHTML = rr(t('stRerollTrainer'));
     } else {
-      /* P52 · Grup B — store başına 2 hak, düz 3 coin; kalan hak düğmede yazar.
-         MADDE E2 — catch-up açıldıysa o store'un ilk yenilemesi bedava ve
-         hakkı tüketmez, o yüzden "hak bitti" kolundan ÖNCE bakılır. */
       const rc = Game.rerollCost();
       const left = Game.rerollLeft();
       if (s.store.freeReroll) {
         el.btnReroll.disabled = false;
-        el.btnReroll.innerHTML = t('rerollFreeCatch');
+        el.btnReroll.innerHTML = rr(t('stRerollFree'));
       } else if (left <= 0) {
         el.btnReroll.disabled = true;
-        el.btnReroll.innerHTML = t('rerollUsed');
+        el.btnReroll.innerHTML = rr(t('stRerollUsed'));
       } else {
         el.btnReroll.disabled = s.coins < rc;
-        el.btnReroll.innerHTML = t('rerollBtnLeft', rc, COIN, left);
+        el.btnReroll.innerHTML = rr(t('stRerollSub', rc, left));
       }
     }
+    el.btnStoreContinue.innerHTML = `<b>${t('stNext')}</b>`;
+    el.btnStoreContinue.title = t('storeContinue');
 
     /* MADDE D5 — store'a bağlı ipuçları. Sıra ÖNEMLİ: en genel olan
        (store'un nasıl çalıştığı) önce, duruma özel olanlar sonra gelir ki

@@ -8857,3 +8857,454 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 #collectionOverlay.hidden { display: none; }
 #collectionScene { height: auto !important; max-height: calc(100vh - 40px); width: min(1180px, 100%); box-sizing: border-box; overflow: auto; }
 #colBody.col-v-all { max-height: calc(100vh - 200px); overflow: auto; }
+
+/* ============================================================
+   P65 — STORE: KULLANICININ FİGMA TASLAĞI (2026-10-04)
+   OKEY-101 · UI_GÜNCEL_STORE v1 240:455 · v2 278:9273 · v3 279:11494.
+   Store artık haritanın 1920×1080 tuvalinde yaşar: sol sütun, $ kutusu,
+   joker paneli, deste haritayla BİREBİR aynı yerde. Ortada STORE plakası
+   (800,188 · 430×160) ve panel (449,307 · 1132×720); panelin üst kenarına
+   Değnek (468) ve backup (1251) omuzları oturur. Panel içi: üst satır
+   jokerler (190×230 grup: 60×60 kilit sekmesi + 160×200 sekizgen çerçeve,
+   110×150 görsel), alt satır değnek + paketler (118×147 çerçeve, 81×110
+   görsel); satır genişliği ürün sayısına göre büyür (taslağın 3/4 joker,
+   4/5/6 ürün varyantları). Reroll (471,925 · 250×80) / Next (1344,925 ·
+   215×80). Renkler TEMA tokenlarından: koyu panel --gm-dark, açık satır
+   --gm-light, turuncu kenar --gm-turn-on, boş slot --gm-panel.
+   Küçük rötuşlar (kullanıcı izni: "ufak rütuşlar sadece"): çerçevenin alt
+   kenarında fiyat etiketi = satın al düğmesi; düğme yazısı okunur olsun
+   diye koyu (taslakta açık zeminde beyazdı); YENİLE'nin altında fiyat/hak.
+   Eski kurallar çok katmanlı olduğu için hepsi #storeOverlay #storeStage
+   önekiyle EZİLİR.
+   ============================================================ */
+#storeOverlay#storeOverlay {
+  position: fixed; inset: 0; z-index: 90; display: block; padding: 0;
+  background: var(--gm-bg); backdrop-filter: none;
+}
+#storeOverlay#storeOverlay.hidden { display: none; }
+#storeOverlay #storeStage {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px; margin: -540px 0 0 -960px;
+  transform: scale(var(--gm-scale)); transform-origin: 50% 50%;
+  background: var(--gm-bg); color: var(--gm-dark);
+  font-family: var(--gm-font); image-rendering: pixelated;
+}
+#storeOverlay #storeStage * { image-rendering: pixelated; }
+
+/* --- sekizgen kutu (köşeleri kesik, kenarlı) — clip-path sözde elemanlarda,
+       böylece drop-shadow filtresi ve taşan çocuklar kırpılmaz --- */
+#storeStage .st-oct { --c: 19px; --bw: 5px; --bc: var(--gm-turn-on); --fill: var(--gm-light); position: relative; isolation: isolate; }
+#storeStage .st-oct::before,
+#storeStage .st-oct::after {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  clip-path: polygon(var(--k) 0, calc(100% - var(--k)) 0, 100% var(--k), 100% calc(100% - var(--k)),
+    calc(100% - var(--k)) 100%, var(--k) 100%, 0 calc(100% - var(--k)), 0 var(--k));
+}
+#storeStage .st-oct::before { inset: 0; --k: var(--c); background: var(--bc); }
+#storeStage .st-oct::after { inset: var(--bw); --k: max(0px, calc(var(--c) - var(--bw) * .6)); background: var(--fill); }
+
+/* --- üst sol: duraklat + bilgi, menü (haritanın eşi) --- */
+#storeStage .brand { position: absolute; left: 0; top: 0; width: 100%; height: 0; display: block; background: none; border: 0; padding: 0; z-index: 6; }
+#storeStage #storeMenuPop {
+  position: absolute; left: 41px; top: 130px; z-index: 60;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--gm-panel); border: 2px solid var(--gm-dark); padding: 10px;
+  width: max-content; min-width: 300px; max-width: 420px; box-sizing: border-box;
+}
+#storeStage #storeMenuPop.hidden { display: none; }
+#storeStage #storeMenuPop .btn { font-family: var(--gm-font); font-size: 20px; width: 100%; box-sizing: border-box; overflow: hidden; }
+
+/* --- sol sütun: haritanın aynısı; eski #storeSide/#storeSign kuralları ezilir --- */
+#storeStage #storeSide.gm-left {
+  position: absolute; left: 41px; top: 137px; width: 350px; height: auto;
+  display: flex; flex-direction: column; gap: 16px; align-items: flex-start;
+  padding: 0; background: none; border: 0; overflow: visible;
+}
+#storeStage #storeSign.gm-map-title {
+  padding: 0; border: 0; border-radius: 0; box-shadow: none;
+  background: var(--img-map-title) no-repeat center / 100% 100%;
+}
+#storeStage #storeSign span { color: #FFFFFF; }
+#storeStage #storeScorePanel.gm-score {
+  position: relative; width: 350px; height: 60px; flex: 0 0 60px;
+  background: var(--img-panel-score) no-repeat center / 100% 100%;
+  display: flex; align-items: stretch;
+}
+#storeStage .gm-score-val #storeScoreVal { font: inherit; color: #FFFFFF; }
+
+/* --- $ kutusu --- */
+#storeStage #storeCoins.gm-coin {
+  position: absolute; left: 1709px; top: 41px; width: 170px; height: 80px;
+  background: var(--img-panel-coin) no-repeat center / 100% 100%;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font: 700 36px/1 var(--gm-font); color: var(--gm-coin-ink); border: 0; border-radius: 0;
+}
+#storeStage #storeCoins .gm-cur { font: 400 48px/1 'Edit Undo BRK', var(--gm-font); color: var(--gm-coin-ink); position: relative; top: -3px; }
+
+/* --- joker paneli (Figma 240:479, 1638,161 · 211×388) --- */
+#storeStage #storeJokerPanel.gm-jokers {
+  position: absolute; left: 1638px; top: 161px; width: 211px; min-height: 388px;
+  background: var(--img-panel-jokers) no-repeat center / 100% 100%;
+  padding: 13px; overflow: visible; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center;
+}
+#storeStage #storeJokerPanel .gm-jk-head { display: none; }
+#storeStage #storeSlotsRow {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 23px; width: 100%;
+  grid-template-columns: none; padding: 0;
+}
+#storeStage #storeSlotsRow .joker-tile,
+#storeStage #storeSlotsRow .joker-slot-empty,
+#storeStage #storeDeckRow .joker-tile {
+  width: 81px; height: 110px; flex: 0 0 81px; min-width: 0; min-height: 0; box-sizing: border-box;
+}
+#storeStage .joker-slot-empty {
+  background: var(--img-tile-back) no-repeat center / 100% 100%; border: 0; border-radius: 0;
+}
+/* deste jokerleri: joker panelinin altında küçük şerit */
+#storeStage #storeDeckRow { position: absolute; left: 1638px; top: 566px; width: 211px; }
+#storeStage #storeDeckRow:empty { display: none; }
+#storeStage #storeDeckRow .panel-title { font: 700 14px/1 var(--gm-font); color: var(--gm-dark); text-align: center; margin: 0 0 8px; letter-spacing: -1px; }
+#storeStage #storeDeckRow .sd-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; }
+#storeStage #storeDeckRow .joker-tile { width: 54px; height: 73px; flex-basis: 54px; }
+
+/* --- deste / atılan --- */
+#storeStage #storePileCol { position: absolute; left: 1752px; top: 759px; width: 81px; height: 268px; }
+#storeStage #storePileCol .deck-pile { position: absolute; left: 0; top: 0; }
+#storeStage #storePileCol .gm-deck-count {
+  position: absolute; left: 0; top: 122px; width: 81px; margin: 0;
+  font: 700 24px/1 var(--gm-font); color: #FFFFFF; letter-spacing: -.96px; text-align: center;
+}
+#storeStage #storePileCol .discard-slot { position: absolute; left: 0; top: 158px; }
+
+/* --- omuzlar: kapalıyken yalnız sekme panelin üstünde görünür; açıkken
+       yukarı kayar (oyun ekranındaki omuzlarla aynı hareket). 4+ yuvada
+       taslak v3'teki gibi iki satır ve uzun gövde. --- */
+#storeStage .st-shoulder {
+  position: absolute; top: 271px; width: 310px; height: 170px; z-index: 1;
+  transition: transform .26s cubic-bezier(.25, .9, .35, 1);
+}
+#storeStage .st-sh-left  { left: 468px; }
+#storeStage .st-sh-right { left: 1251px; }
+#storeStage .st-shoulder.open { transform: translateY(-132px); }
+#storeStage .st-shoulder:is([data-slots="4"], [data-slots="5"], [data-slots="6"]) { height: 291px; }
+#storeStage .st-shoulder:is([data-slots="4"], [data-slots="5"], [data-slots="6"]).open { transform: translateY(-253px); }
+/* gövde: koyu 2px kenar + panel rengi, üst köşeler 17px kesik */
+#storeStage .st-shoulder::before,
+#storeStage .st-shoulder::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 34px; bottom: 0;
+  clip-path: polygon(17px 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 0 100%, 0 17px);
+}
+#storeStage .st-shoulder::before { background: var(--gm-dark); }
+#storeStage .st-shoulder::after { inset: 36px 2px 2px; background: var(--gm-panel); clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%, 0 16px); }
+#storeStage .st-sh-tab {
+  position: absolute; left: 18px; top: 0; width: 274px; height: 35px; z-index: 1;
+  background: var(--gm-dark); border: 0; cursor: pointer;
+  clip-path: polygon(33px 0, calc(100% - 33px) 0, 100% 100%, 0 100%);
+  padding: 0 39px; display: flex; align-items: center; gap: 8px;
+  font: 700 16px/1 var(--gm-font); color: var(--gm-light); letter-spacing: -1.6px; white-space: nowrap;
+}
+#storeStage .st-sh-tab .gm-sh-count { margin-left: auto; }
+#storeStage .st-sh-tab .gm-chev {
+  width: 0; height: 0; margin-left: 6px;
+  border-left: 7px solid transparent; border-right: 7px solid transparent;
+  border-bottom: 9px solid var(--gm-light); transition: transform .26s ease;
+}
+#storeStage .st-shoulder.open .gm-chev { transform: rotate(180deg); }
+#storeStage .st-sh-tab:hover { filter: brightness(1.15); }
+#storeStage .st-sh-body.gm-sh-body { z-index: 1; top: 47px; height: 110px; }
+#storeStage .st-shoulder:not(.open) .st-sh-body { opacity: 0; pointer-events: none; }
+#storeStage .st-shoulder:is([data-slots="4"], [data-slots="5"], [data-slots="6"]) .st-sh-body { height: 231px; }
+#storeStage .st-shoulder:is([data-slots="4"], [data-slots="5"], [data-slots="6"]) .st-sh-body > div {
+  display: grid; grid-template-columns: repeat(2, 81px); gap: 11px 21px; justify-content: center; width: auto;
+}
+#storeStage .st-shoulder:is([data-slots="5"], [data-slots="6"]) .st-sh-body > div { grid-template-columns: repeat(3, 81px); }
+#storeStage .st-sh-body :is(.joker-slot-empty, .joker-tile, .consum-card) {
+  width: 81px; height: 110px; flex: 0 0 81px; box-sizing: border-box;
+}
+
+/* --- ana panel --- */
+#storeOverlay #storeStage #storeScene.st-panel {
+  --c: 19px; --bw: 3px; --bc: var(--gm-light); --fill: var(--gm-dark);
+  position: absolute; left: 449px; top: 307px; width: 1132px; height: 720px; z-index: 2;
+  display: block; padding: 0; margin: 0; gap: 0; max-height: none;
+  background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible;
+  transform: none; animation: none;
+}
+#storeStage #storeItems {
+  display: block; position: static; padding: 0; margin: 0;
+  background: none; border: 0; border-radius: 0; box-shadow: none; grid-template-columns: none;
+}
+#storeStage .store-row.st-oct {
+  --c: 19px; --bw: 5px; --bc: var(--gm-turn-on); --fill: var(--gm-light);
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: max-content; padding: 25px; margin: 0; box-sizing: border-box;
+  background: none; border: 0; border-radius: 0; box-shadow: none;
+}
+#storeStage #storeRowA { top: 65px; min-height: 280px; }
+#storeStage #storeRowB { top: 384px; min-height: 197px; }
+#storeStage #storeRowB[data-n="0"] { display: none; }
+#storeStage .store-row .sr-head { display: none; }
+#storeStage .store-row .sr-grid {
+  display: flex; gap: 20px; grid-template-columns: none !important; margin: 0; padding: 0;
+}
+
+/* --- kart: ortak sıfırlama (eski beyaz kart kabuğu kalkar) --- */
+#storeStage .sr-grid .store-item {
+  position: relative; flex: 0 0 auto; box-sizing: border-box;
+  background: none; border: 0; border-radius: 0; box-shadow: none;
+  padding: 0; margin: 0; gap: 0; min-height: 0; min-width: 0; overflow: visible;
+  display: block; text-align: center;
+}
+#storeStage .sr-grid .store-item.locked { box-shadow: none; }
+#storeStage .sr-grid .store-item.sold-out { opacity: 1; }
+#storeStage .sr-grid .store-item.sold-out .st-frame { opacity: .45; }
+#storeStage .store-item .st-frame {
+  --c: 23px; --bw: 5px; --bc: var(--gm-dark); --fill: var(--gm-light);
+  position: absolute; display: flex; align-items: center; justify-content: center;
+}
+#storeStage .store-item .s-ico {
+  position: relative; margin: 0; flex: none; border-radius: 0; box-shadow: none;
+  display: flex; align-items: center; justify-content: center;
+  background-color: var(--gm-tile-face); outline: 2px solid var(--gm-tile-edge, #CAC2A1); outline-offset: -2px;
+  font-size: 54px; line-height: 1;
+}
+#storeStage .store-item .s-ico:is(.s-jk-art, .cs-art) { outline: 0; background-color: transparent; }
+
+/* joker grubu 190×230: kilit sekmesi (0,0 · 60×60), çerçeve (30,30 · 160×200), görsel 110×150 */
+#storeStage .store-item.st-jk { width: 190px; height: 230px; }
+#storeStage .store-item.st-jk .st-frame { left: 30px; top: 30px; width: 160px; height: 200px; }
+#storeStage .store-item.st-jk .s-ico { width: 110px; height: 150px; }
+#storeStage .store-item.st-jk .s-ico.s-jk-art { background-size: 100% 100%; background-repeat: no-repeat; background-position: center; }
+
+/* ürün 118×147: çerçeve tam boy, görsel 81×110 */
+#storeStage .store-item.st-it { width: 118px; height: 147px; }
+#storeStage .store-item.st-it .st-frame { --c: 18px; inset: 0; }
+#storeStage .store-item.st-it .s-ico { width: 81px; height: 110px; font-size: 40px; }
+#storeStage .store-item.st-it .s-ico.cs-art { background-size: 100% 100%; }
+#storeStage .store-item.st-it :is(.s-rarity, .s-name:not(.s-sold), .s-chips, .s-pack-out, .s-desc) { display: none; }
+
+/* kilit sekmesi — taslaktaki piksel asma kilit, temanın vurgu tonunda */
+#storeStage .store-item .s-lock {
+  position: absolute; left: 0; top: 0; width: 60px; height: 60px; z-index: 2;
+  background: var(--gm-dark); border: 0; border-radius: 0; padding: 0; opacity: 1;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  cursor: pointer; transition: transform .06s ease, filter .1s ease;
+}
+#storeStage .store-item .s-lock:hover { filter: brightness(1.2); }
+#storeStage .store-item .s-lock:active { transform: translateY(2px); }
+/* maske değil görsel: file:// altında CSS maskesi CORS'a takılıyor; vurgu
+   rengi (#FFA629 ≈ --gm-turn-on) dört temada da aynı */
+#storeStage .store-item .s-lock .lk-ico {
+  display: block; width: 60px; height: 60px;
+  background: url('assets/game/store/lock-open.svg') no-repeat center / 100% 100%;
+}
+#storeStage .store-item .s-lock.on .lk-ico { background-image: url('assets/game/store/lock-closed.svg'); }
+#storeStage .store-item.locked .st-frame { --bc: var(--gm-turn-on); }
+
+/* fiyat etiketi = satın al (rötuş): çerçevenin alt kenarına oturur, STOP gibi basılır */
+#storeStage .store-item .s-buy {
+  position: absolute; left: 50%; top: auto; bottom: auto; transform: translateX(-50%);
+  width: auto; min-width: 0; margin: 0; z-index: 3; white-space: nowrap;
+  background: var(--gm-dark); color: var(--gm-light);
+  border: 3px solid var(--gm-light); border-radius: 6px;
+  font: 700 17px/1 var(--gm-font); letter-spacing: -1px; padding: 7px 12px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .45); text-shadow: none;
+  transition: transform .06s ease, box-shadow .06s ease, filter .1s ease;
+}
+#storeStage .store-item.st-jk .s-buy { top: 212px; margin-left: 15px; }
+#storeStage .store-item.st-it .s-buy { top: 130px; font-size: 15px; padding: 6px 9px; }
+#storeStage .store-item .s-buy:hover:not(:disabled) { filter: brightness(1.15); }
+#storeStage .store-item .s-buy:active:not(:disabled) { transform: translateX(-50%) translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .45); }
+#storeStage .store-item .s-buy:disabled { opacity: .55; cursor: default; }
+#storeStage .store-item .s-buy .anar-old { opacity: .6; margin-right: 4px; }
+#storeStage .store-item .s-sold {
+  position: absolute; left: 50%; transform: translateX(-50%); z-index: 3; white-space: nowrap;
+  background: var(--gm-light); color: var(--gm-dark); border: 3px solid var(--gm-dark); border-radius: 6px;
+  font: 700 15px/1 var(--gm-font); letter-spacing: -1px; padding: 6px 10px; margin: 0;
+}
+#storeStage .store-item.st-jk .s-sold { top: 212px; margin-left: 15px; }
+#storeStage .store-item.st-it .s-sold { top: 130px; font-size: 13px; padding: 5px 7px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+/* YENİ rozeti: çerçevenin sağ üst köşesinde */
+#storeStage .store-item .badge-new {
+  position: absolute; right: -6px; top: 18px; left: auto; z-index: 3;
+  background: var(--gm-turn-on); color: var(--gm-dark); border: 3px solid var(--gm-dark); border-radius: 4px;
+  font: 700 13px/1 var(--gm-font); letter-spacing: -.5px; padding: 3px 6px; box-shadow: none;
+}
+/* Ateş Tüccarı pazarlık / ateşi çal: grubun sağ üstünde küçük düğme */
+#storeStage .store-item .s-extra {
+  position: absolute; right: 0; top: -14px; z-index: 3; margin: 0;
+  background: var(--gm-dark); color: var(--gm-light); border: 2px solid var(--gm-light); border-radius: 5px;
+  font: 700 12px/1 var(--gm-font); padding: 4px 7px;
+}
+#storeStage .store-item .s-extra + .s-extra { top: 12px; }
+
+/* --- Reroll / Next (rötuş: koyu yazı okunur; YENİLE altında fiyat + hak) --- */
+#storeStage .store-actions { display: block; margin: 0; padding: 0; }
+#storeStage .st-btn.st-oct {
+  --c: 11px; --bw: 4px; --bc: var(--gm-turn-on); --fill: var(--gm-light);
+  position: absolute; top: 618px; height: 80px; padding: 0 10px; margin: 0;
+  background: none; border: 0; border-radius: 0; box-shadow: none; text-shadow: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--gm-dark); cursor: pointer;
+  filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .45));
+  transition: transform .06s ease, filter .06s ease;
+}
+#storeStage #btnReroll.st-btn { left: 22px; width: 250px; }
+#storeStage #btnStoreContinue.st-btn { left: 895px; width: 215px; }
+#storeStage .st-btn b { font: 700 38px/1 var(--gm-font); letter-spacing: -4px; text-transform: uppercase; }
+#storeStage .st-btn small { font: 700 15px/1 var(--gm-font); letter-spacing: -1px; opacity: .85; }
+#storeStage .st-btn:hover:not(:disabled) { transform: none; }
+#storeStage .st-btn:hover:not(:disabled)::after { filter: brightness(1.08); }
+#storeStage .st-btn:active:not(:disabled) { transform: translateY(3px); filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .45)); }
+#storeStage .st-btn:disabled { opacity: .55; cursor: default; }
+
+/* --- STORE plakası (Figma 241:799) --- */
+#storeStage #storePlate.st-oct {
+  --c: 11px; --bw: 8px; --bc: var(--gm-turn-on); --fill: var(--gm-light);
+  position: absolute; left: 800px; top: 188px; width: 430px; height: 160px; z-index: 3;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; margin: 0; background: none; border: 0; box-shadow: none;
+}
+#storeStage #storePlate h2#storeTitle {
+  font: 700 64px/1.8 var(--gm-font); letter-spacing: -5px; text-transform: uppercase;
+  color: #000000; text-shadow: none; margin: 0; padding: 0;
+}
+
+/* trainer çipi sol sütunun akışında */
+#storeStage #storeSide .trainer-chip { margin: 0; }
+/* taslakta STAGE 41 · RAUND 236 → kutular satırın iki ucuna */
+#storeStage #storeSide .gm-statrow { justify-content: space-between; }
+
+/* P65 — Füzyon seçimi: seçenekler jokerin kendisi (kullanıcı: "jokerlerin
+   kendilerini görebilelim"). Taş yüzlü kart + altında ad/süre, tema panelinde. */
+#fuzyonPick .fz-row { gap: 16px; }
+#fuzyonPick .fz-opt {
+  width: 112px; padding: 0; margin: 0; background: none !important; border: 0 !important;
+  box-shadow: none; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  color: var(--gm-light); font-family: var(--gm-font); cursor: pointer;
+  transition: transform .06s ease;
+}
+#fuzyonPick .fz-opt .fz-card {
+  width: 96px; height: 130px; box-sizing: border-box;
+  background: var(--gm-tile-face); border: 4px solid var(--gm-light); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; font-size: 50px; line-height: 1;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45); transition: box-shadow .06s ease, border-color .1s ease;
+}
+#fuzyonPick .fz-opt .fz-card.fz-art { background: var(--jk-art) no-repeat center / 100% 100%; border-color: transparent; }
+#fuzyonPick .fz-opt b { color: var(--gm-light); font: 700 14px/1.15 var(--gm-font); letter-spacing: -.5px; }
+#fuzyonPick .fz-opt span { color: var(--gm-light); opacity: .75; font: 700 11px/1.2 var(--gm-font); margin: 0; }
+#fuzyonPick .fz-opt:hover .fz-card { filter: brightness(1.06); }
+#fuzyonPick .fz-opt:active { transform: translateY(3px); }
+#fuzyonPick .fz-opt:active .fz-card { box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+#fuzyonPick .fz-opt.picked .fz-card { border-color: var(--gm-turn-on); box-shadow: 0 0 0 3px var(--gm-turn-on), 0 5px 0 rgba(0, 0, 0, .45); }
+#fuzyonPick .fz-opt.picked b { color: var(--gm-turn-on); }
+#fuzyonPick .fz-opt.fz-backup .fz-card { border-style: dashed; }
+#fuzyonPick .tp-box { max-width: 680px; width: auto; }
+#fuzyonPick .fz-opt.picked { box-shadow: none !important; }
+#fuzyonPick .fz-auto {
+  background: rgba(0, 0, 0, .28) !important; color: var(--gm-turn-on) !important; border: 0 !important;
+  border-radius: 8px; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35); font: 700 13px/1.4 var(--gm-font) !important;
+}
+#fuzyonPick .tp-box > .btn { white-space: normal; max-width: 100%; box-sizing: border-box; }
+#fuzyonPick .fz-opt { text-align: center; }
+/* fiyat etiketi çerçeve içinde ortalanır (translate yerine otomatik kenar
+   boşluğu → kart kutusundan taşmaz, kaydırma genişliği büyümez) */
+#storeStage .store-item :is(.s-buy, .s-sold) { left: 0; right: 0; margin: 0 auto; width: max-content; max-width: 100%; transform: none; }
+#storeStage .store-item.st-jk :is(.s-buy, .s-sold) { left: 30px; margin-left: auto; }
+#storeStage .store-item .s-buy:active:not(:disabled) { transform: translateY(3px); }
+#storeStage .store-item .badge-new { right: 0; }
+
+/* ============================================================
+   P65 — HARİTA HAFİF RÖTUŞ (kullanıcı: "tamamen değiştir demek değil…
+   daha clean final product hissiyatı")
+   · Üç kartın "EN AZ SKOR" panelleri AYNI hizada (boss kartıyla aynı
+     taban, 546): eskiden normal kartlarda panel ortada kalıp altında boş
+     bir alan bırakıyordu, kartlar yan yana dengesiz görünüyordu.
+   · Normal kartın görseli boşalan yeri doldurur: 1.4× büyür, şerit ile
+     panel arasında dikeyde ortalanır.
+   · STAGE / RAUND kutuları satırın iki ucuna (taslak: 41 · 236).
+   · "ÖDÜL:" ile $ glifleri arasına nefes payı.
+   ============================================================ */
+.gm-stage .map-card:not(.boss) .mc-target { top: 546px; }
+/* görseller üç kartta da aynı boyda (132×180); normal kartta şerit ile panel
+   arasında ortalanır, boss kartında koşul metni hemen altına akar */
+.gm-stage .map-card .mc-art { left: 119px; width: 132px; height: 180px; }
+.gm-stage .map-card:not(.boss) .mc-art { top: 263px; }
+.gm-stage .map-card.boss .mc-art { top: 176px; }
+.gm-stage .map-card.boss .mc-cond { top: 372px; }
+#mapScreen .gm-left .gm-statrow { justify-content: space-between; }
+.gm-stage .map-card .mc-t-rew .mc-colon { margin-right: 8px; }
+.gm-stage .map-card .mc-pill { letter-spacing: -1.6px; }
+
+/* ============================================================
+   P65 — RAUND KAZANDIN PENCERESİ (kullanıcı: "çok karışık, ilk görünce
+   bu ne be diyorsun"). Ortalanmış yazı yığını yerine: iki büyük kutu
+   (SKOR · TUR), solda kalem sağda tutar olan COIN FİŞİ ve büyük TOPLAM.
+   Oyunun UI dili: koyu panel, açık kartlar koyu yazı, turuncu vurgu.
+   ============================================================ */
+#overlay.rw-open #modal { max-width: 520px; width: 520px; padding: 26px 26px 24px; }
+#overlay.rw-open #modal .mascot-wrap { display: none; }
+#overlay.rw-open #modal h2#modalTitle { margin: 0 0 16px; font-size: 26px; }
+.rw { display: flex; flex-direction: column; gap: 12px; text-align: left; font-family: var(--gm-font); }
+.rw-hero { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; }
+.rw-box {
+  background: var(--gm-light); color: var(--gm-dark); border-radius: 8px;
+  padding: 10px 12px 9px; box-shadow: 0 4px 0 rgba(0, 0, 0, .4); text-align: center;
+}
+.rw-bh { font: 700 13px/1 var(--gm-font); letter-spacing: 1px; opacity: .75; }
+.rw-big { font: 700 44px/1.1 var(--gm-font); letter-spacing: -2px; margin: 4px 0 2px; color: var(--gm-dark); }
+.rw-sub { font: 700 13px/1.2 var(--gm-font); letter-spacing: -.5px; }
+.rw-receipt {
+  background: rgba(0, 0, 0, .28); border-radius: 8px; padding: 12px 14px 10px;
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35); color: var(--gm-light);
+}
+.rw-rh { font: 700 13px/1 var(--gm-font); letter-spacing: 1px; opacity: .8; margin-bottom: 8px; }
+.rw-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  font: 700 15px/1.25 var(--gm-font); letter-spacing: -.5px; padding: 4px 0;
+  border-bottom: 2px dashed color-mix(in srgb, var(--gm-light) 22%, transparent);
+}
+.rw-row b { color: var(--gm-turn-on); white-space: nowrap; font-size: 17px; }
+.rw-row.rw-neg b { color: #FF8A8A; }
+.rw-total {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 8px; font: 700 18px/1 var(--gm-font); letter-spacing: 1px;
+}
+.rw-total b { color: var(--gm-turn-on); font-size: 32px; letter-spacing: -1px; }
+.rw-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rw-wallet { font: 700 15px/1 var(--gm-font); color: var(--gm-light); }
+.rw-chip {
+  font: 700 13px/1 var(--gm-font); color: var(--gm-dark); background: var(--gm-turn-on);
+  border-radius: 6px; padding: 5px 8px;
+}
+.rw-notes { font: 13px/1.4 system-ui, 'Segoe UI', sans-serif; color: var(--gm-light); opacity: .9; display: flex; flex-direction: column; gap: 3px; }
+.rw-notes b { color: var(--gm-turn-on); }
+#overlay.rw-open #modalBtn { margin-top: 16px; width: 100%; font-size: 22px; padding: 14px 20px; }
+/* jackpot "ayrıntılar" içinde de aynı fiş */
+.jp-more .rw { margin-top: 8px; }
+#modalBody .rw-row.rw-neg b { color: #FF8A8A !important; }
+#modalBody .rw-box b, #modalBody .rw-chip { color: var(--gm-dark) !important; }
+
+/* ============================================================
+   P65 — İŞLEME (MELD) ALANI AŞAĞI UZAYIP KAYMIYOR (kullanıcı: "çok fazla
+   açılım yapılınca aşağı iniyor ve kaydırma şekli oluyor… solundaki
+   boşluğu kullanabiliriz, bir sütun daha gibi").
+   ÖLÇÜM (9 açılım): kutu 620px tavana dayanıp 85px kaydırıyordu; alt
+   kısmı ıstakanın ve backup omzunun ARKASINA giriyordu.
+   ÇÖZÜM: alan SAĞ kenarından sabitlenir (x=1622, eskisiyle aynı) ve
+   açılımlar 5'erli SÜTUNLARA dizilir; 6. açılım yeni sütunu SOLDA açar
+   (grid, sütun akışı, rtl). Alt kenar backup omzunun açık hâlinin
+   üstünde kalır, kaydırma çubuğu hiç oluşmaz.
+   ============================================================ */
+.gm-stage #meldArea.gm-meld {
+  left: auto; right: 298px; width: max-content; max-width: 1000px;
+  max-height: none; overflow: visible; align-items: flex-end;
+}
+.gm-stage #meldArea .gm-meld-h { width: 222px; text-align: center; }
+.gm-stage #meldArea .gm-meld-rows {
+  display: grid; grid-auto-flow: column; grid-template-rows: repeat(5, auto);
+  direction: rtl; gap: 12px 14px; width: auto;
+  align-items: start; justify-items: center;
+}
+.gm-stage #meldArea .gm-meld-rows > * { direction: ltr; }
