@@ -2119,8 +2119,8 @@
 
   /* ---------- Müzik (P66) — döngülü fon müziği ----------
      Parça ekrana göre seçilir: menü, harita ve oyun → seçili TEMA (Müzik
-     1/2/3, ayarlardan), boss raundu → o temanın boss sürümü (boss1/2/3),
-     store/yükseltme → store.
+     1/2/3, ayarlardan), boss raundu → o BOSS'un kendi müziği (b_<key>;
+     yoksa temanın boss sürümü boss1/2/3), store/yükseltme → temanın store'u.
      Menü → harita → oyun arasında tema kesilmeden sürer. Değişimde ~1 sn
      çapraz geçiş.
      Gerçek kayıt gelene kadar her parça burada WebAudio ile çalınan GEÇİCİ
@@ -2128,7 +2128,8 @@
      MUSIC_FILES'a dosya yolunu yazmak yeter (ör. 'assets/music/tema-1.mp3'):
      dosyalı parça <audio loop> ile çalar, o parçanın sentezi devreden çıkar.
      Tarayıcılar sesi ilk tıklamaya kadar açmaz → müzik ilk dokunuşta başlar. */
-  const MUSIC_FILES = { tema1: null, tema2: null, tema3: null, boss1: null, boss2: null, boss3: null, store: null };
+  const MUSIC_FILES = { tema1: null, tema2: null, tema3: null, boss1: null, boss2: null, boss3: null,
+    store1: null, store2: null, store3: null };   // boss'a özel parçalar: 'b_' + boss.key
 
   const Music = (() => {
     const VOL_KEY = 'okeyMusicVol', ON_KEY = 'okeyMusicOn';
@@ -2197,6 +2198,16 @@
       arp:  { type: 'triangle', vol: .05, a: .004, dec: .1, sus: .2, rel: .1 },
       bass: { type: 'triangle', vol: .16, a: .006, dec: .15, sus: .55, rel: .06 },
       dbass:{ type: 'sawtooth', vol: .09, a: .004, dec: .08, sus: .4, rel: .04, cut: 700 },
+      brass:{ type: 'sawtooth', vol: .08, a: .03, dec: .2, sus: .7, rel: .1, cut: 1200 },
+      pizz: { type: 'triangle', vol: .13, a: .002, dec: .08, sus: .05, rel: .05 },
+      bell: { type: 'sine', vol: .09, a: .002, dec: .6, sus: .05, rel: .8 },
+      theremin: { type: 'sine', vol: .1, a: .12, dec: .5, sus: .9, rel: .3, vib: 6, vd: .03 },
+      wob:  { type: 'sine', vol: .12, a: .02, dec: .3, sus: .8, rel: .15, vib: 4, vd: .02 },
+      chip: { type: 'square', vol: .045, a: .002, dec: .05, sus: .6, rel: .02 },
+      harpsi: { type: 'sawtooth', vol: .05, a: .002, dec: .15, sus: .1, rel: .1, cut: 3500, sweep: true },
+      organ:{ type: 'square', vol: .04, a: .01, dec: .3, sus: .8, rel: .08, cut: 1500 },
+      violin: { type: 'sawtooth', vol: .06, a: .08, dec: .3, sus: .85, rel: .2, cut: 2200, vib: 5.5 },
+      clar: { type: 'square', vol: .055, a: .02, dec: .2, sus: .8, rel: .08, cut: 1400, vib: 5 },
       drone:{ type: 'sawtooth', vol: .02, a: .4, dec: 1, sus: .9, rel: .6, cut: 520 },
       stab: { type: 'square', vol: .022, a: .003, dec: .05, sus: .15, rel: .04, cut: 2200 },
       pad:  { type: 'triangle', vol: .022, a: .35, dec: .8, sus: .8, rel: .5 },
@@ -2264,14 +2275,160 @@
         { i: 'dbass', s: gen('R . R . R . R . R . R . R . O .', B3, HICAZ) },
         { i: 'drone', s: gen('P - - - - - - - - - - - - - - -', B3, HICAZ) },
       ], drums: 'D.......T...k...' + 'D.....D.T...k.kk' },
-      /* Store — çarşı havası, majör; kanun + "um-pa" bas */
-      store: { bpm: 100, div: 2, dv: .5, parts: [
+      /* Store · Müzik 1 — çarşı havası, majör; kanun + "um-pa" bas */
+      store1: { bpm: 100, div: 2, dv: .5, parts: [
         { i: 'kanun', s: 'G4 B4 D5 B4 C5 - B4 A4 | G4 - A4 B4 A4 - . . | E4 G4 A4 B4 C5 B4 A4 G4 | A4 - - - D4 - . . | ' +
                          'G4 B4 D5 B4 E5 - D5 C5 | B4 - C5 D5 C5 B4 A4 . | C5 B4 A4 G4 F#4 G4 A4 B4 | G4 - - - . . D4 .' },
         { i: 'bass', s: gen('R . F . O . F .', ['G', 'D', 'C', 'D', 'G', 'E', 'D', 'G'], MAJ) },
         { i: 'pad', s: gen('P - - - - - - -', ['G', 'D', 'C', 'D', 'G', 'E', 'D', 'G'], MAJ) },
       ], drums: 'D.TkDT.k' },
+      /* Store · Müzik 2 — hareketli temanın çarşısı: 16'lık kanun koşuları */
+      store2: { bpm: 116, div: 4, dv: .55, parts: [
+        { i: 'kanun', s: 'G4 B4 D5 G5 F#5 D5 B4 D5 E5 C5 A4 C5 D5 B4 G4 B4 | C5 E5 G5 E5 D5 F#5 A5 F#5 G5 - D5 - B4 - G4 - | ' +
+                         'E5 G5 B5 G5 D5 G5 B5 G5 C5 E5 A5 E5 D5 F#5 A5 F#5 | G5 - - - D5 - B4 - G4 - - - . . . .' },
+        { i: 'bass', s: gen('R . O . R . O . R . O . R . O .', ['G', 'C', 'E', 'G'], MAJ) },
+        { i: 'stab', s: gen('. . P . . . P . . . P . . . P .', ['G', 'C', 'E', 'G'], MAJ) },
+      ], drums: 'D.TkD.TkD.TkDkTT' },
+      /* Store · Müzik 3 — sakin temanın çarşısı: tembel ney, 3-3-2 bas */
+      store3: { bpm: 92, div: 4, dv: .4, parts: [
+        { i: 'ney', s: x2('B4 - - - A4 G4 A4 - | D5 - - - B4 - - - | C5 - B4 A4 G4 - E4 - | D4 - - - - - - - | ' +
+                          'G4 - A4 B4 D5 - B4 - | C5 - - - E5 - D5 - | B4 - A4 G4 A4 - B4 - | G4 - - - - - . .') },
+        { i: 'arp', s: x2(gen('A B C B A B C B', ['G', 'D', 'C', 'D', 'G', 'C', 'D', 'G'], MAJ)) },
+        { i: 'bass', s: gen('R . . O . . R . R . . O . . F .', ['G', 'D', 'C', 'D', 'G', 'C', 'D', 'G'], MAJ) },
+      ], drums: 'D..kT.k.D.kkT.k.' },
     };
+
+    /* ── P66e — Her boss'un kendi müziği: boss'un tasarımına göre makam,
+       tempo, saz ve ritim. Anahtar 'b_' + boss.key; listede olmayan (yeni)
+       bir boss seçili temanın boss sürümüne (boss1/2/3) düşer. ── */
+    const NAT  = { D: ['D3', 'F3', 'A3'], C: ['C3', 'E3', 'G3'], Bb: ['Bb2', 'D3', 'F3'], A: ['A2', 'C#3', 'E3'], G: ['G3', 'Bb3', 'D4'], Eb: ['Eb3', 'G3', 'Bb3'] };
+    const AMIN = { A: ['A3', 'C4', 'E4'], C: ['C4', 'E4', 'G4'], E: ['E3', 'G#3', 'B3'], F: ['F3', 'A3', 'C4'], G: ['G3', 'B3', 'D4'], D: ['D3', 'F3', 'A3'] };
+    const EMIN = { E: ['E3', 'G3', 'B3'], C: ['C3', 'E3', 'G3'], A: ['A3', 'C4', 'E4'], B: ['B2', 'D#3', 'F#3'] };
+    const MAJC = { C: ['C4', 'E4', 'G4'], F: ['F3', 'A3', 'C4'], G: ['G3', 'B3', 'D4'], A: ['A3', 'C4', 'E4'] };
+    const DREAM = { C: ['C5', 'E5', 'G5'], D: ['D5', 'F#5', 'A5'], Bb: ['Bb4', 'D5', 'F5'], A: ['A4', 'C5', 'E5'] };
+    const WT   = { C: ['C4', 'E4', 'G#4'], D: ['D4', 'F#4', 'A#4'] };
+    const AHIC = { A: ['A4', 'C#5', 'E5'], Bb: ['Bb4', 'D5', 'F5'], D: ['D4', 'F4', 'A4'] };
+    const EHIC = { E: ['E3', 'G#3', 'B3'], D: ['D3', 'F3', 'A3'], A: ['A3', 'C4', 'E4'] };
+
+    const BOSS_TRACKS = {
+      /* Godzilla — dev adımlar: ağır bakır, pes uğultu, yer sarsan düm */
+      godzilla: { bpm: 88, div: 2, dv: .9, gain: .85, parts: [
+        { i: 'brass', s: 'D3 - - - Eb3 - D3 - | C3 - - - Bb2 - - - | D3 - - - Eb3 - F3 Eb3 | D3 - - - - - - -' },
+        { i: 'bass', s: gen('R - - - O - - -', ['D', 'C', 'D', 'D'], NAT) },
+        { i: 'drone', s: gen('P - - - - - - -', ['D', 'C', 'D', 'D'], NAT) },
+      ], drums: 'D.x.D.xD' },
+      /* Kara Kedi — sinsi, parmak uçlarında: kromatik pizzicato + yürüyen bas */
+      karaKedi: { bpm: 100, div: 2, dv: .45, gain: 1.2, parts: [
+        { i: 'pizz', s: 'E4 . F#4 G4 . . G#4 A4 | . . E4 F#4 G4 . E4 . | B4 . A#4 A4 . G4 E4 . | D#4 E4 - - . . . .' },
+        { i: 'bass', s: 'E2 . G2 . A2 . A#2 . | B2 . A2 . G2 . E2 . | E2 . G2 . A2 . C3 . | B2 . B1 . E2 . . .' },
+      ], drums: 'D.s.k.s.' },
+      /* Sir.by — pembe ve sevimli chiptune; ikinci yarıda değerler "söner" (inen dizi) */
+      kirby: { bpm: 140, div: 2, dv: .45, parts: [
+        { i: 'chip', s: 'C5 E5 G5 E5 F5 - D5 . | E5 G5 C6 G5 A5 - G5 . | F5 E5 D5 C5 B4 C5 D5 E5 | C5 - G4 - C5 - . . | ' +
+                        'E5 D5 C5 B4 A4 G4 F4 E4 | D4 - - - G4 - - - | C5 E5 G5 E5 F5 D5 B4 G4 | C5 - - - . . . .' },
+        { i: 'bass', s: gen('R . O . R . O .', ['C', 'C', 'F', 'C', 'C', 'G', 'C', 'C'], MAJC) },
+      ], drums: 'D.T.D.T.' },
+      /* Cellat — cenaze çanı, iniş yapan ağıt basası, seyrek davul */
+      cellat: { bpm: 70, div: 2, dv: .8, gain: 1.4, parts: [
+        { i: 'bell', s: 'D4 - - - - - - - | . . . . A3 - - - | D4 - - - - - - - | . . . . Eb4 - D4 -' },
+        { i: 'brass', s: 'D2 - - - - - - - | C2 - - - - - - - | Bb1 - - - - - - - | A1 - - - - - - -' },
+        { i: 'pad', s: gen('P - - - - - - -', ['D', 'C', 'Bb', 'A'], NAT) },
+      ], drums: 'D.......D...x...' },
+      /* The Misunderstood — yanlış anlaşılan yalnız: hüzünlü vals (3/4) */
+      misunderstood: { bpm: 96, div: 2, dv: .4, gain: 1.6, parts: [
+        { i: 'violin', s: 'D5 - - - C5 Bb4 | A4 - - - G4 F4 | E4 - F4 - G4 - | A4 - - - - - | ' +
+                          'Bb4 - - - A4 G4 | F4 - - - E4 D4 | C#4 - D4 - E4 - | D4 - - - - -' },
+        { i: 'bass', s: gen('R . . . . .', ['D', 'D', 'A', 'A', 'G', 'D', 'A', 'D'], NAT) },
+        { i: 'arp', s: gen('. . P . P .', ['D', 'D', 'A', 'A', 'G', 'D', 'A', 'D'], NAT) },
+      ], drums: 'D.k.k.' },
+      /* Kelebek Etkisi — kanat çırpan 16'lık arpejler, rüya gibi flüt */
+      kelebek: { bpm: 120, div: 4, dv: .35, gain: .5, parts: [
+        { i: 'ney', s: x2('E5 - - - F#5 - - - | G5 - - - A5 - - - | F5 - - - E5 - D5 - | E5 - - - - - - -') },
+        { i: 'bell', s: gen('A B C B A B C B A C B C A B C B', ['C', 'D', 'Bb', 'A'], DREAM) },
+        { i: 'bass', s: gen('R - - - - - - - - - - - - - - -', ['C', 'D', 'Bb', 'A'], DREAM) },
+      ], drums: 'k...s...k...s.s.' },
+      /* Ahtapot — su altı: dalgalanan melodi, kabarcık arpejleri, derin bas */
+      ahtapot: { bpm: 84, div: 4, dv: .55, parts: [
+        { i: 'wob', s: x2('D4 - - E4 F4 - - - | A4 - G4 - F4 - E4 - | D4 - - E4 F4 - G4 - | A4 - - - - - - -') },
+        { i: 'arp', s: gen('A . B . C . B . A . B . C . B .', ['D', 'Bb', 'C', 'A'], NAT) },
+        { i: 'bass', s: gen('R . . R . . R . . . R . R . . .', ['D', 'Bb', 'C', 'A'], NAT) },
+        { i: 'drone', s: gen('P - - - - - - - - - - - - - - -', ['D', 'Bb', 'C', 'A'], NAT) },
+      ], drums: 'D..k..D...k..k..' },
+      /* Fatality — dövüş oyunu tekno: dörtlük davul, minör riff */
+      fatality: { bpm: 138, div: 4, dv: .75, parts: [
+        { i: 'boss', s: 'A4 . A4 . C5 . A4 . D5 . A4 . E5 . D5 . | C5 . C5 . E5 . C5 . G5 . C5 . G5 . F5 . | ' +
+                        'A4 . A4 . C5 . A4 . D5 . A4 . E5 . D5 . | A4 . A4 . C5 . A4 . E5 . D5 . C5 . B4 .' },
+        { i: 'dbass', s: gen('R . O . R . O . R . O . R . O .', ['A', 'C', 'A', 'E'], AMIN) },
+      ], drums: 'D.s.x.s.D.s.x.ss' },
+      /* Zombie — topallayan korku-funk: inen kromatik org, aksak davul */
+      zombie: { bpm: 96, div: 4, dv: .6, parts: [
+        { i: 'organ', s: x2('E4 - D#4 - D4 - C#4 - | C4 - - - B3 - - - | E4 - D#4 - D4 - F4 - | E4 - - - - - - -') },
+        { i: 'bass', s: gen('R . . . R . O . . . R . . . F .', ['E', 'C', 'E', 'B'], EMIN) },
+      ], drums: 'D...x..D..D.x...' },
+      /* Freedom Fighters — trampetli marş: kahraman ama gergin */
+      freedom: { bpm: 112, div: 4, dv: .65, parts: [
+        { i: 'brass', s: x2('D4 - D4 F4 A4 - - - | G4 - F4 E4 D4 - - - | D4 - D4 F4 A4 - D5 - | C5 - A4 - D5 - - -') },
+        { i: 'bass', s: gen('R . . . F . . . R . . . F . . .', ['D', 'G', 'D', 'A'], NAT) },
+      ], drums: 'D.xxD.x.D.xxDxxx' },
+      /* Alien — tam ton dizisinde theremin, uzay sinyali gibi çan blipleri */
+      uzayli: { bpm: 90, div: 4, dv: .4, gain: .65, parts: [
+        { i: 'theremin', s: x2('C5 - - - D5 - E5 - | F#5 - - - E5 - - - | G#5 - F#5 - E5 - D5 - | C5 - - - - - - -') },
+        { i: 'bell', s: gen('A B C B A B C B A B C B A B C B', ['C', 'D', 'C', 'D'], WT) },
+        { i: 'bass', s: gen('R - - - - - - - . . . . R - - -', ['C', 'D', 'C', 'D'], WT) },
+      ], drums: 'k.....s...k.s...' },
+      /* Üç Kağıtçı — sokak hilekârı: 9/8 Roman havası, Hicaz klarnet */
+      ucKagitci: { bpm: 132, div: 2, dv: .6, parts: [
+        { i: 'clar', s: 'D5 C5 Bb4 A4 Bb4 A4 G4 - - | F#4 G4 A4 Bb4 A4 G4 F#4 - - | G4 A4 Bb4 C5 D5 Eb5 D5 - - | C5 Bb4 A4 G4 F#4 Eb4 D4 - -' },
+        { i: 'bass', s: gen('R . O . R . O . F', ['D', 'D', 'C', 'D'], HICAZ) },
+      ], drums: 'D.T.D.TkT' },
+      /* GLITCH — takılan, kekeleyen chiptune; bozuk tekrarlar */
+      dervish: { bpm: 128, div: 4, dv: .65, parts: [
+        { i: 'chip', s: 'A4 A4 A4 . C5 . . A4 . . G4 G4 G4 G4 . . | E5 . E5 . D5 . C5 . A4 A4 . . . . . . | ' +
+                        'C5 C5 C5 . E5 . . C5 . . B4 B4 B4 B4 . . | G5 . F5 . E5 . D5 . C5 C5 C5 C5 C5 C5 C5 C5' },
+        { i: 'dbass', s: gen('R . . R . . R . R . . R . R R .', ['A', 'F', 'C', 'G'], AMIN) },
+      ], drums: 'D.sxD.sxDDs.xsxs' },
+      /* Terzi'nin İğnesi — dikiş makinesi: hızlı tekrar eden pizzicato, tik-tak */
+      terziIgne: { bpm: 116, div: 4, dv: .5, parts: [
+        { i: 'pizz', s: 'E5 E5 E5 E5 D5 D5 D5 D5 C5 C5 B4 B4 A4 . . . | A4 B4 C5 D5 E5 . . . F5 E5 D5 C5 B4 . . . | ' +
+                        'E5 E5 E5 E5 D5 D5 D5 D5 C5 C5 B4 B4 A4 . . . | C5 B4 A4 G#4 A4 . E4 . A4 . . . . . . .' },
+        { i: 'bass', s: gen('R . F . R . F . R . F . R . F .', ['A', 'D', 'A', 'E'], AMIN) },
+      ], drums: 'D.s.k.s.D.s.k.s.' },
+      /* Avukat — mahkeme salonu: barok klavsen, resmî ve soğuk */
+      avukat: { bpm: 108, div: 4, dv: .3, parts: [
+        { i: 'harpsi', s: 'D5 A4 F4 A4 D5 A4 F4 A4 E5 A4 G4 A4 E5 A4 G4 A4 | F5 A4 D5 A4 F5 A4 D5 A4 E5 A4 C#5 A4 E5 A4 C#5 A4 | ' +
+                          'D5 Bb4 G4 Bb4 D5 Bb4 G4 Bb4 C5 A4 F4 A4 C5 A4 F4 A4 | Bb4 G4 E4 G4 A4 F4 D4 F4 C#4 E4 A4 E4 D4 - - -' },
+        { i: 'bass', s: gen('R - - - - - - - F - - - - - - -', ['D', 'D', 'G', 'A'], NAT) },
+      ], drums: 'k...............' },
+      /* Ritim — darbuka sahnede: karmaşık ritim önde, saz yalnız vurgular */
+      ritim: { bpm: 120, div: 4, dv: 1, parts: [
+        { i: 'saz', s: x2('D5 . . . A4 . . . | Bb4 . A4 . G4 . . . | D5 . . . A4 . . . | G4 F#4 Eb4 F#4 D4 . . .') },
+        { i: 'bass', s: gen('R . . R . . R . R . . R . . R .', ['D', 'G', 'D', 'D'], HICAZ) },
+      ], drums: 'DkTkDkTTDkTkDTTT' + 'D.TkTkD.TkTkDTkT' },
+      /* Kahin — kehanet: A Hicaz'da ney, seyrek çanlar, pes uğultu, bendir */
+      kahin: { bpm: 80, div: 4, dv: .5, parts: [
+        { i: 'ney', s: x2('A4 - - - Bb4 - - - | C#5 - - - D5 - - - | E5 - - - D5 - C#5 Bb4 | A4 - - - - - - -') },
+        { i: 'bell', s: gen('. . . . A . . . . . . . C . . .', ['A', 'Bb', 'D', 'A'], AHIC) },
+        { i: 'drone', s: gen('P - - - - - - - - - - - - - - -', ['A', 'Bb', 'D', 'A'], AHIC) },
+      ], drums: 'D.......k...T...' },
+      /* Tüccar — çarşı pazarlığı: E Hicaz kanun, oynak bas */
+      tuccar: { bpm: 104, div: 2, dv: .6, parts: [
+        { i: 'kanun', s: 'E5 F5 G#5 F5 E5 - D5 . | C5 D5 E5 - D5 C5 B4 . | A4 B4 C5 D5 E5 F5 E5 D5 | E5 - - - . . . .' },
+        { i: 'bass', s: gen('R . F . O . F .', ['E', 'D', 'A', 'E'], EHIC) },
+      ], drums: 'D.TkD.TkD.T.DkTT' },
+      /* The Corporates — soğuk kurumsal synth: düzenli arpej, tekdüze nabız */
+      corporates: { bpm: 110, div: 4, dv: .45, parts: [
+        { i: 'organ', s: x2('A4 - - - C5 - B4 - | A4 - - - E4 - - - | F4 - - - A4 - G4 - | E4 - - - - - - -') },
+        { i: 'arp', s: gen('A B C B A B C B A B C B A B C B', ['A', 'A', 'F', 'E'], AMIN) },
+        { i: 'bass', s: gen('R . . . R . . . R . . . R . O .', ['A', 'A', 'F', 'E'], AMIN) },
+      ], drums: 'D.s.x.s.D.s.x.s.' },
+      /* Ayna Kral — görkemli saray: bakır melodi kendini aynalar, klavsen, timpani */
+      aynaKral: { bpm: 96, div: 2, dv: .7, parts: [
+        { i: 'brass', s: 'D4 - F4 A4 D5 - C5 Bb4 | A4 - - - G4 F4 E4 - | E4 - F4 G4 A4 - - - | Bb4 C5 - D5 A4 F4 - D4' },
+        { i: 'harpsi', s: gen('A B C B A B C B', ['D', 'A', 'C', 'D'], NAT) },
+        { i: 'bass', s: gen('R - - - F - - -', ['D', 'A', 'C', 'D'], NAT) },
+      ], drums: 'D...x...D.D.x.xx' },
+    };
+    Object.keys(BOSS_TRACKS).forEach(k => { TRACKS['b_' + k] = BOSS_TRACKS[k]; });
 
     function ensureCtx() {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
@@ -2292,7 +2449,7 @@
       osc.frequency.setValueAtTime(f, t);
       if (o.vib && dur > .3) {                    // ney: geç başlayan hafif titreşim
         const lfo = actx.createOscillator(), lg = actx.createGain();
-        lfo.frequency.value = o.vib; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * .008, t + dur);
+        lfo.frequency.value = o.vib; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * (o.vd || .008), t + dur);
         lfo.connect(lg).connect(osc.frequency); lfo.start(t); lfo.stop(t + dur + o.rel * 6);
       }
       let node = osc;
@@ -2312,7 +2469,8 @@
       osc.stop(t + dur + o.rel * 6);
     }
 
-    /* darbuka: D düm (pes, perde düşen), T tek (tiz), k ka (yumuşak tiz) */
+    /* darbuka: D düm (pes, perde düşen), T tek (tiz), k ka (yumuşak tiz);
+       boss parçaları için s zil (çok tiz, kısa), x trampet (orta, uzun) */
     function drum(dest, t, k, v) {
       if (k === 'D') {
         const o = actx.createOscillator(), g = actx.createGain();
@@ -2327,8 +2485,9 @@
       }
       const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
       src.buffer = noise;
-      f.type = 'bandpass'; f.frequency.value = k === 'T' ? 3400 : 2300; f.Q.value = 1.3;
-      const L = k === 'T' ? .07 : .045, V = (k === 'T' ? .4 : .2) * v;
+      const P = { T: [3400, 1.3, .07, .4], k: [2300, 1.3, .045, .2], s: [8500, .9, .03, .12], x: [1800, .7, .14, .32] }[k] || [2300, 1.3, .045, .2];
+      f.type = 'bandpass'; f.frequency.value = P[0]; f.Q.value = P[1];
+      const L = P[2], V = P[3] * v;
       g.gain.setValueAtTime(V, t);
       g.gain.exponentialRampToValueAtTime(.0001, t + L);
       src.connect(f).connect(g).connect(dest); src.start(t); src.stop(t + L + .02);
@@ -2339,7 +2498,7 @@
       const out = actx.createGain();
       out.gain.value = 0;
       out.connect(master);
-      out.gain.setTargetAtTime(1, actx.currentTime, .3);
+      out.gain.setTargetAtTime(T.gain || 1, actx.currentTime, .3);   // parça başı seviye dengesi
       const stepDur = 60 / T.bpm / T.div;
       const parts = T.parts.map(p => ({ o: INST[p.i], q: seq(p.s) }));
       let step = 0, next = actx.currentTime + .06;
@@ -2387,13 +2546,19 @@
       };
     }
 
+    let force = null;               // test/kayıt kancası: belirli parçayı zorla
     function want() {
+      if (force) return force;
       if (preview && document.getElementById('settingsOv')) return preview;
       preview = null;
       const theme = 'tema' + set;
-      if (storeOpen() || upgradeOpen()) return 'store';
+      if (storeOpen() || upgradeOpen()) return 'store' + set;
       if (curScreen() === 'game') {
-        try { return Game.state && Game.isBossRound() ? 'boss' + set : theme; } catch (e) { return theme; }
+        try {
+          if (!Game.state || !Game.isBossRound()) return theme;
+          const own = Game.state.boss && 'b_' + Game.state.boss.key;
+          return own && TRACKS[own] ? own : 'boss' + set;     // boss'un kendi müziği
+        } catch (e) { return theme; }
       }
       return theme;                   // menü + harita: seçili tema
     }
@@ -2444,6 +2609,7 @@
         sync();
       },
       want, sync, unlock, TRACKS,
+      force(name) { force = name && TRACKS[name] ? name : null; unlock(); sync(); },
       setOn(b) {
         on = !!b;
         lsSet(ON_KEY, on ? '1' : '0');
