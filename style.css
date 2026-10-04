@@ -9308,3 +9308,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   align-items: start; justify-items: center;
 }
 .gm-stage #meldArea .gm-meld-rows > * { direction: ltr; }
+
+/* P66 — Ayarlar: müzik aç/kapa + ses sürgüsü (tema vurgusu) */
+#settingsOv .set-music { align-items: center; flex-wrap: nowrap; }
+#settingsOv .set-music input[type="range"] { width: 170px; accent-color: var(--gm-turn-on); cursor: pointer; }
+#settingsOv .set-music b { min-width: 46px; text-align: right; color: var(--gm-light); font: 700 15px/1 var(--gm-font); }

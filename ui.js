@@ -2117,6 +2117,310 @@
     dice: () => { for (let i = 0; i < 7; i++) beep(300 + Math.random() * 500, .03, 'square', .07, i * .06); beep(180, .12, 'triangle', .1, .45); },
   };
 
+  /* ---------- Müzik (P66) — döngülü fon müziği ----------
+     Parça ekrana göre seçilir: menü/harita → menu, oyun → game, boss
+     raundu → boss, store/yükseltme → store. Değişimde ~1 sn çapraz geçiş.
+     Gerçek kayıt gelene kadar her parça burada WebAudio ile çalınan GEÇİCİ
+     bir döngüdür (Hicaz makamı, bağlama/ney/darbuka taklidi). Kayıt gelince
+     MUSIC_FILES'a dosya yolunu yazmak yeter (ör. 'assets/music/menu.mp3'):
+     dosyalı parça <audio loop> ile çalar, o parçanın sentezi devreden çıkar.
+     Tarayıcılar sesi ilk tıklamaya kadar açmaz → müzik ilk dokunuşta başlar. */
+  const MUSIC_FILES = { menu: null, game: null, boss: null, store: null };
+
+  const Music = (() => {
+    const VOL_KEY = 'okeyMusicVol', ON_KEY = 'okeyMusicOn';
+    const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* kozmetik */ } };
+    let vol = parseInt(lsGet(VOL_KEY), 10);
+    if (isNaN(vol)) vol = 50;
+    let on = lsGet(ON_KEY) !== '0';
+    /* P66b — oyun müziği seçimi: 1 = ilk (sakin) saz döngüsü, 2 = hareketli.
+       Arkadaş testinde ikisi karşılaştırılıyor; seçim run raporuna da yazılır. */
+    const SET_KEY = 'okeyMusicSet';
+    let set = lsGet(SET_KEY) === '2' ? 2 : 1;
+    let preview = null;             // ayarlarda seçeneğe basınca o parça dinletilir
+    let master = null, noise = null, unlocked = false, cur = null;
+    const level = () => (on ? Math.pow(Math.max(0, Math.min(100, vol)) / 100, 1.5) * 0.6 : 0);
+
+    /* ── nota yazımı: "D5 - C5 . | A4" → olaylar. "-" önceki notayı uzatır,
+       "." sus, "|" yalnız okunurluk için ölçü çizgisi, "D3+F#3" akor,
+       "D2^" kökün beşlisi. */
+    const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+    function hz(n) {
+      const m = /^([A-G])(b|#)?(\d)(\^?)$/.exec(n);
+      if (!m) return 0;
+      const midi = 12 * (+m[3] + 1) + NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+      return 440 * Math.pow(2, (midi - 69) / 12) * (m[4] ? 1.5 : 1);
+    }
+    function seq(str) {
+      const tok = str.replace(/\|/g, ' ').trim().split(/\s+/);
+      const at = {}; let last = null;
+      tok.forEach((x, i) => {
+        if (x === '-') { if (last && last[0] + last[2] === i) last[2]++; return; }
+        if (x === '.') { last = null; return; }
+        last = [i, x.split('+').map(hz), 1];
+        at[i] = last;
+      });
+      return { at, len: tok.length };
+    }
+    /* kalıp + kök listesi → ölçü ölçü dizi. R kök (2. oktav), O oktav üstü,
+       F beşli; akor tablosundan A/B/C = akorun 1./2./3. sesi. */
+    function gen(pat, roots, chords) {
+      return roots.map(r => pat.split(/\s+/).map(x => {
+        if (x === 'R') return r + '2';
+        if (x === 'O') return r + '3';
+        if (x === 'F') return r + '2^';
+        if (x === 'P') return chords[r].join('+');
+        if ('ABC'.includes(x) && x.length === 1) return chords[r]['ABC'.indexOf(x)];
+        return x;
+      }).join(' ')).join(' | ');
+    }
+
+    /* ── sazlar ── */
+    const INST = {
+      saz:  { type: 'sawtooth', vol: .09, a: .004, dec: .12, sus: .25, rel: .08, cut: 2600, sweep: true },
+      ney:  { type: 'triangle', vol: .13, a: .07, dec: .4, sus: .8, rel: .25, vib: 5 },
+      kanun:{ type: 'square', vol: .045, a: .003, dec: .09, sus: .3, rel: .06, cut: 3000, sweep: true },
+      arp:  { type: 'triangle', vol: .05, a: .004, dec: .1, sus: .2, rel: .1 },
+      bass: { type: 'triangle', vol: .16, a: .006, dec: .15, sus: .55, rel: .06 },
+      dbass:{ type: 'sawtooth', vol: .09, a: .004, dec: .08, sus: .4, rel: .04, cut: 700 },
+      stab: { type: 'square', vol: .022, a: .003, dec: .05, sus: .15, rel: .04, cut: 2200 },
+      pad:  { type: 'triangle', vol: .022, a: .35, dec: .8, sus: .8, rel: .5 },
+      boss: { type: 'square', vol: .05, a: .006, dec: .2, sus: .55, rel: .1, cut: 1900 },
+    };
+    const HICAZ = { D: ['D3', 'F#3', 'A3'], G: ['G3', 'Bb3', 'D4'], C: ['C3', 'Eb3', 'G3'], Eb: ['Eb3', 'G3', 'Bb3'] };
+    const MAJ = { G: ['G3', 'B3', 'D4'], D: ['D3', 'F#3', 'A3'], C: ['C3', 'E3', 'G3'], E: ['E3', 'G3', 'B3'] };
+
+    const TRACKS = {
+      /* Menü — sakin Hicaz, ney melodisi + saz arpeji */
+      menu: { bpm: 84, div: 2, dv: .45, parts: [
+        { i: 'ney', s: 'A4 - - - Bb4 - A4 - | G4 - F#4 - G4 - - - | A4 - - - C5 - Bb4 A4 | A4 - - - - - - - | ' +
+                       'D5 - - - C5 - Bb4 - | A4 - G4 - F#4 - - - | G4 - F#4 - Eb4 - F#4 - | D4 - - - - - - -' },
+        { i: 'arp', s: gen('A B C B A B C B', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
+        { i: 'bass', s: gen('R - - - F - - -', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
+        { i: 'pad', s: gen('P - - - - - - -', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
+      ], drums: 'D...T..k' },
+      /* Oyun — kıpır kıpır Hicaz, saz + maksum ritmi */
+      game: { bpm: 112, div: 2, dv: .6, parts: [
+        { i: 'saz', s: 'D5 - C5 Bb4 A4 - - . | Bb4 A4 G4 F#4 G4 - A4 . | A4 Bb4 C5 D5 Eb5 - D5 C5 | D5 - - - - - . . | ' +
+                       'G4 A4 Bb4 A4 G4 F#4 Eb4 . | F#4 G4 A4 - G4 F#4 Eb4 D4 | Eb4 F#4 G4 A4 Bb4 A4 G4 F#4 | D4 - - - - - . . | ' +
+                       'A4 . D5 . Eb5 D5 C5 Bb4 | A4 - Bb4 A4 G4 - . . | G4 . C5 . D5 C5 Bb4 A4 | G4 - A4 G4 F#4 - . . | ' +
+                       'F#4 G4 A4 Bb4 C5 Bb4 A4 G4 | A4 Bb4 C5 D5 Eb5 D5 C5 Bb4 | A4 - G4 F#4 Eb4 - F#4 G4 | D4 - - - . . . .' },
+        { i: 'bass', s: gen('R . O . R . F .', ['D', 'G', 'C', 'D', 'G', 'D', 'Eb', 'D', 'D', 'G', 'C', 'D', 'D', 'C', 'Eb', 'D'], HICAZ) },
+        { i: 'pad', s: gen('P - - - - - - -', ['D', 'G', 'C', 'D', 'G', 'D', 'Eb', 'D', 'D', 'G', 'C', 'D', 'D', 'C', 'Eb', 'D'], HICAZ) },
+      ], drums: 'DT.TD.T.DT.TD.T.DT.TD.T.DTkTDkTT' },
+      /* Oyun · Müzik 2 — daha hareketli: 128 bpm, 16'lık saz koşuları,
+         oktav zıplayan bas, ara vuruşlarda akor vuruşu, dolgulu darbuka */
+      game2: { bpm: 128, div: 4, dv: .7, parts: [
+        { i: 'saz', s: 'D5 . D5 . C5 Bb4 A4 . Bb4 A4 G4 . A4 - - . | F#4 G4 A4 . A4 . Bb4 A4 G4 F#4 G4 . A4 - - - | ' +
+                       'A4 Bb4 C5 D5 Eb5 . D5 C5 D5 . C5 Bb4 A4 . G4 . | A4 - - - D5 - - - A4 . G4 F#4 G4 A4 Bb4 C5 | ' +
+                       'D5 . Eb5 D5 C5 . Bb4 . C5 . Bb4 A4 G4 . A4 . | Bb4 A4 G4 F#4 G4 . Eb4 . F#4 G4 A4 Bb4 A4 - - . | ' +
+                       'G4 A4 Bb4 C5 D5 . Eb5 . D5 C5 Bb4 A4 G4 F#4 Eb4 F#4 | D4 . D4 . D5 - - - . . A4 . D5 . . .' },
+        { i: 'bass', s: gen('R . O . R . O . R . O . F . O .', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
+        { i: 'stab', s: gen('. . P . . . P . . . P . . . P .', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
+      ], drums: 'D.Tk.kT.D.TkT.Tk' + 'D.Tk.kT.DkTkTTTT' },
+      /* Boss — hızlı, karanlık; 16'lık bas ostinatosu */
+      boss: { bpm: 132, div: 4, dv: .7, parts: [
+        { i: 'boss', s: 'D5 - - - . . . . Eb5 - D5 - C5 - Bb4 - | A4 - - - - - - - . . . . . . . . | ' +
+                        'C5 - - - . . . . D5 - C5 - Bb4 - A4 - | Bb4 - A4 - G4 - F#4 - Eb4 - - - D4 - - -' },
+        { i: 'dbass', s: gen('R R O R R R O R R R O R R O R O', ['D', 'D', 'C', 'Eb'], HICAZ) },
+        { i: 'pad', s: gen('P - - - - - - - - - - - - - - -', ['D', 'D', 'C', 'Eb'], HICAZ) },
+      ], drums: 'D..TD.T.D..TDkTk' },
+      /* Store — çarşı havası, majör; kanun + "um-pa" bas */
+      store: { bpm: 100, div: 2, dv: .5, parts: [
+        { i: 'kanun', s: 'G4 B4 D5 B4 C5 - B4 A4 | G4 - A4 B4 A4 - . . | E4 G4 A4 B4 C5 B4 A4 G4 | A4 - - - D4 - . . | ' +
+                         'G4 B4 D5 B4 E5 - D5 C5 | B4 - C5 D5 C5 B4 A4 . | C5 B4 A4 G4 F#4 G4 A4 B4 | G4 - - - . . D4 .' },
+        { i: 'bass', s: gen('R . F . O . F .', ['G', 'D', 'C', 'D', 'G', 'E', 'D', 'G'], MAJ) },
+        { i: 'pad', s: gen('P - - - - - - -', ['G', 'D', 'C', 'D', 'G', 'E', 'D', 'G'], MAJ) },
+      ], drums: 'D.TkDT.k' },
+    };
+
+    function ensureCtx() {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (!master) {
+        master = actx.createGain();
+        master.gain.value = level();
+        master.connect(actx.destination);
+        noise = actx.createBuffer(1, actx.sampleRate * 0.3, actx.sampleRate);
+        const d = noise.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      return actx;
+    }
+
+    function tone(dest, t, f, dur, o) {
+      const osc = actx.createOscillator(), g = actx.createGain();
+      osc.type = o.type;
+      osc.frequency.setValueAtTime(f, t);
+      if (o.vib && dur > .3) {                    // ney: geç başlayan hafif titreşim
+        const lfo = actx.createOscillator(), lg = actx.createGain();
+        lfo.frequency.value = o.vib; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * .008, t + dur);
+        lfo.connect(lg).connect(osc.frequency); lfo.start(t); lfo.stop(t + dur + o.rel * 6);
+      }
+      let node = osc;
+      if (o.cut) {
+        const fl = actx.createBiquadFilter();
+        fl.type = 'lowpass';
+        fl.frequency.setValueAtTime(o.cut, t);
+        if (o.sweep) fl.frequency.setTargetAtTime(o.cut * .3, t, .08);   // tel çekme hissi
+        osc.connect(fl); node = fl;
+      }
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(o.vol, t + o.a);
+      g.gain.setTargetAtTime(o.vol * o.sus, t + o.a, o.dec);
+      g.gain.setTargetAtTime(0, t + dur, o.rel);
+      node.connect(g).connect(dest);
+      osc.start(t);
+      osc.stop(t + dur + o.rel * 6);
+    }
+
+    /* darbuka: D düm (pes, perde düşen), T tek (tiz), k ka (yumuşak tiz) */
+    function drum(dest, t, k, v) {
+      if (k === 'D') {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(150, t);
+        o.frequency.exponentialRampToValueAtTime(52, t + .16);
+        g.gain.setValueAtTime(.0001, t);
+        g.gain.exponentialRampToValueAtTime(.6 * v, t + .005);
+        g.gain.exponentialRampToValueAtTime(.0001, t + .3);
+        o.connect(g).connect(dest); o.start(t); o.stop(t + .32);
+        return;
+      }
+      const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+      src.buffer = noise;
+      f.type = 'bandpass'; f.frequency.value = k === 'T' ? 3400 : 2300; f.Q.value = 1.3;
+      const L = k === 'T' ? .07 : .045, V = (k === 'T' ? .4 : .2) * v;
+      g.gain.setValueAtTime(V, t);
+      g.gain.exponentialRampToValueAtTime(.0001, t + L);
+      src.connect(f).connect(g).connect(dest); src.start(t); src.stop(t + L + .02);
+    }
+
+    function playSynth(name) {
+      const T = TRACKS[name];
+      const out = actx.createGain();
+      out.gain.value = 0;
+      out.connect(master);
+      out.gain.setTargetAtTime(1, actx.currentTime, .3);
+      const stepDur = 60 / T.bpm / T.div;
+      const parts = T.parts.map(p => ({ o: INST[p.i], q: seq(p.s) }));
+      let step = 0, next = actx.currentTime + .06;
+      const tick = () => {
+        /* sekme uykudan dönünce geçmişe kalan adımları topluca çalma */
+        if (next < actx.currentTime) next = actx.currentTime + .05;
+        while (next < actx.currentTime + .25) {
+          parts.forEach(p => {
+            const e = p.q.at[step % p.q.len];
+            if (e) e[1].forEach(f => f && tone(out, next, f, e[2] * stepDur * .92, p.o));
+          });
+          const k = T.drums[step % T.drums.length];
+          if (k !== '.') drum(out, next, k, T.dv);
+          step++; next += stepDur;
+        }
+      };
+      tick();
+      const timer = setInterval(tick, 40);
+      return {
+        name,
+        stop() {
+          out.gain.setTargetAtTime(0, actx.currentTime, .25);
+          setTimeout(() => { clearInterval(timer); out.disconnect(); }, 1400);
+        },
+      };
+    }
+
+    function playFile(name) {
+      const a = new Audio(MUSIC_FILES[name]);
+      a.loop = true; a.volume = 0;
+      a.play().catch(() => {});
+      let k = 0, fading = null;
+      const fade = (from, to, done) => {
+        clearInterval(fading); k = 0;
+        fading = setInterval(() => {
+          k = Math.min(1, k + .05);
+          a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+          if (k >= 1) { clearInterval(fading); if (done) done(); }
+        }, 50);
+      };
+      fade(0, Math.min(1, level() * 2));
+      return {
+        name, el: a,
+        stop() { fade(a.volume, 0, () => { a.pause(); a.src = ''; }); },
+      };
+    }
+
+    function want() {
+      if (preview && document.getElementById('settingsOv')) return preview;
+      preview = null;
+      const game = set === 2 ? 'game2' : 'game';
+      if (storeOpen() || upgradeOpen()) return 'store';
+      if (curScreen() === 'game') {
+        try { return Game.state && Game.isBossRound() ? 'boss' : game; } catch (e) { return game; }
+      }
+      return 'menu';
+    }
+
+    function sync() {
+      if (!unlocked || !on) return;
+      const w = want();
+      if (cur && cur.name === w) return;
+      try {
+        ensureCtx();
+        if (cur) cur.stop();
+        cur = MUSIC_FILES[w] ? playFile(w) : playSynth(w);
+      } catch (e) { cur = null; /* ses desteklenmiyorsa sessiz devam */ }
+    }
+
+    function applyLevel() {
+      if (master) master.gain.setTargetAtTime(level(), actx.currentTime, .05);
+      if (cur && cur.el) cur.el.volume = Math.min(1, level() * 2);
+    }
+
+    function unlock() {
+      if (unlocked) return;
+      unlocked = true;
+      try { ensureCtx(); if (actx.state === 'suspended') actx.resume(); } catch (e) { /* sessiz */ }
+      sync();
+    }
+    document.addEventListener('pointerdown', unlock, true);
+    document.addEventListener('keydown', unlock, true);
+    /* arka plan sekmesinde zamanlayıcı kısılır → bağlamı uyut, dönünce uyandır */
+    document.addEventListener('visibilitychange', () => {
+      if (!actx || !unlocked) return;
+      if (document.hidden) actx.suspend(); else actx.resume();
+    });
+    setInterval(sync, 500);
+
+    return {
+      get on() { return on; },
+      get vol() { return vol; },
+      get track() { return cur ? cur.name : null; },
+      get unlocked() { return unlocked; },
+      get set() { return set; },
+      setSet(n) {
+        set = +n === 2 ? 2 : 1;
+        lsSet(SET_KEY, String(set));
+        preview = set === 2 ? 'game2' : 'game';
+        if (!on) this.setOn(true);       // seçen kişi duymak ister
+        unlock();
+        sync();
+      },
+      want, sync, unlock, TRACKS,
+      setOn(b) {
+        on = !!b;
+        lsSet(ON_KEY, on ? '1' : '0');
+        if (!on && cur) { cur.stop(); cur = null; }
+        applyLevel();
+        sync();
+      },
+      setVol(v) {
+        vol = Math.max(0, Math.min(100, Math.round(+v || 0)));
+        lsSet(VOL_KEY, String(vol));
+        applyLevel();
+      },
+    };
+  })();
+
   /* ---------- Görsel efektler ---------- */
 
   function flashMult(text) {
@@ -5585,15 +5889,43 @@
         `<span class="sw">${th.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span>` +
         `<span>${t('theme_' + th.key)}</span></button>`).join('') +
       `</div></div>` +
+      /* P66 — müzik: aç/kapa + ses seviyesi */
+      `<div class="set-row"><span class="set-label">${t('musicLabel')}</span>` +
+      `<div class="set-langs set-music"><button class="set-lang${Music.on ? ' on' : ''}" id="setMusicOn">` +
+      `${Music.on ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff')}</button>` +
+      `<input type="range" id="setMusicVol" min="0" max="100" step="5" value="${Music.vol}" aria-label="${t('musicLabel')}">` +
+      `<b id="setMusicPct">${Music.vol}%</b></div></div>` +
+      `<div class="set-row"><span class="set-label">${t('musicSetLabel')}</span>` +
+      `<div class="set-langs">` +
+      [1, 2].map(n => `<button class="set-lang set-mset${Music.set === n ? ' on' : ''}" data-mset="${n}">♪ ${t('musicSet' + n)}</button>`).join('') +
+      `</div></div>` +
       /* P60/P61 — ilk kez ipuçlarını yeniden göster */
       `<div class="set-row"><span class="set-label">${t('hintsLabel')}</span>` +
       `<div class="set-langs"><button class="set-lang" id="setHintsReset">↺ ${t('hintsReset')}</button></div></div>` +
       `<button class="btn ghost" id="setClose">${t('close')}</button></div>`;
     document.body.appendChild(ov);
     ov.querySelector('#setHintsReset').addEventListener('click', () => { Hints.reset(); toast(t('hintsResetDone'), true); });
+    const mOn = ov.querySelector('#setMusicOn'), mVol = ov.querySelector('#setMusicVol');
+    mOn.addEventListener('click', () => {
+      Music.setOn(!Music.on);
+      mOn.classList.toggle('on', Music.on);
+      mOn.textContent = Music.on ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff');
+    });
+    ov.querySelectorAll('.set-mset').forEach(b => b.addEventListener('click', () => {
+      Music.setSet(b.dataset.mset);
+      ov.querySelectorAll('.set-mset').forEach(x => x.classList.toggle('on', x === b));
+      mOn.classList.toggle('on', Music.on);
+      mOn.textContent = Music.on ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff');
+      toast(t('musicPreview', t('musicSet' + Music.set)), true);
+    }));
+    mVol.addEventListener('input', () => {
+      Music.setVol(mVol.value);
+      ov.querySelector('#setMusicPct').textContent = Music.vol + '%';
+      if (!Music.on && Music.vol > 0) mOn.click();     // sürgüyü oynatan müziği duymak ister
+    });
     ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
     ov.querySelector('#setClose').addEventListener('click', () => ov.remove());
-    ov.querySelectorAll('.set-lang').forEach(b => b.addEventListener('click', () => {
+    ov.querySelectorAll('.set-lang[data-lang]').forEach(b => b.addEventListener('click', () => {
       if (b.dataset.lang === T.lang) return;
       T.setLang(b.dataset.lang);
       applyStaticTexts();
@@ -6570,6 +6902,7 @@
     const out = [];
     out.push(t('rpTitle'));
     out.push(t('rpMeta', mode, when, mins));
+    out.push(t('rpMusic', Music.on ? t('musicSet' + Music.set) : t('musicOff')));   // P66b — arkadaş testi
     const where = `S${s.stage} R${s.roundInStage}`;
     const bossTxt = s.boss && Game.isBossRound && Game.isBossRound() ? ` · ${t('rpBoss')} ${T.bossName(s.boss.key, s.boss.name)}` : '';
     out.push(kind === 'win' ? t('rpResultWin', where) : t('rpResultLose', where + bossTxt, s.score, s.target));
@@ -7893,6 +8226,7 @@
     // P60 — run raporu + ipucu penceresi
     Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell,
     // P61 — Kumarhane hissi
+    Music,
     showHiLo, showSideBet, showRuletPick, kumarStartPanels, showJackpot, pickRunMode, showSettings, showRunPick,
     collectionView: (v) => showCollection(v) };
 })();
