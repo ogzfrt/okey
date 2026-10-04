@@ -1693,10 +1693,14 @@ const SPECIAL_TILES = {
    havuzundan tamamen düşer (bkz. _genUpgradeOffer). Böylece oyuncunun
    karşısına hiçbir zaman "hiçbir şey yapmayan" bir raf ödülü çıkmaz.
    ============================================================ */
-/* P51 · Grup B: joker rafı 3→2 (tavan 4→3). Balatro rafı 2 kart; her reroll daha az şey gösterir. */
-const SHOP_JOKER_BASE  = 2;
-const SHOP_JOKER_MAX   = 3;
-const SHOP_EXTRA_BASE  = 3;
+/* P51 · Grup B: joker rafı 3→2 (tavan 4→3). Balatro rafı 2 kart; her reroll daha az şey gösterir.
+   P67 (kullanıcı kararı 2026-10-05, Figma store v1): raflar yükseltilmeden SABİT 3 joker +
+   4 ürün (1 değnek + her türden 1 paket) gösterir — boş/eksik raf "ölü alan" hissi veriyordu.
+   Paketler artık ihtimalle değil GARANTİ çıkar (verecek şeyi kalmayan tür hariç). Eskici
+   Rafı: joker 3→4, ürün 4→5 (5. ürün ikinci bir paket). Bot ölçümü GDD 22.1b-34. */
+const SHOP_JOKER_BASE  = 3;
+const SHOP_JOKER_MAX   = 4;
+const SHOP_EXTRA_BASE  = 4;
 const SHOP_EXTRA_MAX   = 5;
 /* GRUP G (2026-09-07): ikinci rafın SABİT kalemi artık yalnız DEĞNEK.
    Özel taş slotu kaldırıldı (taşlar yalnız 2'li paketten çıkıyor), boşalan
@@ -3865,8 +3869,10 @@ const Game = {
     const packs = s.store.packs || (s.store.packs = []);
     if (packs.length >= this.shopPackSlots()) return false;
     const taken = new Set(packs.map(p => p.kind));
-    const pool = Object.values(PACK_DEFS)
-      .filter(d => !taken.has(d.kind) && this._packUseful(d.kind));
+    const useful = Object.values(PACK_DEFS).filter(d => this._packUseful(d.kind));
+    /* P67 — üç tür de raftaysa (artık taban böyle) ikinci paket herhangi bir tür olabilir */
+    const fresh = useful.filter(d => !taken.has(d.kind));
+    const pool = fresh.length ? fresh : useful;
     if (!pool.length) return false;
     const def = pool[Math.floor(this.rng() * pool.length)];
     packs.push({ kind: def.kind, price: def.price, sold: false });
@@ -9279,14 +9285,24 @@ const Game = {
        tavanda) elenir; envanterin dolu olması artık paketi engellemez. */
     const stageBonus = Math.min(PACK_STAGE_CAP,
       PACK_STAGE_BONUS * Math.max(0, (s.stage || 1) - 1));
-    for (const def of Object.values(PACK_DEFS)) {
-      if (packs.length >= packSlots) break;
-      if (takenKinds.has(def.kind)) continue;
-      if (!this._packUseful(def.kind)) continue;
-      if (this.rng() >= def.chance + stageBonus) continue;
+    /* P67 — paketler GARANTİ: her tür bir kez (verecek şeyi kalmayan tür
+       hariç); Eskici Rafı'yla açılan fazladan slot rastgele bir türün
+       İKİNCİ paketidir. `chance`/`stageBonus` artık yalnız eski kayıt
+       uyumu için tanımlı, üretimde kullanılmaz. */
+    void stageBonus;
+    const mkPack = (def) => {
       let pp = this.modePrice(def.price), ppBase;       // MADDE D4
       if (anarchist) { ppBase = pp; pp = anar(pp); }
       packs.push({ kind: def.kind, price: pp, basePrice: ppBase, sold: false });
+      takenKinds.add(def.kind);
+    };
+    const usable = Object.values(PACK_DEFS).filter(def => this._packUseful(def.kind));
+    for (const def of usable) {
+      if (packs.length >= packSlots) break;
+      mkPack(def);
+    }
+    while (packs.length < packSlots && usable.length) {
+      mkPack(usable[Math.floor(this.rng() * usable.length)]);
     }
     // sonraki üretimde "az önce bunlar çıktı" filtresi için kaydet (madde 19)
     s.lastStoreKeys = items.map(i => i.key);

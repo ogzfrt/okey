@@ -392,13 +392,20 @@
 
       <div id="storeCoins" class="gm-coin"><span class="gm-cur">$</span><span id="storeCoinVal">0</span></div>
 
-      <!-- sağ: joker ızgarası (haritayla aynı, Figma 240:479) -->
-      <aside id="storeJokerPanel" class="gm-jokers">
-        <div class="gm-jk-head"><span id="ssSlotsTitle">SLOTLARIN</span> <span id="ssSlotsCount">0/5</span></div>
-        <div id="storeSlotsRow"></div>
-      </aside>
-      <!-- deste jokerleri slotta görünmez — satış erişimi için mini şerit -->
-      <div id="storeDeckRow"></div>
+      <!-- P67 — store kendi UI dilimizde (kullanıcı: "renkler önemsiz, bizim
+           ui-design'a göre baştan tasarla"). Sağ sütun: joker slotları + altında
+           backup envanteri; sol sütunun altı: değnek envanteri + deste jokerleri;
+           ortada başlık plakalı koyu panel, iki gömme raf ve iki düğme. -->
+      <div id="storeRightCol">
+        <aside id="storeJokerPanel" class="gm-jokers">
+          <div class="gm-jk-head"><span id="ssSlotsTitle">SLOTLARIN</span> <span id="ssSlotsCount">0/5</span></div>
+          <div id="storeSlotsRow"></div>
+        </aside>
+        <div id="storeBackupShoulder" class="st-shoulder st-inv">
+          <div class="st-sh-tab"><span id="ssBackupTitle">backup</span><span id="ssBackupCount" class="gm-sh-count">0/2</span></div>
+          <div class="st-sh-body"><div id="storeBackupRow"></div></div>
+        </div>
+      </div>
 
       <div id="storePileCol">
         <div class="deck-pile"></div>
@@ -406,43 +413,32 @@
         <div id="storeDiscardSlot" class="discard-slot"></div>
       </div>
 
-      <!-- omuzlar: panelin üst kenarına oturur (Figma 240:456 / 240:468) -->
-      <div id="storeTotemShoulder" class="st-shoulder st-sh-left open">
-        <button class="st-sh-tab" id="btnStoreTotem" aria-expanded="true">
-          <span id="ssConsumTitle">Değnek</span>
-          <span id="ssConsumCount" class="gm-sh-count">0/3</span>
-          <span class="gm-chev" aria-hidden="true"></span>
-        </button>
-        <div class="gm-sh-body st-sh-body"><div id="storeConsumRow"></div></div>
-      </div>
-      <div id="storeBackupShoulder" class="st-shoulder st-sh-right open">
-        <button class="st-sh-tab" id="btnStoreBackup" aria-expanded="true">
-          <span id="ssBackupTitle">backup</span>
-          <span id="ssBackupCount" class="gm-sh-count">0/2</span>
-          <span class="gm-chev" aria-hidden="true"></span>
-        </button>
-        <div class="gm-sh-body st-sh-body"><div id="storeBackupRow"></div></div>
+      <div id="storeLeftInv">
+        <div id="storeTotemShoulder" class="st-shoulder st-inv">
+          <div class="st-sh-tab"><span id="ssConsumTitle">Değnek</span><span id="ssConsumCount" class="gm-sh-count">0/3</span></div>
+          <div class="st-sh-body"><div id="storeConsumRow"></div></div>
+        </div>
+        <!-- deste jokerleri slotta görünmez — satış erişimi için mini şerit -->
+        <div id="storeDeckRow"></div>
       </div>
 
-      <!-- ana panel (Figma 240:478, 449,307 · 1132×720) -->
-      <main id="storeScene" class="st-oct st-panel">
+      <main id="storeScene" class="st-panel">
+        <div id="storePlate"><h2 id="storeTitle">STORE</h2></div>
         <div id="storeItems">
-          <div class="store-row st-oct" id="storeRowA">
+          <div class="store-row st-well" id="storeRowA">
             <div class="sr-head" id="srJokersLbl">JOKERLER</div>
             <div class="sr-grid" id="storeRowJokers"></div>
           </div>
-          <div class="store-row st-oct" id="storeRowB">
+          <div class="store-row st-well" id="storeRowB">
             <div class="sr-head" id="srExtrasLbl">DEĞNEK &amp; PAKETLER</div>
             <div class="sr-grid" id="storeRowExtras"></div>
           </div>
         </div>
         <div class="store-actions">
-          <button id="btnReroll" class="st-btn st-oct">Yenile</button>
-          <button id="btnStoreContinue" class="st-btn st-oct">Devam</button>
+          <button id="btnReroll" class="st-btn st-ghost">Yenile</button>
+          <button id="btnStoreContinue" class="st-btn st-go">Devam</button>
         </div>
       </main>
-      <!-- STORE plakası (Figma 241:799, 800,188 · 430×160) -->
-      <div id="storePlate" class="st-oct"><h2 id="storeTitle">STORE</h2></div>
     </div>
   </div>
 

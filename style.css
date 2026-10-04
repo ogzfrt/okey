@@ -7118,6 +7118,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 /* P57 (2026-10-01) — Legendary 2/15: Lanetli_kaptan (390:2) → kaptan.
    Boss-Epic frame 279:9897'a Üçkağıtçı (390:44) geldi → ucKagitci (boss 20/20). */
 .jk-kaptan       { --jk-art: url('assets/game/joker/lanetli-kaptan.svg'); }
+.jk-medusa       { --jk-art: url('assets/game/joker/medusa.svg'); }   /* P67 · Figma 420:2 */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
@@ -8891,18 +8892,6 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 #storeOverlay #storeStage * { image-rendering: pixelated; }
 
-/* --- sekizgen kutu (köşeleri kesik, kenarlı) — clip-path sözde elemanlarda,
-       böylece drop-shadow filtresi ve taşan çocuklar kırpılmaz --- */
-#storeStage .st-oct { --c: 19px; --bw: 5px; --bc: var(--gm-turn-on); --fill: var(--gm-light); position: relative; isolation: isolate; }
-#storeStage .st-oct::before,
-#storeStage .st-oct::after {
-  content: ''; position: absolute; z-index: -1; pointer-events: none;
-  clip-path: polygon(var(--k) 0, calc(100% - var(--k)) 0, 100% var(--k), 100% calc(100% - var(--k)),
-    calc(100% - var(--k)) 100%, var(--k) 100%, 0 calc(100% - var(--k)), 0 var(--k));
-}
-#storeStage .st-oct::before { inset: 0; --k: var(--c); background: var(--bc); }
-#storeStage .st-oct::after { inset: var(--bw); --k: max(0px, calc(var(--c) - var(--bw) * .6)); background: var(--fill); }
-
 /* --- üst sol: duraklat + bilgi, menü (haritanın eşi) --- */
 #storeStage .brand { position: absolute; left: 0; top: 0; width: 100%; height: 0; display: block; background: none; border: 0; padding: 0; z-index: 6; }
 #storeStage #storeMenuPop {
@@ -8941,33 +8930,6 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 #storeStage #storeCoins .gm-cur { font: 400 48px/1 'Edit Undo BRK', var(--gm-font); color: var(--gm-coin-ink); position: relative; top: -3px; }
 
-/* --- joker paneli (Figma 240:479, 1638,161 · 211×388) --- */
-#storeStage #storeJokerPanel.gm-jokers {
-  position: absolute; left: 1638px; top: 161px; width: 211px; min-height: 388px;
-  background: var(--img-panel-jokers) no-repeat center / 100% 100%;
-  padding: 13px; overflow: visible; box-sizing: border-box;
-  display: flex; flex-direction: column; align-items: center;
-}
-#storeStage #storeJokerPanel .gm-jk-head { display: none; }
-#storeStage #storeSlotsRow {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 23px; width: 100%;
-  grid-template-columns: none; padding: 0;
-}
-#storeStage #storeSlotsRow .joker-tile,
-#storeStage #storeSlotsRow .joker-slot-empty,
-#storeStage #storeDeckRow .joker-tile {
-  width: 81px; height: 110px; flex: 0 0 81px; min-width: 0; min-height: 0; box-sizing: border-box;
-}
-#storeStage .joker-slot-empty {
-  background: var(--img-tile-back) no-repeat center / 100% 100%; border: 0; border-radius: 0;
-}
-/* deste jokerleri: joker panelinin altında küçük şerit */
-#storeStage #storeDeckRow { position: absolute; left: 1638px; top: 566px; width: 211px; }
-#storeStage #storeDeckRow:empty { display: none; }
-#storeStage #storeDeckRow .panel-title { font: 700 14px/1 var(--gm-font); color: var(--gm-dark); text-align: center; margin: 0 0 8px; letter-spacing: -1px; }
-#storeStage #storeDeckRow .sd-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; }
-#storeStage #storeDeckRow .joker-tile { width: 54px; height: 73px; flex-basis: 54px; }
-
 /* --- deste / atılan --- */
 #storeStage #storePileCol { position: absolute; left: 1752px; top: 759px; width: 81px; height: 268px; }
 #storeStage #storePileCol .deck-pile { position: absolute; left: 0; top: 0; }
@@ -8977,199 +8939,243 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 #storeStage #storePileCol .discard-slot { position: absolute; left: 0; top: 158px; }
 
-/* --- omuzlar: kapalıyken yalnız sekme panelin üstünde görünür; açıkken
-       yukarı kayar (oyun ekranındaki omuzlarla aynı hareket). 4+ yuvada
-       taslak v3'teki gibi iki satır ve uzun gövde. --- */
-#storeStage .st-shoulder {
-  position: absolute; top: 271px; width: 310px; height: 170px; z-index: 1;
-  transition: transform .26s cubic-bezier(.25, .9, .35, 1);
+/* ============================================================
+   P67 — STORE KENDİ UI DİLİMİZDE (kullanıcı 2026-10-05: "renkler önemsiz,
+   bizim ui-design'a göre baştan tasarla" + "çok ölü alan varmış gibi").
+   Dil: Raund Kazandın / Stage Tamamlandı pencereleriyle aynı — koyu tema
+   paneli + 4px açık kenar, üst kenara oturan başlık plakası, içte gömme
+   koyu raflar, açık kartlar, turuncu vurgu, açık ana düğme + çerçeveli
+   ikincil düğme. Ölü alan: envanterler panelden çıktı (değnek sol sütunun
+   altına, backup joker slotlarının altına); panel plakadan ekranın dibine
+   uzanır, kartlar büyüdü ve rafa eşit aralıkla yayılır.
+   ============================================================ */
+
+/* --- sağ sütun: joker slotları + backup (akışta, üst üste) --- */
+#storeStage #storeRightCol {
+  position: absolute; left: 1638px; top: 161px; width: 211px;
+  display: flex; flex-direction: column; gap: 16px; align-items: stretch;
 }
-#storeStage .st-sh-left  { left: 468px; }
-#storeStage .st-sh-right { left: 1251px; }
-#storeStage .st-shoulder.open { transform: translateY(-132px); }
-#storeStage .st-shoulder:is([data-slots="4"], [data-slots="5"], [data-slots="6"]) { height: 291px; }
-#storeStage .st-shoulder:is([data-slots="4"], [data-slots="5"], [data-slots="6"]).open { transform: translateY(-253px); }
-/* gövde: koyu 2px kenar + panel rengi, üst köşeler 17px kesik */
-#storeStage .st-shoulder::before,
-#storeStage .st-shoulder::after {
-  content: ''; position: absolute; left: 0; right: 0; top: 34px; bottom: 0;
-  clip-path: polygon(17px 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 0 100%, 0 17px);
+#storeStage #storeJokerPanel.gm-jokers {
+  position: relative; left: auto; top: auto; width: 211px; min-height: 388px;
+  background: var(--img-panel-jokers) no-repeat center / 100% 100%;
+  padding: 13px; overflow: visible; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center;
 }
-#storeStage .st-shoulder::before { background: var(--gm-dark); }
-#storeStage .st-shoulder::after { inset: 36px 2px 2px; background: var(--gm-panel); clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%, 0 16px); }
-#storeStage .st-sh-tab {
-  position: absolute; left: 18px; top: 0; width: 274px; height: 35px; z-index: 1;
-  background: var(--gm-dark); border: 0; cursor: pointer;
-  clip-path: polygon(33px 0, calc(100% - 33px) 0, 100% 100%, 0 100%);
-  padding: 0 39px; display: flex; align-items: center; gap: 8px;
-  font: 700 16px/1 var(--gm-font); color: var(--gm-light); letter-spacing: -1.6px; white-space: nowrap;
+#storeStage #storeJokerPanel .gm-jk-head { display: none; }
+#storeStage #storeSlotsRow {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 23px; width: 100%;
+  grid-template-columns: none; padding: 0;
 }
-#storeStage .st-sh-tab .gm-sh-count { margin-left: auto; }
-#storeStage .st-sh-tab .gm-chev {
-  width: 0; height: 0; margin-left: 6px;
-  border-left: 7px solid transparent; border-right: 7px solid transparent;
-  border-bottom: 9px solid var(--gm-light); transition: transform .26s ease;
+#storeStage :is(#storeSlotsRow, #storeDeckRow, .st-sh-body) :is(.joker-tile, .joker-slot-empty, .consum-card) {
+  width: 81px; height: 110px; flex: 0 0 81px; min-width: 0; min-height: 0; box-sizing: border-box;
 }
-#storeStage .st-shoulder.open .gm-chev { transform: rotate(180deg); }
-#storeStage .st-sh-tab:hover { filter: brightness(1.15); }
-#storeStage .st-sh-body.gm-sh-body { z-index: 1; top: 47px; height: 110px; }
-#storeStage .st-shoulder:not(.open) .st-sh-body { opacity: 0; pointer-events: none; }
-#storeStage .st-shoulder:is([data-slots="4"], [data-slots="5"], [data-slots="6"]) .st-sh-body { height: 231px; }
-#storeStage .st-shoulder:is([data-slots="4"], [data-slots="5"], [data-slots="6"]) .st-sh-body > div {
-  display: grid; grid-template-columns: repeat(2, 81px); gap: 11px 21px; justify-content: center; width: auto;
-}
-#storeStage .st-shoulder:is([data-slots="5"], [data-slots="6"]) .st-sh-body > div { grid-template-columns: repeat(3, 81px); }
-#storeStage .st-sh-body :is(.joker-slot-empty, .joker-tile, .consum-card) {
-  width: 81px; height: 110px; flex: 0 0 81px; box-sizing: border-box;
+#storeStage .joker-slot-empty {
+  background: var(--img-tile-back) no-repeat center / 100% 100%; border: 0; border-radius: 0;
 }
 
-/* --- ana panel --- */
-#storeOverlay #storeStage #storeScene.st-panel {
-  --c: 19px; --bw: 3px; --bc: var(--gm-light); --fill: var(--gm-dark);
-  position: absolute; left: 449px; top: 307px; width: 1132px; height: 720px; z-index: 2;
-  display: block; padding: 0; margin: 0; gap: 0; max-height: none;
-  background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible;
-  transform: none; animation: none;
+/* --- sol sütunun altı: değnek envanteri + deste jokerleri --- */
+#storeStage #storeLeftInv {
+  position: absolute; left: 41px; top: 652px; width: 350px;
+  display: flex; flex-direction: column; gap: 14px;
 }
+
+/* --- envanter paneli (değnek / backup): koyu panel, açık kenar, gömme yuvalar --- */
+#storeStage .st-shoulder.st-inv {
+  position: relative; left: auto; top: auto; width: 100%; height: auto; transform: none;
+  background: var(--gm-dark); border: 4px solid var(--gm-light); border-radius: 8px;
+  padding: 10px 12px 12px; box-sizing: border-box; box-shadow: 0 5px 0 rgba(0, 0, 0, .35);
+}
+#storeStage .st-inv .st-sh-tab {
+  position: static; width: auto; height: auto; clip-path: none; background: none; padding: 0 2px 8px;
+  display: flex; align-items: center; gap: 8px; cursor: default;
+  font: 700 17px/1 var(--gm-font); color: var(--gm-light); letter-spacing: 1px; text-transform: uppercase; white-space: nowrap;
+}
+#storeStage .st-inv .st-sh-tab .gm-sh-count { margin-left: auto; color: var(--gm-turn-on); letter-spacing: 0; }
+#storeStage .st-inv .st-sh-body {
+  position: static; height: auto; opacity: 1; pointer-events: auto;
+  background: rgba(0, 0, 0, .28); box-shadow: inset 0 3px 0 rgba(0, 0, 0, .25);
+  border-radius: 6px; padding: 10px;
+}
+#storeStage .st-inv .st-sh-body > div {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 12px; width: auto; margin: 0; padding: 0;
+}
+/* değnek: satırda en çok 3 yuva (4-6 yuva iki satır) */
+#storeStage #storeTotemShoulder .st-sh-body > div { max-width: calc(81px * 3 + 24px); margin: 0 auto; }
+/* backup sağ sütunda (211px): iki yuva yan yana sığsın diye iç boşluklar dar */
+#storeStage #storeBackupShoulder.st-inv { padding: 8px 8px 8px; }
+#storeStage #storeBackupShoulder .st-sh-tab { font-size: 15px; padding-bottom: 6px; }
+#storeStage #storeBackupShoulder .st-sh-body { padding: 6px; }
+#storeStage #storeBackupShoulder .st-sh-body > div { flex-wrap: nowrap; gap: 8px; }
+#storeStage #storeDeckRow:empty { display: none; }
+#storeStage #storeDeckRow {
+  position: relative; left: auto; top: auto; width: 100%;
+  background: var(--gm-dark); border: 4px solid var(--gm-light); border-radius: 8px;
+  padding: 8px 10px 10px; box-sizing: border-box;
+}
+#storeStage #storeDeckRow .panel-title { font: 700 14px/1 var(--gm-font); color: var(--gm-light); text-align: left; margin: 0 0 8px; letter-spacing: 1px; text-transform: uppercase; }
+#storeStage #storeDeckRow .sd-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; }
+#storeStage #storeDeckRow .joker-tile { width: 54px; height: 73px; flex-basis: 54px; }
+
+/* --- ana panel: koyu tema, açık kenar, plakadan ekranın dibine --- */
+#storeOverlay #storeStage #storeScene.st-panel {
+  position: absolute; left: 432px; top: 146px; width: 1176px; height: 890px; z-index: 2;
+  display: flex; flex-direction: column; gap: 18px;
+  padding: 62px 28px 24px; margin: 0; box-sizing: border-box; max-height: none;
+  background: var(--gm-dark); border: 4px solid var(--gm-light); border-radius: 12px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, .35); overflow: visible; transform: none; animation: none;
+}
+/* başlık plakası: panelin üst kenarına oturur */
+#storeStage #storePlate {
+  position: absolute; left: 50%; top: -46px; transform: translateX(-50%); z-index: 3;
+  width: auto; height: auto; padding: 10px 56px 12px;
+  background: var(--gm-dark); border: 4px solid var(--gm-light); border-radius: 8px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .35);
+}
+#storeStage #storePlate h2#storeTitle {
+  font: 700 58px/1 var(--gm-font); letter-spacing: 2px; text-transform: uppercase;
+  color: var(--gm-light); text-shadow: 0 4px 0 rgba(0, 0, 0, .3); margin: 0; padding: 0; white-space: nowrap;
+}
+
+/* --- raflar: gömme koyu alan, başlık sol üstte, kartlar eşit aralıkla --- */
 #storeStage #storeItems {
-  display: block; position: static; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 18px; flex: 1 1 auto; min-height: 0;
+  position: static; padding: 0; margin: 0;
   background: none; border: 0; border-radius: 0; box-shadow: none; grid-template-columns: none;
 }
-#storeStage .store-row.st-oct {
-  --c: 19px; --bw: 5px; --bc: var(--gm-turn-on); --fill: var(--gm-light);
-  position: absolute; left: 50%; transform: translateX(-50%);
-  width: max-content; padding: 25px; margin: 0; box-sizing: border-box;
-  background: none; border: 0; border-radius: 0; box-shadow: none;
+#storeStage .store-row.st-well {
+  position: relative; left: auto; top: auto; transform: none; width: auto; min-height: 0;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 20px 20px; margin: 0; box-sizing: border-box;
+  background: rgba(0, 0, 0, .28); border: 0; border-radius: 10px; box-shadow: inset 0 4px 0 rgba(0, 0, 0, .25);
 }
-#storeStage #storeRowA { top: 65px; min-height: 280px; }
-#storeStage #storeRowB { top: 384px; min-height: 197px; }
+#storeStage #storeRowA { flex: 1 1 0; }
+#storeStage #storeRowB { flex: 0 0 auto; }
 #storeStage #storeRowB[data-n="0"] { display: none; }
-#storeStage .store-row .sr-head { display: none; }
+#storeStage .store-row .sr-head {
+  display: block; font: 700 15px/1 var(--gm-font); color: var(--gm-light); opacity: .85;
+  letter-spacing: 2px; text-transform: uppercase; text-align: left; margin: 0; padding: 0;
+}
 #storeStage .store-row .sr-grid {
-  display: flex; gap: 20px; grid-template-columns: none !important; margin: 0; padding: 0;
+  display: flex; align-items: center; justify-content: space-evenly; gap: 20px; flex: 1 1 auto;
+  grid-template-columns: none !important; margin: 0; padding: 0;
 }
 
-/* --- kart: ortak sıfırlama (eski beyaz kart kabuğu kalkar) --- */
+/* --- kart: açık zemin, üstte nadirlik şeridi, gömme görsel alanı --- */
 #storeStage .sr-grid .store-item {
-  position: relative; flex: 0 0 auto; box-sizing: border-box;
-  background: none; border: 0; border-radius: 0; box-shadow: none;
-  padding: 0; margin: 0; gap: 0; min-height: 0; min-width: 0; overflow: visible;
-  display: block; text-align: center;
+  --w: 214px; --aw: 150px; --ah: 204px; --rar: var(--gm-dark);
+  position: relative; flex: 0 0 var(--w); width: var(--w); height: auto; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: stretch; gap: 12px;
+  padding: 16px 14px 14px; margin: 0; min-height: 0; min-width: 0; overflow: visible; text-align: center;
+  background: var(--gm-light); color: var(--gm-dark);
+  border: 0; border-radius: 10px; box-shadow: 0 6px 0 rgba(0, 0, 0, .35);
+  transition: transform .12s ease;
 }
-#storeStage .sr-grid .store-item.locked { box-shadow: none; }
+#storeStage .sr-grid .store-item::before {
+  content: ''; position: absolute; left: 14px; right: 14px; top: 0; height: 6px;
+  background: var(--rar); border-radius: 0 0 4px 4px;
+}
+#storeStage .sr-grid .store-item.r-common    { --rar: #B0B8C1; }
+#storeStage .sr-grid .store-item.r-rare      { --rar: #4A90D9; }
+#storeStage .sr-grid .store-item.r-epic      { --rar: #9B59B6; }
+#storeStage .sr-grid .store-item.r-legendary { --rar: #F5A623; }
+#storeStage .sr-grid .store-item.r-mythic    { --rar: #FF3CAC; }
+#storeStage .sr-grid .store-item.r-pack::before { background: var(--gm-turn-on); }
+#storeStage .sr-grid .store-item:hover:not(.sold-out) { transform: translateY(-4px); }
+#storeStage .sr-grid .store-item.locked { box-shadow: 0 0 0 4px var(--gm-turn-on), 0 6px 0 rgba(0, 0, 0, .35); }
 #storeStage .sr-grid .store-item.sold-out { opacity: 1; }
-#storeStage .sr-grid .store-item.sold-out .st-frame { opacity: .45; }
+#storeStage .sr-grid .store-item.sold-out .st-frame { opacity: .4; filter: grayscale(.6); }
+
 #storeStage .store-item .st-frame {
-  --c: 23px; --bw: 5px; --bc: var(--gm-dark); --fill: var(--gm-light);
-  position: absolute; display: flex; align-items: center; justify-content: center;
+  position: relative; inset: auto; display: flex; align-items: center; justify-content: center;
+  padding: 8px; border-radius: 6px; background: rgba(0, 0, 0, .1); box-shadow: inset 0 2px 0 rgba(0, 0, 0, .12);
 }
 #storeStage .store-item .s-ico {
   position: relative; margin: 0; flex: none; border-radius: 0; box-shadow: none;
+  width: var(--aw); height: var(--ah);
   display: flex; align-items: center; justify-content: center;
   background-color: var(--gm-tile-face); outline: 2px solid var(--gm-tile-edge, #CAC2A1); outline-offset: -2px;
-  font-size: 54px; line-height: 1;
+  font-size: 96px; line-height: 1;
 }
-#storeStage .store-item .s-ico:is(.s-jk-art, .cs-art) { outline: 0; background-color: transparent; }
-
-/* joker grubu 190×230: kilit sekmesi (0,0 · 60×60), çerçeve (30,30 · 160×200), görsel 110×150 */
-#storeStage .store-item.st-jk { width: 190px; height: 230px; }
-#storeStage .store-item.st-jk .st-frame { left: 30px; top: 30px; width: 160px; height: 200px; }
-#storeStage .store-item.st-jk .s-ico { width: 110px; height: 150px; }
-#storeStage .store-item.st-jk .s-ico.s-jk-art { background-size: 100% 100%; background-repeat: no-repeat; background-position: center; }
-
-/* ürün 118×147: çerçeve tam boy, görsel 81×110 */
-#storeStage .store-item.st-it { width: 118px; height: 147px; }
-#storeStage .store-item.st-it .st-frame { --c: 18px; inset: 0; }
-#storeStage .store-item.st-it .s-ico { width: 81px; height: 110px; font-size: 40px; }
-#storeStage .store-item.st-it .s-ico.cs-art { background-size: 100% 100%; }
+#storeStage .store-item .s-ico:is(.s-jk-art, .cs-art) {
+  outline: 0; background-color: transparent; background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
+}
+/* ürün (değnek / paket) kartı daha küçük */
+#storeStage .sr-grid .store-item.st-it { --w: 156px; --aw: 96px; --ah: 130px; gap: 10px; padding: 14px 12px 12px; }
+#storeStage .store-item.st-it .s-ico { font-size: 58px; }
 #storeStage .store-item.st-it :is(.s-rarity, .s-name:not(.s-sold), .s-chips, .s-pack-out, .s-desc) { display: none; }
+/* Kumarhane stage sonu (5 joker) ve 6 ürünlü raf: kartlar biraz küçülür */
+#storeStage #storeRowA[data-n="5"] .store-item { --w: 190px; --aw: 132px; --ah: 180px; }
+#storeStage #storeRowB:is([data-n="6"], [data-n="7"]) .store-item { --w: 146px; --aw: 88px; --ah: 120px; }
 
-/* kilit sekmesi — taslaktaki piksel asma kilit, temanın vurgu tonunda */
+/* satın al: kartın altında turuncu vurgu düğmesi, STOP gibi basılır */
+#storeStage .store-item .s-buy {
+  position: relative; left: auto; top: auto; bottom: auto; transform: none;
+  width: 100%; min-width: 0; margin: 0; z-index: 1; white-space: nowrap;
+  background: var(--gm-turn-on); color: var(--gm-dark);
+  border: 3px solid var(--gm-dark); border-radius: 6px;
+  font: 700 20px/1 var(--gm-font); letter-spacing: 0; padding: 9px 6px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .4); text-shadow: none;
+  transition: transform .06s ease, box-shadow .06s ease, filter .1s ease;
+}
+#storeStage .store-item.st-it .s-buy { font-size: 17px; padding: 8px 4px; }
+#storeStage .store-item .s-buy:hover:not(:disabled) { filter: brightness(1.08); }
+#storeStage .store-item .s-buy:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+#storeStage .store-item .s-buy:disabled { background: rgba(0, 0, 0, .14); color: rgba(0, 0, 0, .45); border-color: rgba(0, 0, 0, .3); box-shadow: none; cursor: default; opacity: 1; }
+#storeStage .store-item .s-buy .anar-old { opacity: .6; margin-right: 4px; }
+#storeStage .store-item .s-sold {
+  position: relative; left: auto; top: auto; transform: none; z-index: 1; white-space: nowrap;
+  display: block; background: var(--gm-dark); color: var(--gm-light); border: 0; border-radius: 6px;
+  font: 700 17px/1 var(--gm-font); letter-spacing: 1px; padding: 11px 6px; margin: 0;
+  max-width: none; overflow: hidden; text-overflow: ellipsis;
+}
+#storeStage .store-item.st-it .s-sold { font-size: 14px; padding: 10px 4px; }
+
+/* kilit: sol üst köşeye taşan küçük koyu düğme */
 #storeStage .store-item .s-lock {
-  position: absolute; left: 0; top: 0; width: 60px; height: 60px; z-index: 2;
-  background: var(--gm-dark); border: 0; border-radius: 0; padding: 0; opacity: 1;
-  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  position: absolute; left: -12px; top: -12px; width: 46px; height: 46px; z-index: 3;
+  background: var(--gm-dark); border: 3px solid var(--gm-light); border-radius: 8px; padding: 0; opacity: 1;
+  clip-path: none; box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
   cursor: pointer; transition: transform .06s ease, filter .1s ease;
 }
 #storeStage .store-item .s-lock:hover { filter: brightness(1.2); }
 #storeStage .store-item .s-lock:active { transform: translateY(2px); }
-/* maske değil görsel: file:// altında CSS maskesi CORS'a takılıyor; vurgu
-   rengi (#FFA629 ≈ --gm-turn-on) dört temada da aynı */
 #storeStage .store-item .s-lock .lk-ico {
-  display: block; width: 60px; height: 60px;
+  display: block; width: 100%; height: 100%;
   background: url('assets/game/store/lock-open.svg') no-repeat center / 100% 100%;
 }
+#storeStage .store-item .s-lock.on { border-color: var(--gm-turn-on); }
 #storeStage .store-item .s-lock.on .lk-ico { background-image: url('assets/game/store/lock-closed.svg'); }
-#storeStage .store-item.locked .st-frame { --bc: var(--gm-turn-on); }
+/* YENİ rozeti: sağ üst köşe */
+#storeStage .store-item .badge-new {
+  position: absolute; right: 8px; top: -12px; left: auto; z-index: 3;
+  background: var(--gm-turn-on); color: var(--gm-dark); border: 3px solid var(--gm-dark); border-radius: 6px;
+  font: 700 14px/1 var(--gm-font); letter-spacing: 0; padding: 4px 7px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+/* Ateş Tüccarı pazarlık / ateşi çal: kartın üstünde küçük düğmeler */
+#storeStage .store-item .s-extra {
+  position: absolute; right: 8px; top: -36px; z-index: 3; margin: 0;
+  background: var(--gm-dark); color: var(--gm-light); border: 2px solid var(--gm-light); border-radius: 5px;
+  font: 700 13px/1 var(--gm-font); padding: 5px 8px;
+}
+#storeStage .store-item .s-extra + .s-extra { right: auto; left: 40px; }
 
-/* fiyat etiketi = satın al (rötuş): çerçevenin alt kenarına oturur, STOP gibi basılır */
-#storeStage .store-item .s-buy {
-  position: absolute; left: 50%; top: auto; bottom: auto; transform: translateX(-50%);
-  width: auto; min-width: 0; margin: 0; z-index: 3; white-space: nowrap;
-  background: var(--gm-dark); color: var(--gm-light);
-  border: 3px solid var(--gm-light); border-radius: 6px;
-  font: 700 17px/1 var(--gm-font); letter-spacing: -1px; padding: 7px 12px;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, .45); text-shadow: none;
+/* --- YENİLE (çerçeveli ikincil) / DEVAM (açık ana düğme) --- */
+#storeStage .store-actions { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin: 0; padding: 0; flex: 0 0 auto; }
+#storeStage .st-btn {
+  position: relative; left: auto; top: auto; width: 300px; height: 78px; padding: 0 16px; margin: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 10px; cursor: pointer; text-shadow: none;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .4);
   transition: transform .06s ease, box-shadow .06s ease, filter .1s ease;
 }
-#storeStage .store-item.st-jk .s-buy { top: 212px; margin-left: 15px; }
-#storeStage .store-item.st-it .s-buy { top: 130px; font-size: 15px; padding: 6px 9px; }
-#storeStage .store-item .s-buy:hover:not(:disabled) { filter: brightness(1.15); }
-#storeStage .store-item .s-buy:active:not(:disabled) { transform: translateX(-50%) translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .45); }
-#storeStage .store-item .s-buy:disabled { opacity: .55; cursor: default; }
-#storeStage .store-item .s-buy .anar-old { opacity: .6; margin-right: 4px; }
-#storeStage .store-item .s-sold {
-  position: absolute; left: 50%; transform: translateX(-50%); z-index: 3; white-space: nowrap;
-  background: var(--gm-light); color: var(--gm-dark); border: 3px solid var(--gm-dark); border-radius: 6px;
-  font: 700 15px/1 var(--gm-font); letter-spacing: -1px; padding: 6px 10px; margin: 0;
-}
-#storeStage .store-item.st-jk .s-sold { top: 212px; margin-left: 15px; }
-#storeStage .store-item.st-it .s-sold { top: 130px; font-size: 13px; padding: 5px 7px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
-/* YENİ rozeti: çerçevenin sağ üst köşesinde */
-#storeStage .store-item .badge-new {
-  position: absolute; right: -6px; top: 18px; left: auto; z-index: 3;
-  background: var(--gm-turn-on); color: var(--gm-dark); border: 3px solid var(--gm-dark); border-radius: 4px;
-  font: 700 13px/1 var(--gm-font); letter-spacing: -.5px; padding: 3px 6px; box-shadow: none;
-}
-/* Ateş Tüccarı pazarlık / ateşi çal: grubun sağ üstünde küçük düğme */
-#storeStage .store-item .s-extra {
-  position: absolute; right: 0; top: -14px; z-index: 3; margin: 0;
-  background: var(--gm-dark); color: var(--gm-light); border: 2px solid var(--gm-light); border-radius: 5px;
-  font: 700 12px/1 var(--gm-font); padding: 4px 7px;
-}
-#storeStage .store-item .s-extra + .s-extra { top: 12px; }
-
-/* --- Reroll / Next (rötuş: koyu yazı okunur; YENİLE altında fiyat + hak) --- */
-#storeStage .store-actions { display: block; margin: 0; padding: 0; }
-#storeStage .st-btn.st-oct {
-  --c: 11px; --bw: 4px; --bc: var(--gm-turn-on); --fill: var(--gm-light);
-  position: absolute; top: 618px; height: 80px; padding: 0 10px; margin: 0;
-  background: none; border: 0; border-radius: 0; box-shadow: none; text-shadow: none;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  color: var(--gm-dark); cursor: pointer;
-  filter: drop-shadow(0 5px 0 rgba(0, 0, 0, .45));
-  transition: transform .06s ease, filter .06s ease;
-}
-#storeStage #btnReroll.st-btn { left: 22px; width: 250px; }
-#storeStage #btnStoreContinue.st-btn { left: 895px; width: 215px; }
-#storeStage .st-btn b { font: 700 38px/1 var(--gm-font); letter-spacing: -4px; text-transform: uppercase; }
-#storeStage .st-btn small { font: 700 15px/1 var(--gm-font); letter-spacing: -1px; opacity: .85; }
-#storeStage .st-btn:hover:not(:disabled) { transform: none; }
-#storeStage .st-btn:hover:not(:disabled)::after { filter: brightness(1.08); }
-#storeStage .st-btn:active:not(:disabled) { transform: translateY(3px); filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .45)); }
-#storeStage .st-btn:disabled { opacity: .55; cursor: default; }
-
-/* --- STORE plakası (Figma 241:799) --- */
-#storeStage #storePlate.st-oct {
-  --c: 11px; --bw: 8px; --bc: var(--gm-turn-on); --fill: var(--gm-light);
-  position: absolute; left: 800px; top: 188px; width: 430px; height: 160px; z-index: 3;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0; margin: 0; background: none; border: 0; box-shadow: none;
-}
-#storeStage #storePlate h2#storeTitle {
-  font: 700 64px/1.8 var(--gm-font); letter-spacing: -5px; text-transform: uppercase;
-  color: #000000; text-shadow: none; margin: 0; padding: 0;
-}
+#storeStage .st-btn.st-go { background: var(--gm-light); color: var(--gm-dark); border: 4px solid var(--gm-light); }
+#storeStage .st-btn.st-ghost { background: transparent; color: var(--gm-light); border: 4px solid var(--gm-light); }
+#storeStage .st-btn b { font: 700 36px/1 var(--gm-font); letter-spacing: 1px; text-transform: uppercase; }
+#storeStage .st-btn small { font: 700 15px/1 var(--gm-font); letter-spacing: 0; opacity: .85; }
+#storeStage #btnStoreContinue b::after { content: ' →'; }
+#storeStage .st-btn:hover:not(:disabled) { filter: brightness(1.1); transform: none; }
+#storeStage .st-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+#storeStage .st-btn:disabled { opacity: .5; cursor: default; }
 
 /* trainer çipi sol sütunun akışında */
 #storeStage #storeSide .trainer-chip { margin: 0; }
@@ -9208,12 +9214,6 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 #fuzyonPick .tp-box > .btn { white-space: normal; max-width: 100%; box-sizing: border-box; }
 #fuzyonPick .fz-opt { text-align: center; }
-/* fiyat etiketi çerçeve içinde ortalanır (translate yerine otomatik kenar
-   boşluğu → kart kutusundan taşmaz, kaydırma genişliği büyümez) */
-#storeStage .store-item :is(.s-buy, .s-sold) { left: 0; right: 0; margin: 0 auto; width: max-content; max-width: 100%; transform: none; }
-#storeStage .store-item.st-jk :is(.s-buy, .s-sold) { left: 30px; margin-left: auto; }
-#storeStage .store-item .s-buy:active:not(:disabled) { transform: translateY(3px); }
-#storeStage .store-item .badge-new { right: 0; }
 
 /* ============================================================
    P65 — HARİTA HAFİF RÖTUŞ (kullanıcı: "tamamen değiştir demek değil…

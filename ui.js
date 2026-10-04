@@ -5875,15 +5875,7 @@
     const deck = document.querySelector('#storePileCol .deck-pile');
     deck.addEventListener('click', () => showPilePopup('deck'));
     deck.style.cursor = 'pointer';
-    /* omuzlar: sekmeye tıkla → aç/kapa (oyun ekranındaki omuzlarla aynı his) */
-    for (const [btn, node] of [['btnStoreTotem', 'storeTotemShoulder'], ['btnStoreBackup', 'storeBackupShoulder']]) {
-      $(btn).addEventListener('click', () => {
-        const open = !$(node).classList.contains('open');
-        $(node).classList.toggle('open', open);
-        $(btn).setAttribute('aria-expanded', String(open));
-        SFX.tick();
-      });
-    }
+    /* P67 — envanter panelleri her zaman açık (sol sütun altı / sağ sütun); aç/kapa sekmesi yok */
   }
   function fitMapPauseMenu() {
     if (!el.mapMenuPop || el.mapMenuPop.classList.contains('hidden')) return;
@@ -6791,11 +6783,11 @@
         `${item.leaked ? ' · 🗣' : ''}${item.locked ? ' · 🔒' : ''}${s.store.anarchist ? ' · ⚡' : ''}`;
       const jArt = !disguised && JOKER_ART.has(item.key);
       card.classList.add('art-card');
-      /* P65 — Figma taslağı: sekizgen çerçeve içinde kart görseli, sol üstte
-         kilit sekmesi, çerçevenin alt kenarında fiyat etiketi (= satın al). */
+      /* P67 — açık kart: gömme alanda büyük görsel, altında satın al düğmesi,
+         sol üst köşede kilit, sağ üstte YENİ rozeti; üst şerit nadirlik rengi. */
       card.classList.add('st-jk');
       card.innerHTML =
-        `<div class="st-frame st-oct">` +
+        `<div class="st-frame">` +
         (jArt ? `<div class="s-ico s-jk-art jk-${item.key}"></div>`
           : `<div class="s-ico ico-${item.rarity}">${disguised ? '🀫' : jokerIcon(item.key)}</div>`) +
         `</div>` +
@@ -6875,9 +6867,9 @@
          kart düzeninde kalır. */
       card.classList.add('st-it');
       card.innerHTML = cArt
-        ? `<div class="st-frame st-oct"><div class="s-ico ico-consum cs-art cs-${c.key}"></div></div>`
+        ? `<div class="st-frame"><div class="s-ico ico-consum cs-art cs-${c.key}"></div></div>`
         : `<div class="s-rarity">${T.rarity(c.rarity || 'common')} · ${t('consumRarity')}${s.store.anarchist ? ' · ⚡' : ''}</div>` +
-          `<div class="st-frame st-oct"><div class="s-ico ico-consum">${c.icon}</div></div>` +
+          `<div class="st-frame"><div class="s-ico ico-consum">${c.icon}</div></div>` +
           `<div class="s-name">${T.consumName(c.key, c.name)}</div>` +
           chipsHtml(T.consumDesc(c.key, c.desc));
       /* PLAYTEST 9 · GRUP M: "envanterde en fazla 3 taşınır" cümlesi
@@ -6928,7 +6920,7 @@
            "seçim bekleniyor" der — satın alma butonu bir daha çıkmaz. */
         card.innerHTML =
           `<div class="s-rarity">${t('packRarity_' + pk.kind)}</div>` +
-          `<div class="st-frame st-oct"><div class="s-ico ico-pack">${def.icon}</div></div>` +
+          `<div class="st-frame"><div class="s-ico ico-pack">${def.icon}</div></div>` +
           `<div class="s-name s-sold">${pk.pending ? t('packPending') : t('opened')}</div>` +
           (pk.contents ? `<div class="s-pack-out">${pk.contents.map(packOutHtml).join('<hr>')}</div>` : '');
         /* P65: çerçeve küçük — paketten çıkanlar üstüne gelince tooltip'te */
@@ -6938,7 +6930,7 @@
       } else {
         card.innerHTML =
           `<div class="s-rarity">${t('packRarity_' + pk.kind)}${s.store.anarchist ? ' · ⚡' : ''}</div>` +
-          `<div class="st-frame st-oct"><div class="s-ico ico-pack">${def.icon}</div></div>` +
+          `<div class="st-frame"><div class="s-ico ico-pack">${def.icon}</div></div>` +
           /* GRUP G (2026-09-07): `.pack-q` gizem tipografisidir (19px,
              harf arası 2px, sallanma) ve yalnız "???" adlı paketlere
              yakışır. 2'li Özel Taş Paketi'nin ADI VAR — normal kart adı
@@ -7470,7 +7462,8 @@
     'pinkyWarrior', 'kiyamet', 'kagit', 'ejderha',
     'frankenstein',                           // P54 · Figma 383:975 — ilk Legendary çizimi
     'otekiDunya',                             // P55 · Figma 387:3 — Mythic 10/10
-    'kaptan', 'ucKagitci']);                  // P57 · Figma 390:2 (Legendary 2/15) + 390:44 (boss 20/20)
+    'kaptan', 'ucKagitci',                    // P57 · Figma 390:2 (Legendary 2/15) + 390:44 (boss 20/20)
+    'medusa']);                               // P67 · Figma 420:2 (Legendary 3/15)
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
