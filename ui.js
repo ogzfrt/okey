@@ -2119,7 +2119,8 @@
 
   /* ---------- Müzik (P66) — döngülü fon müziği ----------
      Parça ekrana göre seçilir: menü, harita ve oyun → seçili TEMA (Müzik
-     1/2/3, ayarlardan), boss raundu → boss, store/yükseltme → store.
+     1/2/3, ayarlardan), boss raundu → o temanın boss sürümü (boss1/2/3),
+     store/yükseltme → store.
      Menü → harita → oyun arasında tema kesilmeden sürer. Değişimde ~1 sn
      çapraz geçiş.
      Gerçek kayıt gelene kadar her parça burada WebAudio ile çalınan GEÇİCİ
@@ -2127,7 +2128,7 @@
      MUSIC_FILES'a dosya yolunu yazmak yeter (ör. 'assets/music/tema-1.mp3'):
      dosyalı parça <audio loop> ile çalar, o parçanın sentezi devreden çıkar.
      Tarayıcılar sesi ilk tıklamaya kadar açmaz → müzik ilk dokunuşta başlar. */
-  const MUSIC_FILES = { tema1: null, tema2: null, tema3: null, boss: null, store: null };
+  const MUSIC_FILES = { tema1: null, tema2: null, tema3: null, boss1: null, boss2: null, boss3: null, store: null };
 
   const Music = (() => {
     const VOL_KEY = 'okeyMusicVol', ON_KEY = 'okeyMusicOn';
@@ -2184,6 +2185,9 @@
     const x2 = (str) => str.split('|').map(bar => bar.trim().split(/\s+/)
       .map(x => (x === '.' ? '. .' : x === '-' ? '- -' : x + ' -')).join(' ')).join(' | ');
     const T3 = ['D', 'G', 'C', 'D', 'C', 'G', 'Eb', 'D', 'D', 'G', 'C', 'D', 'C', 'G', 'Eb', 'D'];
+    const B1 = ['D', 'Eb', 'D', 'G', 'D', 'Eb', 'C', 'D'];
+    const B2 = ['D', 'Eb', 'D', 'G', 'D', 'D', 'Eb', 'D'];
+    const B3 = ['D', 'C', 'D', 'G', 'D', 'Eb', 'C', 'D'];
 
     /* ── sazlar ── */
     const INST = {
@@ -2193,6 +2197,7 @@
       arp:  { type: 'triangle', vol: .05, a: .004, dec: .1, sus: .2, rel: .1 },
       bass: { type: 'triangle', vol: .16, a: .006, dec: .15, sus: .55, rel: .06 },
       dbass:{ type: 'sawtooth', vol: .09, a: .004, dec: .08, sus: .4, rel: .04, cut: 700 },
+      drone:{ type: 'sawtooth', vol: .02, a: .4, dec: 1, sus: .9, rel: .6, cut: 520 },
       stab: { type: 'square', vol: .022, a: .003, dec: .05, sus: .15, rel: .04, cut: 2200 },
       pad:  { type: 'triangle', vol: .022, a: .35, dec: .8, sus: .8, rel: .5 },
       boss: { type: 'square', vol: .05, a: .006, dec: .2, sus: .55, rel: .1, cut: 1900 },
@@ -2232,13 +2237,33 @@
         { i: 'bass', s: gen('R . . O . . R . R . . O . . F .', T3, HICAZ) },
         { i: 'pad', s: gen('P - - - - - - - - - - - - - - -', T3, HICAZ) },
       ], drums: 'D..kT.k.D.kkT.k.' },
-      /* Boss — hızlı, karanlık; 16'lık bas ostinatosu */
-      boss: { bpm: 132, div: 4, dv: .7, parts: [
-        { i: 'boss', s: 'D5 - - - . . . . Eb5 - D5 - C5 - Bb4 - | A4 - - - - - - - . . . . . . . . | ' +
-                        'C5 - - - . . . . D5 - C5 - Bb4 - A4 - | Bb4 - A4 - G4 - F#4 - Eb4 - - - D4 - - -' },
-        { i: 'dbass', s: gen('R R O R R R O R R R O R R O R O', ['D', 'D', 'C', 'Eb'], HICAZ) },
-        { i: 'pad', s: gen('P - - - - - - - - - - - - - - -', ['D', 'D', 'C', 'Eb'], HICAZ) },
-      ], drums: 'D..TD.T.D..TDkTk' },
+      /* ── Boss sürümleri: her tema kendi boss parçasına döner. Aynı melodik
+         çekirdek, ama Hicaz'ın karanlık yüzü (D ↔ Eb gerilimi), daha hızlı
+         tempo, 16'lık bas ve ağır darbuka. ── */
+      /* Boss · Müzik 1 — temanın "D5 C5 Bb4 A4" açılışı sertleşir, Eb'ye iner */
+      boss1: { bpm: 126, div: 4, dv: .75, parts: [
+        { i: 'boss', s: x2('D5 - C5 Bb4 A4 - - . | Bb4 A4 G4 F#4 Eb4 - - . | D5 - C5 Bb4 A4 - - . | Bb4 - A4 - G4 F#4 Eb4 D4 | ' +
+                           'A4 . A4 . Bb4 A4 G4 F#4 | G4 - F#4 Eb4 F#4 - - . | A4 Bb4 C5 D5 Eb5 - D5 C5 | D5 - - - Eb5 - D5 -') },
+        { i: 'dbass', s: gen('R R O R R R O R R R O R R O R O', B1, HICAZ) },
+        { i: 'drone', s: gen('P - - - - - - - - - - - - - - -', B1, HICAZ) },
+      ], drums: 'D.TkD.TkD.TkDkTk' + 'D.TkD.TkDDTkTTTT' },
+      /* Boss · Müzik 2 — en hareketli temanın koşuları 140 bpm'de saldırır */
+      boss2: { bpm: 140, div: 4, dv: .8, parts: [
+        { i: 'saz', s: 'D5 . D5 . C5 Bb4 A4 . Eb5 . D5 . C5 Bb4 A4 . | Bb4 A4 G4 F#4 Eb4 . Eb4 . D4 - - - . . . . | ' +
+                       'D5 . D5 . C5 Bb4 A4 . Eb5 . D5 . C5 Bb4 A4 . | G4 A4 Bb4 C5 D5 . Eb5 . D5 - - - . . . . | ' +
+                       'A4 . A4 Bb4 A4 . G4 . A4 . A4 Bb4 C5 . Bb4 . | A4 G4 F#4 G4 A4 . Eb4 . F#4 G4 A4 Bb4 A4 - - . | ' +
+                       'D5 C5 Bb4 A4 Bb4 A4 G4 F#4 G4 F#4 Eb4 F#4 G4 A4 Bb4 C5 | D5 . . . Eb5 . . . D5 . D5 . D5 - - -' },
+        { i: 'dbass', s: gen('R . O . R . O . R . O . R O R O', B2, HICAZ) },
+        { i: 'stab', s: gen('. . P . . . P . . . P . P . P .', B2, HICAZ) },
+      ], drums: 'D.TkTkTkD.TkTTTT' + 'D.TkD.TkDkTkDTTT' },
+      /* Boss · Müzik 3 — ney yavaş ve tekinsiz; altında nabız gibi bas,
+         pes uğultu ve yarım tempolu ağır düm */
+      boss3: { bpm: 108, div: 4, dv: .85, parts: [
+        { i: 'ney', s: x2('D5 - - - - - Eb5 D5 | C5 - Bb4 - A4 - - - | Bb4 - - - A4 - G4 F#4 | G4 - - - - - . . | ' +
+                          'A4 - - Bb4 A4 - G4 F#4 | Eb4 - - - F#4 - - - | G4 - A4 Bb4 C5 - Bb4 A4 | D4 - - - - - . .') },
+        { i: 'dbass', s: gen('R . R . R . R . R . R . R . O .', B3, HICAZ) },
+        { i: 'drone', s: gen('P - - - - - - - - - - - - - - -', B3, HICAZ) },
+      ], drums: 'D.......T...k...' + 'D.....D.T...k.kk' },
       /* Store — çarşı havası, majör; kanun + "um-pa" bas */
       store: { bpm: 100, div: 2, dv: .5, parts: [
         { i: 'kanun', s: 'G4 B4 D5 B4 C5 - B4 A4 | G4 - A4 B4 A4 - . . | E4 G4 A4 B4 C5 B4 A4 G4 | A4 - - - D4 - . . | ' +
@@ -2368,7 +2393,7 @@
       const theme = 'tema' + set;
       if (storeOpen() || upgradeOpen()) return 'store';
       if (curScreen() === 'game') {
-        try { return Game.state && Game.isBossRound() ? 'boss' : theme; } catch (e) { return theme; }
+        try { return Game.state && Game.isBossRound() ? 'boss' + set : theme; } catch (e) { return theme; }
       }
       return theme;                   // menü + harita: seçili tema
     }
