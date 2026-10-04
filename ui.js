@@ -1045,6 +1045,7 @@
           markInRound();                   // raund içine girildi
           showScreen('game');
           flushRoundStart();               // raund başı olayları + pop-up'lar
+          setTimeout(kumarStartPanels, 1500);  // P61 — Rulet rengi + yan bahis (eli görerek; bahis bandı geçtikten sonra)
         };
         /* P58 · Kumarhane — KÖR BAHİS: el görülmeden, oyun ekranına geçmeden önce */
         if (Game.needsBet && Game.needsBet()) showBetPicker(go);
@@ -1590,6 +1591,9 @@
 
   // 95 joker için ikon haritası (kartın görsel alanı)
   const JOKER_ICONS = {
+    /* P61 · Kumarhane jokerleri (Figma çizimi gelene kadar emoji) */
+    krupiye: '🎩', sansliZar: '🎲', kartSayici: '🃏', fisUstasi: '🪙',
+    rulet: '🎡', hileliZar: '🎰', martingale: '📈',
     /* common */
     bereket: '🌾', kosucu: '🏃', ikizler: '👯', takim: '🧩', uzunKosu: '🛤️',
     ciftFirtina: '🌪️', kalabalikPer: '👨‍👩‍👧‍👦', renkUstasi: '🎨', sayiTapinagi: '🛕',
@@ -2104,6 +2108,9 @@
       [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => beep(f, .14, 'square', .09, i * .07));
       beep(2093, .5, 'triangle', .07, .42);
     },
+    /* P61 · Kumarhane — fiş şıkırtısı ve zar */
+    chips: () => { for (let i = 0; i < 5; i++) beep(1800 + (i % 2) * 400, .03, 'square', .05, i * .045); },
+    dice: () => { for (let i = 0; i < 7; i++) beep(300 + Math.random() * 500, .03, 'square', .07, i * .06); beep(180, .12, 'triangle', .1, .45); },
   };
 
   /* ---------- Görsel efektler ---------- */
@@ -3408,7 +3415,12 @@
         else if (s.bungieSnap && s.bungieSnap.turn === s.turn) gumLine = t('bungieChipSnap', s.bungieSnap.n);
       }
       const betLine = bs && bs.bet ? bs : null;   // P58 · Kumarhane
-      const show = s.status === 'playing' && !!(g || bo || notes.length || corpLine || betLine || gumLine);
+      /* P61 — yan bahis ve Rulet rengi de bahis satırının altında */
+      const sideLine = s.status === 'playing' && s.sideBet ? s.sideBet : null;
+      const ruletLine = s.status === 'playing' && s.ruletColor && Game.hasActive('rulet') ? s.ruletColor : null;
+      if (!s.sideOffer) document.getElementById('sideOv')?.remove();
+      if (s.status !== 'playing' || (s.ruletColor && document.getElementById('ruletOv'))) document.getElementById('ruletOv')?.remove();
+      const show = s.status === 'playing' && !!(g || bo || notes.length || corpLine || betLine || gumLine || sideLine || ruletLine);
       el.kahinChip.classList.toggle('hidden', !show);
       if (show) {
         const lines = [];
@@ -3427,6 +3439,10 @@
             + (betLine.katla ? ' · ' + t(betLine.katla.burned ? 'betChipBurned' : 'betChipKatla', betLine.katla.base) : '')
             + `</span></div>`);
         }
+        if (sideLine) lines.push(`<div class="kc-line kc-side"><span class="kc-ico">🎲</span><span class="kc-val">`
+          + t('sideChip', T.ev(SIDE_NAME(sideLine.key)), sideLine.odds) + `</span></div>`);
+        if (ruletLine) lines.push(`<div class="kc-line kc-rulet"><span class="kc-ico">🎡</span><span class="kc-val">`
+          + t('ruletChip', ruletLine === 'red' ? '🔴 ' + t('cRed') : '⚫ ' + t('cBlack')) + `</span></div>`);
         if (corpLine) {
           const mark = corpLine.done ? '<span class="kc-ok">✓</span>' : corpLine.failed ? '<span class="kc-ok kc-fail">✗</span>' : '';
           lines.push(`<div class="kc-line kc-corp"><span class="kc-ico">🏢</span><span class="kc-val">`
@@ -3769,8 +3785,17 @@
       `<div class="pk-box">` +
       `<div class="pk-title">🎰 ${t('betTitle')}</div>` +
       `<div class="pk-sub-title">${t('betSub')}</div>` +
+      `<div class="bet-peek hidden"></div>` +
       `<div class="pk-body pk-choice"></div>` +
       `<div class="pk-foot"><span class="pk-hint">${t('betKatlaHint')}</span></div></div>`;
+    /* P61 · 🃏 Kart Sayıcı — kör bahis bu kartla yarı-kör: elinden 3 taş açık */
+    const peek = Game.betPeek ? Game.betPeek() : null;
+    if (peek && peek.length) {
+      const pb = ov.querySelector('.bet-peek');
+      pb.classList.remove('hidden');
+      pb.innerHTML = `<span class="bp-lbl">🃏 ${T.name({ key: 'kartSayici', name: JOKER_DEFS.kartSayici.name })}</span>`;
+      for (const tl of peek) { const te = tileEl(tl, false); te.classList.add('bp-tile'); pb.appendChild(te); }
+    }
     const body = ov.querySelector('.pk-body');
     opts.forEach((o, i) => {
       const c = document.createElement('button');
@@ -3779,11 +3804,12 @@
       c.style.animationDelay = `${i * 0.11}s`;
       c.innerHTML = `<div class="pk-name">${T.ev(o.name)}</div>` +
         `<div class="bet-target">${t('betTarget', o.target)}</div>` +
-        `<div class="pk-desc">${t('betReward_' + o.key)}</div>`;
+        `<div class="pk-desc">${betRewardText(o)}</div>`;
       c.addEventListener('click', () => {
         const r = Game.placeBet(o.key);
         if (!r.ok) { toast(r.error); return; }
-        SFX.coin();
+        SFX.chips();
+        betClosedScene(o.key, c);   // P61 — fişler masaya, "BAHİSLER KAPANDI!"
         ov.remove();
         toast(T.ev(r.note), true);
         if (done) done(); else render();
@@ -3792,6 +3818,15 @@
     });
     document.body.appendChild(ov);
     Hints.show('kumarhane');   // P60 — ilk bahiste kuralların özeti
+  }
+
+  /* P61 — ödül metni motorun o stage'deki değerlerinden (betReward) */
+  function betRewardText(o) {
+    if (!o.perm && !o.picks && o.coinMult === 1) return t('betReward_guvenli');
+    const parts = [t('brCoin', o.coinMult)];
+    if (o.perm) parts.push(t('brPerm', Number(o.perm).toFixed(o.perm % 0.5 ? 2 : 1)));
+    if (o.picks) parts.push(t('brPick_' + (o.pick || 'any')));
+    return t('brPrefix') + parts.join(' + ') + '.';
   }
 
   function showKatlaOffer() {
@@ -3821,12 +3856,229 @@
     });
     ov.querySelector('[data-k="double"]').addEventListener('click', () => {
       ov.remove();
+      const base = Game.state.target;
       const r = Game.katlaDouble();
-      if (r.ok) { SFX.boss(); toast(T.ev(r.note), true); }
+      if (r.ok) { SFX.dice(); katlaScene(base, Game.state.target); }
       render();
     });
     document.body.appendChild(ov);
     Hints.show('katla');   // P60 — ilk Katla teklifinde ne zaman katlanır
+  }
+
+  /* ============================================================
+     P61 (kullanıcı kararları 2026-10-04) — KUMARHANE HİSSİ
+     · betClosedScene: bahis seçilince fişler masaya kayar + bant
+     · katlaScene: Katla'da zar sesi, ekran titrer, hedef "katlanır"
+     · showJackpot: Riskli/Ölümcül/Katla kazancında beyaz kutu yerine
+     · kumarStartPanels: raund başı (el GÖRÜLEREK) Rulet rengi + yan bahis;
+       ıstaka görünsün diye arkaplanı karartmayan "dock" pencereler
+     · showHiLo: raund sonu Yüksek mi Alçak mı
+     ============================================================ */
+  function betClosedScene(key, fromEl) {
+    const r = fromEl.getBoundingClientRect();
+    const layer = document.createElement('div');
+    layer.className = 'chip-layer';
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (let i = 0; i < 7; i++) {
+      const c = document.createElement('div');
+      c.className = `fly-chip chip-${key}`;
+      c.style.left = `${cx - 14 + (i - 3) * 7}px`;
+      c.style.top = `${cy - 14}px`;
+      c.style.setProperty('--dx', `${innerWidth / 2 - cx + (i - 3) * 4}px`);
+      c.style.setProperty('--dy', `${70 - cy - i * 3}px`);
+      c.style.animationDelay = `${i * 0.05}s`;
+      layer.appendChild(c);
+    }
+    const band = document.createElement('div');
+    band.className = 'bet-band';
+    band.textContent = t('betClosed');
+    layer.appendChild(band);
+    document.body.appendChild(layer);
+    setTimeout(() => layer.remove(), 1700);
+  }
+  function katlaScene(from, to) {
+    const scr = document.getElementById('gameScreen');
+    if (scr) { scr.classList.remove('kz-shake'); void scr.offsetWidth; scr.classList.add('kz-shake'); setTimeout(() => scr.classList.remove('kz-shake'), 500); }
+    const f = document.createElement('div');
+    f.className = 'katla-fold';
+    f.innerHTML = `<span class="kf-dice">🎲</span><span class="kf-old">${from}</span><span class="kf-arrow">→</span><span class="kf-new">${to}</span>`;
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 1700);
+  }
+
+  function showJackpot(detailHtml) {
+    const s = Game.state, cr = s.coinReport, b = cr.bet;
+    document.getElementById('jackpotOv')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'jackpotOv';
+    ov.className = `jp-ov jp-${b.kat > 1 ? 'katla' : b.key}`;
+    const title = b.kat > 1 ? t('jpKatla') : b.key === 'olumcul' ? t('jpOlumcul') : t('jpRiskli');
+    const sb = s.sideBet && s.sideBet.resolved ? s.sideBet : null;
+    const total = (cr.net || 0) + (cr.jokerCoins || 0) + (cr.permCoin || 0) + (cr.interest || 0) + (sb && sb.paid ? sb.paid : 0);
+    const rows = [t('jpCoin', b.coinMult)];
+    if (b.perm) rows.push(t('jpPerm', b.perm.toFixed(1)));
+    if (b.picks) rows.push(t('jpPicks', b.picks));
+    if (sb) rows.push(sb.hit ? t('jpSideHit', T.ev(SIDE_NAME(sb.key)), sb.paid) : t('jpSideMiss', T.ev(SIDE_NAME(sb.key))));
+    let rain = '';
+    for (let i = 0; i < 26; i++)
+      rain += `<i class="jp-coin" style="left:${Math.round(Math.random() * 100)}%;animation-delay:${(Math.random() * 1.2).toFixed(2)}s;animation-duration:${(1.4 + Math.random()).toFixed(2)}s"></i>`;
+    ov.innerHTML =
+      `<div class="jp-rain">${rain}</div>` +
+      `<div class="jp-box"><div class="jp-title">${title}</div>` +
+      `<div class="jp-score">${s.score} / ${s.target}</div>` +
+      `<div class="jp-count"><span class="jp-coinico">🪙</span> +<b id="jpNum">0</b></div>` +
+      `<div class="jp-rows">${rows.map((x, i) => `<div class="jp-row" style="animation-delay:${0.5 + i * 0.35}s">${x}</div>`).join('')}</div>` +
+      `<details class="jp-more"><summary>${t('jpDetails')}</summary><div>${detailHtml}</div></details>` +
+      `<button class="ep-btn" id="jpGo">${el.modalBtn.textContent}</button></div>`;
+    document.body.appendChild(ov);
+    SFX.jackpot();
+    const num = ov.querySelector('#jpNum');
+    const t0 = performance.now(), dur = 1100;
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / dur);
+      num.textContent = Math.round(total * (1 - Math.pow(1 - k, 3)));
+      if (k < 1 && document.body.contains(num)) requestAnimationFrame(tick);
+      else { num.textContent = total; }
+    };
+    requestAnimationFrame(tick);
+    ov.querySelector('#jpGo').addEventListener('click', () => { ov.remove(); el.modalBtn.click(); });
+  }
+  const SIDE_NAME = (key) => (typeof SIDE_BETS !== 'undefined' && SIDE_BETS[key] ? SIDE_BETS[key].name : key);
+
+  /* raund başı: Rulet rengi → yan bahis (ikisi de eli görerek) */
+  function kumarStartPanels() {
+    const s = Game.state;
+    if (!s || s.status !== 'playing' || curScreen() !== 'game' || TUT.active) return;
+    if (Game.needsRulet && Game.needsRulet()) { showRuletPick(); return; }
+    const st = Game.sideBetState && Game.sideBetState();
+    if (st && st.offer && st.canAfford) showSideBet();
+  }
+  function dockOv(id, tone) {
+    document.getElementById(id)?.remove();
+    const ov = document.createElement('div');
+    ov.id = id;
+    ov.className = `pk-ov tone-${tone} dock-ov`;
+    return ov;
+  }
+  function showRuletPick() {
+    const ov = dockOv('ruletOv', 'gold');
+    ov.innerHTML = `<div class="pk-box">` +
+      `<div class="pk-title">🎡 ${t('ruletTitle')}</div>` +
+      `<div class="pk-sub-title">${t('ruletSub')}</div>` +
+      `<div class="pk-body pk-choice">` +
+      `<button class="pk-card rl-card rl-red" data-c="red"><div class="pk-ico">🔴</div><div class="pk-name">${t('cRed')}</div></button>` +
+      `<button class="pk-card rl-card rl-black" data-c="black"><div class="pk-ico">⚫</div><div class="pk-name">${t('cBlack')}</div></button>` +
+      `</div></div>`;
+    ov.querySelectorAll('.rl-card').forEach(b => b.addEventListener('click', () => {
+      const r = Game.ruletPick(b.dataset.c);
+      if (!r.ok) { toast(T.ev(r.error)); return; }
+      SFX.chips();
+      ov.remove();
+      render();
+      setTimeout(kumarStartPanels, 150);
+    }));
+    document.body.appendChild(ov);
+  }
+  function showSideBet() {
+    const st = Game.sideBetState();
+    const ov = dockOv('sideOv', 'azure');
+    ov.innerHTML = `<div class="pk-box">` +
+      `<div class="pk-title">🎲 ${t('sideTitle', st.stake)}</div>` +
+      `<div class="pk-sub-title">${t('sideSub')}</div>` +
+      `<div class="pk-body pk-choice"></div>` +
+      `<div class="pk-foot"><button class="btn ghost" id="sidePass">${t('sidePass')}</button></div></div>`;
+    const body = ov.querySelector('.pk-body');
+    st.offer.forEach((o, i) => {
+      const c = document.createElement('button');
+      c.className = 'pk-card side-card';
+      c.dataset.side = o.key;
+      c.style.animationDelay = `${i * 0.08}s`;
+      c.innerHTML = `<div class="pk-name">${T.ev(o.name)}</div>`
+        + `<div class="side-odds">${o.odds}:1</div>`
+        + `<div class="pk-desc">${t('sidePays', st.stake * (o.odds + 1))}</div>`;
+      c.addEventListener('click', () => {
+        const r = Game.placeSideBet(o.key);
+        if (!r.ok) { toast(T.ev(r.error)); return; }
+        SFX.chips();
+        ov.remove();
+        toast(T.ev(r.note), true);
+        render();
+      });
+      body.appendChild(c);
+    });
+    ov.querySelector('#sidePass').addEventListener('click', () => { Game.skipSideBet(); ov.remove(); render(); });
+    document.body.appendChild(ov);
+    Hints.show('yanBahis');
+  }
+
+  /* Yüksek mi Alçak mı — raund sonu; `done` akışı sürdürür */
+  function showHiLo(done) {
+    const ov = document.createElement('div');
+    ov.id = 'hiloOv';
+    ov.className = 'pk-ov tone-gold hilo-ov';
+    document.body.appendChild(ov);
+    const hiTile = (tl, cls = '') => {
+      const te = tileEl({ id: 'hl-' + Math.random(), color: tl.color, number: tl.number }, false);
+      te.classList.add('hl-tile'); if (cls) te.classList.add(cls);
+      return te.outerHTML;
+    };
+    const finish = () => { Game.hiLoClose(); ov.remove(); render(); done(); };
+    const draw = (flash) => {
+      const h = Game.hiLoState();
+      if (!h) { finish(); return; }
+      const hm = (typeof HILO !== 'undefined' ? HILO.mult : 1.5);
+      const mx = (k) => Number((hm ** k).toFixed(2));
+      const ladder = [1, 2, 3].map(k => `<span class="hl-step${h.step >= k ? ' on' : ''}">×${mx(k)}</span>`).join('');
+      let body = '', foot = '';
+      if (h.phase === 'offer') {
+        body = `<div class="hl-big">${hiTile(h.cur)}</div>`
+          + `<div class="hl-text">${t('hiloOffer', h.stake, mx(1), mx(3))}</div>`;
+        foot = `<button class="btn primary" data-a="accept">${t('hiloAccept')}</button>`
+          + `<button class="btn ghost" data-a="skip">${t('hiloSkip', h.stake)}</button>`;
+      } else if (h.phase === 'play') {
+        const n = h.cur.number;
+        /* doğru tahminden sonra: soluk ÖNCEKİ taş → yeni taş */
+        body = `<div class="hl-big">${flash && flash.prev ? hiTile(flash.prev, 'hl-prev') + '<span class="hl-arrow">→</span>' : ''}${hiTile(h.cur)}</div>`
+          + `<div class="hl-ladder">${ladder}</div>`
+          + `<div class="hl-pot">${t('hiloPot', h.pot)}</div>`
+          + (flash ? `<div class="hl-flash ${flash.cls}">${flash.text}</div>` : '');
+        foot = `<button class="btn primary hl-hi" data-a="hi">⬆ ${t('hiloHi')} <small>${13 - n}/13</small></button>`
+          + `<button class="btn primary hl-lo" data-a="lo">⬇ ${t('hiloLo')} <small>${n - 1}/13</small></button>`
+          + (h.step > 0 ? `<button class="btn ghost" data-a="cash">💰 ${t('hiloCash', h.pot)}</button>` : '');
+      } else if (h.phase === 'undo') {
+        body = `<div class="hl-big">${hiTile(h.cur)}${hiTile(h.last, 'hl-bad')}</div>`
+          + `<div class="hl-text">${t('hiloUndoAsk')}</div>`;
+        foot = `<button class="btn primary" data-a="undo">🎰 ${t('hiloUndo')}</button>`
+          + `<button class="btn ghost" data-a="lose">${t('hiloAcceptLoss')}</button>`;
+      } else {
+        const won = h.phase === 'done';
+        body = `<div class="hl-big">${h.last ? hiTile(h.last, won ? '' : 'hl-bad') : hiTile(h.cur)}</div>`
+          + `<div class="hl-ladder">${ladder}</div>`
+          + `<div class="hl-result ${won ? 'ok' : 'bad'}">${won ? t('hiloWon', h.pot - h.stake) : t('hiloLost', h.stake)}</div>`;
+        foot = `<button class="btn primary" data-a="close">${t('okBtn')}</button>`;
+      }
+      ov.innerHTML = `<div class="pk-box"><div class="pk-title">🃏 ${t('hiloTitle')}</div>`
+        + `<div class="pk-sub-title">${t('hiloSub')}</div>${body}<div class="pk-foot hl-foot">${foot}</div></div>`;
+      ov.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => act(b.dataset.a)));
+    };
+    const act = (a) => {
+      if (a === 'accept') { Game.hiLoAccept(); SFX.chips(); draw(); return; }
+      if (a === 'skip') { Game.hiLoSkip(); finish(); return; }
+      if (a === 'cash') { Game.hiLoCashOut(); SFX.coin(); draw(); return; }
+      if (a === 'undo') { Game.hiLoUndo(); SFX.dice(); draw(); return; }
+      if (a === 'lose') { Game.hiLoAcceptLoss(); SFX.lose(); draw(); return; }
+      if (a === 'close') { finish(); return; }
+      if (a === 'hi' || a === 'lo') {
+        const prev = { ...Game.hiLoState().cur };
+        const r = Game.hiLoGuess(a);
+        if (!r.ok) return;
+        if (r.win) { SFX.coin(); if (r.done) SFX.jackpot(); }
+        else if (!r.canUndo) SFX.lose();
+        draw(r.win && !r.done ? { cls: 'ok', prev, text: r.tie ? t('hiloTieWin') : t('hiloRight') } : null);
+      }
+    };
+    draw();
+    Hints.show('hiLo');
   }
 
   function showBetPicks(done) {
@@ -4705,25 +4957,28 @@
   }
 
   function pickRunMode(onPick) {
+    /* P61 — oyunun pencere diline (pk-ov) taşındı; eskisi düz beyaz bir
+       .tp-box'tı. Kart sınıfı (.mp-card[data-mode]) testler için aynı. */
+    document.getElementById('modePickOv')?.remove();
     const ov = document.createElement('div');
-    ov.id = 'tutResume';
-    ov.className = 'mode-pick';
+    ov.id = 'modePickOv';
+    ov.className = 'pk-ov tone-gold mode-pick-ov';
     /* İki kart da AYNI görsel ağırlıkta: hiçbiri "varsayılan" değil, ikisi de
        gerçek bir seçim. (İlk hâlde biri primary biri ghost'tu; ghost kart
        menü arkaplanında silik okunuyordu.) */
-    const card = (key, name, desc, locked) =>
-      `<button class="btn mp-card" data-mode="${key}"${locked ? ' disabled' : ''}>` +
-      `<span class="mp-name">${name}${locked ? ' 🔒' : ''}</span>` +
-      `<span class="mp-desc">${locked ? t('modeLockedTip') : desc}</span></button>`;
+    const card = (key, ico, name, desc, locked) =>
+      `<button class="pk-card mp-card mp-${key}" data-mode="${key}"${locked ? ' disabled' : ''}>` +
+      `<div class="pk-ico">${ico}</div>` +
+      `<div class="pk-name mp-name">${name}${locked ? ' 🔒' : ''}</div>` +
+      `<div class="pk-desc mp-desc">${locked ? t('modeLockedTip') : desc}</div></button>`;
     ov.innerHTML =
-      `<div class="tp-box"><h3>${t('modePickTitle')}</h3>` +
-      `<p>${t('modePickBody')}</p>` +
-      `<div class="tr-row mp-row">` +
-      card('base', t('modeName_base'), t('modeDesc_base'), !Modes.unlocked('base')) +
-      card('hizli', t('modeName_hizli'), t('modeDesc_hizli'), !Modes.unlocked('hizli')) +
+      `<div class="pk-box"><div class="pk-title">${t('modePickTitle')}</div>` +
+      `<div class="pk-sub-title">${t('modePickBody')}</div>` +
+      `<div class="pk-body pk-choice">` +
+      card('base', '🀄', t('modeName_base'), t('modeDesc_base'), !Modes.unlocked('base')) +
+      card('hizli', '🎰', t('modeName_hizli'), t('modeDesc_hizli'), !Modes.unlocked('hizli')) +
       `</div>` +
-      `<div class="tr-row" style="margin-top:12px">` +
-      `<button class="btn ghost" id="mpCancel">${t('backBtn')}</button></div></div>`;
+      `<div class="pk-foot"><button class="btn ghost" id="mpCancel">${t('backBtn')}</button></div></div>`;
     document.body.appendChild(ov);
     ov.querySelectorAll('.mp-card').forEach(b => b.addEventListener('click', () => {
       if (b.disabled) return;
@@ -5169,8 +5424,12 @@
         `<span class="sw">${th.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span>` +
         `<span>${t('theme_' + th.key)}</span></button>`).join('') +
       `</div></div>` +
+      /* P60/P61 — ilk kez ipuçlarını yeniden göster */
+      `<div class="set-row"><span class="set-label">${t('hintsLabel')}</span>` +
+      `<div class="set-langs"><button class="set-lang" id="setHintsReset">↺ ${t('hintsReset')}</button></div></div>` +
       `<button class="btn ghost" id="setClose">${t('close')}</button></div>`;
     document.body.appendChild(ov);
+    ov.querySelector('#setHintsReset').addEventListener('click', () => { Hints.reset(); toast(t('hintsResetDone'), true); });
     ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
     ov.querySelector('#setClose').addEventListener('click', () => ov.remove());
     ov.querySelectorAll('.set-lang').forEach(b => b.addEventListener('click', () => {
@@ -5359,6 +5618,14 @@
       // P59 · Kumarhane: raund arası store yok → düğme "Devam" der
       el.modalBtn.textContent = (Game.kumarhaneOn && Game.kumarhaneOn() && !s.store && !s.upgradeOffer && !s.runFinished)
         ? t('okBtn') : t('goStore');
+      /* P61 — Riskli / Ölümcül / Katla kazancı: beyaz kutu yerine JACKPOT
+         (ayrıntılar "Ayrıntılar" altında aynen durur) */
+      const jb = cr.bet;
+      if (jb && !cr.survived && !TUT.active && (jb.key !== 'guvenli' || jb.kat > 1)) {
+        el.modalBody.innerHTML = '';
+        showJackpot(`${t('winBody', s.score, over, pct)}<br>${t('wonOnTurn', s.wonOnTurn)}${coinHtml}`);
+        return;
+      }
     } else if (!TUT.active) {
       /* P59 — Game Over artık ayrı, Balatro tarzı panel (showGameOver) */
       showGameOver();
@@ -5402,8 +5669,13 @@
         openStore();
       };
       /* P58 · Kumarhane — bahis ödülü (3 jokerden 1'i) önce alınır */
-      if ((s.betPicks || []).length) { showBetPicks(after); return; }
-      after();
+      const afterHiLo = () => {
+        if ((s.betPicks || []).length) { showBetPicks(after); return; }
+        after();
+      };
+      /* P61 — raund coini için Yüksek mi Alçak mı (isteğe bağlı) */
+      if (s.hiLo && s.hiLo.phase === 'offer' && !TUT.active) { showHiLo(afterHiLo); return; }
+      afterHiLo();
     } else if (s.status === 'runComplete') {
       clearSave();
       showScreen('menu');
@@ -6549,11 +6821,23 @@
       }
       el.colBody.appendChild(wrap);
     }
-    for (const rar of order) {
-      const defs = all.filter(d => d.rarity === rar);
+    /* P61 — Kumarhane jokerleri kendi rafında (yalnız o modda çıkarlar) */
+    const casinoDefs = all.filter(d => d.casino)
+      .sort((x, y) => order.indexOf(x.rarity) - order.indexOf(y.rarity));   // nadirliğe göre (kullanıcı isteği)
+    for (const rar of [...order, 'casino']) {
+      const defs = rar === 'casino' ? casinoDefs : all.filter(d => d.rarity === rar && !d.casino);
       if (!defs.length) continue;
       const head = document.createElement('div');
-      head.className = `col-rar-head tr-${rar}`;
+      head.className = `col-rar-head tr-${rar === 'casino' ? 'legendary col-casino-head' : rar}`;
+      if (rar === 'casino') {
+        head.innerHTML = `🎰 ${t('colCasino')} <span>${t('colCount', defs.length)}</span><small>${t('colCasinoNote')}</small>`;
+        el.colBody.appendChild(head);
+        const grid = document.createElement('div');
+        grid.className = 'col-grid tr-col-tiles col-casino';
+        for (const d of defs) grid.appendChild(colJokerCard(d));
+        el.colBody.appendChild(grid);
+        continue;
+      }
       head.innerHTML = `${T.rarity(rar)} <span>${t('colCount', defs.length)}</span>`;
       el.colBody.appendChild(head);
       const grid = document.createElement('div');
@@ -7278,5 +7562,7 @@
     // Playtest 20 — Grup R: mod kilit sistemi
     Modes,
     // P60 — run raporu + ipucu penceresi
-    Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell };
+    Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell,
+    // P61 — Kumarhane hissi
+    showHiLo, showSideBet, showRuletPick, kumarStartPanels, showJackpot, pickRunMode, showSettings };
 })();

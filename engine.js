@@ -162,7 +162,15 @@ const RUN_MODES = {
     /* P50 — kullanıcı: "coin kazancını arttırmayalım, normal run'daki gibi
        test edeceğim". ×1.5 → ×1. Diğer güç paketi (el +2, +0.5x, 3 açılış
        jokeri, gerilen nadirlik eğrisi) aynen duruyor. */
-    coinMult: 1,
+    /* P61 · DENGE (kullanıcı kararı 2026-10-04: "oyun basit olmasın, imkânsız da
+       olmasın"; seçilen paket "P3 + coin ×0.35"). Uzman bot, karışık bahis, run bitirme:
+         bugün %10.0 (Güvenli %11.2) · store'a 176 coinle girip 148'ini HARCAYAMIYORDU
+         2 açılış jokeri            %6.8   — erken gücü en çok kesen tek ayar
+         + açılışta az Legendary    %5.2
+         + stage'e göre ödül (P3)   %5.9 (Güvenli %9.0) — gücü ilk stage'den sonraya kaydırır
+         + coin ×0.35 (SEÇİLEN)     %6.1 (Güvenli %8.0) — store 76 → 50 coin; harcama kararı geri geldi
+         + başlangıç +0.5x (P4)     %3.3 — reddedildi (imkânsıza yakın) */
+    coinMult: 0.35,
     priceMult: 1.0,
     handBonus: 2,
     /* P58 · Grup C (kullanıcı kararı 2026-10-02) — mod KUMARHANE RUN oldu
@@ -172,8 +180,8 @@ const RUN_MODES = {
     kumarhane: true,
     storeBonus: 2,          // P58 — stage sonu store'unda +2 joker rafı (raund arası store yok)
     curveStretch: true,
-    openJokers: 3,
-    openRarity: { common: 0.20, rare: 0.45, legendary: 0.35 },
+    openJokers: 2,                                              // P61: 3 → 2
+    openRarity: { common: 0.35, rare: 0.50, legendary: 0.15 },  // P61: eskisi %20 / %45 / %35
   },
 };
 function runModeOf(s) {
@@ -193,8 +201,11 @@ function runModeOf(s) {
    ========================================================================== */
 const BETS = {
   guvenli: { key: 'guvenli', name: '🟢 Güvenli', targetMult: 1,   coinMult: 1, picks: 0, pick: null,        perm: 0 },
-  riskli:  { key: 'riskli',  name: '🟡 Riskli',  targetMult: 1.5, coinMult: 2, picks: 1, pick: 'any',       perm: 0.5 },
-  olumcul: { key: 'olumcul', name: '🔴 Ölümcül', targetMult: 2,   coinMult: 3, picks: 1, pick: 'legendary', perm: 1.0 },
+  /* P61 — ödül stage'e göre büyür (permByStage / pickByStage, bkz. betReward) */
+  riskli:  { key: 'riskli',  name: '🟡 Riskli',  targetMult: 1.5, coinMult: 2, picks: 1, pick: 'any',       perm: 0.5,
+    permByStage: [0.25, 0.5, 0.75, 1.0], pickByStage: ['low', 'any', 'any', 'any'] },
+  olumcul: { key: 'olumcul', name: '🔴 Ölümcül', targetMult: 2,   coinMult: 3, picks: 1, pick: 'legendary', perm: 1.0,
+    permByStage: [0.5, 1.0, 1.5, 2.0], pickByStage: ['rare', 'legendary', 'legendary', 'legendary'] },
 };
 /* ÖDÜL KALİBRASYONU (uzman bot, 800 run, KATLA=smart, run bitirme):
      ilk öneri  (Riskli +0x,   Ölümcül +0.5x): Güvenli %13 · Riskli %3  · Ölümcül %4  — risk cezalı
@@ -209,6 +220,48 @@ const BET_KEYS = ['guvenli', 'riskli', 'olumcul'];
    Nesne içinde: denge araçları bellekte değiştirebilsin. */
 const KATLA = { reward: 2 };
 const BET_PICK_CHOICES = 3;
+
+/* ==========================================================================
+   P61 · KUMARHANE HİSSİ (kullanıcı kararları 2026-10-04)
+   · YAN BAHİS: el dağıtıldıktan sonra, ilk hamleden önce 3 teklif; birine
+     SIDE_STAKE coin yatırılır. Raund kazanılır VE koşul tutarsa
+     stake × (oran + 1) geri ödenir. Oranlar bot ölçümüyle (her koşulun
+     kazanılan raundlardaki gerçek sıklığı) hafif oyuncu lehine seçildi.
+   · YÜKSEK Mİ ALÇAK MI: kazanılan raundun sonunda isteğe bağlı; ortaya
+     YALNIZ o raundun coin kazancı (coinReport.net) konur. 1-13 rastgele
+     taş, eşitlik kasaya, en çok HILO_STEPS adım (×2/×4/×8), çekil serbest.
+   ========================================================================== */
+const SIDE_STAKE = 5;
+const SIDE_OFFERS = 3;
+/* ORAN KALİBRASYONU (uzman bot, Kumarhane, 400 run · 2063 kazanılan raund):
+   koşulun kazanılan raundlardaki sıklığı p → oran ≈ 1.1/p − 1 (tam sayıya),
+   yani ortalama elde beklenen getiri hafif artı; eli okuyup doğru teklifi
+   seçen oyuncu daha fazla kazanır.
+     4'lü Per %20.8 → 4:1 · 5'li Sıralı %10.4 → 9:1 · 5+ kombinasyon (bot
+     biriktirir: %81 — insan için çok daha zor) → 2:1 · hedef ×1.5 %25.9 → 3:1
+     · okeysiz %43.6 → 2:1 · 1. turda bitiş %21.7 → 4:1 · Çift %30.7 → 3:1
+   İlk sürümde "3+ kombinasyon" (%100) ve "en geç 2. tur" (%57) bedava
+   paraydı → eşikler 5+ ve 1. tur oldu. */
+const SIDE_BETS = {
+  per4:    { key: 'per4',    name: "4'lü Per açarım",                  odds: 4 },
+  sirali5: { key: 'sirali5', name: "5'li Sıralı açarım",               odds: 9 },
+  combo5:  { key: 'combo5',  name: 'Tek açılımda 5+ kombinasyon açarım', odds: 2 },
+  big:     { key: 'big',     name: 'Hedefin 1.5 katını yaparım',         odds: 3 },
+  noOkey:  { key: 'noOkey',  name: 'Okeyi hiç kullanmadan kazanırım',    odds: 2 },
+  fast:    { key: 'fast',    name: 'Raundu 1. turda bitiririm',          odds: 4 },
+  cift:    { key: 'cift',    name: 'Çift açarak kazanırım',              odds: 3 },
+};
+const SIDE_KEYS = Object.keys(SIDE_BETS);
+const HILO_STEPS = 3;
+/* ADIM ÇARPANI (kullanıcı kararı 2026-10-04): ×2 fazla cömertti — çekil hakkı
+   olduğu için oyuncu yalnız lehine olan tahmini oynar (optimal beklenti ×2.66,
+   bot run başına +115-130 coin). ×1.5'te yalnız uç taşlar (1-4 / 10-13) kârlı,
+   5-9 gerçek karar; bot +21 coin/run, run bitirme aynı (±2). */
+const HILO = { mult: 1.5 };
+const FIS_USTASI_MULT = 0.2;
+const RULET_HIT = 2.0;
+const RULET_MISS = 0.5;
+const SANSLI_ZAR_MIN = 5;   // 5-6 kurtarır (1/3)
 
 /* PLAYTEST 26 · MADDE D — STAGE'İ 8'LİK EĞRİYE TAŞI.
    Oyunun iki tablosu 8 stage için yazılmıştır: BOSS_STAGE_WEIGHTS ve
@@ -2249,6 +2302,27 @@ const JOKER_DEFS = {
   kagit: { key: 'kagit', name: 'Kağıt', rarity: 'mythic', uses: 1,
     desc: 'Her raund başında elindeki en düşük taş KALICI olarak okeye dönüşür (Okey Mührü gibi: her stage o stage’in okeyi olur).' },
 
+  /* ===== P61 · KUMARHANE JOKERLERİ (kullanıcı kararı 2026-10-04) =====
+     `casino: true` → YALNIZ Kumarhane Run'da çıkar (store, paket, bahis
+     ödülü, açılış). Temel Run'a hiçbir yoldan girmez (jokerPool süzer);
+     Koleksiyon'da ayrı "Kumarhane" rafında görünür. Hepsi bahis / Katla /
+     yan bahis / Yüksek mi Alçak mı sistemlerine dokunur — Temel Run'da
+     anlamsız kartlar. */
+  krupiye: { key: 'krupiye', name: 'Krupiye', rarity: 'legendary', casino: true,
+    desc: 'Katla tutarsa bahis ödülü ×3 (×2 yerine).' },
+  sansliZar: { key: 'sansliZar', name: 'Şanslı Zar', rarity: 'rare', casino: true,
+    desc: 'Raundu kaybedeceğin anda zar atılır: 5-6 gelirse raund sıyrılarak kazanılır (bahis ödülü yok). Her iki durumda kart kırılır.' },
+  kartSayici: { key: 'kartSayici', name: 'Kart Sayıcı', rarity: 'rare', casino: true,
+    desc: 'Bahis penceresinde elinden 3 taş açık görünür.' },
+  fisUstasi: { key: 'fisUstasi', name: 'Fiş Ustası', rarity: 'common', casino: true,
+    desc: '🟢 Güvenli bahis tutunca kalıcı +0.2x.' },
+  rulet: { key: 'rulet', name: 'Rulet', rarity: 'rare', casino: true,
+    desc: 'Raund başında 🔴 Kırmızı ya da ⚫ Siyah seç. Açılımında en çok o renk varsa +2.0x, yoksa −0.5x.' },
+  hileliZar: { key: 'hileliZar', name: 'Hileli Zar', rarity: 'legendary', casino: true,
+    desc: 'Yüksek mi Alçak mı\'da eşitlik senin; her stage 1 yanlış tahmini geri alırsın.' },
+  martingale: { key: 'martingale', name: 'Martingale', rarity: 'rare', casino: true,
+    desc: 'Kaybettiğin her yan bahis sonraki yan bahsin ödemesini +1 artırır; tutunca sıfırlanır.' },
+
   /* ===== BOSS (EPIC) — Slot Jokerleri (4) + Deste Jokerleri (4, GDD 10):
      deste jokerleri desteye karışır, eline gelince aktifleşir,
      kombinasyona giremez, discard edilirse -100 puan (GDD 7.6) ===== */
@@ -3303,7 +3377,6 @@ const Game = {
       winStreak: 0,
       nextTargetMult: 1,
       permTargetUp: 0,      // P31 · Grup A — The World bedeli: hedefler run boyunca kalıcı artar
-      islekPermBonus: 0,    // Ayna Kırığı kalıntısı
       worldUsed: false,
       gossipTable: [],      // Grup F — Dedikodu Masası: 3 açık taş
       gossipSwapUsed: false,
@@ -3824,6 +3897,7 @@ const Game = {
     s.roundStartNotes = [];
     this._resolvePendingPacks(s.roundStartNotes); // Grup F güvenlik ağı
     this._resolveBetPicks(s.roundStartNotes);     // P58 · Kumarhane güvenlik ağı
+    this.hiLoClose();                             // P61 · yarım kalan Yüksek mi Alçak mı kapanır
 
     // Backup slot bekleme (GDD 7.4) — süre dolunca zorla Ana Slot'a
     for (const b of [...s.backup]) {
@@ -3923,7 +3997,18 @@ const Game = {
   betOptions() {
     const s = this.state;
     const base = s.betBaseTarget ?? s.target;
-    return BET_KEYS.map(k => ({ ...BETS[k], target: Math.ceil(base * BETS[k].targetMult) }));
+    return BET_KEYS.map(k => ({ ...BETS[k], ...this.betReward(k), target: Math.ceil(base * BETS[k].targetMult) }));
+  },
+  /* P61 — bahis ödülü STAGE'E GÖRE (kullanıcı isteği: "ilk stage'de ödüller
+     küçük, stage ilerledikçe büyüsün"). BETS[k].permByStage / coinByStage /
+     pickByStage dizileri varsa stage'in değeri (dizi sonundan taşan stage —
+     trainer sonsuz — son değeri alır), yoksa sabit perm / coinMult / pick. */
+  betReward(key) {
+    const s = this.state;
+    const b = BETS[key] || BETS.guvenli;
+    const at = (arr, dflt) => (Array.isArray(arr) && arr.length ? arr[Math.min(Math.max(1, s.stage || 1), arr.length) - 1] : dflt);
+    return { coinMult: at(b.coinByStage, b.coinMult), perm: at(b.permByStage, b.perm),
+      picks: b.picks, pick: at(b.pickByStage, b.pick) };
   },
   /* KÖR bahis: raunda girerken, el görülmeden (UI haritadan oyuna geçişte sorar) */
   placeBet(key) {
@@ -3977,21 +4062,29 @@ const Game = {
   _betPayout(notes) {
     const s = this.state;
     const b = BETS[s.bet] || BETS.guvenli;
-    const kat = s.katla && !s.katla.burned && s.score >= s.target ? KATLA.reward : 1;
-    const coinMult = b.coinMult * kat;
-    const perm = round2(b.perm * kat);
+    const rw = this.betReward(b.key);   // P61 — stage'e göre ödül
+    /* P61 · 🎩 Krupiye — Katla tutarsa ödül ×3 (×2 yerine) */
+    const katR = KATLA.reward + (this.hasActive('krupiye') ? 1 : 0);
+    const kat = s.katla && !s.katla.burned && s.score >= s.target ? katR : 1;
+    const coinMult = rw.coinMult * kat;
+    const perm = round2(rw.perm * kat);
     if (perm) s.permMult = round2(s.permMult + perm);
-    const picks = b.picks * kat;
+    /* P61 · 🪙 Fiş Ustası — Güvenli bahis de kalıcı çarpan bırakır */
+    if (b.key === 'guvenli' && this.hasActive('fisUstasi')) {
+      s.permMult = round2(s.permMult + FIS_USTASI_MULT);
+      notes.push(`🪙 Fiş Ustası: Güvenli bahis tuttu → +${FIS_USTASI_MULT.toFixed(1)}x kalıcı`);
+    }
+    const picks = rw.picks * kat;
     if (!Array.isArray(s.betPicks)) s.betPicks = [];
     const avoid = new Set();
     for (let i = 0; i < picks; i++) {
-      const p = this._rollBetPick(b.pick, avoid);
+      const p = this._rollBetPick(rw.pick, avoid);
       if (p) { s.betPicks.push(p); p.options.forEach(o => avoid.add(o.key)); }
     }
     notes.push(`🎰 ${b.name} bahis: coin ×${coinMult}`
       + (perm ? ` · +${perm.toFixed(1)}x kalıcı` : '')
       + (picks ? ` · ${picks} joker seçimi` : '')
-      + (kat > 1 ? ' (KATLA tuttu: ödül ×2)' : ''));
+      + (kat > 1 ? ` (KATLA tuttu: ödül ×${kat})` : ''));
     return { key: b.key, name: b.name, coinMult, kat, perm, picks };
   },
   /* Bahis ödülü: 3 jokerden 1'i. 'legendary' → yalnız Legendary, 'any' → paket eğrisi */
@@ -4002,9 +4095,13 @@ const Game = {
     const owned = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
     for (let i = 0; i < BET_PICK_CHOICES; i++) {
       let o = null;
-      if (kind === 'legendary') {
-        let pool = this.jokerPool(d => d.rarity === 'legendary' && !owned.has(d.key) && !skip.has(d.key));
-        if (!pool.length) pool = this.jokerPool(d => d.rarity === 'legendary' && !skip.has(d.key));
+      /* P61 — 'legendary' | 'rare' (yalnız Rare) | 'low' (Common/Rare) | 'any' (paket eğrisi) */
+      const rarOk = kind === 'legendary' ? (r) => r === 'legendary'
+        : kind === 'rare' ? (r) => r === 'rare'
+        : kind === 'low' ? (r) => r === 'common' || r === 'rare' : null;
+      if (rarOk) {
+        let pool = this.jokerPool(d => rarOk(d.rarity) && !owned.has(d.key) && !skip.has(d.key));
+        if (!pool.length) pool = this.jokerPool(d => rarOk(d.rarity) && !skip.has(d.key));
         if (pool.length) {
           const d = pool[Math.floor(this.rng() * pool.length)];
           o = { type: 'joker', key: d.key, name: d.name, rarity: d.rarity, desc: d.desc };
@@ -4026,6 +4123,188 @@ const Game = {
     s.betPicks.shift();
     return { ok: true, got, left: s.betPicks.length };
   },
+  /* ---------- P61 · YAN BAHİS ---------- */
+  _rollSideOffer() {
+    const s = this.state;
+    if (!this.kumarhaneOn() || s.status !== 'playing') return null;
+    const pool = SIDE_KEYS.slice();
+    const out = [];
+    while (out.length < SIDE_OFFERS && pool.length) out.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0]);
+    return { options: out, stake: SIDE_STAKE };
+  },
+  sideOdds(key) {
+    const b = SIDE_BETS[key];
+    if (!b) return 0;
+    const mg = this.slotRecs().find(j => j.key === 'martingale');
+    return b.odds + (mg && !this.state.jokersDisabled ? (mg.mg || 0) : 0);
+  },
+  sideBetState() {
+    const s = this.state;
+    if (!s || !this.kumarhaneOn()) return null;
+    return {
+      offer: s.sideOffer ? s.sideOffer.options.map(k => ({ key: k, name: SIDE_BETS[k].name, odds: this.sideOdds(k) })) : null,
+      stake: SIDE_STAKE, canAfford: s.coins >= SIDE_STAKE,
+      bet: s.sideBet ? { ...s.sideBet, name: SIDE_BETS[s.sideBet.key].name } : null,
+    };
+  },
+  placeSideBet(key) {
+    const s = this.state;
+    if (!s.sideOffer || !s.sideOffer.options.includes(key)) return { ok: false, error: 'Bu yan bahis teklif edilmedi.' };
+    if (s.coins < SIDE_STAKE) return { ok: false, error: `Yan bahis için ${SIDE_STAKE} coin gerekir.` };
+    spendCoins(s, SIDE_STAKE);
+    s.sideBet = { key, odds: this.sideOdds(key), stake: SIDE_STAKE, target: s.target };
+    s.sideOffer = null;
+    return { ok: true, note: `🎲 Yan bahis: ${SIDE_BETS[key].name} (${s.sideBet.odds}:1)` };
+  },
+  skipSideBet() { this.state.sideOffer = null; return { ok: true }; },
+  _sideTrackMeld() {
+    const s = this.state;
+    if (!s.sideTrack) s.sideTrack = { per4: false, sirali5: false, maxCombos: 0, okeyUsed: false, cift: false };
+    const T = s.sideTrack;
+    for (const c of s.staged) {
+      if (c.type === 'per' && c.tiles.length >= 4) T.per4 = true;
+      if (c.type === 'sirali' && c.tiles.length >= 5) T.sirali5 = true;
+      if (c.type === 'cift') T.cift = true;
+    }
+    T.maxCombos = Math.max(T.maxCombos, s.staged.length);
+    const all = [...s.staged.flatMap(c => c.tiles), ...s.islemeler.flatMap(e => e.tiles)];
+    if (all.some(t => t.isOkeyReal || this.isOkeyTile(t))) T.okeyUsed = true;
+  },
+  _sideBetHit(key) {
+    const s = this.state, T = s.sideTrack || {};
+    switch (key) {
+      case 'per4': return !!T.per4;
+      case 'sirali5': return !!T.sirali5;
+      case 'combo5': return (T.maxCombos || 0) >= 5;
+      case 'big': return s.score >= 1.5 * (s.sideBet ? s.sideBet.target : s.target);
+      case 'noOkey': return !T.okeyUsed;
+      case 'fast': return (s.wonOnTurn || 99) <= 1;
+      case 'cift': return !!T.cift;
+    }
+    return false;
+  },
+  /* raund sonu: kazanılan raundda koşul tutarsa öder; sıyrılan raundda yan bahis yanar */
+  _sideBetResolve(notes, survived) {
+    const s = this.state;
+    const sb = s.sideBet;
+    if (!sb || sb.resolved) return;
+    sb.resolved = true;
+    const mg = this.slotRecs().find(j => j.key === 'martingale');
+    sb.hit = !survived && s.status === 'won' && this._sideBetHit(sb.key);
+    if (sb.hit) {
+      sb.paid = sb.stake * (sb.odds + 1);
+      gainCoins(s, sb.paid);
+      notes.push(`🎲 Yan bahis tuttu: ${SIDE_BETS[sb.key].name} → +${sb.paid} coin (${sb.odds}:1)`);
+      if (mg) mg.mg = 0;
+    } else {
+      notes.push(`🎲 Yan bahis tutmadı: ${SIDE_BETS[sb.key].name} (−${sb.stake})`);
+      if (mg && !s.jokersDisabled) { mg.mg = (mg.mg || 0) + 1; notes.push(`📈 Martingale: sonraki yan bahis +${mg.mg}`); }
+    }
+  },
+
+  /* ---------- P61 · 🎡 Rulet / 🃏 Kart Sayıcı ---------- */
+  needsRulet() {
+    const s = this.state;
+    return !!s && this.kumarhaneOn() && s.status === 'playing' && !s.ruletColor && this.hasActive('rulet');
+  },
+  ruletPick(color) {
+    if (color !== 'red' && color !== 'black') return { ok: false, error: 'Rulet rengi kırmızı ya da siyah olmalı.' };
+    this.state.ruletColor = color;
+    return { ok: true, note: `🎡 Rulet: ${color === 'red' ? '🔴 Kırmızı' : '⚫ Siyah'}` };
+  },
+  betPeek() {
+    const s = this.state;
+    if (!s || !this.hasActive('kartSayici')) return null;
+    if (!s.betPeekIds) {
+      const pool = s.hand.filter(t => !t.jokerTile);
+      const ids = [];
+      while (ids.length < 3 && pool.length) ids.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0].id);
+      s.betPeekIds = ids;
+    }
+    return s.betPeekIds.map(id => s.hand.find(t => t.id === id)).filter(Boolean);
+  },
+
+  /* ---------- P61 · 🎲 Şanslı Zar (kayıp zincirinde) ---------- */
+  _sansliZar(events) {
+    const s = this.state;
+    if (s.jokersDisabled || !this.kumarhaneOn()) return false;
+    const j = s.jokers.find(x => x.key === 'sansliZar');
+    if (!j) return false;
+    const d = 1 + Math.floor(this.rng() * 6);
+    s.jokers = s.jokers.filter(x => x !== j);
+    s.lastZar = d;
+    if (d >= SANSLI_ZAR_MIN) { events.push(`🎲 Şanslı Zar: ${d} geldi — raund kurtuldu! (kart kırıldı)`); return true; }
+    events.push(`🎲 Şanslı Zar: ${d} geldi — kurtarmadı (kart kırıldı)`);
+    return false;
+  },
+
+  /* ---------- P61 · YÜKSEK Mİ ALÇAK MI ---------- */
+  _hiLoTile() {
+    return { number: 1 + Math.floor(this.rng() * 13), color: COLORS[Math.floor(this.rng() * COLORS.length)] };
+  },
+  _hiLoOffer() {
+    const s = this.state;
+    const net = s.coinReport && !s.coinReport.survived ? (s.coinReport.net || 0) : 0;
+    if (!this.kumarhaneOn() || s.status !== 'won' || s.runFinished || net <= 0) { s.hiLo = null; return; }
+    s.hiLo = { stake: net, pot: net, step: 0, cur: this._hiLoTile(), last: null, phase: 'offer' };
+  },
+  hiLoState() { const h = this.state && this.state.hiLo; return h ? { ...h, max: HILO_STEPS, canUndo: this._hiLoCanUndo() } : null; },
+  _hiLoCanUndo() { const s = this.state; return this.hasActive('hileliZar') && s.hiLoUndoStage !== s.stage; },
+  hiLoAccept() {
+    const h = this.state.hiLo;
+    if (!h || h.phase !== 'offer') return { ok: false };
+    h.phase = 'play';
+    return { ok: true };
+  },
+  hiLoSkip() { const h = this.state.hiLo; if (h && h.phase === 'offer') this.state.hiLo = null; return { ok: true }; },
+  hiLoGuess(dir) {
+    const s = this.state, h = s.hiLo;
+    if (!h || h.phase !== 'play' || (dir !== 'hi' && dir !== 'lo')) return { ok: false };
+    const next = this._hiLoTile();
+    const tie = next.number === h.cur.number;
+    const win = tie ? this.hasActive('hileliZar') : (dir === 'hi' ? next.number > h.cur.number : next.number < h.cur.number);
+    h.last = next;
+    if (!win) {
+      if (this._hiLoCanUndo()) { h.phase = 'undo'; return { ok: true, win: false, tie, next, canUndo: true }; }
+      this._hiLoLose();
+      return { ok: true, win: false, tie, next };
+    }
+    h.pot = Math.round(h.pot * HILO.mult); h.step++; h.cur = next;
+    if (h.step >= HILO_STEPS) { this.hiLoCashOut(); return { ok: true, win: true, tie, next, done: true }; }
+    return { ok: true, win: true, tie, next };
+  },
+  hiLoUndo() {
+    const s = this.state, h = s.hiLo;
+    if (!h || h.phase !== 'undo') return { ok: false };
+    s.hiLoUndoStage = s.stage;
+    h.phase = 'play';
+    return { ok: true, note: '🎰 Hileli Zar: tahmin geri alındı' };
+  },
+  hiLoAcceptLoss() { const h = this.state.hiLo; if (!h || h.phase !== 'undo') return { ok: false }; this._hiLoLose(); return { ok: true }; },
+  _hiLoLose() {
+    const s = this.state, h = s.hiLo;
+    spendCoins(s, Math.min(h.stake, Math.max(0, s.coins)));
+    h.phase = 'lost';
+    s.statHiLo = s.statHiLo || { won: 0, lost: 0, net: 0 };
+    s.statHiLo.lost++; s.statHiLo.net -= h.stake;
+  },
+  hiLoCashOut() {
+    const s = this.state, h = s.hiLo;
+    if (!h || h.phase !== 'play') return { ok: false };
+    gainCoins(s, h.pot - h.stake);
+    h.phase = 'done';
+    s.statHiLo = s.statHiLo || { won: 0, lost: 0, net: 0 };
+    if (h.step > 0) { s.statHiLo.won++; s.statHiLo.net += h.pot - h.stake; }
+    return { ok: true, pot: h.pot };
+  },
+  hiLoClose() {
+    const s = this.state, h = s.hiLo;
+    if (!h) return;
+    if (h.phase === 'play') this.hiLoCashOut();
+    else if (h.phase === 'undo') this._hiLoLose();
+    s.hiLo = null;
+  },
+
   /* Güvenlik ağı: seçilmeden geçilen ödül boşa gitmesin — ilk seçenek verilir */
   _resolveBetPicks(notes) {
     const s = this.state;
@@ -4055,6 +4334,9 @@ const Game = {
        karışsaydı hem ölçüm kirlenir hem de "seçtiğim kadro" sözü bozulurdu. */
     s.jokers = []; s.backup = []; s.deckJokers = [];
     s.openingJokers = null; s.openingReels = null;
+    /* P61 — Kumarhane jokerleri Temel Run'da yok: trainer da süzer */
+    if (Array.isArray(cfg.jokers) && !this.kumarhaneOn())
+      cfg = { ...cfg, jokers: cfg.jokers.filter(k => !(JOKER_DEFS[k] && JOKER_DEFS[k].casino)) };
     // stages: pozitif tam sayı ya da Infinity (Sonsuz Mod)
     const ch = cfg.stages;
     s.trainerStages = (ch === Infinity || ch === 'inf') ? Infinity
@@ -4596,6 +4878,12 @@ const Game = {
     s.betBaseTarget = null;
     s.katla = null;           // P58 · Kumarhane — katlandıysa { base, burned }
     s.katlaOffer = null;
+    s.sideOffer = null;       // P61 · yan bahis teklifi (el dağıtıldıktan sonra kurulur)
+    s.sideBet = null;
+    s.sideTrack = { per4: false, sirali5: false, maxCombos: 0, okeyUsed: false, cift: false };
+    s.ruletColor = null;      // P61 · 🎡 Rulet — bu raundun rengi
+    s.betPeekIds = null;      // P61 · 🃏 Kart Sayıcı — bahiste açık 3 taş
+    s.hiLo = null;            // P61 · Yüksek mi Alçak mı (raund sonu)
     s.storeTilePick = null;   // P29 · Grup O — store seçimi raunda taşmaz
     s.deck = createDeck(s);
     // Sahte okeyler bu stage'in okeyinin normal kopyaları olur:
@@ -4733,7 +5021,6 @@ const Game = {
     s.godzillaLevel = 0;
     s.jokersDisabled = false;
     s.islekRateBonus = 0;
-    s.islekReversed = false;
     s.hipnoNumber = null;     // Hipnotizör — bu raund transtaki sayı (Toplu Hipnoz)
     s.misuActive = false;     // The Misunderstood — bu raund aktif mi
     s.cellatMotive = 0;       // Cellat — idam başına +2 birikimi
@@ -4847,8 +5134,6 @@ const Game = {
         s.roundStartNotes.push('🍎 Adem ile Havva: ıstaka dolu — elma bu raund düşmedi');
       }
     }
-    if (s.islekPermBonus > 0)
-      s.islekRateBonus += s.islekPermBonus;
 
     // Sisyphus (Grup D): artık raund başı puanı YOK — kaya tur içinde yükselir
     // P48: kaya raundlar arası taşınır — raund başı notu kayanın o anki yerini söyler
@@ -5840,8 +6125,10 @@ const Game = {
      gizli paket ve Anka Kuşu dönüşümü hepsi buradan okur. Trainer modunda
      oyuncu kurulumdan elle seçebilir — orası bu filtreye tabi değildir. */
   jokerPool(filterFn) {
+    /* P61 — Kumarhane jokerleri (casino) yalnız Kumarhane Run'da çıkar */
+    const casinoOk = !!(this.state && this.kumarhaneOn());
     return Object.values(JOKER_DEFS)
-      .filter(d => !d.trainerOnly && (!filterFn || filterFn(d)));
+      .filter(d => !d.trainerOnly && (casinoOk || !d.casino) && (!filterFn || filterFn(d)));
   },
 
   tileValue(tile, combo) {
@@ -6235,6 +6522,18 @@ const Game = {
     if (atesN) {
       flat += 120 * atesN;
       triggered.push({ id: 'ates', name: 'Ateş Taşı', text: `+${120 * atesN} puan` });
+    }
+    /* P61 · 🎡 Rulet — açılımda en çok seçilen renk varsa +2.0x, yoksa −0.5x
+       (okey/joker taşı sayılmaz; eşitlik "en çok" değildir) */
+    if (s.ruletColor && this.hasActive('rulet') && ctx.tiles.length) {
+      const cnt = { red: 0, blue: 0, yellow: 0, black: 0 };
+      for (const t of ctx.tiles) if (!t.jokerTile && !this.isOkeyTile(t) && cnt[t.color] != null) cnt[t.color]++;
+      const me = cnt[s.ruletColor];
+      const hit = me > 0 && Object.entries(cnt).every(([c, n]) => c === s.ruletColor || n < me);
+      const rj = this.slotRecs().find(j => j.key === 'rulet');
+      const ico = s.ruletColor === 'red' ? '🔴' : '⚫';
+      if (hit) { mult += RULET_HIT; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} tuttu +${RULET_HIT.toFixed(1)}x` }); }
+      else { mult -= RULET_MISS; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} tutmadı −${RULET_MISS.toFixed(1)}x` }); }
     }
     /* P59 — Öteki Dünya slottayken açılımdaki her Ay Taşı +AY.tileMult */
     if (AY.tileMult > 0 && this._otekiOpen()) {
@@ -6858,8 +7157,10 @@ const Game = {
     let best = 0;
     const cand = s.hand.filter(t => !t.jokerTile && !t.sewn && !t.bossSewn);
     if (!cand.length) return 0;
-    // Ayna Kırığı: işlek TERSİNE döner → atılan taş × 20 (tetiklenirse)
-    if (s.islekReversed) best += Math.max(...cand.map(t => t.number)) * 20;
+    /* P61 — şu an taşa bağlı bir atma bonusu veren kart YOK (Atık Avcısı
+       2026-09-10'da, Ayna Kırığı P31'de çıktı; ölü `islekReversed` yolu P61'de
+       silindi). Fonksiyon, canSkipFinalDiscard / hopelessRound için bir
+       genişleme noktası olarak kalır: yeni bir kart buraya eklenir. */
     return best;
   },
 
@@ -7313,6 +7614,7 @@ const Game = {
       + s.islemeler.reduce((a, e) => a + e.tiles.length, 0);
     if (!s.statTypes) s.statTypes = { per: 0, sirali: 0, cift: 0 };
     for (const c of s.staged) if (s.statTypes[c.type] != null) s.statTypes[c.type]++;
+    this._sideTrackMeld();   // P61 — yan bahis koşulları
     s.openedThisTurn = true;
 
     /* DAMGA — hak yalnız GERÇEKTEN 2 kat verdiğinde harcanır; basış
@@ -7766,18 +8068,11 @@ const Game = {
         const extra = islekCands.length > 1
           ? ` (yalnız en yüksek taş sayılır — ${islekCands.length} taş atıldı)` : '';
         /* PARATONER (P29 · Grup F) — yem varsa yıldırım ona iner.
-           Sıra: Ayna Kırığı (Mythic) > Paratoner (Rare) > normal ceza.
-           Mythic zaten daha büyük ödemeyi yaptığı için yem yanmaz —
-           iki kart birlikteyken oyuncu hem 20 katı alıp hem taş
-           kaybetmez. Yem elden çıkarken `_takeTile` ZORUNLU, yoksa el
-           defteri nöbetçisi onu sahipsiz kayıp sayar. */
-        const ptBait = (!s.islekReversed && !s.jokersDisabled && this.hasActive('paratoner'))
+           Yem elden çıkarken `_takeTile` ZORUNLU, yoksa el defteri
+           nöbetçisi onu sahipsiz kayıp sayar. (P61: Ayna Kırığı dalı silindi.) */
+        const ptBait = (!s.jokersDisabled && this.hasActive('paratoner'))
           ? s.hand.find(t => t.id === s.paratonerBait) : null;
-        if (s.islekReversed) {
-          const gain = top.number * 20;
-          s.score += gain;
-          events.push(`İŞLEK (Ayna Kırığı): +${gain} puan!${extra}`);
-        } else if (ptBait) {
+        if (ptBait) {
           const gain = ptBait.number * PARATONER_MULT;
           s.score += gain;
           this._takeTile(ptBait, 'paratoner-yem');
@@ -8012,6 +8307,11 @@ const Game = {
           events.push(`🎭 The Misunderstood UYANDI: ${MISU_V2_ROUNDS} raund boyunca açılımların +${MISU_V2_MULT.toFixed(1)}x alır`);
           this._finishWin();
           if (s.coinReport) s.coinReport.savedBy = 'The Misunderstood';
+        } else if (this._sansliZar(events)) {
+          /* P61 · 🎲 Şanslı Zar — 5-6 geldi: raund sıyrılarak kazanıldı */
+          s.wonOnTurn = s.turn;
+          this._finishWinSurvived();
+          if (s.coinReport) s.coinReport.savedBy = 'Şanslı Zar';
         } else if (this._autoRescueTurn(events)) {
           /* Grup I — son çare: raunda +1 tur ekleyen bir değnek. Kurtarıcı
              jokerlerin hepsi tükendiyse ve envanterde öyle bir kart varsa,
@@ -11682,6 +11982,47 @@ for (const fn of ['_finishWin', '_finishWinSurvived', 'discard']) {
 }
 Game.runLog = function () { return this.state ? runLogOf(this.state) : null; };
 
+/* P61 — Kumarhane akış kancaları: yan bahis teklifi raund kurulunca
+   (el dağıtıldıktan sonra), ilk hamlede düşer; raund sonu yan bahis
+   çözülür ve Yüksek mi Alçak mı teklifi kurulur. */
+{
+  const origStart = Game._startRound;
+  Game._startRound = function (...args) {
+    const r = origStart.apply(this, args);
+    const s = this.state;
+    if (s && this.kumarhaneOn() && s.status === 'playing') s.sideOffer = this._rollSideOffer();
+    return r;
+  };
+  for (const fn of ['confirmMelds', 'discard', 'skipToDiscard']) {
+    const orig = Game[fn];
+    Game[fn] = function (...args) {
+      if (this.state && this.state.sideOffer) this.state.sideOffer = null;   // teklif ilk hamlede düşer
+      return orig.apply(this, args);
+    };
+  }
+  const origWin = Game._finishWin;
+  Game._finishWin = function (...args) {
+    const r = origWin.apply(this, args);
+    const s = this.state;
+    if (s && s.status === 'won' && this.kumarhaneOn()) {
+      const notes = (s.coinReport && s.coinReport.extraNotes) || [];
+      this._sideBetResolve(notes, false);
+      this._hiLoOffer();
+    }
+    return r;
+  };
+  const origSurv = Game._finishWinSurvived;
+  Game._finishWinSurvived = function (...args) {
+    const r = origSurv.apply(this, args);
+    const s = this.state;
+    if (s && this.kumarhaneOn()) {
+      this._sideBetResolve((s.coinReport && s.coinReport.extraNotes) || [], true);
+      s.hiLo = null;
+    }
+    return r;
+  };
+}
+
 /* Node smoke-test desteği */
 if (typeof module !== 'undefined') {
   module.exports = {
@@ -11689,7 +12030,8 @@ if (typeof module !== 'undefined') {
     sortPer, sortCift, sortSirali, createDeck, resolveCombo,
     COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
-    CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES, UC_PEEK_COST, AY_WELL_SIZE, AY, MOON_NAMES, moonIcon, moonPhaseOf, isMoonTile,
+    CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, MOON_NAMES, moonIcon, moonPhaseOf, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,
