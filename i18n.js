@@ -150,6 +150,18 @@
       sumBestMeld: 'En yüksek tekli açılım',
       /* MADDE D5 — kademeli ipuçları. Her biri ömür boyu BİR KEZ görünür. */
       hintTitle: 'İPUCU', hintOk: 'Anladım',
+      /* P62 — run seçim ekranı */
+      rpName_base: 'Temel Run', rpName_hizli: 'Kumarhane Run',
+      rpDesc_base: 'Klasik ilerleyiş: her raund sonunda store açılır, jokerlerini 8 stage boyunca kurarsın. Son boss’tan sonra Sonsuz Mod.',
+      rpDesc_hizli: 'Her raund kör bahis koy, hedefi tutturunca Katla. Yan bahis, Yüksek mi Alçak mı ve kendine özel jokerler. Store yalnız stage sonunda.',
+      rpBack: 'Geri', rpNew: 'Yeni Run', rpCont: 'Devam Et', rpPlay: 'OYNA', rpContinueBtn: 'DEVAM ET',
+      rpSoon: 'ÇOK YAKINDA', rpSoonName: '???', rpSoonDesc: 'Bu mod üzerinde çalışıyoruz — çok yakında burada.',
+      rpStats_base: '8 Stage · 24 Raund', rpStats_hizli: '4 Stage · 12 Raund',
+      rpOverwrite: 'Yeni run başlatırsan kayıtlı run silinir.',
+      rpStage: 'Stage', rpRound: 'Raund', rpCoins: 'Coin', rpBest: 'En İyi Açılım', rpMult: 'Kalıcı Çarpan',
+      rpWhere_inStore: 'Store’da bıraktın — oradan devam edersin.',
+      rpWhere_inRound: 'Raund içinde bıraktın — raundun başından devam edersin.',
+      rpWhere_map: 'Haritada bıraktın — sıradaki raundu seçersin.',
       /* P61 — Kumarhane hissi */
       betClosed: 'BAHİSLER KAPANDI!',
       jpRiskli: '🟡 RİSKLİ TUTTU!', jpOlumcul: '🔴 ÖLÜMCÜL TUTTU!', jpKatla: '🎲 KATLA TUTTU!',
@@ -966,6 +978,18 @@
       sumExpired: 'Jokers lost to expiry',
       sumBestMeld: 'Best single meld',
       hintTitle: 'TIP', hintOk: 'Got it',
+      /* P62 — run select screen */
+      rpName_base: 'Base Run', rpName_hizli: 'Casino Run',
+      rpDesc_base: 'The classic climb: the shop opens after every round and you build your jokers over 8 stages. Endless Mode after the last boss.',
+      rpDesc_hizli: 'Place a blind bet every round and Double when you hit the target. Side bets, Higher or Lower and its own jokers. Shop only at stage end.',
+      rpBack: 'Back', rpNew: 'New Run', rpCont: 'Continue', rpPlay: 'PLAY', rpContinueBtn: 'CONTINUE',
+      rpSoon: 'COMING SOON', rpSoonName: '???', rpSoonDesc: 'We are working on this mode — coming soon.',
+      rpStats_base: '8 Stages · 24 Rounds', rpStats_hizli: '4 Stages · 12 Rounds',
+      rpOverwrite: 'Starting a new run deletes your saved run.',
+      rpStage: 'Stage', rpRound: 'Round', rpCoins: 'Coins', rpBest: 'Best Meld', rpMult: 'Permanent Mult',
+      rpWhere_inStore: 'You left in the shop — you continue there.',
+      rpWhere_inRound: 'You left mid-round — the round restarts.',
+      rpWhere_map: 'You left on the map — pick the next round.',
       /* P61 — casino feel */
       betClosed: 'NO MORE BETS!',
       jpRiskli: '🟡 RISKY WON!', jpOlumcul: '🔴 DEADLY WON!', jpKatla: '🎲 DOUBLE WON!',

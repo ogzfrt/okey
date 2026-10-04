@@ -4956,37 +4956,118 @@
       `</div>`;
   }
 
-  function pickRunMode(onPick) {
-    /* P61 — oyunun pencere diline (pk-ov) taşındı; eskisi düz beyaz bir
-       .tp-box'tı. Kart sınıfı (.mp-card[data-mode]) testler için aynı. */
+  /* ============================================================
+     P62 (kullanıcı isteği 2026-10-04, Balatro "New Run / Continue" örnekleri)
+     — RUN SEÇİM EKRANI. OYNA artık tek bir panel açar:
+       · sekmeler: Yeni Run · Devam Et (kayıt yoksa kapalı)
+       · Yeni Run: oklu mod karuseli + sayfa noktaları; 6 sayfa — Temel ve
+         Kumarhane açık, kalan 4 mod KİLİTLİ "Çok yakında" (6 mod hedefi;
+         adları/kuralları henüz tasarlanmadı, bu yüzden "???")
+       · Devam Et: kayıtlı run'ın özeti (mod, stage, raund, coin, en iyi
+         açılım, kalıcı çarpan, nerede bırakıldı) + DEVAM ET
+     Görsel dil: oyun sonu panelleriyle aynı (ep-ov / ep-box, tema renkleri,
+     piksel başlık). Açık mod kartı `.mp-card[data-mode]` sınıfını taşır:
+     karta tıklamak da o modu başlatır (testler bu yolu kullanır).
+     Klavye: ←/→ mod değiştirir, Enter oynar / devam eder, Esc kapatır.
+     ============================================================ */
+  const RUN_PAGES = [
+    { key: 'base', ico: '🀄' }, { key: 'hizli', ico: '🎰' },
+    { key: 'soon3', soon: true }, { key: 'soon4', soon: true },
+    { key: 'soon5', soon: true }, { key: 'soon6', soon: true },
+  ];
+  let runPickIdx = 0;
+  function showRunPick(opts = {}) {
+    document.getElementById('runPickOv')?.remove();
     document.getElementById('modePickOv')?.remove();
+    const save = 'save' in opts ? opts.save : loadSave();
+    const onPick = opts.onPick || ((m) => startNewRun(m));
+    let tab = opts.tab || (save ? 'cont' : 'new');
+    let sv = null;
+    try { sv = save ? JSON.parse(save.data) : null; } catch (e) { sv = null; }
     const ov = document.createElement('div');
-    ov.id = 'modePickOv';
-    ov.className = 'pk-ov tone-gold mode-pick-ov';
-    /* İki kart da AYNI görsel ağırlıkta: hiçbiri "varsayılan" değil, ikisi de
-       gerçek bir seçim. (İlk hâlde biri primary biri ghost'tu; ghost kart
-       menü arkaplanında silik okunuyordu.) */
-    const card = (key, ico, name, desc, locked) =>
-      `<button class="pk-card mp-card mp-${key}" data-mode="${key}"${locked ? ' disabled' : ''}>` +
-      `<div class="pk-ico">${ico}</div>` +
-      `<div class="pk-name mp-name">${name}${locked ? ' 🔒' : ''}</div>` +
-      `<div class="pk-desc mp-desc">${locked ? t('modeLockedTip') : desc}</div></button>`;
-    ov.innerHTML =
-      `<div class="pk-box"><div class="pk-title">${t('modePickTitle')}</div>` +
-      `<div class="pk-sub-title">${t('modePickBody')}</div>` +
-      `<div class="pk-body pk-choice">` +
-      card('base', '🀄', t('modeName_base'), t('modeDesc_base'), !Modes.unlocked('base')) +
-      card('hizli', '🎰', t('modeName_hizli'), t('modeDesc_hizli'), !Modes.unlocked('hizli')) +
-      `</div>` +
-      `<div class="pk-foot"><button class="btn ghost" id="mpCancel">${t('backBtn')}</button></div></div>`;
+    ov.id = 'runPickOv';
+    ov.className = 'ep-ov rp-ov';
     document.body.appendChild(ov);
-    ov.querySelectorAll('.mp-card').forEach(b => b.addEventListener('click', () => {
-      if (b.disabled) return;
-      ov.remove();
-      onPick(b.dataset.mode);
-    }));
-    ov.querySelector('#mpCancel').addEventListener('click', () => ov.remove());
+    const onKey = (e) => {
+      if (!document.body.contains(ov)) { document.removeEventListener('keydown', onKey); return; }
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      else if (e.key === 'ArrowLeft' && tab === 'new') { e.preventDefault(); go(-1); }
+      else if (e.key === 'ArrowRight' && tab === 'new') { e.preventDefault(); go(1); }
+      else if (e.key === 'Enter') { e.preventDefault(); ov.querySelector('#rpGo:not([disabled])')?.click(); }
+    };
+    const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+    const isOpen = (p) => !p.soon && Modes.unlocked(p.key);
+    const go = (d) => { runPickIdx = (runPickIdx + d + RUN_PAGES.length) % RUN_PAGES.length; draw(); };
+    const play = (key) => { close(); onPick(key); };
+    const cont = () => {
+      close();
+      resumeSave(save);
+      toast(t(save.where === 'inRound' ? 'roundRestartToast' : 'resumedToast'), true);
+    };
+    const slide = (p, i) => {
+      const open = isOpen(p);
+      const name = p.soon ? t('rpSoonName') : t('rpName_' + p.key);
+      const desc = p.soon ? t('rpSoonDesc') : (open ? t('rpDesc_' + p.key) : t('modeLockedTip'));
+      return `<div class="rp-slide${i === runPickIdx ? ' on' : ''}${open ? ' mp-card' : ' rp-locked'}"`
+        + (open ? ` data-mode="${p.key}"` : '') + ` data-i="${i}">`
+        + `<div class="rp-art${p.soon ? ' rp-art-soon' : ''}"><span>${p.soon ? '?' : p.ico}</span>`
+        + (p.soon || !open ? `<i class="rp-lock">🔒</i>` : '') + `</div>`
+        + `<div class="rp-info"><div class="rp-name">${name}</div>`
+        + (p.soon ? `<div class="rp-ribbon">${t('rpSoon')}</div>` : '')
+        + `<div class="rp-desc">${desc}`
+        + (!p.soon ? `<div class="rp-stats">${t('rpStats_' + p.key)}</div>` : '') + `</div></div>`
+        + `</div>`;
+    };
+    const draw = () => {
+      const p = RUN_PAGES[runPickIdx];
+      const tabs = `<div class="rp-tabs">`
+        + `<button class="rp-tab${tab === 'new' ? ' on' : ''}" data-tab="new">${t('rpNew')}</button>`
+        + `<button class="rp-tab${tab === 'cont' ? ' on' : ''}" data-tab="cont"${sv ? '' : ' disabled'}>${t('rpCont')}</button>`
+        + `</div>`;
+      let body = '', foot = '';
+      if (tab === 'new') {
+        body = `<div class="rp-carousel"><button class="rp-arrow" data-d="-1" aria-label="‹">‹</button>`
+          + `<div class="rp-stage">${RUN_PAGES.map(slide).join('')}</div>`
+          + `<button class="rp-arrow" data-d="1" aria-label="›">›</button></div>`
+          + `<div class="rp-dots">${RUN_PAGES.map((q, i) => `<i class="${i === runPickIdx ? 'on' : ''}${q.soon ? ' soon' : ''}" data-i="${i}"></i>`).join('')}</div>`;
+        foot = `<button class="ep-btn rp-go" id="rpGo"${isOpen(p) ? '' : ' disabled'}>${p.soon ? t('rpSoon') : t('rpPlay')}</button>`
+          + (sv && isOpen(p) ? `<div class="ep-note rp-warn">${t('rpOverwrite')}</div>` : '');
+      } else {
+        const mode = sv.runMode || 'base';
+        const pg = RUN_PAGES.find(q => q.key === mode) || RUN_PAGES[0];
+        const total = (typeof RUN_MODES !== 'undefined' && RUN_MODES[mode]) ? RUN_MODES[mode].stages : 8;
+        const where = save.where === 'inStore' ? 'inStore' : save.where === 'inRound' ? 'inRound' : 'map';
+        body = `<div class="rp-slide on rp-cont"><div class="rp-art"><span>${pg.ico || '🀄'}</span></div>`
+          + `<div class="rp-info"><div class="rp-name">${t('rpName_' + mode)}</div>`
+          + `<div class="rp-desc rp-sum">`
+          + `<div><span>${t('rpStage')}</span><b>${sv.stage}/${total}</b></div>`
+          + `<div><span>${t('rpRound')}</span><b>${sv.roundInStage}/3</b></div>`
+          + `<div><span>${t('rpCoins')}</span><b class="c-orange">${sv.coins}</b></div>`
+          + `<div><span>${t('rpBest')}</span><b class="c-red">${sv.statBestMeld || 0}</b></div>`
+          + `<div><span>${t('rpMult')}</span><b class="c-green">+${Number(sv.permMult || 0).toFixed(1)}x</b></div>`
+          + `</div></div></div>`
+          + `<div class="rp-where">${t('rpWhere_' + where)}</div>`;
+        foot = `<button class="ep-btn rp-go" id="rpGo">${t('rpContinueBtn')}</button>`;
+      }
+      ov.innerHTML = `<div class="ep-box rp-box"><div class="rp-plate">${t('modePickTitle')}</div>${tabs}<div class="rp-body">${body}</div>`
+        + `<div class="rp-foot">${foot}<button class="ep-btn ep-ghost rp-back" id="rpBack">${t('rpBack')}</button></div></div>`;
+      ov.querySelectorAll('.rp-tab').forEach(b => b.addEventListener('click', () => { if (!b.disabled) { tab = b.dataset.tab; draw(); } }));
+      ov.querySelectorAll('.rp-arrow').forEach(b => b.addEventListener('click', () => go(+b.dataset.d)));
+      ov.querySelectorAll('.rp-dots i').forEach(b => b.addEventListener('click', () => { runPickIdx = +b.dataset.i; draw(); }));
+      ov.querySelectorAll('.rp-slide.mp-card').forEach(b => b.addEventListener('click', () => play(b.dataset.mode)));
+      ov.querySelector('#rpBack').addEventListener('click', close);
+      const goBtn = ov.querySelector('#rpGo');
+      if (goBtn) goBtn.addEventListener('click', () => {
+        if (goBtn.disabled) return;
+        if (tab === 'cont') cont(); else play(RUN_PAGES[runPickIdx].key);
+      });
+    };
+    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    document.addEventListener('keydown', onKey);
+    draw();
   }
+  /* eski çağrı yeri: yalnız Yeni Run sekmesiyle açar */
+  function pickRunMode(onPick) { showRunPick({ tab: 'new', onPick, save: null }); }
 
   /* ============================================================
      MADDE D4 + PLAYTEST 26 · MADDE D — AÇILIŞ SLOT ÇARKI
@@ -5157,45 +5238,11 @@
     }
   }
 
-  el.btnPlay.addEventListener('click', () => {
-    const save = loadSave();
-    // MADDE D4 — kayıt yoksa önce mod seçimi
-    if (!save) { pickRunMode(m => startNewRun(m)); return; }
-    if (save.where === 'inStore') {
-      // store'da (veya yükseltme seçiminde) bırakıldı → doğrudan oraya dön
-      resumeSave(save);
-      toast(t('resumedToast'), true);
-      return;
-    }
-    if (save.where === 'inRound') {
-      // raund içinde bırakıldı → o raundun BAŞINDAN devam (harita ekranından)
-      resumeSave(save);
-      toast(t('roundRestartToast'), true);
-      return;
-    }
-    // raund arasında bırakıldı → seçenek sun
-    const ov = document.createElement('div');
-    ov.id = 'tutResume';
-    const s2 = JSON.parse(save.data);
-    ov.innerHTML =
-      `<div class="tp-box"><h3>${t('resumeTitle')}</h3>` +
-      `<p>${t('resumeBody', s2.stage, t('resumeRoundName', s2.roundInStage))}</p>` +
-      `<div class="tr-row">` +
-      `<button class="btn primary" id="rsGo">${t('resumeBtn')}</button>` +
-      `<button class="btn ghost" id="rsNew">${t('newRunBtn')}</button>` +
-      `</div></div>`;
-    document.body.appendChild(ov);
-    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
-    ov.querySelector('#rsGo').addEventListener('click', () => {
-      ov.remove();
-      resumeSave(save);
-      toast(t('resumedToast'), true);
-    });
-    // MADDE D4 — "yeni run" da mod seçiminden geçer
-    ov.querySelector('#rsNew').addEventListener('click', () => {
-      ov.remove(); pickRunMode(m => startNewRun(m));
-    });
-  });
+  /* P62 — OYNA: tek panel (Yeni Run / Devam Et). Eskiden kayıt store'da ya da
+     raund içindeyse SORMADAN devam ediyor, raund arasındaysa ayrı bir beyaz
+     kutu açıyordu; artık her durumda aynı ekran — kayıt varsa Devam Et
+     sekmesi açık gelir. */
+  el.btnPlay.addEventListener('click', () => showRunPick());
 
   /* GRUP I (2026-09-07): haritadaki "Ana Menü" düğmesi kaldırıldı —
      tasarımda yok. Ana menüye artık haritanın DURAKLAT düğmesindeki
@@ -7568,5 +7615,5 @@
     // P60 — run raporu + ipucu penceresi
     Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell,
     // P61 — Kumarhane hissi
-    showHiLo, showSideBet, showRuletPick, kumarStartPanels, showJackpot, pickRunMode, showSettings };
+    showHiLo, showSideBet, showRuletPick, kumarStartPanels, showJackpot, pickRunMode, showSettings, showRunPick };
 })();
