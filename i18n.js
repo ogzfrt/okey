@@ -202,8 +202,8 @@
       colCasino: 'KUMARHANE JOKERLERİ', colCasinoNote: 'Yalnız Kumarhane Run’da çıkar',
       hintsLabel: 'İpuçları', hintsReset: 'Yeniden göster', hintsResetDone: 'İpuçları sıfırlandı — yeniden görünecekler',
       musicLabel: 'MÜZİK', musicOn: 'Açık', musicOff: 'Kapalı',
-      musicSetLabel: 'OYUN MÜZİĞİ', musicSet1: 'Müzik 1', musicSet2: 'Müzik 2',
-      musicPreview: (n) => `${n} çalıyor — oyunda bu çalacak`,
+      musicSetLabel: 'TEMA MÜZİĞİ', musicSet1: 'Müzik 1', musicSet2: 'Müzik 2', musicSet3: 'Müzik 3',
+      musicPreview: (n) => `${n} çalıyor — menüde ve oyunda bu çalacak`,
       rpMusic: (m) => `Müzik: ${m}`,
       hint_yanBahis: '<b>YAN BAHİS</b>: ana bahis kördü, bu ise elini GÖREREK oynanır. 3 tekliften birine 5 coin '
         + 'yatırırsın; raundu kazanır ve koşulu tutarsan oran kadar öder (3:1 → +20). İlk hamlende teklif kapanır.',
@@ -1069,8 +1069,8 @@
       colCasino: 'CASINO JOKERS', colCasinoNote: 'Only appear in Casino Run',
       hintsLabel: 'Tips', hintsReset: 'Show again', hintsResetDone: 'Tips reset — they will show again',
       musicLabel: 'MUSIC', musicOn: 'On', musicOff: 'Off',
-      musicSetLabel: 'GAME MUSIC', musicSet1: 'Music 1', musicSet2: 'Music 2',
-      musicPreview: (n) => `Playing ${n} — this will play in game`,
+      musicSetLabel: 'THEME MUSIC', musicSet1: 'Music 1', musicSet2: 'Music 2', musicSet3: 'Music 3',
+      musicPreview: (n) => `Playing ${n} — this plays in the menu and in game`,
       rpMusic: (m) => `Music: ${m}`,
       hint_yanBahis: '<b>SIDE BET</b>: the main bet was blind, this one is placed SEEING your hand. Put 5 coins on one of '
         + '3 offers; win the round and meet the condition to get paid the odds (3:1 → +20). The offer closes on your first move.',

@@ -2118,14 +2118,16 @@
   };
 
   /* ---------- Müzik (P66) — döngülü fon müziği ----------
-     Parça ekrana göre seçilir: menü/harita → menu, oyun → game, boss
-     raundu → boss, store/yükseltme → store. Değişimde ~1 sn çapraz geçiş.
+     Parça ekrana göre seçilir: menü, harita ve oyun → seçili TEMA (Müzik
+     1/2/3, ayarlardan), boss raundu → boss, store/yükseltme → store.
+     Menü → harita → oyun arasında tema kesilmeden sürer. Değişimde ~1 sn
+     çapraz geçiş.
      Gerçek kayıt gelene kadar her parça burada WebAudio ile çalınan GEÇİCİ
      bir döngüdür (Hicaz makamı, bağlama/ney/darbuka taklidi). Kayıt gelince
-     MUSIC_FILES'a dosya yolunu yazmak yeter (ör. 'assets/music/menu.mp3'):
+     MUSIC_FILES'a dosya yolunu yazmak yeter (ör. 'assets/music/tema-1.mp3'):
      dosyalı parça <audio loop> ile çalar, o parçanın sentezi devreden çıkar.
      Tarayıcılar sesi ilk tıklamaya kadar açmaz → müzik ilk dokunuşta başlar. */
-  const MUSIC_FILES = { menu: null, game: null, boss: null, store: null };
+  const MUSIC_FILES = { tema1: null, tema2: null, tema3: null, boss: null, store: null };
 
   const Music = (() => {
     const VOL_KEY = 'okeyMusicVol', ON_KEY = 'okeyMusicOn';
@@ -2134,10 +2136,12 @@
     let vol = parseInt(lsGet(VOL_KEY), 10);
     if (isNaN(vol)) vol = 50;
     let on = lsGet(ON_KEY) !== '0';
-    /* P66b — oyun müziği seçimi: 1 = ilk (sakin) saz döngüsü, 2 = hareketli.
-       Arkadaş testinde ikisi karşılaştırılıyor; seçim run raporuna da yazılır. */
+    /* P66b/c — tema seçimi: 1 = saz (112 bpm), 2 = hareketli (128 bpm),
+       3 = orta yol (100 bpm, ney). Arkadaş testinde karşılaştırılıyor;
+       seçim run raporuna da yazılır. */
     const SET_KEY = 'okeyMusicSet';
-    let set = lsGet(SET_KEY) === '2' ? 2 : 1;
+    const SETS = [1, 2, 3];
+    let set = SETS.includes(+lsGet(SET_KEY)) ? +lsGet(SET_KEY) : 1;
     let preview = null;             // ayarlarda seçeneğe basınca o parça dinletilir
     let master = null, noise = null, unlocked = false, cur = null;
     const level = () => (on ? Math.pow(Math.max(0, Math.min(100, vol)) / 100, 1.5) * 0.6 : 0);
@@ -2176,6 +2180,11 @@
       }).join(' ')).join(' | ');
     }
 
+    /* 8'lik yazımı 16'lık ızgaraya aç: her nota/sus iki adım sürer */
+    const x2 = (str) => str.split('|').map(bar => bar.trim().split(/\s+/)
+      .map(x => (x === '.' ? '. .' : x === '-' ? '- -' : x + ' -')).join(' ')).join(' | ');
+    const T3 = ['D', 'G', 'C', 'D', 'C', 'G', 'Eb', 'D', 'D', 'G', 'C', 'D', 'C', 'G', 'Eb', 'D'];
+
     /* ── sazlar ── */
     const INST = {
       saz:  { type: 'sawtooth', vol: .09, a: .004, dec: .12, sus: .25, rel: .08, cut: 2600, sweep: true },
@@ -2192,16 +2201,8 @@
     const MAJ = { G: ['G3', 'B3', 'D4'], D: ['D3', 'F#3', 'A3'], C: ['C3', 'E3', 'G3'], E: ['E3', 'G3', 'B3'] };
 
     const TRACKS = {
-      /* Menü — sakin Hicaz, ney melodisi + saz arpeji */
-      menu: { bpm: 84, div: 2, dv: .45, parts: [
-        { i: 'ney', s: 'A4 - - - Bb4 - A4 - | G4 - F#4 - G4 - - - | A4 - - - C5 - Bb4 A4 | A4 - - - - - - - | ' +
-                       'D5 - - - C5 - Bb4 - | A4 - G4 - F#4 - - - | G4 - F#4 - Eb4 - F#4 - | D4 - - - - - - -' },
-        { i: 'arp', s: gen('A B C B A B C B', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
-        { i: 'bass', s: gen('R - - - F - - -', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
-        { i: 'pad', s: gen('P - - - - - - -', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
-      ], drums: 'D...T..k' },
-      /* Oyun — kıpır kıpır Hicaz, saz + maksum ritmi */
-      game: { bpm: 112, div: 2, dv: .6, parts: [
+      /* Tema · Müzik 1 — kıpır kıpır Hicaz, saz + maksum ritmi */
+      tema1: { bpm: 112, div: 2, dv: .6, parts: [
         { i: 'saz', s: 'D5 - C5 Bb4 A4 - - . | Bb4 A4 G4 F#4 G4 - A4 . | A4 Bb4 C5 D5 Eb5 - D5 C5 | D5 - - - - - . . | ' +
                        'G4 A4 Bb4 A4 G4 F#4 Eb4 . | F#4 G4 A4 - G4 F#4 Eb4 D4 | Eb4 F#4 G4 A4 Bb4 A4 G4 F#4 | D4 - - - - - . . | ' +
                        'A4 . D5 . Eb5 D5 C5 Bb4 | A4 - Bb4 A4 G4 - . . | G4 . C5 . D5 C5 Bb4 A4 | G4 - A4 G4 F#4 - . . | ' +
@@ -2209,9 +2210,9 @@
         { i: 'bass', s: gen('R . O . R . F .', ['D', 'G', 'C', 'D', 'G', 'D', 'Eb', 'D', 'D', 'G', 'C', 'D', 'D', 'C', 'Eb', 'D'], HICAZ) },
         { i: 'pad', s: gen('P - - - - - - -', ['D', 'G', 'C', 'D', 'G', 'D', 'Eb', 'D', 'D', 'G', 'C', 'D', 'D', 'C', 'Eb', 'D'], HICAZ) },
       ], drums: 'DT.TD.T.DT.TD.T.DT.TD.T.DTkTDkTT' },
-      /* Oyun · Müzik 2 — daha hareketli: 128 bpm, 16'lık saz koşuları,
+      /* Tema · Müzik 2 — daha hareketli: 128 bpm, 16'lık saz koşuları,
          oktav zıplayan bas, ara vuruşlarda akor vuruşu, dolgulu darbuka */
-      game2: { bpm: 128, div: 4, dv: .7, parts: [
+      tema2: { bpm: 128, div: 4, dv: .7, parts: [
         { i: 'saz', s: 'D5 . D5 . C5 Bb4 A4 . Bb4 A4 G4 . A4 - - . | F#4 G4 A4 . A4 . Bb4 A4 G4 F#4 G4 . A4 - - - | ' +
                        'A4 Bb4 C5 D5 Eb5 . D5 C5 D5 . C5 Bb4 A4 . G4 . | A4 - - - D5 - - - A4 . G4 F#4 G4 A4 Bb4 C5 | ' +
                        'D5 . Eb5 D5 C5 . Bb4 . C5 . Bb4 A4 G4 . A4 . | Bb4 A4 G4 F#4 G4 . Eb4 . F#4 G4 A4 Bb4 A4 - - . | ' +
@@ -2219,6 +2220,18 @@
         { i: 'bass', s: gen('R . O . R . O . R . O . F . O .', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
         { i: 'stab', s: gen('. . P . . . P . . . P . . . P .', ['D', 'D', 'C', 'D', 'G', 'D', 'Eb', 'D'], HICAZ) },
       ], drums: 'D.Tk.kT.D.TkT.Tk' + 'D.Tk.kT.DkTkTTTT' },
+      /* Tema · Müzik 3 — orta yol: 100 bpm, ney melodisi uzun ve rahat,
+         altında 3-3-2 kıvrak bas + 8'lik saz arpeji + hafif darbuka.
+         Hareketli ama yormaz; menüde de oyunda da dinlenebilir. */
+      tema3: { bpm: 100, div: 4, dv: .5, parts: [
+        { i: 'ney', s: x2('A4 - - Bb4 A4 - G4 A4 | Bb4 - A4 G4 F#4 - - . | G4 - A4 Bb4 C5 - Bb4 A4 | A4 - - - - - . . | ' +
+                          'D5 - C5 D5 Eb5 - D5 C5 | Bb4 - A4 Bb4 C5 - - . | Bb4 A4 G4 F#4 G4 - Eb4 F#4 | D4 - - - - - . . | ' +
+                          'F#4 - G4 A4 Bb4 - A4 G4 | A4 - - Bb4 C5 - Bb4 A4 | G4 - F#4 G4 A4 - Bb4 C5 | D5 - - - - - . . | ' +
+                          'Eb5 - D5 C5 D5 - C5 Bb4 | C5 - Bb4 A4 Bb4 - A4 G4 | A4 - G4 F#4 Eb4 - F#4 G4 | D4 - - - - - . .') },
+        { i: 'arp', s: x2(gen('A B C B A B C B', T3, HICAZ)) },
+        { i: 'bass', s: gen('R . . O . . R . R . . O . . F .', T3, HICAZ) },
+        { i: 'pad', s: gen('P - - - - - - - - - - - - - - -', T3, HICAZ) },
+      ], drums: 'D..kT.k.D.kkT.k.' },
       /* Boss — hızlı, karanlık; 16'lık bas ostinatosu */
       boss: { bpm: 132, div: 4, dv: .7, parts: [
         { i: 'boss', s: 'D5 - - - . . . . Eb5 - D5 - C5 - Bb4 - | A4 - - - - - - - . . . . . . . . | ' +
@@ -2352,12 +2365,12 @@
     function want() {
       if (preview && document.getElementById('settingsOv')) return preview;
       preview = null;
-      const game = set === 2 ? 'game2' : 'game';
+      const theme = 'tema' + set;
       if (storeOpen() || upgradeOpen()) return 'store';
       if (curScreen() === 'game') {
-        try { return Game.state && Game.isBossRound() ? 'boss' : game; } catch (e) { return game; }
+        try { return Game.state && Game.isBossRound() ? 'boss' : theme; } catch (e) { return theme; }
       }
-      return 'menu';
+      return theme;                   // menü + harita: seçili tema
     }
 
     function sync() {
@@ -2398,9 +2411,9 @@
       get unlocked() { return unlocked; },
       get set() { return set; },
       setSet(n) {
-        set = +n === 2 ? 2 : 1;
+        set = SETS.includes(+n) ? +n : 1;
         lsSet(SET_KEY, String(set));
-        preview = set === 2 ? 'game2' : 'game';
+        preview = 'tema' + set;
         if (!on) this.setOn(true);       // seçen kişi duymak ister
         unlock();
         sync();
@@ -5897,7 +5910,7 @@
       `<b id="setMusicPct">${Music.vol}%</b></div></div>` +
       `<div class="set-row"><span class="set-label">${t('musicSetLabel')}</span>` +
       `<div class="set-langs">` +
-      [1, 2].map(n => `<button class="set-lang set-mset${Music.set === n ? ' on' : ''}" data-mset="${n}">♪ ${t('musicSet' + n)}</button>`).join('') +
+      [1, 2, 3].map(n => `<button class="set-lang set-mset${Music.set === n ? ' on' : ''}" data-mset="${n}">♪ ${t('musicSet' + n)}</button>`).join('') +
       `</div></div>` +
       /* P60/P61 — ilk kez ipuçlarını yeniden göster */
       `<div class="set-row"><span class="set-label">${t('hintsLabel')}</span>` +
