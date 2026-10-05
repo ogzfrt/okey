@@ -512,8 +512,9 @@ const MAX_HAND = 30;
    yüksek geçer. */
 const STAGE_TARGETS = [
   /* P67c (kullanıcı kararı 2026-10-05): sabit raf (3 joker + 4 ürün) S1 boss geçişini tutumlu
-     botta %47 → %56'ya çıkardı; boss hedefi %5 yükseltildi (730 → 767). R1/R2 aynı. */
-  [290, 510, 767],      // S1 — el 21 · oran 0.38/0.66
+     botta %47 → %56'ya çıkardı; boss hedefi %5 yükseltildi (730 → 767). P67d: R1/R2 de %5
+     (290 → 305, 510 → 536) — oran yine 0.40/0.70. */
+  [305, 536, 767],      // S1 — el 21 · oran 0.40/0.70
   /* P51 · GRUP B (kullanıcı onayı 2026-09-15) — BALATRO EĞRİSİ, tam run botuyla
      ölçülerek kuruldu (tools/run_audit.js).
      v2 (10.3) S4-S8'de sabit 1.42x adımla büyüyordu: erken stage'ler (el 15→21
