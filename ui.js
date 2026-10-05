@@ -257,6 +257,7 @@
     if (name === 'menu') fitMenuLabels(); // görünür olunca ölçülebilir
     if (name === 'map') { renderMap(); saveGame('between'); }
     if (name === 'game') render();
+    applyRunTheme();   // P68 — Kumarhane run'ında kumarhane teması
     updateTrainerBadge();
     if (TUT.active) TUT.update();
   }
@@ -6116,6 +6117,25 @@
     if (key === 'yesil') delete root.dataset.theme;
     else root.dataset.theme = key;
     if (persist) { try { localStorage.setItem(THEME_KEY, key); } catch (e) {} }
+    applyRunTheme();
+  }
+
+  /* P68 — KUMARHANE TEMASI (kullanıcı 2026-10-05): normal dört tema aynen
+     kalır; Ayarlar → Kumarhane Teması açıkken (varsayılan açık) Kumarhane
+     run'ının oyun/harita/store/pencereleri Klasik Vegas temasına geçer. Ana
+     menü ve normal run'lar her zaman kullanıcının seçtiği temada. */
+  const CASINO_THEME_KEY = 'okeyCasinoTheme';
+  let casinoThemeOn = (() => { try { return localStorage.getItem(CASINO_THEME_KEY) !== '0'; } catch (e) { return true; } })();
+  function casinoRunActive() {
+    try { return curScreen() !== 'menu' && !!Game.state && !!Game.kumarhaneOn && Game.kumarhaneOn(); } catch (e) { return false; }
+  }
+  function applyRunTheme() {
+    let key;
+    try { key = casinoThemeOn && casinoRunActive() ? 'kumarhane' : themeKey; }
+    catch (e) { return; }   // modül kurulumu bitmeden çağrıldıysa (TDZ)
+    const root = document.documentElement;
+    if (key === 'yesil') delete root.dataset.theme;
+    else root.dataset.theme = key;
   }
 
   /* index.html <head> içindeki satır temayı ilk boyamadan önce zaten
@@ -6143,6 +6163,12 @@
         `<button class="set-theme${th.key === themeKey ? ' on' : ''}" data-theme="${th.key}">` +
         `<span class="sw">${th.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span>` +
         `<span>${t('theme_' + th.key)}</span></button>`).join('') +
+      `</div></div>` +
+      /* P68 — Kumarhane run'ına özel tema */
+      `<div class="set-row"><span class="set-label">${t('casinoThemeLabel')}</span>` +
+      `<div class="set-langs">` +
+      `<button class="set-lang set-casino${casinoThemeOn ? ' on' : ''}" data-casino="1">🎰 ${t('musicOn')}</button>` +
+      `<button class="set-lang set-casino${casinoThemeOn ? '' : ' on'}" data-casino="0">${t('musicOff')}</button>` +
       `</div></div>` +
       /* P67 — ses efektleri (düğme/taş sesleri): aç/kapa + seviye */
       `<div class="set-row"><span class="set-label">${t('sfxSetLabel')}</span>` +
@@ -6217,6 +6243,13 @@
        ekran (oyun, store, ödül çarkı, modallar) yeniden çizim beklemeden
        döner. Yine de sayaç/etiket metinleri seçili temaya göre "on"
        sınıfını taşısın diye pencere tazelenir. */
+    ov.querySelectorAll('.set-casino').forEach(b => b.addEventListener('click', () => {
+      casinoThemeOn = b.dataset.casino === '1';
+      try { localStorage.setItem(CASINO_THEME_KEY, casinoThemeOn ? '1' : '0'); } catch (e) {}
+      ov.querySelectorAll('.set-casino').forEach(x => x.classList.toggle('on', x === b));
+      applyRunTheme();
+      toast(t(casinoThemeOn ? 'casinoThemeOnToast' : 'casinoThemeOffToast'), true);
+    }));
     ov.querySelectorAll('.set-theme').forEach(b => b.addEventListener('click', () => {
       if (b.dataset.theme === themeKey) return;
       applyTheme(b.dataset.theme);
@@ -8530,7 +8563,7 @@
     // P60 — run raporu + ipucu penceresi
     Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell,
     // P61 — Kumarhane hissi
-    Music,
+    Music, applyRunTheme,
     showHiLo, showSideBet, showRuletPick, kumarStartPanels, showJackpot, pickRunMode, showSettings, showRunPick,
     collectionView: (v) => showCollection(v) };
 })();
