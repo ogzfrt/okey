@@ -231,9 +231,9 @@
       hiloHowTitle: 'Nasıl oynanır?',
       hiloHow1: 'Ortada açık bir taş var (1-13).',
       hiloHow2: 'Sıradaki taş ondan YÜKSEK mi ALÇAK mı, tahmin et.',
-      hiloHow3: (a, b, st) => `Bilirsen kazancın büyür (${st} → ${a} … ${b}). İstediğin an çekil. Bilemezsen bu raundun ${st} coini yanar.`,
+      hiloHow3odds: (st) => `Kolay tahmin az, zor tahmin çok öder (ör. %85 → ×1.24, %46 → ×2.28, en çok ×5). İstediğin an çekil. Bilemezsen bu raundun ${st} coini yanar.`,
       hiloOpen: 'AÇIK TAŞ', hiloNext: 'SIRADAKİ', hiloPrev: 'ÖNCEKİ', hiloCame: 'GELEN',
-      hiloNowCash: (n) => `Şimdi çekilirsen 🪙 ${n}`, hiloIfRight: (n) => `bilirsen 🪙 ${n}`,
+      hiloNowCash: (n) => `Şimdi çekilirsen 🪙 ${n}`, hiloOddsLine: 'kolay tahmin az, zor tahmin çok öder',
       hiloTieNote: 'Eşit gelirse kasa kazanır.', hiloCameN: (n) => `(${n} geldi)`,
       colCasino: 'KUMARHANE JOKERLERİ', colCasinoNote: 'Yalnız Kumarhane Run’da çıkar',
       hintsLabel: 'İpuçları', hintsReset: 'Yeniden göster', hintsResetDone: 'İpuçları sıfırlandı — yeniden görünecekler',
@@ -248,8 +248,8 @@
       hint_yanBahis: '<b>YAN BAHİS</b>: ana bahis kördü, bu ise elini GÖREREK oynanır. 3 tekliften birine 5 coin '
         + 'yatırırsın; raundu kazanır ve koşulu tutarsan oran kadar öder (3:1 → +20). İlk hamlende teklif kapanır.',
       hint_hiLo: '<b>YÜKSEK Mİ ALÇAK MI</b>: yalnız bu raundun coin kazancı ortaya konur. Açık taştan sonra gelecek '
-        + 'taş yüksek mi alçak mı? Her doğru tahmin ×1.5, en çok 3 adım (×3.4). Eşit gelirse kasa kazanır. '
-        + 'Düğmelerdeki sayı tutma ihtimalin (ör. 4 açıkken Yüksek 9/13). İstediğin an çekil.',
+        + 'taş yüksek mi alçak mı? Ödeme ihtimale göre: kolay tahmin az, zor tahmin çok öder (en çok ×5), en çok 3 adım. '
+        + 'Düğmede ihtimal, çarpan ve bilirsen eline geçecek coin yazar. Eşit gelirse kasa kazanır. İstediğin an çekil.',
       hint_store: 'Store raund sonunda açılır (Kumarhane Run’da yalnız stage sonunda). Bir ürünü '
         + '<b>KİLİTLEYEBİLİRSİN</b> (ücretsiz) — kilitli ürün yenilemede ve sonraki store’da kaybolmaz.',
       hint_jokerAge: 'Jokerlerin bir <b>SÜRESİ</b> var: her raund sonunda azalır, bitince '
@@ -1137,9 +1137,9 @@
       hiloHowTitle: 'How to play',
       hiloHow1: 'A tile is face up in the middle (1-13).',
       hiloHow2: 'Guess whether the next tile is HIGHER or LOWER.',
-      hiloHow3: (a, b, st) => `Each right guess grows your winnings (${st} → ${a} … ${b}). Cash out any time. A wrong guess burns this round's ${st} coins.`,
+      hiloHow3odds: (st) => `Easy guesses pay little, hard guesses pay a lot (e.g. 85% → ×1.24, 46% → ×2.28, up to ×5). Cash out any time. A wrong guess burns this round's ${st} coins.`,
       hiloOpen: 'FACE UP', hiloNext: 'NEXT', hiloPrev: 'BEFORE', hiloCame: 'DRAWN',
-      hiloNowCash: (n) => `Cash out now 🪙 ${n}`, hiloIfRight: (n) => `if right 🪙 ${n}`,
+      hiloNowCash: (n) => `Cash out now 🪙 ${n}`, hiloOddsLine: 'easy guesses pay little, hard ones pay a lot',
       hiloTieNote: 'A tie goes to the house.', hiloCameN: (n) => `(${n} came)`,
       colCasino: 'CASINO JOKERS', colCasinoNote: 'Only appear in Casino Run',
       hintsLabel: 'Tips', hintsReset: 'Show again', hintsResetDone: 'Tips reset — they will show again',
@@ -1154,8 +1154,8 @@
       hint_yanBahis: '<b>SIDE BET</b>: the main bet was blind, this one is placed SEEING your hand. Put 5 coins on one of '
         + '3 offers; win the round and meet the condition to get paid the odds (3:1 → +20). The offer closes on your first move.',
       hint_hiLo: '<b>HIGHER OR LOWER</b>: only this round’s coin winnings are at stake. Will the next tile be higher or lower? '
-        + 'Each right guess ×1.5, at most 3 steps (×3.4). Ties go to the house. The number on each button is your chance '
-        + '(e.g. 4 showing: Higher 9/13). Cash out any time.',
+        + 'Payouts follow the odds: easy guesses pay little, hard ones pay a lot (up to ×5), at most 3 steps. '
+        + 'Each button shows your chance, the multiplier and what you would hold. Ties go to the house. Cash out any time.',
       hint_store: 'The shop opens after a round (in Casino Run only at the end of a stage). You can '
         + '<b>LOCK</b> an item for free — locked items survive rerolls and carry to the next shop.',
       hint_jokerAge: 'Jokers have a <b>LIFESPAN</b>: it drops every round and the card is gone '
@@ -1753,13 +1753,13 @@
   })[tr] || tr;
   const JOKER_EN = {
     /* P61 · Kumarhane (Casino) jokerleri */
-    krupiye: { name: 'Croupier', desc: 'If a Double hits, the bet reward is ×3 (instead of ×2).' },
+    krupiye: { name: 'Croupier', desc: 'Won bets pay ×2 (×4 with Double); a won Safe bet also gives +0.35x permanent.' },
     sansliZar: { name: 'Lucky Die', desc: 'When you are about to lose the round a die is rolled: 5-6 scrapes the round through (no bet reward). The card breaks either way.' },
-    kartSayici: { name: 'Card Counter', desc: '3 tiles of your hand are shown face up in the bet window.' },
+    kartSayici: { name: 'Card Counter', desc: '6 tiles of your hand are shown face up in the bet window.' },
     fisUstasi: { name: 'Chip Master', desc: '🟢 A won Safe bet gives a permanent +0.2x.' },
-    rulet: { name: 'Roulette', desc: 'At round start pick 🔴 Red or ⚫ Black. If your meld has the most of that colour +2.0x, otherwise −0.5x.' },
-    hileliZar: { name: 'Loaded Dice', desc: 'In Higher or Lower ties are yours; once per stage you may take back a wrong guess.' },
-    martingale: { name: 'Martingale', desc: 'Every lost side bet adds +1 to the next side bet’s odds; resets when one hits.' },
+    rulet: { name: 'Roulette', desc: 'Pick 🔴/⚫ each round: +0.3x per tile of it in your meld, none −1x.' },
+    hileliZar: { name: 'Loaded Dice', desc: 'Higher or Lower: ties are yours, right guess +0.08x permanent, 1 take-back per stage.' },
+    martingale: { name: 'Martingale', desc: 'A lost side bet doubles the next payout (≤×8); a win gives +0.2x×that permanent.' },
     bereket: { name: 'Fortune Stone', desc: '+1.5x on every meld.' },
     kosucu: { name: 'Runner', desc: 'Meld a Run: +2.0x.' },
     ikizler: { name: 'Twins', desc: 'Meld a Pair: +2.0x.' },
@@ -2122,12 +2122,14 @@
     [/^(🟢|🟡|🔴) (Güvenli|Riskli|Ölümcül)$/, (m) => `${m[1]} ${({ Güvenli: 'Safe', Riskli: 'Risky', Ölümcül: 'Deadly' })[m[2]]}`],
     [/^🎰 Bahis: (🟢|🟡|🔴) (Güvenli|Riskli|Ölümcül) — hedef (\d+)$/, (m) => `🎰 Bet: ${m[1]} ${({ Güvenli: 'Safe', Riskli: 'Risky', Ölümcül: 'Deadly' })[m[2]]} — target ${m[3]}`],
     [/^🎰 (🟢|🟡|🔴) (Güvenli|Riskli|Ölümcül) bahis: coin ×(\d+)(.*)$/, (m) => `🎰 ${m[1]} ${({ Güvenli: 'Safe', Riskli: 'Risky', Ölümcül: 'Deadly' })[m[2]]} bet: coins ×${m[3]}`
-      + m[4].replace(/ · \+([\d.]+)x kalıcı/, ' · +$1x permanent').replace(/ · (\d+) joker seçimi/, ' · $1 joker picks').replace(/ \(KATLA tuttu: ödül ×(\d)\)/, ' (DOUBLE hit: reward ×$1)')],
+      + m[4].replace(/ · \+([\d.]+)x kalıcı/, ' · +$1x permanent').replace(/ · (\d+) joker seçimi/, ' · $1 joker picks').replace(/ \(KATLA tuttu: ödül ×(\d)\)/, ' (DOUBLE hit: reward ×$1)').replace(/ \(🎩 Krupiye: ödül ×(\d)\)/, ' (🎩 Croupier: reward ×$1)')],
     /* P61 — yan bahis / Rulet / Şanslı Zar / Fiş Ustası / Hileli Zar */
     [/^🎲 Yan bahis tuttu: (.+) → \+(\d+) coin \((\d+):1\)$/, (m) => `🎲 Side bet won: ${SIDE_EN(m[1])} → +${m[2]} coins (${m[3]}:1)`],
     [/^🎲 Yan bahis tutmadı: (.+) \(−(\d+)\)$/, (m) => `🎲 Side bet lost: ${SIDE_EN(m[1])} (−${m[2]})`],
     [/^🎲 Yan bahis: (.+) \((\d+):1\)$/, (m) => `🎲 Side bet: ${SIDE_EN(m[1])} (${m[2]}:1)`],
-    [/^📈 Martingale: sonraki yan bahis \+(\d+)$/, '📈 Martingale: next side bet +$1'],
+    [/^📈 Martingale: sonraki yan bahsin ödemesi ×(\d+)$/, '📈 Martingale: next side bet pays ×$1'],
+    [/^📈 Martingale: seri bitti → \+([\d.]+)x kalıcı$/, '📈 Martingale: streak cashed → +$1x permanent'],
+    [/^🎡 (🔴|⚫) ×(\d+) taş \+([\d.]+)x$/, '🎡 $1 ×$2 tiles +$3x'],
     [/^🎡 (🔴|⚫) tuttu \+([\d.]+)x$/, '🎡 $1 hit +$2x'],
     [/^🎡 (🔴|⚫) tutmadı −([\d.]+)x$/, '🎡 $1 missed −$2x'],
     [/^🎡 Rulet: (🔴|⚫) (Kırmızı|Siyah)$/, (m) => `🎡 Roulette: ${m[1]} ${m[2] === 'Kırmızı' ? 'Red' : 'Black'}`],

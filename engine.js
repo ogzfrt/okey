@@ -229,7 +229,8 @@ const BET_PICK_CHOICES = 3;
      kazanılan raundlardaki gerçek sıklığı) hafif oyuncu lehine seçildi.
    · YÜKSEK Mİ ALÇAK MI: kazanılan raundun sonunda isteğe bağlı; ortaya
      YALNIZ o raundun coin kazancı (coinReport.net) konur. 1-13 rastgele
-     taş, eşitlik kasaya, en çok HILO_STEPS adım (×2/×4/×8), çekil serbest.
+     taş, eşitlik kasaya, en çok HILO_STEPS adım, çekil serbest. P69: adım
+     çarpanı İHTİMALE GÖRE (bkz. HILO).
    ========================================================================== */
 const SIDE_STAKE = 5;
 const SIDE_OFFERS = 3;
@@ -257,10 +258,35 @@ const HILO_STEPS = 3;
    olduğu için oyuncu yalnız lehine olan tahmini oynar (optimal beklenti ×2.66,
    bot run başına +115-130 coin). ×1.5'te yalnız uç taşlar (1-4 / 10-13) kârlı,
    5-9 gerçek karar; bot +21 coin/run, run bitirme aynı (±2). */
-const HILO = { mult: 1.5 };
+/* P69 (kullanıcı kararı 2026-10-05) — İHTİMALE GÖRE ÖDEME. Sabit ×1.5'te kolay
+   taraf (2'de "yüksek" %85) zor tarafla aynı ödüyordu: oyuncu hep kolayı oynayıp
+   risksiz kazanıyor, zor tahmin anlamsızdı. Artık adım çarpanı = edge / p
+   (p = kazanma ihtimali; eşitlik kasaya, Hileli Zar'ın eşitlik avantajı hesaba
+   KATILMAZ → jokerin artısı). edge 1.05: yan bahisler gibi hafif oyuncu lehine.
+   Örn. 2'de yüksek %85 → ×1.24 · 7'de yüksek %46 → ×2.28 · uç tahmin en çok ×5. */
+const HILO = { edge: 1.05, maxMult: 5 };
+function hiLoOdds(cur, dir) {
+  const win = dir === 'hi' ? 13 - cur : cur - 1;   // eşitlik hariç
+  const p = win / 13;
+  const mult = p > 0 ? Math.min(HILO.maxMult, Math.round(100 * HILO.edge / p) / 100) : 0;
+  return { p, mult };
+}
 const FIS_USTASI_MULT = 0.2;
-const RULET_HIT = 2.0;
-const RULET_MISS = 0.5;
+/* P69 — Rulet artık taş başına: açılımdaki seçilen renk taşı başına +RULET_PER;
+   o renkten hiç taş yoksa −RULET_MISS (eski "en çok o renk" şartı büyük
+   açılımlarda nadiren tutuyordu, ölçülen katkı ≈0). */
+const RULET_PER = 0.3;
+const RULET_HIT = RULET_PER;   // eski ad (dışa aktarım uyumu)
+const RULET_MISS = 1.0;
+/* P69 — Kumarhane'de store yalnız stage sonunda açıldığı için coin büyük ölçüde
+   birikip kalıyor; yalnız coin veren jokerler (ilk sürüm Krupiye ×2, Hileli Zar
+   +0.25 çarpan, Martingale ×2^n) coin girişini +20…+54 artırdı ama ulaşılan
+   stage'i hiç değiştirmedi. Bu yüzden üçüne de KALICI ÇARPAN ayağı eklendi. */
+const KRUPIYE_MULT = 2;          // tutan bahsin ödülü ×2
+const KRUPIYE_SAFE_PERM = 0.35;  // Güvenli bahis tutunca da kalıcı çarpan
+const MARTINGALE_CAP = 3;        // ödeme en çok 2³ = ×8
+const MARTINGALE_PERM = 0.2;     // tutunca kalıcı +0.2x × katlanma (×1/×2/×4/×8)
+const HILELI_ZAR_PERM = 0.08;    // Hi-Lo'da her doğru tahmin kalıcı +0.08x
 const SANSLI_ZAR_MIN = 5;   // 5-6 kurtarır (1/3)
 
 /* PLAYTEST 26 · MADDE D — STAGE'İ 8'LİK EĞRİYE TAŞI.
@@ -2315,20 +2341,26 @@ const JOKER_DEFS = {
      Koleksiyon'da ayrı "Kumarhane" rafında görünür. Hepsi bahis / Katla /
      yan bahis / Yüksek mi Alçak mı sistemlerine dokunur — Temel Run'da
      anlamsız kartlar. */
+  /* P69 (kullanıcı: "kumarhane jokerlerinin dengesini, bonuslarını, çalışma sistemlerini
+     düzgün ayarlayalım") — uzman bot katkı ölçümü (her joker run boyu elde, 1500 run,
+     ort. ulaşılan stage farkı): Krupiye +0.01 · Hileli Zar +0.02 · Martingale −0.01 ·
+     Rulet +0.02 · Kart Sayıcı −0.01 → beşi etkisizdi (Şanslı Zar +0.40, Fiş Ustası
+     +0.29 yerinde). Kıyas: Renk Ustası (C) +0.64 · Hipnotizör (R) +0.16 · Sisyphus (L)
+     +0.33 · Medusa (L) +1.04. Fikirler korunarak güçlendirildi; sonuç GDD 22.1b-39. */
   krupiye: { key: 'krupiye', name: 'Krupiye', rarity: 'legendary', casino: true,
-    desc: 'Katla tutarsa bahis ödülü ×3 (×2 yerine).' },
+    desc: 'Tutan bahsin ödülü ×2 (Katla ile ×4); Güvenli tutunca da +0.35x kalıcı.' },
   sansliZar: { key: 'sansliZar', name: 'Şanslı Zar', rarity: 'rare', casino: true,
     desc: 'Raundu kaybedeceğin anda zar atılır: 5-6 gelirse raund sıyrılarak kazanılır (bahis ödülü yok). Her iki durumda kart kırılır.' },
-  kartSayici: { key: 'kartSayici', name: 'Kart Sayıcı', rarity: 'rare', casino: true,
-    desc: 'Bahis penceresinde elinden 3 taş açık görünür.' },
+  kartSayici: { key: 'kartSayici', name: 'Kart Sayıcı', rarity: 'common', casino: true,
+    desc: 'Bahis penceresinde elinden 6 taş açık görünür.' },
   fisUstasi: { key: 'fisUstasi', name: 'Fiş Ustası', rarity: 'common', casino: true,
     desc: '🟢 Güvenli bahis tutunca kalıcı +0.2x.' },
   rulet: { key: 'rulet', name: 'Rulet', rarity: 'rare', casino: true,
-    desc: 'Raund başında 🔴 Kırmızı ya da ⚫ Siyah seç. Açılımında en çok o renk varsa +2.0x, yoksa −0.5x.' },
-  hileliZar: { key: 'hileliZar', name: 'Hileli Zar', rarity: 'legendary', casino: true,
-    desc: 'Yüksek mi Alçak mı\'da eşitlik senin; her stage 1 yanlış tahmini geri alırsın.' },
+    desc: 'Raund başı 🔴/⚫ seç: açılımdaki o renk taş başına +0.3x, hiç yoksa −1x.' },
+  hileliZar: { key: 'hileliZar', name: 'Hileli Zar', rarity: 'rare', casino: true,
+    desc: 'Yüksek mi Alçak mı: eşitlik senin, doğru tahmin +0.08x kalıcı, stage başı 1 geri alma.' },
   martingale: { key: 'martingale', name: 'Martingale', rarity: 'rare', casino: true,
-    desc: 'Kaybettiğin her yan bahis sonraki yan bahsin ödemesini +1 artırır; tutunca sıfırlanır.' },
+    desc: 'Kaybedilen yan bahis sonrakinin ödemesini ×2’ler (≤×8); tutunca +0.2x×kat kalıcı.' },
 
   /* ===== BOSS (EPIC) — Slot Jokerleri (4) + Deste Jokerleri (4, GDD 10):
      deste jokerleri desteye karışır, eline gelince aktifleşir,
@@ -4072,11 +4104,12 @@ const Game = {
     const s = this.state;
     const b = BETS[s.bet] || BETS.guvenli;
     const rw = this.betReward(b.key);   // P61 — stage'e göre ödül
-    /* P61 · 🎩 Krupiye — Katla tutarsa ödül ×3 (×2 yerine) */
-    const katR = KATLA.reward + (this.hasActive('krupiye') ? 1 : 0);
-    const kat = s.katla && !s.katla.burned && s.score >= s.target ? katR : 1;
+    /* P69 · 🎩 Krupiye — tutan her bahsin ödülü ×2 (Katla da tutarsa ×4) */
+    const katla = s.katla && !s.katla.burned && s.score >= s.target ? KATLA.reward : 1;
+    const kat = katla * (this.hasActive('krupiye') ? KRUPIYE_MULT : 1);
     const coinMult = rw.coinMult * kat;
-    const perm = round2(rw.perm * kat);
+    let perm = round2(rw.perm * kat);
+    if (b.key === 'guvenli' && this.hasActive('krupiye')) perm = round2(perm + KRUPIYE_SAFE_PERM);   // P69 · Krupiye
     if (perm) s.permMult = round2(s.permMult + perm);
     /* P61 · 🪙 Fiş Ustası — Güvenli bahis de kalıcı çarpan bırakır */
     if (b.key === 'guvenli' && this.hasActive('fisUstasi')) {
@@ -4093,7 +4126,7 @@ const Game = {
     notes.push(`🎰 ${b.name} bahis: coin ×${coinMult}`
       + (perm ? ` · +${perm.toFixed(1)}x kalıcı` : '')
       + (picks ? ` · ${picks} joker seçimi` : '')
-      + (kat > 1 ? ` (KATLA tuttu: ödül ×${kat})` : ''));
+      + (katla > 1 ? ` (KATLA tuttu: ödül ×${kat})` : kat > 1 ? ` (🎩 Krupiye: ödül ×${kat})` : ''));
     return { key: b.key, name: b.name, coinMult, kat, perm, picks };
   },
   /* Bahis ödülü: 3 jokerden 1'i. 'legendary' → yalnız Legendary, 'any' → paket eğrisi */
@@ -4145,7 +4178,10 @@ const Game = {
     const b = SIDE_BETS[key];
     if (!b) return 0;
     const mg = this.slotRecs().find(j => j.key === 'martingale');
-    return b.odds + (mg && !this.state.jokersDisabled ? (mg.mg || 0) : 0);
+    /* P69 · 📈 Martingale — kayıp serisinde ödeme 2^n katına çıkar (en çok ×8):
+       etkin oran = (oran + 1) × 2^n − 1, yani ödeme = yatırılan × (etkin oran + 1). */
+    const n = mg && !this.state.jokersDisabled ? Math.min(MARTINGALE_CAP, mg.mg || 0) : 0;
+    return (b.odds + 1) * Math.pow(2, n) - 1;
   },
   sideBetState() {
     const s = this.state;
@@ -4204,10 +4240,16 @@ const Game = {
       sb.paid = sb.stake * (sb.odds + 1);
       gainCoins(s, sb.paid);
       notes.push(`🎲 Yan bahis tuttu: ${SIDE_BETS[sb.key].name} → +${sb.paid} coin (${sb.odds}:1)`);
+      if (mg && !s.jokersDisabled) {   // P69 · Martingale: seri sonrası kazanç kalıcı çarpan da bırakır
+        const k = Math.pow(2, Math.min(MARTINGALE_CAP, mg.mg || 0));
+        const add = round2(MARTINGALE_PERM * k);
+        s.permMult = round2(s.permMult + add);
+        notes.push(`📈 Martingale: seri bitti → +${add.toFixed(2)}x kalıcı`);
+      }
       if (mg) mg.mg = 0;
     } else {
       notes.push(`🎲 Yan bahis tutmadı: ${SIDE_BETS[sb.key].name} (−${sb.stake})`);
-      if (mg && !s.jokersDisabled) { mg.mg = (mg.mg || 0) + 1; notes.push(`📈 Martingale: sonraki yan bahis +${mg.mg}`); }
+      if (mg && !s.jokersDisabled) { mg.mg = Math.min(MARTINGALE_CAP, (mg.mg || 0) + 1); notes.push(`📈 Martingale: sonraki yan bahsin ödemesi ×${Math.pow(2, mg.mg)}`); }
     }
   },
 
@@ -4227,7 +4269,7 @@ const Game = {
     if (!s.betPeekIds) {
       const pool = s.hand.filter(t => !t.jokerTile);
       const ids = [];
-      while (ids.length < 3 && pool.length) ids.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0].id);
+      while (ids.length < 6 && pool.length) ids.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0].id);   // P69: 3 → 6
       s.betPeekIds = ids;
     }
     return s.betPeekIds.map(id => s.hand.find(t => t.id === id)).filter(Boolean);
@@ -4257,7 +4299,13 @@ const Game = {
     if (!this.kumarhaneOn() || s.status !== 'won' || s.runFinished || net <= 0) { s.hiLo = null; return; }
     s.hiLo = { stake: net, pot: net, step: 0, cur: this._hiLoTile(), last: null, phase: 'offer' };
   },
-  hiLoState() { const h = this.state && this.state.hiLo; return h ? { ...h, max: HILO_STEPS, canUndo: this._hiLoCanUndo() } : null; },
+  hiLoState() {
+    const h = this.state && this.state.hiLo;
+    if (!h) return null;
+    const odds = h.cur ? { hi: hiLoOdds(h.cur.number, 'hi'), lo: hiLoOdds(h.cur.number, 'lo') } : null;
+    if (odds && this.hasActive('hileliZar')) { odds.hi.p += 1 / 13; odds.lo.p += 1 / 13; }   // eşitlik senin
+    return { ...h, max: HILO_STEPS, canUndo: this._hiLoCanUndo(), odds };
+  },
   _hiLoCanUndo() { const s = this.state; return this.hasActive('hileliZar') && s.hiLoUndoStage !== s.stage; },
   hiLoAccept() {
     const h = this.state.hiLo;
@@ -4269,6 +4317,8 @@ const Game = {
   hiLoGuess(dir) {
     const s = this.state, h = s.hiLo;
     if (!h || h.phase !== 'play' || (dir !== 'hi' && dir !== 'lo')) return { ok: false };
+    const odd = hiLoOdds(h.cur.number, dir);
+    if (!odd.mult) return { ok: false, error: 'Bu yönde kazanma ihtimali yok.' };
     const next = this._hiLoTile();
     const tie = next.number === h.cur.number;
     const win = tie ? this.hasActive('hileliZar') : (dir === 'hi' ? next.number > h.cur.number : next.number < h.cur.number);
@@ -4278,7 +4328,9 @@ const Game = {
       this._hiLoLose();
       return { ok: true, win: false, tie, next };
     }
-    h.pot = Math.round(h.pot * HILO.mult); h.step++; h.cur = next;
+    h.pot = Math.round(h.pot * odd.mult); h.step++; h.cur = next;
+    h.lastMult = odd.mult;
+    if (this.hasActive('hileliZar')) s.permMult = round2(s.permMult + HILELI_ZAR_PERM);   // P69 · Hileli Zar
     if (h.step >= HILO_STEPS) { this.hiLoCashOut(); return { ok: true, win: true, tie, next, done: true }; }
     return { ok: true, win: true, tie, next };
   },
@@ -6534,16 +6586,16 @@ const Game = {
       flat += 120 * atesN;
       triggered.push({ id: 'ates', name: 'Ateş Taşı', text: `+${120 * atesN} puan` });
     }
-    /* P61 · 🎡 Rulet — açılımda en çok seçilen renk varsa +2.0x, yoksa −0.5x
-       (okey/joker taşı sayılmaz; eşitlik "en çok" değildir) */
+    /* P69 · 🎡 Rulet — açılımdaki seçilen renk taşı başına +RULET_PER; o renkten
+       hiç yoksa −RULET_MISS (okey/joker taşı sayılmaz) */
     if (s.ruletColor && this.hasActive('rulet') && ctx.tiles.length) {
       const cnt = { red: 0, blue: 0, yellow: 0, black: 0 };
       for (const t of ctx.tiles) if (!t.jokerTile && !this.isOkeyTile(t) && cnt[t.color] != null) cnt[t.color]++;
       const me = cnt[s.ruletColor];
-      const hit = me > 0 && Object.entries(cnt).every(([c, n]) => c === s.ruletColor || n < me);
+      const hit = me > 0;
       const rj = this.slotRecs().find(j => j.key === 'rulet');
       const ico = s.ruletColor === 'red' ? '🔴' : '⚫';
-      if (hit) { mult += RULET_HIT; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} tuttu +${RULET_HIT.toFixed(1)}x` }); }
+      if (hit) { const add = round2(RULET_PER * me); mult += add; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} ×${me} taş +${add.toFixed(1)}x` }); }
       else { mult -= RULET_MISS; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} tutmadı −${RULET_MISS.toFixed(1)}x` }); }
     }
     /* P59 — Öteki Dünya slottayken açılımdaki her Ay Taşı +AY.tileMult */
@@ -12165,7 +12217,7 @@ if (typeof module !== 'undefined') {
     COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, MOON_NAMES, moonIcon, moonPhaseOf, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, hiLoOdds, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_PERM, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, MOON_NAMES, moonIcon, moonPhaseOf, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

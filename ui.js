@@ -4615,26 +4615,36 @@
       te.classList.add('hl-tile'); if (cls) te.classList.add(cls);
       return te.outerHTML;
     };
-    const hm = () => (typeof HILO !== 'undefined' ? HILO.mult : 1.5);
-    const pots = (h) => { const out = [h.stake]; for (let k = 0; k < h.max; k++) out.push(Math.round(out[out.length - 1] * hm())); return out; };
-    const ladderHtml = (h) => pots(h).map((v, k) => `<span class="hl-rung${k === h.step ? ' on' : ''}${k < h.step ? ' past' : ''}">🪙 ${v}</span>`)
-      .join('<i class="hl-arr">→</i>');
+    /* P69 — ihtimale göre ödeme: adım çarpanı tahmine göre değiştiği için merdiven
+       artık önceden hesaplanmış tutarlar değil, ADIMLAR: geçilenler kazanılan pot,
+       sıradaki ?, kalanlar boş. */
+    const ladderHtml = (h) => {
+      const out = [`<span class="hl-rung${h.step === 0 ? ' on' : ' past'}">🪙 ${h.stake}</span>`];
+      for (let k = 1; k <= h.max; k++) {
+        const reached = k <= h.step;
+        out.push(`<span class="hl-rung${reached ? (k === h.step ? ' on' : ' past') : ''}">${reached && k === h.step ? '🪙 ' + h.pot : (reached ? '✓' : k + '/' + h.max)}</span>`);
+      }
+      return out.join('<i class="hl-arr">→</i>');
+    };
+    const oddBtn = (h, dir) => {
+      const o = h.odds[dir], pct = Math.round(100 * o.p);
+      if (!o.mult) return `<button class="btn primary hl-${dir}" disabled>${dir === 'hi' ? '⬆ ' + t('hiloHi') : '⬇ ' + t('hiloLo')}<small>%0</small></button>`;
+      return `<button class="btn primary hl-${dir}" data-a="${dir}">${dir === 'hi' ? '⬆ ' + t('hiloHi') : '⬇ ' + t('hiloLo')}`
+        + `<small>%${pct} · ×${o.mult.toFixed(2)} → 🪙 ${Math.round(h.pot * o.mult)}</small></button>`;
+    };
     const finish = () => { Game.hiLoClose(); ov.remove(); render(); done(); };
     const draw = (flash) => {
       const h = Game.hiLoState();
       if (!h) { finish(); return; }
       let body = '', foot = '';
       if (h.phase === 'offer') {
-        const p = pots(h);
         body = `<div class="hl-win">${t('hiloWinLine', h.stake)}</div>`
           + `<div class="hl-how"><div class="hl-how-t">${t('hiloHowTitle')}</div>`
-          + `<ol><li>${t('hiloHow1')}</li><li>${t('hiloHow2')}</li><li>${t('hiloHow3', p[1], p[p.length - 1], h.stake)}</li></ol></div>`
+          + `<ol><li>${t('hiloHow1')}</li><li>${t('hiloHow2')}</li><li>${t('hiloHow3odds', h.stake)}</li></ol></div>`
           + `<div class="hl-ladder">${ladderHtml(h)}</div>`;
         foot = `<button class="btn primary" data-a="accept">🎲 ${t('hiloAccept')}</button>`
           + `<button class="btn ghost" data-a="skip">${t('hiloSkip', h.stake)}</button>`;
       } else if (h.phase === 'play' || h.phase === 'undo') {
-        const n = h.cur.number, pHi = Math.round(100 * (13 - n) / 13), pLo = Math.round(100 * (n - 1) / 13);
-        const next = h.step < h.max ? Math.round(h.pot * hm()) : h.pot;
         body = `<div class="hl-table">`
           + (flash && flash.prev ? `<div class="hl-slot hl-old"><div class="hl-lbl">${t('hiloPrev')}</div>${hiTile(flash.prev, 'hl-prev')}</div>` : '')
           + `<div class="hl-slot"><div class="hl-lbl">${t('hiloOpen')}</div>${hiTile(h.cur)}</div>`
@@ -4643,14 +4653,13 @@
           + `</div>`
           + (flash ? `<div class="hl-flash ${flash.cls}">${flash.text}</div>` : '')
           + `<div class="hl-ladder">${ladderHtml(h)}</div>`
-          + (h.phase === 'play' ? `<div class="hl-now">${h.step > 0 ? t('hiloNowCash', h.pot) + ' · ' : ''}${t('hiloIfRight', next)}</div>` : '');
+          + (h.phase === 'play' ? `<div class="hl-now">${h.step > 0 ? t('hiloNowCash', h.pot) + ' · ' : ''}${t('hiloOddsLine')}</div>` : '');
         if (h.phase === 'undo') {
           body += `<div class="hl-text">${t('hiloUndoAsk')}</div>`;
           foot = `<button class="btn primary" data-a="undo">🎰 ${t('hiloUndo')}</button>`
             + `<button class="btn ghost" data-a="lose">${t('hiloAcceptLoss')}</button>`;
         } else {
-          foot = `<button class="btn primary hl-hi" data-a="hi">⬆ ${t('hiloHi')}<small>%${pHi}</small></button>`
-            + `<button class="btn primary hl-lo" data-a="lo">⬇ ${t('hiloLo')}<small>%${pLo}</small></button>`
+          foot = oddBtn(h, 'hi') + oddBtn(h, 'lo')
             + (h.step > 0 ? `<button class="btn ghost" data-a="cash">💰 ${t('hiloCash', h.pot)}</button>` : '')
             + `<div class="hl-tie">${t('hiloTieNote')}</div>`;
         }
