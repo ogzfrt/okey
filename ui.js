@@ -7578,7 +7578,8 @@
     'frankenstein',                           // P54 · Figma 383:975 — ilk Legendary çizimi
     'otekiDunya',                             // P55 · Figma 387:3 — Mythic 10/10
     'kaptan', 'ucKagitci',                    // P57 · Figma 390:2 (Legendary 2/15) + 390:44 (boss 20/20)
-    'medusa']);                               // P67 · Figma 420:2 (Legendary 3/15)
+    'medusa',                                 // P67 · Figma 420:2 (Legendary 3/15)
+    'nostradamus']);                          // P71 · Figma 428:2 (Legendary 4/15)
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',

@@ -7130,6 +7130,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
    Boss-Epic frame 279:9897'a Üçkağıtçı (390:44) geldi → ucKagitci (boss 20/20). */
 .jk-kaptan       { --jk-art: url('assets/game/joker/lanetli-kaptan.svg'); }
 .jk-medusa       { --jk-art: url('assets/game/joker/medusa.svg'); }   /* P67 · Figma 420:2 */
+.jk-nostradamus  { --jk-art: url('assets/game/joker/nostradamus.svg'); }   /* P71 · Figma 428:2 */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
