@@ -346,6 +346,7 @@
       /* Grup A — raund adları okey kültüründen: Gösterge (okeyi ilan eden
          taş) ve Çanak (ortadaki büyüyen pot) */
       normal1: 'Gösterge Eli', normal2: 'Çanak Eli', bossRound: 'BOSS RAUND',
+      casino1: 'Fiş Masası', casino2: 'VIP Masa',
       target: 'Hedef', pts: 'puan',
       rewardNormal: "20'ye kadar", rewardBoss: "35'e kadar + Epic Taş",
       rewardLine: (r) => `Ödül: ${r} · Store`,
@@ -1229,6 +1230,7 @@
       mcExpand: 'Expand card', mcCollapse: 'Collapse card',
       okeyOfStage: "THIS STAGE'S OKEY",
       normal1: 'Indicator Hand', normal2: 'Pot Hand', bossRound: 'BOSS ROUND',
+      casino1: 'Chip Table', casino2: 'VIP Table',
       target: 'Target', pts: 'pts',
       rewardNormal: 'up to 20', rewardBoss: 'up to 35 + Epic Tile',
       rewardLine: (r) => `Reward: ${r} · Store`,

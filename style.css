@@ -4747,6 +4747,9 @@ body.game-open #app {
   overflow: hidden;
 }
 body.game-open #app::before { display: none; }   /* açık tema swoosh'u */
+/* P69b — geniş ekranda (16:9'dan geniş) tuvalin yanlarındaki boşlukta menünün dekoratif
+   halkası görünüyordu (body::before yalnız menüde gizliydi): oyun/harita/store'da kapalı. */
+body.game-open::before { display: none; }
 body.game-open :is(#gameScreen, #mapScreen) { min-height: 0; height: 100%; gap: 0; }
 
 :is(#gameScreen, #mapScreen) .gm-stage {
@@ -9419,10 +9422,12 @@ html[data-theme="kumarhane"] {
 }
 
 /* --- masa zemini (kullanıcı: kenardaki masa kolu çerçevesi güzel durmadı → kaldırıldı) --- */
+/* P69b — çuha TUVALE değil bütün ekrana: geniş ekranda tuvalin yanında kesik kenar ve
+   ışık havuzu sınırı oluşmasın; tuval saydam, masa kenardan kenara kesintisiz. */
 html[data-theme="kumarhane"] body.game-open,
-html[data-theme="kumarhane"] #storeOverlay#storeOverlay { background: #0B4A2A; }
+html[data-theme="kumarhane"] #storeOverlay#storeOverlay { background: var(--cs-felt); }
 html[data-theme="kumarhane"] :is(#gameScreen, #mapScreen) .gm-stage,
-html[data-theme="kumarhane"] #storeOverlay #storeStage { background: var(--cs-felt); }
+html[data-theme="kumarhane"] #storeOverlay #storeStage { background: transparent; }
 /* tuvalin doğrudan zeminde duran yazıları çuha üstünde okunur olsun */
 html[data-theme="kumarhane"] :is(#gameScreen, #mapScreen) .gm-stage,
 html[data-theme="kumarhane"] #storeOverlay #storeStage { color: var(--gm-light); }

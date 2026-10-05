@@ -242,6 +242,13 @@
     // Harita: #trainerMapBar zaten "🧪 TRAINER" etiketi taşıyor (renderMap)
   }
 
+  /* P69c — raund adları: Temel Run'da okey dili (Gösterge Eli / Çanak Eli), Kumarhane
+     run'ında kumarhane dili (Fiş Masası / VIP Masa; kullanıcı seçimi 2026-10-05). */
+  function roundName(n) {
+    const casino = !!(Game.state && Game.kumarhaneOn && Game.kumarhaneOn());
+    return t((casino ? 'casino' : 'normal') + n);
+  }
+
   function showScreen(name) {
     el.menuScreen.classList.toggle('hidden', name !== 'menu');
     el.mapScreen.classList.toggle('hidden', name !== 'map');
@@ -1011,7 +1018,7 @@
     el.mapDeckCount.textContent = `${(s.deck || []).length}/${Game.totalTilesInPlay()}`;
 
     el.mapCards.innerHTML = '';
-    const names = [t('normal1'), t('normal2'), null];
+    const names = [roundName(1), roundName(2), null];
     const arts = ['art-indicator', 'art-pot', null];
     for (let ric = 1; ric <= 3; ric++) {
       const done = ric < s.roundInStage;
@@ -3565,7 +3572,7 @@
        yazar; stage ve raund sayaçları kendi kutularında. */
     el.roundChip.textContent = Game.isBossRound()
       ? T.bossName(s.boss.key, s.boss.name)
-      : t(s.roundInStage === 1 ? 'normal1' : 'normal2');
+      : roundName(s.roundInStage === 1 ? 1 : 2);
     el.stageVal.textContent = `${s.stage}/${chCount()}`;
     el.roundVal.textContent = `${s.roundInStage}/3`;
     el.coinVal.textContent = s.coins;   // Figma: "$" ayrı katman, ikon yok
