@@ -345,7 +345,7 @@
       okeyOfStage: "BU STAGE'İN OKEYİ",
       /* Grup A — raund adları okey kültüründen: Gösterge (okeyi ilan eden
          taş) ve Çanak (ortadaki büyüyen pot) */
-      normal1: 'Gösterge Eli', normal2: 'Çanak Eli', bossRound: 'BOSS RAUND',
+      normal1: 'Açılış Masası', normal2: 'Usta Masası', bossRound: 'BOSS RAUND',
       casino1: 'Fiş Masası', casino2: 'VIP Masa',
       target: 'Hedef', pts: 'puan',
       rewardNormal: "20'ye kadar", rewardBoss: "35'e kadar + Epic Taş",
@@ -908,7 +908,7 @@
       tutLostBtn: '↺ Raundu Tekrar Dene',
       tutStoreLocked: 'Öğreticiyi bitirmek için önce boss raundunu oyna!',
       tut: {
-        welcome: `<b>Hoş geldin!</b> Bu öğreticide gerçek bir <b>Stage</b> oynayacaksın (hedefler kolaylaştırıldı). Her stage <b>3 raund</b>: Gösterge Eli → Çanak Eli → <b>BOSS</b>. Raund kazandıkça coin toplar, store'dan joker alırsın.<br><br>👉 Ortadaki karttan <b>OYNA</b>'ya bas.`,
+        welcome: `<b>Hoş geldin!</b> Bu öğreticide gerçek bir <b>Stage</b> oynayacaksın (hedefler kolaylaştırıldı). Her stage <b>3 raund</b>: Açılış Masası → Usta Masası → <b>BOSS</b>. Raund kazandıkça coin toplar, store'dan joker alırsın.<br><br>👉 Ortadaki karttan <b>OYNA</b>'ya bas.`,
         goal: `Amaç: <b>4 tur içinde</b> şu hedef puana ulaşmak. Puanı, elinden taş kombinasyonları "açarak" kazanırsın. Soldaki <b>Raund Puan</b> çubuğu ilerlemeni gösterir.`,
         rack: `Alttaki <b>ıstaka</b> senin elin. Her taşın bir <b>rengi</b> ve <b>sayısı (1-13)</b> var. Taşa tıklayarak seçersin; sürükleyip bırakarak da dizebilirsin.`,
         sortRank: `<div class="tut-ex"><div><span class="tt red">7</span><span class="tt blue">7</span><span class="tt black">7</span> <b>PER</b> — aynı sayı, <u>farklı</u> renkler · <span class="tt yellow">3</span><span class="tt yellow">3</span> <b>ÇİFT</b> — aynı sayı, aynı renk</div></div>👉 <b>Sayı</b> butonuna bas: taşlar 1'den 13'e dizilir, aynı sayılar yan yana gelir — Per ve Çift'leri bir bakışta görürsün.`,
@@ -1229,7 +1229,7 @@
       mcRewardTip: (per, n) => `Each $ ≈ ${per} coins · ${n} × $ ≈ ${per * n} coins`,
       mcExpand: 'Expand card', mcCollapse: 'Collapse card',
       okeyOfStage: "THIS STAGE'S OKEY",
-      normal1: 'Indicator Hand', normal2: 'Pot Hand', bossRound: 'BOSS ROUND',
+      normal1: 'Opening Table', normal2: "Master's Table", bossRound: 'BOSS ROUND',
       casino1: 'Chip Table', casino2: 'VIP Table',
       target: 'Target', pts: 'pts',
       rewardNormal: 'up to 20', rewardBoss: 'up to 35 + Epic Tile',
@@ -1719,7 +1719,7 @@
       tutLostBtn: '↺ Retry Round',
       tutStoreLocked: 'Play the boss round first to finish the tutorial!',
       tut: {
-        welcome: `<b>Welcome!</b> In this tutorial you'll play a real <b>Stage</b> (with easier targets). Each stage has <b>3 rounds</b>: Indicator Hand → Pot Hand → <b>BOSS</b>. Win rounds to earn coins and buy jokers in the store.<br><br>👉 Press <b>PLAY</b> on the middle card.`,
+        welcome: `<b>Welcome!</b> In this tutorial you'll play a real <b>Stage</b> (with easier targets). Each stage has <b>3 rounds</b>: Opening Table → Master's Table → <b>BOSS</b>. Win rounds to earn coins and buy jokers in the store.<br><br>👉 Press <b>PLAY</b> on the middle card.`,
         goal: `Goal: reach the target score <b>within 4 turns</b>. You earn points by "opening" tile combinations from your hand. The <b>Raund Score</b> bar on the left tracks your progress.`,
         rack: `The <b>rack</b> below is your hand. Every tile has a <b>color</b> and a <b>number (1-13)</b>. Click a tile to select it; you can also drag & drop to rearrange.`,
         sortRank: `<div class="tut-ex"><div><span class="tt red">7</span><span class="tt blue">7</span><span class="tt black">7</span> <b>SET</b> — same number, <u>different</u> colors · <span class="tt yellow">3</span><span class="tt yellow">3</span> <b>PAIR</b> — same number, same color</div></div>👉 Press <b>Rank</b>: tiles line up 1→13 with equal numbers adjacent — Sets and Pairs pop out at a glance.`,

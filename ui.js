@@ -242,7 +242,7 @@
     // Harita: #trainerMapBar zaten "🧪 TRAINER" etiketi taşıyor (renderMap)
   }
 
-  /* P69c — raund adları: Temel Run'da okey dili (Gösterge Eli / Çanak Eli), Kumarhane
+  /* P69c — raund adları: Temel Run'da Açılış Masası / Usta Masası, Kumarhane
      run'ında kumarhane dili (Fiş Masası / VIP Masa; kullanıcı seçimi 2026-10-05). */
   function roundName(n) {
     const casino = !!(Game.state && Game.kumarhaneOn && Game.kumarhaneOn());
@@ -3568,7 +3568,7 @@
     syncOwnedEver(); // "YENİ!" rozeti için sahiplik geçmişi güncel tutulur
 
     /* Figma düzeni (2026-08-23): çipte artık "Stage 1/8 · Raund 1" değil
-       RAUND ADI (Gösterge Eli / Çanak Eli) — boss raundunda BOSS ADI —
+       RAUND ADI (Açılış Masası / Usta Masası) — boss raundunda BOSS ADI —
        yazar; stage ve raund sayaçları kendi kutularında. */
     el.roundChip.textContent = Game.isBossRound()
       ? T.bossName(s.boss.key, s.boss.name)
