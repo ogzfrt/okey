@@ -8625,6 +8625,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   aspect-ratio: 110 / 150; align-self: center; image-rendering: pixelated;
 }
 @media (max-width: 700px) { .rp-art.rp-art-img { width: 72px; height: auto; } }
+.rp-art-img.mode-base  { --mode-art: url('assets/game/mode/temel-run.svg'); }
+.rp-art-img.mode-hizli { --mode-art: url('assets/game/mode/kumarhane-run.svg'); }
 
 /* ============================================================
    P64 — BÜTÜN POP-UP'LAR OYUNUN UI DİLİNDE (kullanıcı 2026-10-04:
@@ -9313,3 +9315,33 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 #settingsOv .set-music { align-items: center; flex-wrap: nowrap; }
 #settingsOv .set-music input[type="range"] { width: 170px; accent-color: var(--gm-turn-on); cursor: pointer; }
 #settingsOv .set-music b { min-width: 64px; text-align: right; color: var(--gm-light); font: 700 15px/1 var(--gm-font); }
+
+/* P67e — Koleksiyon › Müzikler: parça kartları (görsel + ad + müzik fikri + ▶) */
+.col-page-grid.col-cat-music { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.col-mus {
+  display: flex; align-items: center; gap: 12px; min-width: 0; width: 100%; overflow: hidden;
+  background: var(--gm-light); color: var(--gm-dark); border-radius: 10px;
+  padding: 10px 12px; box-shadow: 0 5px 0 rgba(0, 0, 0, .35); box-sizing: border-box;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.col-mus.playing { box-shadow: 0 0 0 4px var(--gm-turn-on), 0 5px 0 rgba(0, 0, 0, .35); transform: translateY(-2px); }
+.col-mus .cm-art {
+  flex: 0 0 54px; width: 54px; height: 73px; border-radius: 4px;
+  background: var(--jk-art, none) no-repeat center / 100% 100%; image-rendering: pixelated;
+}
+.col-mus .cm-note {
+  display: flex; align-items: center; justify-content: center; font-size: 30px;
+  background: rgba(0, 0, 0, .12); box-shadow: inset 0 2px 0 rgba(0, 0, 0, .12);
+}
+.col-mus .cm-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.col-mus .cm-txt b { font: 700 16px/1.1 var(--gm-font); letter-spacing: -.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col-mus .cm-txt small { font: 500 12px/1.3 system-ui, sans-serif; opacity: .85; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.col-mus .cm-play {
+  flex: 0 0 46px; width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+  background: var(--gm-turn-on); color: var(--gm-dark); border: 3px solid var(--gm-dark);
+  font: 700 18px/1 var(--gm-font); box-shadow: 0 3px 0 rgba(0, 0, 0, .4); padding: 0;
+}
+.col-mus .cm-play:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.col-mus.playing .cm-play { background: var(--gm-dark); color: var(--gm-light); }
+@media (max-width: 900px) { .col-page-grid.col-cat-music { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .col-page-grid.col-cat-music { grid-template-columns: 1fr; } }
