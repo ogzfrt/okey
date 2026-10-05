@@ -4520,15 +4520,21 @@ body.menu-open #app {
    Tüm çocuk konumları Figma px'idir.
    ========================================================================== */
 
+/* OKEY PIXEL (2026-10-05) — oyunun kendi ana yazı tipi. Pixel Operator Mono 8
+   (CC0) temelinde; işaretli harfler baştan çizildi: ç ş ğ gövdesi artık
+   taban çizgisinde (eskiden 2 px yukarıda zıplıyordu), Ö Ü Ş Ç Ğ İ tam boy
+   (eskiden 5–6 px'e ezilmişti), üst işaret gövdeden 1 px boşlukla, çengel
+   taban çizgisinin altında. → ← ≈ ≤ ≥ ✓ ✗ ∞ − de aynı ızgarada. Metrikler
+   eskisiyle aynı → yerleşim kaymaz. Üretici: tools/fonts/build_okey_pixel.py */
 @font-face {
-  font-family: 'Pixel Operator Mono 8';
-  src: url('assets/fonts/pixel-operator-mono8.ttf') format('truetype');
+  font-family: 'Okey Pixel';
+  src: url('assets/fonts/okey-pixel.ttf') format('truetype');
   font-weight: 400;
   font-display: block;
 }
 @font-face {
-  font-family: 'Pixel Operator Mono 8';
-  src: url('assets/fonts/pixel-operator-mono8-bold.ttf') format('truetype');
+  font-family: 'Okey Pixel';
+  src: url('assets/fonts/okey-pixel-bold.ttf') format('truetype');
   font-weight: 700;
   font-display: block;
 }
@@ -4599,9 +4605,10 @@ body.menu-open #app {
      geri kalanından KÜÇÜK ve KAYIK çiziliyordu ("ÇEKTİĞİN" → "ÇEKTıĞıN").
      Eksik glifler artık fontun KENDİSİNE eklendi — fontun kendi parçaları
      (breve, Ç'nin çengeli, i'nin noktası) kullanılarak, aynı 8×8 piksel
-     ızgarasında. Bkz. tools/fonts/add_turkish_glyphs.py.
+     ızgarasında. 2026-10-05: yerini kendi fontumuz Okey Pixel aldı
+     (tools/fonts/build_okey_pixel.py) — bkz. @font-face notu.
      Pixelify Sans yalnız gerçek bir yedek olarak listede kalır. */
-  --gm-font: 'Pixel Operator Mono 8', 'Pixelify Sans', 'Courier New', monospace;
+  --gm-font: 'Okey Pixel', 'Pixelify Sans', 'Courier New', monospace;
 }
 
 /* ---------- TEMA: Mor (Figma 245:799 "RENK DENEME 1") ----------
@@ -5825,7 +5832,7 @@ body.game-open #toast { top: 44%; }
   background: var(--gm-panel, #BBD09E);
   border: 3px solid var(--gm-dark, #66862C);
   padding: 18px 20px; min-width: 340px; max-height: 80vh; overflow-y: auto;
-  font-family: 'Pixel Operator Mono 8', 'Pixelify Sans', monospace;
+  font-family: 'Okey Pixel', 'Pixelify Sans', monospace;
   color: #254122;
 }
 #runInfoPop h3 {
@@ -6746,7 +6753,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 #actBadge {
   position: fixed; z-index: 1150; pointer-events: none;
   box-sizing: border-box;
-  font-family: var(--gm-font, 'Pixel Operator Mono 8', 'Pixelify Sans', 'Courier New', monospace);
+  font-family: var(--gm-font, 'Okey Pixel', 'Pixelify Sans', 'Courier New', monospace);
   animation: abIn .12s ease-out;
 }
 /* P44 (kullanıcı çizimi 2026-09-14) — rozetin ŞEKLİ satır içi SVG (ui.js
@@ -7596,7 +7603,10 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   display: flex; align-items: center; justify-content: center;
   font: 700 24px/1 var(--gm-font);
   letter-spacing: -2.4px; text-transform: uppercase; color: #FFFFFF;
-  padding: 0 10px; text-align: center; white-space: nowrap; overflow: hidden;
+  /* İç pay 24px: ucu ucuna sığan adlar ("KELEBEK ETKİSİ" 24px'te 313/314)
+     şeridin kenarına yapışıyordu → fitText kenardan nefes payı bırakacak
+     kadar erken küçültür (ui.js renderMap). */
+  padding: 0 24px; text-align: center; white-space: nowrap; overflow: hidden;
 }
 
 /* Kart görseli: normal raundlarda tasarımın kendi maskot taşları,
@@ -8438,7 +8448,10 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
 }
 .ep-row.ep-wide { font-size: 16px; }
-.ep-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ep-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  /* Okey Pixel: büyük harf işareti (İ Ö Ç) gövdenin üstüne, çengel (ş ç) tabanın
+     altına taşar; "…" için gereken overflow onları kesmesin diye görünmez pay */
+  padding-block: .45em .3em; margin-block: -.45em -.3em; }
 .ep-val {
   background: var(--gm-dark); color: var(--gm-light); border-radius: 4px;
   padding: 7px 10px; min-width: 52px; text-align: center;
@@ -9338,7 +9351,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   background: rgba(0, 0, 0, .12); box-shadow: inset 0 2px 0 rgba(0, 0, 0, .12);
 }
 .col-mus .cm-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-align: left; }
-.col-mus .cm-txt b { font: 700 16px/1.1 var(--gm-font); letter-spacing: -.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col-mus .cm-txt b { font: 700 16px/1.1 var(--gm-font); letter-spacing: -.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding-block: .45em .3em; margin-block: -.45em -.3em; }
 .col-mus .cm-txt small { font: 500 12px/1.3 system-ui, sans-serif; opacity: .85; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .col-mus .cm-play {
   flex: 0 0 46px; width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
