@@ -7787,9 +7787,15 @@
   const COL_CATS = [
     { key: 'jokers', ico: '🃏', big: true, filters: ['all', 'common', 'rare', 'legendary', 'mythic'],
       items: () => byRarity(Object.values(JOKER_DEFS).filter(d => !d.casino && d.rarity !== 'epic' && d.rarity !== 'final')), card: (d) => colJokerCard(d) },
-    { key: 'boss', ico: '👹', items: () => Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic'), card: (d) => colJokerCard(d) },
-    /* P71 — FİNAL jokerleri: açılmamışsa gri/kilitli (Kumarhane finalini yenince açılır) */
-    { key: 'final', ico: '💋', items: () => Object.values(JOKER_DEFS).filter(d => d.rarity === 'final'), card: (d) => colFinalCard(d) },
+    /* P71b (kullanıcı: "final boss jokerleri ayrı bölüm olmasın") — Boss Jokerleri
+       artık iki nadirliği birlikte taşır: Hepsi / Boss / Final Boss çipleri, diğer
+       joker bölümleriyle aynı filtre mantığı (d.rarity === filtre). Final boss
+       jokerleri önde; açılmamışsa gri/kilitli (colFinalCard). */
+    { key: 'boss', ico: '👹', filters: ['all', 'epic', 'final'],
+      filterLabel: (f) => (f === 'epic' ? t('colF_boss') : t('colF_finalBoss')),
+      items: () => [...Object.values(JOKER_DEFS).filter(d => d.rarity === 'final'),
+        ...Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic')],
+      card: (d) => (d.rarity === 'final' ? colFinalCard(d) : colJokerCard(d)) },
     { key: 'casino', ico: '🎰', items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.casino)), card: (d) => colJokerCard(d) },
     { key: 'consum', ico: '🪄', items: () => byRarity(Object.values(CONSUMABLES)), card: (d) => colConsumCard(d) },
     { key: 'special', ico: '💠', items: () => Object.values(SPECIAL_TILES), card: (d) => colSpecialCard(d) },
@@ -8617,6 +8623,25 @@
 
   applyStaticTexts();
   Game.newRun(); // arka planda hazır dursun (harita için)
+
+  /* P71b — JOKER ÇİZİMLERİNİ ÖNCEDEN YÜKLE (arkadaş raporu: "Medusa koleksiyonda
+     bazen hiç görünmüyor"). Çizimli kartın kabuğu bilinçli olarak yok (arkası
+     şeffaf), bu yüzden SVG ağdan inene kadar kart TAMAMEN görünmez kalıyordu;
+     yavaş bağlantıda koleksiyonu ilk açan kartı hiç görmüyordu. Açılışta her
+     `jk-<anahtar>` için ekran dışı 1 px bir öğe çizilir → tarayıcı bütün joker
+     çizimlerini baştan indirir. Yol yine CSS'te (`--jk-art`), JS'te yol yok
+     (tek dosyalık sürüm kuralı). */
+  {
+    const pre = document.createElement('div');
+    pre.className = 'art-preload';
+    pre.setAttribute('aria-hidden', 'true');
+    for (const k of JOKER_ART) {
+      const d = document.createElement('div');
+      d.className = 'jk-' + k;
+      pre.appendChild(d);
+    }
+    document.body.appendChild(pre);
+  }
   if (location.hash === '#map') showScreen('map');
   else if (location.hash === '#game') showScreen('game');
   else showScreen('menu');
