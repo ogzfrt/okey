@@ -109,6 +109,20 @@ const TOTAL_STAGES = 8;
                        %33/%33/%33). Kötü açılış ihtimalini düşürür, tavanı
                        çok değiştirmez. Mythic ve Epic (boss ödülü) HARİÇ.
    ========================================================================== */
+/* P71 — Kumarhane FİNAL hedefi: uzman botla kalibre edildi (6000 run, KATLA=smart).
+   Finale gelenlerin karışık bahisle ≈%50'si, Güvenli ile ≈%32'si geçer; 2320'de
+   %93'tü (çok kolaydı). Kullanıcı onayı 2026-10-06; bahis çarpanı bunun üstüne biner.
+   RUN_MODES.targets içinde okunduğu için tablodan ÖNCE tanımlı olmak zorunda
+   (const TDZ); final boss tanımı BOSSES'in altında. */
+const FINAL_TARGET = 5200;   // P71 — bot ölçümüyle kalibre (BET=mix final geçiş ≈%50)
+const LADY_REFILL_TO = 21;   // P71 — tur başı çekişte el bu sayıya tamamlanır
+const LADY_STAR_MULT = 2;    // P71 — Sahnenin Yıldızı: seçilen jokerin katkısı ×2 (denge kolu)
+const LADY_USES = 6;         // P71 — boss jokerlerinin (2–4) belirgin şekilde üstü
+/* P71 — puanı _calcOpening'deki ÖZEL bloklardan gelen jokerler (effect()
+   fonksiyonu olmayanlar). Yıldız adayı = effect() olan + bu liste. */
+const STAR_SCORE_KEYS = ['ankaKusu', 'ayna', 'ejderha', 'godzilla', 'katalizor', 'kirby', 'kumarbaz',
+  'medusa', 'misunderstood', 'otekiDunya', 'rulet', 'terazi', 'terziIgne', 'tradeJokeri', 'truva',
+  'ucuncuTeker', 'vampir', 'yankee', 'yasakElma', 'zincir', 'ritim'];
 const RUN_MODES = {
   base: {
     key: 'base',
@@ -158,6 +172,7 @@ const RUN_MODES = {
       [ 660,  930, 1190],       // S2   (eski 825 · 1160 · 1490)
       [ 910, 1220, 1505],       // S3   (eski 1140 · 1525 · 1880)
       [1175, 1500, 1785],       // S4   (eski 1470 · 1875 · 2230)
+      [1175, 1500, FINAL_TARGET],   // S5 FİNAL — yalnız 3. sütun kullanılır (P71)
     ],
     /* P50 — kullanıcı: "coin kazancını arttırmayalım, normal run'daki gibi
        test edeceğim". ×1.5 → ×1. Diğer güç paketi (el +2, +0.5x, 3 açılış
@@ -179,6 +194,7 @@ const RUN_MODES = {
     startPermMult: 1.0,
     kumarhane: true,
     storeBonus: 2,          // P58 — stage sonu store'unda +2 joker rafı (raund arası store yok)
+    finalBoss: 'ladyLuck',  // P71 — 4 stage'in ÜSTÜNE eklenen tek raundluk FİNAL (stages 4 kalır: eğri onu okur)
     curveStretch: true,
     openJokers: 2,                                              // P61: 3 → 2
     openRarity: { common: 0.35, rare: 0.50, legendary: 0.15 },  // P61: eskisi %20 / %45 / %35
@@ -829,6 +845,16 @@ const BOSSES = [
   { key: 'aynaKral', name: 'Ayna Kral', desc: 'Her açılımın puanı birikir ve bir sonraki açılımdan düşülür.' },
 ];
 
+/* P71 · KUMARHANE FİNALİ (spec 2026-10-05) — modun SABİT final boss'u.
+   Rastgele boss havuzunda (BOSSES) DEĞİLDİR; yalnız `finalBoss` alanı olan
+   modun son stage'i olarak gelir. `reward` yenince kalıcı açılan joker,
+   `mascotItem` ana menü maskotunun eşya katmanı (çizim gelince bağlanır).
+   Final hedefi (FINAL_TARGET) RUN_MODES'un üstünde tanımlıdır. */
+const FINAL_BOSSES = {
+  ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', final: true, reward: 'ladyLuck', mascotItem: 'ruj',
+    desc: 'Her tur bir jokerini büyüler: puanı TERS döner, diğer etkisi susar. Istakandaki en yüksek taşı da çalar.' },
+};
+
 /* ==========================================================================
    PLAYTEST 17 · GRUP C — BOSS ZORLUK DAĞILIMI (kullanıcı kararı 2026-08-28)
    Sorun: boss sırası run başında 20 boss'un DÜZ KARIŞTIRILMASIYLA
@@ -925,6 +951,7 @@ const RARITY = {
   legendary: { tr: 'Legendary',   price: 14, sell: 7,  discount: 0.08, discPrice: 10, uses: 3 },
   mythic:    { tr: 'Mythic',      price: 20, sell: 10, discount: 0.04, discPrice: 15, uses: 1 },
   epic:      { tr: 'Boss (Epic)', price: 0,  sell: 8,  discount: 0,    discPrice: 0,  uses: 3 },  // store'da satılmaz
+  final:     { tr: 'Final',       price: 0,  sell: 7,  discount: 0,    discPrice: 0,  uses: 6 },  // P71 — yalnız final boss ödülü
 };
 
 /* ==========================================================================
@@ -2438,6 +2465,10 @@ const JOKER_DEFS = {
     desc: 'Açılımların puanı yansımada birikir. Açılımsız turda alırsın: 2 açılım ×1.5, 3+ açılım ×2.' },
   karaKedi: { key: 'karaKedi', name: 'Kara Kedi', rarity: 'epic', uses: 2,
     desc: 'En düşük taşı çekersen kalıcı 13 olur; açılımda +80 puan.' },
+  /* P71 — FİNAL nadirlik: yalnız Kumarhane finalinde Lady Luck'ı yenince
+     kalıcı açılır; havuzlarda (store/paket/açılış/bahis) ASLA çıkmaz. */
+  ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', rarity: 'final', uses: LADY_USES, icon: '💋',
+    desc: 'Çekişte elin 21\'e tamamlanır; her tur bir puan jokerin ×2 verir.' },
 };
 
 /* Tüccar (GDD 10) — her raund başında sunulan takas havuzu.
@@ -3319,7 +3350,7 @@ const Game = {
 
   /* MADDE D4: `mode` verilmezse temel run. Bilinmeyen bir anahtar gelirse
      sessizce temel run'a düşülür — eski kayıtlar ve eski çağrılar için. */
-  newRun(mode) {
+  newRun(mode, opts = {}) {
     this.trainerMode = false;
     const rm = RUN_MODES[mode] ? mode : 'base';
     /* MADDE D — modun AÇILIŞ GÜCÜ. İki alan da run'ın BAŞLANGIÇ
@@ -3389,6 +3420,7 @@ const Game = {
       jokers: [],
       backup: [],           // GDD 7.4 — Backup Slot (maks 2, dondurulmuş)
       consumables: [],      // GDD 6.5b — envanter (maks 3, run boyunca taşınır)
+      finalJokersGiven: [], // P71 — kalıcı final jokerleri (UI'dan gelen anahtarlar)
       storeTilePick: null,  // P29 · Grup O — store'da sunulan 10 taş
       tileMods: [],         // Grup K — tüketilebilirlerin kalıcı deste değişiklikleri
       specialTiles: [],     // GDD 6.5c — desteye kalıcı eklenen özel normal taşlar
@@ -3444,6 +3476,7 @@ const Game = {
        Sonuçlar BURADA belirlenir (kayıt/geri yükleme güvenli); UI onları
        `s.openingJokers` üzerinden çark animasyonuyla gösterir. */
     this._grantOpeningJokers();
+    this._grantFinalJokers(opts.finals);   // P71 — kalıcı açılmış final jokerleri (UI verir)
     this._startRound();
   },
 
@@ -3462,7 +3495,7 @@ const Game = {
     for (let i = 0; i < m.openJokers; i++) {
       const rarity = this._weightedRarity(m.openRarity);
       let cand = this.jokerPool(d => d.rarity === rarity && !taken.has(d.key));
-      if (!cand.length) cand = this.jokerPool(d => d.rarity !== 'epic'
+      if (!cand.length) cand = this.jokerPool(d => d.rarity !== 'epic' && d.rarity !== 'final'
         && d.rarity !== 'mythic' && !taken.has(d.key));
       if (!cand.length) break;
       const def = cand[Math.floor(this.rng() * cand.length)];
@@ -3499,6 +3532,31 @@ const Game = {
     }
     strip.push(winner);
     return strip;
+  },
+
+  /* P71 — kalıcı final jokerleri yeni run'ın 1. slotuna, taze süreyle.
+     Anahtar listesi UI'dan gelir (localStorage.okeyFinals); motor yalnız
+     'final' nadirlikli tanımları kabul eder. */
+  _grantFinalJokers(keys) {
+    const s = this.state;
+    s.finalJokersGiven = [];
+    for (const k of keys || []) {
+      const def = JOKER_DEFS[k];
+      if (!def || def.rarity !== 'final' || s.jokers.length >= this.slotCap()) continue;
+      const j = this._initJoker({ id: ++_jokerId, key: def.key, name: def.name, desc: def.desc,
+        rarity: 'final', usesLeft: this._usesFor(def, 'final'), fresh: true });
+      s.jokers.unshift(j);
+      s.finalJokersGiven.push(k);
+    }
+  },
+
+  /* P71 — run, modun final boss'u yenilerek bitti mi → açılacak joker */
+  finalBeaten() {
+    const s = this.state;
+    const m = runModeOf(s);
+    if (this.trainerMode || !m.finalBoss || !s.runFinished) return null;
+    if (!s.boss || s.boss.key !== m.finalBoss) return null;
+    return FINAL_BOSSES[m.finalBoss].reward;
   },
 
   /* Ağırlık sözlüğünden ({common: 0.33, ...}) rarity çeker. */
@@ -3562,6 +3620,9 @@ const Game = {
       if (!boss) boss = remaining.shift();
       if (boss) order.push(boss);
     }
+    /* P71 — modun sabit final boss'u en sona eklenir; nStages (eğri) değişmez */
+    const fb = runModeOf(this.state).finalBoss;
+    if (fb && FINAL_BOSSES[fb]) order.push(FINAL_BOSSES[fb]);
     return order;
   },
 
@@ -3646,8 +3707,38 @@ const Game = {
      efektini de (durum alanları dahil: terzi.color, truva.revealed vb.) taşır. */
   slotRecs() {
     const out = [];
-    for (const j of this.state.jokers) out.push(...this._recsOf(j));
+    const skip = this._recSkipIds();
+    for (const j of this.state.jokers) if (!skip.has(j.id)) out.push(...this._recsOf(j));
     return out;
+  },
+
+  /* P71 — Lady Luck: büyülü joker o tur yok sayılır (mekanikleri susar);
+     puan katkısı _calcOpening'de ters uygulanır. `_calcSkipId` yalnız
+     _calcOpening'in "jokersiz" hesabı içindir (yıldız). */
+  _recSkipIds() {
+    const s = this.state;
+    const ids = new Set();
+    if (this._calcSkipId != null) ids.add(this._calcSkipId);
+    if (s && s.bossCharmId != null && !this._calcWithCharm && this._ladyCurseOn()) ids.add(s.bossCharmId);
+    return ids;
+  },
+  _ladyCurseOn() {
+    const s = this.state;
+    return !!(s && s.boss && s.boss.key === 'ladyLuck' && this.bossOn());
+  },
+  /* Lady Luck çalışıyor mu — Avukat boss'u onu bu tur susturduysa tamamlama
+     ve yıldız durur, süre yine işler (spec §3 etkileşimler). */
+  _ladyActive() {
+    const s = this.state;
+    if (!this.hasActive('ladyLuck')) return false;
+    return !(this.bossOn() && s.boss && s.boss.key === 'avukat' && s.bossMutedJoker === 'ladyLuck');
+  },
+  _ladyStarCandidates() {
+    const s = this.state;
+    if (this._ladyCurseOn()) return [];   // Lady Luck boss raundında yıldız ilan edilmez
+    const muted = this.bossOn() && s.boss && s.boss.key === 'avukat' ? s.bossMutedJoker : null;
+    return s.jokers.filter(j => j.key !== 'ladyLuck' && this._recsOf(j).some(r =>
+      r.key !== muted && (typeof JOKER_DEFS[r.key]?.effect === 'function' || STAR_SCORE_KEYS.includes(r.key))));
   },
 
   /* Bir slot kaydının taşıdığı TÜM efekt kayıtları: kendisi + Vasiyet
@@ -3951,7 +4042,7 @@ const Game = {
           s.roundStartNotes.push(`${b.name} backup süresi doldu → Ana Slot'a geçti`);
         } else {
           // ana slot dolu → en düşük nadirlik otomatik satılır (GDD 7.4)
-          const order = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+          const order = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
           const lowest = [...s.jokers].sort((a, c) => order.indexOf(a.rarity) - order.indexOf(c.rarity))[0];
           s.jokers = s.jokers.filter(x => x !== lowest);
           gainCoins(s, jokerSell(lowest.key, lowest.rarity));
@@ -3972,7 +4063,9 @@ const Game = {
     }
     if (s.roundInStage >= 3) {
       s.stage++;
-      s.roundInStage = 1;
+      /* P71 — final stage normal raund taşımaz: doğrudan boss raunduna açılır */
+      s.roundInStage = this.isFinalStage() ? 3 : 1;
+      if (this.isFinalStage()) s.roundStartNotes.push('💋 FİNAL: Lady Luck masada seni bekliyor');
       s.okey = this._rollOkey();
       s.roundStartNotes.push(
         `Stage ${s.stage} — yeni okey ilan edildi: ${COLOR_TR[s.okey.color]} ${s.okey.number}`);
@@ -4003,7 +4096,15 @@ const Game = {
        sertleşmeye devam eder (bkz. targetFor, tablo dışı dal). */
     if (this.state && this.state.endless) return Infinity;
     if (this.trainerMode && this.state.trainerStages) return this.state.trainerStages;
-    return runModeOf(this.state).stages;   // MADDE D4 — Hızlı Run'da 4
+    const m = runModeOf(this.state);
+    return m.stages + (m.finalBoss ? 1 : 0);   // MADDE D4 · P71 — Kumarhane 4 + FİNAL
+  },
+
+  /* P71 — finale gelindi mi: modun 4 stage'inin ÜSTÜNDEKİ tek raundluk stage */
+  isFinalStage() {
+    const s = this.state;
+    const m = runModeOf(s);
+    return !this.trainerMode && !!m.finalBoss && s.stage === m.stages + 1;
   },
 
   /* P53 — SONSUZ MODA GEÇ. Zafer ekranındaki "Devam et" düğmesi çağırır.
@@ -5112,6 +5213,9 @@ const Game = {
     // Grup F — yeni boss koşullarının raund bazlı durumu
     s.bossFreedomMarks = [];  // Freedom boss: zorunlu kullanılacak işaretliler
     s.bossMutedJoker = null;  // Avukat boss: bu tur susturulan joker
+    s.bossCharmId = null;  // P71 Lady Luck: bu tur büyülenen joker (slot id)
+    s.bossStolenTile = null;
+    s.bossStolenFace = null;  // P71 Lady Luck: bu tur çalınan taşın yüzü ("Mavi 13") — UI bossTurnNotes
     s.bossOracle = null;      // Kahin boss: bu turun zorunlu kehaneti
     s.bossOracleMissed = false;
     s.bossMirrorDebt = 0;     // Ayna Kral boss: ters yansıma borcu
@@ -5120,7 +5224,7 @@ const Game = {
 
     // Boss raundu (GDD 13) — kısıtlama stage başında bilinir, 3. raundda
     // uygulanır. Boss, run başında karılan tekrarsız sıradan gelir (madde 21).
-    if (!s.boss || s.roundInStage === 1) {
+    if (!s.boss || s.roundInStage === 1 || this.isFinalStage()) {
       const ord = s.bossOrder || BOSSES;
       s.boss = ord[(s.stage - 1) % ord.length];
     }
@@ -5619,6 +5723,30 @@ const Game = {
       }
     }
 
+    /* LADY LUCK (P71 · Kumarhane finali) — Göz Kamaştırma: her tur bir joker
+       büyülenir (puan katkısı ters, diğer etkileri susar) ve ıstakadaki en
+       yüksek sayılı taş çalınır (okey/sahte okey/joker taşı hariç). */
+    if (key === 'ladyLuck') {
+      s.bossCharmId = null;
+      s.bossStolenFace = null; s.bossStolenTile = null;
+      if (s.jokers.length) {
+        const j = s.jokers[Math.floor(this.rng() * s.jokers.length)];
+        s.bossCharmId = j.id;
+        events.push(`💋 Lady Luck ${j.name} jokerini büyüledi — bu tur puanı TERS döner, diğer etkisi susar`);
+      }
+      const cand = plain();
+      if (cand.length) {
+        const top = Math.max(...cand.map(t => t.number));
+        const hi = cand.filter(t => t.number === top);
+        const t = this._takeTile(hi[Math.floor(this.rng() * hi.length)], 'lady-luck');
+        s.bossStolenFace = `${COLOR_TR[t.color]} ${t.number}`;
+        s.bossStolenTile = { color: t.color, number: t.number };   // UI yerelleştirmesi için
+        // UI'ın ortadaki büyük bildirimi (cheatFlash kuyruğu) çalınan taşı duyurur
+        if (Array.isArray(s.cheatFlash)) s.cheatFlash.push({ side: 'boss', kind: 'ladySteal', color: t.color, number: t.number });
+        events.push(`💋 Lady Luck kalbini çaldı: ${COLOR_TR[t.color]} ${t.number}`);
+      }
+    }
+
     /* KAHİN — "Her tur 1 ZORUNLU kehanet; uymazsan o turun tüm puanı
        sıfırlanır. Tüm turlarda uyarsan raund sonunda +500 puan." */
     if (key === 'kahin') {
@@ -5713,6 +5841,7 @@ const Game = {
   /* Tur başı efektleri — raund başında ve her çekişten sonra çalışır */
   _onTurnStart(events) {
     const s = this.state;
+    s.ladyStarId = null;   // P71 — yıldız _bossTurnStart'tan SONRA seçilir (aşağıda)
     /* ÜÇ KAĞITÇI (BOSS) — ters gelen taş BİR tur ters kalır: bu turda çekilenler
        (`faceDownFresh`) bekler, bir önceki turun ters taşları şimdi açılır. */
     for (const t of s.hand) {
@@ -5808,6 +5937,16 @@ const Game = {
         events.push(`👹 Kelebek yasağı: bu tur ${{ per: 'Per', sirali: 'Sıralı', cift: 'Çift' }[s.bossBan]} açarsan puan %30 kesilir`);
       }
       this._bossTurnStart(events); // Grup F: yeni 12 boss'un tur başı etkileri
+    }
+    /* P71 — Sahnenin Yıldızı: her tur puan veren bir joker ×2. Boss tur başından
+       SONRA seçilir ki _ladyActive() bu turun Avukat susturmasını görsün. */
+    if (this._ladyActive()) {
+      const c = this._ladyStarCandidates();
+      if (c.length) {
+        const j = c[Math.floor(this.rng() * c.length)];
+        s.ladyStarId = j.id;
+        events.push(`⭐ Sahnenin Yıldızı: ${j.name} bu tur ×${LADY_STAR_MULT} veriyor`);
+      }
     }
     // Fatality sınırı — joker VEYA boss koşulu olarak (GDD 10).
     // Playtest 2: eski formül (el toplamının %60'ı) çok kolay aşılıyordu;
@@ -6191,7 +6330,7 @@ const Game = {
     /* P61 — Kumarhane jokerleri (casino) yalnız Kumarhane Run'da çıkar */
     const casinoOk = !!(this.state && this.kumarhaneOn());
     return Object.values(JOKER_DEFS)
-      .filter(d => !d.trainerOnly && (casinoOk || !d.casino) && (!filterFn || filterFn(d)));
+      .filter(d => !d.trainerOnly && d.rarity !== 'final' && (casinoOk || !d.casino) && (!filterFn || filterFn(d)));
   },
 
   tileValue(tile, combo) {
@@ -6320,7 +6459,81 @@ const Game = {
       a + Math.max(...c.tiles.map(t => c.values?.get(t.id) ?? t.number)), 0);
   },
 
+  /* P71 — Lady Luck sarmalayıcısı. _calcOpeningRaw SAF bir hesaptır (durum
+     yazmaz), bu yüzden jokerli ve jokersiz iki kez çağrılıp aradaki fark
+     jokerin GERÇEK katkısı olarak ters (lanet) ya da ×2 (yıldız) uygulanır.
+     30 ayrı joker bloğuna tek tek dokunmamak bilinçli. */
   _calcOpening() {
+    const s = this.state;
+    const charm = !s.jokersDisabled && s.bossCharmId != null && this._ladyCurseOn()
+      && s.jokers.find(j => j.id === s.bossCharmId);
+    if (charm) {
+      // büyülü joker ilk geçişte zaten yok sayılıyor; ikinci geçişte geri gelir
+      const [wo, full] = this._calcTwice(
+        () => this._calcOpeningRaw(),
+        () => {
+          this._calcWithCharm = true;
+          try { return this._calcOpeningRaw(); } finally { this._calcWithCharm = false; }
+        });
+      return this._ladyMix(wo, full, -1, charm.name);
+    }
+    const star = s.ladyStarId != null && !s.jokersDisabled && this._ladyActive()
+      && s.jokers.find(j => j.id === s.ladyStarId);
+    if (star) {
+      // ilk geçiş yıldızlı jokerle (full), ikinci geçiş onsuz (wo) — aynı zarlar
+      const [full, wo] = this._calcTwice(
+        () => this._calcOpeningRaw(),
+        () => {
+          this._calcSkipId = star.id;
+          try { return this._calcOpeningRaw(); } finally { this._calcSkipId = null; }
+        });
+      return this._ladyMix(wo, full, LADY_STAR_MULT, star.name);
+    }
+    return this._calcOpeningRaw();
+  },
+
+  /* P71 — iki hesap (jokerli/jokersiz) AYNI zarları görsün: ilk geçişin rng
+     çekilişleri kaydedilir, ikinci geçiş aynılarını tekrar okur; akış yalnız
+     bir kez ilerler (Kelebek _calcOpeningRaw içinde zar atıyor). `rng` Game'in
+     kendi özelliğidir (Math.random); gölgelenir ve aynı referansa geri alınır. */
+  _calcTwice(first, second) {
+    const real = this.rng, tape = [];
+    let i = 0, a, b;
+    this.rng = () => { const v = real.call(this); tape.push(v); return v; };
+    try { a = first(); } finally { this.rng = real; }
+    this.rng = () => (i < tape.length ? tape[i++] : real.call(this));
+    try { b = second(); } finally { this.rng = real; }
+    return [a, b];
+  },
+
+  /* wo = joker yokken, full = joker varken; k katkının kaç katı uygulanır
+     (−1 ters, LADY_STAR_MULT yıldız). Ters uygulamada taban: çarpan ≥ 1,
+     puan ≥ min(jokersiz puan, ceil(ham)) — taban lanetten fayda üretmez. */
+  _ladyMix(wo, full, k, name) {
+    const dF = full.final - wo.final;
+    /* Lanette büyülü jokerin puan dışı yan çıktıları (kelebekCoin, damgaBonus,
+       raw/parts/flat) SUSAR → taban `wo`; yıldızda (k>0) taban `full`. */
+    const out = Object.assign({}, k < 0 ? wo : full);
+    let fin = wo.final + k * dF;
+    let car = (full.carpan != null && wo.carpan != null) ? round2(wo.carpan + k * (full.carpan - wo.carpan)) : null;
+    if (k < 0) {
+      /* Lanet ASLA fayda üretmez: büyülü jokerin net katkısı negatifse (dF<0)
+         tersi pozitif olurdu → sonuç jokersiz sonucu (wo) geçemez. */
+      if (car != null) car = Math.max(1, Math.min(car, wo.carpan));
+      fin = Math.min(fin, wo.final);
+      fin = Math.max(fin, Math.min(wo.final, Math.ceil(wo.raw || 0)));
+      out.triggered = [...(wo.triggered || []), { id: 'ladyLuck', name: 'Lady Luck',
+        text: `💋 ${name} büyülü: ${fin - wo.final >= 0 ? '+' : ''}${Math.round(fin - wo.final)} puan` }];
+    } else {
+      out.triggered = [...(full.triggered || []), { id: 'ladyLuck', name: 'Lady Luck',
+        text: `⭐ ${name} sahnede ×${k}: +${Math.round(fin - full.final)} puan` }];
+    }
+    out.final = Math.max(0, Math.round(fin));
+    if (car != null) { out.carpan = car; out.carpanText = `${car.toFixed(1)}x`; }
+    return out;
+  },
+
+  _calcOpeningRaw() {
     const s = this.state;
     const ctx = this._buildCtx();
     const triggered = [];
@@ -8470,11 +8683,14 @@ const Game = {
     }
 
     // çekiş — Grup A: el üst sınırına (MAX_HAND=21) kırpılır; Kara Kedi dönüşümü
-    const wantN = 5 + (s.permDraw || 0) // kalıcı çekiş yükseltmesi (madde 24 · Bol Çekiş, eski adı Derin Nefes)
+    let wantN = 5 + (s.permDraw || 0) // kalıcı çekiş yükseltmesi (madde 24 · Bol Çekiş, eski adı Derin Nefes)
       + (s.tuccarDraw || 0)  // Tüccar takası: bu raund +1 taş
       + (s.bonusDraw || 0)   // Grup E — Yıldız Taşı: açılımda kazanılan ekstra çekiş
       - (s.appleEaten ? APPLE_DRAW_CUT : 0);   // P31 · Grup I — cennetten kovulma
     if (s.bonusDraw) { events.push(`⭐ Yıldız Taşı: +${s.bonusDraw} ekstra taş`); s.bonusDraw = 0; }
+    /* P71 — LADY LUCK · Tamamlama: el 21'in altındaysa eksik kadar çek
+       (normal çekişten azsa normal çekiş geçerli; ıstaka sınırı aşağıda) */
+    if (this._ladyActive()) wantN = Math.max(wantN, LADY_REFILL_TO - this.realHandCount());
     const drawN = Math.max(0, Math.min(wantN, MAX_HAND - this.realHandCount()));
     /* TANRININ ELİ (P31 · Grup E) — otomatik çekiş YOK: hak `s.godPick`
        olarak bekler, oyuncu destesinden seçer (godPickTake). Tur yine
@@ -8559,7 +8775,7 @@ const Game = {
   _ageJokers(notes) {
     const s = this.state;
     // Sarmaşık + Avukat — en nadir jokeri koruma (GDD 9/10)
-    const rarOrder = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+    const rarOrder = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
     /* PLAYTEST 22 · GRUP B — SARMAŞIK ARTIK DESTE JOKERLERİNİ DE SARAR.
        Eskiden aday havuzu yalnız `s.jokers`ti (Ana Slot). Oysa Zombie,
        Freedom Fighters, Ahtapot gibi DESTE jokerleri de aynı süre
@@ -8762,6 +8978,7 @@ const Game = {
       return;
     }
     s.status = 'won';
+    s.ladyStarId = null;   // P71 — raund bitti: store'da eski ⭐ rozeti kalmasın
     s.winStreak++;
     if (s.wonOnTurn == null) s.wonOnTurn = s.turn;
     const boss = this.isBossRound();
@@ -8924,6 +9141,7 @@ const Game = {
      iki bitiş de aynı ödülü verir. */
   _grantBossEpic() {
     const s = this.state;
+    if (s.boss && s.boss.final) return;   // P71 — final ödülü run SONUNDA kalıcı açılır, run içinde verilmez
     const def = JOKER_DEFS[s.boss.key];
     if (!def) return;
     const j = this._initJoker({ id: ++_jokerId, key: def.key, name: def.name, desc: def.desc,
@@ -9147,7 +9365,7 @@ const Game = {
         notes.push(`🎁 Kayıp Sandık: envanter dolu — ${def.name} yerine +${def.price} coin (toplam +${UP_VAL.kayipSandik + def.price})`);
       }
     } else if (key === 'ustaninMuhru') {
-      const order = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+      const order = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
       const cand = [...s.jokers, ...s.backup, ...s.deckJokers].filter(j => !j.runLong);
       const best = cand.sort((a, b) => order.indexOf(b.rarity) - order.indexOf(a.rarity))[0];
       if (best) {
@@ -11965,6 +12183,16 @@ const Game = {
       delete st.store.pack;
     }
     if (st.store?.packs) for (const p of st.store.packs) if (!p.kind) p.kind = 'special';
+    /* P71 göçü — final boss'lu mod (Kumarhane) için P71 ÖNCESİ kayıtta 4
+       girişli bossOrder vardır; S5'te ord[(5-1)%4] = S1 boss'u + FINAL_TARGET
+       hedefi gelirdi. Final boss sıranın sonuna eklenir. Lady Luck jokeri
+       OTOMATİK verilmez (açılış ödülü yalnız newRun'da, UI kalıcılığından). */
+    {
+      const fb = RUN_MODES[st.runMode]?.finalBoss;
+      if (fb && FINAL_BOSSES[fb] && Array.isArray(st.bossOrder)
+          && !st.bossOrder.some(b => b && b.key === fb))
+        st.bossOrder.push(FINAL_BOSSES[fb]);
+    }
     this.state = st;
     /* id sayaçlarını mevcut kayıttaki en büyük id'nin üstüne taşı.
        PLAYTEST 16 · GRUP E/F — KÖK NEDEN DÜZELTMESİ: bu tarama eskiden
@@ -12214,7 +12442,8 @@ if (typeof module !== 'undefined') {
   module.exports = {
     Game, detectCombo, isCift, isPer, isSirali, getCarpan, computeScore,
     sortPer, sortCift, sortSirali, createDeck, resolveCombo,
-    COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, overshootBonus, stageCoinScale,
+    COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, FINAL_BOSSES, FINAL_TARGET,
+    LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
     SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, hiLoOdds, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_PERM, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, MOON_NAMES, moonIcon, moonPhaseOf, isMoonTile,

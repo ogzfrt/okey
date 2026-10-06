@@ -7935,6 +7935,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 #jokerTip.tr-epic      { --tip-accent: #9B59B6; --tip-ink: #150620; }
 #jokerTip.tr-legendary { --tip-accent: #F5A623; --tip-ink: #1F1200; }
 #jokerTip.tr-mythic    { --tip-accent: #FF3CAC; --tip-ink: #23001A; --tip-bg: #1B0F2B; }
+#jokerTip.tr-final     { --tip-accent: #E6BE4E; --tip-ink: #2A0008; --tip-bg: #3A0A14; }
 /* Nadirliği olmayan kartlar (değnek/özel taş/boss koşulu) kendi etiketiyle
    gelir; onlarda şerit rengi nötr kalır. */
 #jokerTip.tr-none      { --tip-accent: #C7CEE0; }
@@ -9486,3 +9487,24 @@ html[data-theme="kumarhane"] .gm-stage .map-card .mc-t-rew :is(.mc-coins, .mc-co
 html[data-theme="kumarhane"] :is(.gm-stage, #storeStage) .gm-score-val,
 html[data-theme="kumarhane"] :is(.gm-stage, #storeStage) .gm-score-val * { color: var(--gm-dark) !important; }
 html[data-theme="kumarhane"] .gm-stage #turnIndicator.gm-turn { color: var(--cs-gold); text-shadow: 0 2px 0 rgba(0, 0, 0, .5); }
+
+/* P71 — FİNAL nadirlik (Lady Luck): kırmızı-altın */
+.r-final { border-left-color: #C8102E; box-shadow: 0 0 14px rgba(230,190,78,.45); }
+.joker-tile.r-final { outline: 3px solid #E6BE4E; outline-offset: -3px; }
+.store-item.r-final, .pk-card.r-final { border-top-color: #C8102E; }
+/* büyülü / sahnedeki joker rozetleri */
+.joker-tile.ll-charm, .joker-tile.ll-star { position: relative; }
+.joker-tile .ll-badge {
+  position: absolute; top: -10px; left: -10px; z-index: 3; font-size: 22px; line-height: 1;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)); pointer-events: none;
+}
+/* büyü tonu yalnız içeriğe (çizim / ad): rozet ve `.dying` görünümü etkilenmez */
+.joker-tile.ll-charm .jt-art, .joker-tile.ll-charm .jt-name { filter: saturate(.6) hue-rotate(-20deg); }
+/* final haritası: tek kart ortada (mc-2'nin yeri) */
+.gm-stage .map-card.mc-final { left: 829px; }
+/* koleksiyon: açılmamış final kartı */
+.col-locked { filter: grayscale(1) brightness(.55); }
+.ep-note.ep-final { color: #E6BE4E; font-weight: 700; }
+/* Trainer / Koleksiyon başlıkları ve filtre çipi */
+.col-rar-head.tr-final { color: #C8102E; }
+.tr-rar.tr-final { color: #C8102E; }

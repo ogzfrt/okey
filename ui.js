@@ -212,6 +212,9 @@
 
   // Bu run'ın toplam stage sayısı gösterimi (Sonsuz Mod → ∞)
   const chCount = () => Game.totalStages() === Infinity ? '∞' : Game.totalStages();
+  /* P71 — Kumarhane finalinde "5/5" yerine FİNAL yazılır (stage ve raund göstergeleri) */
+  const stageText = (s) => Game.isFinalStage() ? t('stageFinal') : `${s.stage}/${chCount()}`;
+  const roundText = (s) => Game.isFinalStage() ? t('mapFinal') : `${s.roundInStage}/3`;
 
   /* Kalıcı "TRAINER MODU" göstergesi (Grup H): trainer modunda TÜM
      ekranlarda üstte durur, oyuncu ana oyunla karıştırmasın.
@@ -992,8 +995,9 @@
   function renderMap() {
     const s = Game.state;
     if (mapOpenDoneRound !== s.roundInStage) { mapOpenDone.clear(); mapOpenDoneRound = s.roundInStage; }
-    el.mapStage.textContent = `${s.stage}/${chCount()}`;
-    el.mapRound.textContent = `${s.roundInStage}/3`;
+    const finalOnly = Game.isFinalStage();   // P71 — final stage'inde tek kart (Lady Luck)
+    el.mapStage.textContent = stageText(s);
+    el.mapRound.textContent = roundText(s);
     el.mapScoreVal.textContent = String(s.score ?? 0);
     el.mapCoinVal.textContent = String(s.coins);
     el.mapOkey.innerHTML = '';
@@ -1021,6 +1025,7 @@
     const names = [roundName(1), roundName(2), null];
     const arts = ['art-indicator', 'art-pot', null];
     for (let ric = 1; ric <= 3; ric++) {
+      if (finalOnly && ric < 3) continue;
       const done = ric < s.roundInStage;
       const active = ric === s.roundInStage;
       const boss = ric === 3;
@@ -1030,7 +1035,7 @@
       const folded = done && !mapOpenDone.has(ric);
       card.className = 'map-card mc-' + ric
         + (active ? ' active' : done ? ' done' : ' locked') + (boss ? ' boss' : '')
-        + (folded ? ' collapsed' : '');
+        + (folded ? ' collapsed' : '') + (finalOnly ? ' mc-final' : '');
       const target = active ? s.target : Game.targetFor(s.stage, ric);
 
       const btn = document.createElement('button');
@@ -1629,7 +1634,7 @@
     /* epic */
     kirby: '🌸', cellat: '🪓', dervish: '🌀', misunderstood: '🎭', zombie: '🧟',
     uzayli: '👽', ahtapot: '🐙', ucKagitci: '🃏', otekiDunya: '🌗', terziIgne: '📍', freedom: '🗽',
-    avukat: '⚖️', kahin: '👁️', tuccar: '💼', fatality: '💀', ritim: '🥁',
+    avukat: '⚖️', ladyLuck: '💋', kahin: '👁️', tuccar: '💼', fatality: '💀', ritim: '🥁',
     corporates: '🏢', godzilla: '🦖', kelebek: '🦋', aynaKral: '🪞', karaKedi: '🐈‍⬛',
   };
   const jokerIcon = (key) => JOKER_ICONS[key] || (JOKER_DEFS[key]?.mech === 'deck' ? '◈' : '🃏');
@@ -1855,6 +1860,10 @@
       + (!opts.backup && !runLong && j.usesLeft <= 1 ? ' dying' : '')
       + (runLong ? ' run-long' : '');
     tile2.dataset.jid = j.id;
+    /* P71 — Lady Luck: büyülü (💋) ve sahnedeki (⭐) joker işaretleri */
+    const gs = Game.state;
+    if (gs && gs.bossCharmId === j.id && Game.isBossRound() && gs.boss && gs.boss.key === 'ladyLuck') tile2.classList.add('ll-charm');
+    if (gs && gs.ladyStarId === j.id) tile2.classList.add('ll-star');
     if (!jokerSeen.has(j.id)) { jokerSeen.add(j.id); tile2.classList.add('jt-enter'); }
     if (j.noSell) tile2.classList.add('locked-sell');
     /* BOSS (EPIC) JOKER ÇİZİMİ SLOTTA (kullanıcı isteği 2026-09-10).
@@ -1889,6 +1898,13 @@
         : `<div class="jt-name">${(j.noSell ? '🔒 ' : '')}${(j.fused && j.fused.length ? '⚗ ' : '')}${T.name(j)}</div>`) +
       `<span class="jt-uses${opts.backup ? ' frozen' : (!runLong && j.usesLeft <= 1 ? ' danger' : '')}">` +
       (opts.backup ? `❄${j.waitLeft}` : (runLong ? '∞' : j.usesLeft)) + `</span>`;
+    /* P71 — 💋/⭐ rozeti gerçek öğe (::after legendary parıltısıyla çakışırdı) */
+    if (tile2.classList.contains('ll-charm') || tile2.classList.contains('ll-star')) {
+      const lb = document.createElement('span');
+      lb.className = 'll-badge';
+      lb.textContent = tile2.classList.contains('ll-charm') ? '💋' : '⭐';
+      tile2.appendChild(lb);
+    }
     // Godzilla şarj rozeti — o anki gerçek seviye canlı görünür
     if (!opts.backup && (j.key === 'godzilla' || (j.fused || []).some(f => f.key === 'godzilla'))) {
       const lv = Game.state.godzillaLevel || 0;
@@ -2751,6 +2767,9 @@
       title = t('cheatBossExposedTitle');
       body = f.back ? t('cheatBossExposedBack', f.coin, T.color(f.back.color), f.back.number)
         : t('cheatBossExposedBody', f.coin);
+    } else if (f.kind === 'ladySteal') {
+      title = t('ladyStealTitle');
+      body = t('cheatBossStealHand', T.color(f.color), f.number);
     } else if (f.kind === 'stealHand') {
       title = t('cheatBossHitTitle');
       body = t('cheatBossStealHand', T.color(f.color), f.number);
@@ -2794,7 +2813,7 @@
       `<div class="ob-box">` +
       `<img src="maskot.png" alt="maskot">` +
       `<div class="ob-txt">` +
-      `<div class="ob-title">${t('obTitle', s.stage, chCount())}</div>` +
+      `<div class="ob-title">${Game.isFinalStage() ? t('stageFinal') : t('obTitle', s.stage, chCount())}</div>` +
       `<div class="ob-sub">${t('obSub')}</div>` +
       `<div class="okey-tile-mini ${s.okey.color}">${s.okey.number}</div>` +
       `<div class="ob-name">${okeyLabel()}</div>` +
@@ -3515,6 +3534,11 @@
       const mj = Game.slotRecs().find(j => j.key === s.bossMutedJoker);
       n.push(t('bossMutedExtra', mj ? T.name(mj) : s.bossMutedJoker));
     }
+    /* P71 — Lady Luck: bildirim kartları kapalı olduğundan lanet BURADA görünür */
+    if (k === 'ladyLuck') {
+      const cj = s.bossCharmId != null ? s.jokers.find(j => j.id === s.bossCharmId) : null;
+      if (cj || s.bossStolenFace) n.push(t('bossLadyExtra', cj ? T.name(cj) : '', s.bossStolenTile ? T.color(s.bossStolenTile.color) + ' ' + s.bossStolenTile.number : (s.bossStolenFace || '')));
+    }
     if (k === 'aynaKral' && (s.bossMirrorDebt || 0) > 0) n.push(t('bossMirrorExtra', s.bossMirrorDebt));
     if (k === 'corporates' && s.corpTask)
       n.push(`${T.ev(s.corpTask.name)}: ${T.ev(s.corpTask.text)}${s.corpTask.failed ? ' — ' + t('bossTaskFailed') : ''}`);
@@ -3573,8 +3597,8 @@
     el.roundChip.textContent = Game.isBossRound()
       ? T.bossName(s.boss.key, s.boss.name)
       : roundName(s.roundInStage === 1 ? 1 : 2);
-    el.stageVal.textContent = `${s.stage}/${chCount()}`;
-    el.roundVal.textContent = `${s.roundInStage}/3`;
+    el.stageVal.textContent = stageText(s);
+    el.roundVal.textContent = roundText(s);
     el.coinVal.textContent = s.coins;   // Figma: "$" ayrı katman, ikon yok
     /* Figma: sol alttaki OKEY bloğu — başlık ayrı, kutuda GERÇEK TAŞ
        görseli durur (mini çip değil), böylece oyuncu ıstakadaki okeyle
@@ -4741,7 +4765,7 @@
     newTileIds.clear();
     if (Game.state.status === 'runComplete' || Game.state.runFinished) { showRunComplete(); return; }
     showScreen('map');
-    if (Game.state.roundInStage === 1) showOkeyBanner();
+    if (Game.state.roundInStage === 1 || Game.isFinalStage()) showOkeyBanner();   // P71 — final 3. raundda başlar
   }
 
   /* TANRININ ELİ (P31 · Grup E) — desteden seçimli çekiş penceresi.
@@ -5439,7 +5463,7 @@
       selection.clear();
       newTileIds.clear();
       if (mode === 'play') {
-        Game.newRun();
+        Game.newRun(undefined, { finals: Finals.list() });
         showScreen('map');
         showOkeyBanner();
       } else {
@@ -5454,7 +5478,7 @@
 
   function startNewRun(mode) {
     clearSave();
-    Game.newRun(mode);
+    Game.newRun(mode, { finals: Finals.list() });
     selection.clear();
     newTileIds.clear();
     showScreen('map');
@@ -5464,6 +5488,9 @@
     if (opening && opening.length)
       showOpeningReel(opening, Game.state.openingReels, () => showOkeyBanner());
     else showOkeyBanner(); // maskot okeyi ilan eder (GDD 14.2)
+    /* P71 — kalıcı final jokeri run'a katıldı */
+    if ((Game.state.finalJokersGiven || []).length)
+      setTimeout(() => toast(t('finalStart', T.name(Game.state.jokers.find(j => j.key === 'ladyLuck') || Game.state.jokers[0]), JOKER_DEFS.ladyLuck.uses), true), 600);
     SFX.draw();
   }
 
@@ -5657,12 +5684,14 @@
         const mode = sv.runMode || 'base';
         const pg = RUN_PAGES.find(q => q.key === mode) || RUN_PAGES[0];
         const total = (typeof RUN_MODES !== 'undefined' && RUN_MODES[mode]) ? RUN_MODES[mode].stages : 8;
+        const totalShown = total + ((typeof RUN_MODES !== 'undefined' && RUN_MODES[mode] && RUN_MODES[mode].finalBoss) ? 1 : 0);   // P71
+        const svFinal = sv.stage > total && !!(typeof RUN_MODES !== 'undefined' && RUN_MODES[mode] && RUN_MODES[mode].finalBoss);   // P71
         const where = save.where === 'inStore' ? 'inStore' : save.where === 'inRound' ? 'inRound' : 'map';
         body = `<div class="rp-slide on rp-cont">` + (pg.img ? `<div class="rp-art rp-art-img mode-${pg.key}"></div>` : `<div class="rp-art"><span>${pg.ico || '🀄'}</span></div>`)
           + `<div class="rp-info"><div class="rp-name">${t('rpName_' + mode)}</div>`
           + `<div class="rp-desc rp-sum">`
-          + `<div><span>${t('rpStage')}</span><b>${sv.stage}/${total}</b></div>`
-          + `<div><span>${t('rpRound')}</span><b>${sv.roundInStage}/3</b></div>`
+          + `<div><span>${t('rpStage')}</span><b>${svFinal ? t('stageFinal') : sv.stage + '/' + totalShown}</b></div>`
+          + `<div><span>${t('rpRound')}</span><b>${svFinal ? t('mapFinal') : sv.roundInStage + '/3'}</b></div>`
           + `<div><span>${t('rpCoins')}</span><b class="c-orange">${sv.coins}</b></div>`
           + `<div><span>${t('rpBest')}</span><b class="c-red">${sv.statBestMeld || 0}</b></div>`
           + `<div><span>${t('rpMult')}</span><b class="c-green">+${Number(sv.permMult || 0).toFixed(1)}x</b></div>`
@@ -6082,6 +6111,22 @@
         key: m.key, open: this.unlocked(m.key), never: !!m.never,
         done: this.done(m.key),
       }));
+    },
+  };
+
+  /* P71 — KALICI FİNAL ÖDÜLLERİ. Mod kilit defteriyle aynı yöntem; motor
+     yalnız anahtar listesini alır (Game.newRun(mode, { finals })). */
+  const FINALS_KEY = 'okeyFinals';
+  const Finals = {
+    _read() { try { return JSON.parse(localStorage.getItem(FINALS_KEY)) || {}; } catch (e) { return {}; } },
+    has(k) { return !!this._read()[k]; },
+    list() { return Object.keys(this._read()); },
+    unlock(k) {
+      const o = this._read();
+      if (o[k]) return false;
+      o[k] = { at: Date.now() };
+      try { localStorage.setItem(FINALS_KEY, JSON.stringify(o)); } catch (e) {}
+      return true;
     },
   };
 
@@ -6846,8 +6891,8 @@
        BİREBİR aynı içerik (bkz. renderMap). Kalıcı çarpan satırı haritada
        olduğu gibi burada da yok — Figma taslağında yer almıyor. */
     $('storeCoinVal').textContent = String(s.coins);
-    $('storeStageVal').textContent = `${s.stage}/${chCount()}`;
-    el.ssRound.textContent = `${s.roundInStage}/3`;
+    $('storeStageVal').textContent = stageText(s);
+    el.ssRound.textContent = roundText(s);
     $('storeScoreVal').textContent = String(s.score ?? 0);
     const okBox = $('storeOkey');
     okBox.innerHTML = '';
@@ -7163,8 +7208,11 @@
       tiles: fmt(s.statTilesMelded), discarded: fmt(s.statDiscarded),
       bought: fmt(s.statBought), rerolls: fmt(s.statRerolls),
       score: fmt(s.totalScore), coins: `${s.coins}`,
-      stage: `${s.stage}`, stageOf: Number.isFinite(chCount()) ? `/${chCount()}` : '',
-      round: `${(s.stage - 1) * 3 + s.roundInStage}`,
+      /* P71 — final stage'inde "5/5" değil FİNAL (stageOf boş) */
+      stage: Game.isFinalStage() ? t('stageFinal') : `${s.stage}`,
+      stageOf: Game.isFinalStage() || !Number.isFinite(chCount()) ? '' : `/${chCount()}`,
+      /* P71 — final stage'i tek raund: 4 stage × 3 + 1 = 13. raund (roundInStage 3 değil) */
+      round: `${(s.stage - 1) * 3 + (Game.isFinalStage() ? 1 : s.roundInStage)}`,
       mult: `+${(s.permMult || 0).toFixed(1)}x`,
     };
   }
@@ -7220,7 +7268,7 @@
     out.push(t('rpTitle'));
     out.push(t('rpMeta', mode, when, mins));
     out.push(t('rpMusic', Music.on ? t('musicSet' + Music.set) : t('musicOff')));   // P66b — arkadaş testi
-    const where = `S${s.stage} R${s.roundInStage}`;
+    const where = Game.isFinalStage() ? `S${s.stage} ${t('stageFinal')}` : `S${s.stage} R${s.roundInStage}`;
     const bossTxt = s.boss && Game.isBossRound && Game.isBossRound() ? ` · ${t('rpBoss')} ${T.bossName(s.boss.key, s.boss.name)}` : '';
     out.push(kind === 'win' ? t('rpResultWin', where) : t('rpResultLose', where + bossTxt, s.score, s.target));
     if (why) out.push(t('rpWhy', String(why).replace(/<[^>]+>/g, '')));
@@ -7321,6 +7369,9 @@
        Trainer run'ı kayıt yazmaz, bu yüzden kilidi de açmaz. */
     let openedModes = [];
     if (!Game.trainerMode) openedModes = Modes.complete('base');
+    /* P71 — modun final boss'u yenildiyse ödül kalıcı açılır (Trainer hariç) */
+    const finKey = Game.finalBeaten();
+    const finNew = finKey ? Finals.unlock(finKey) : false;
     /* P53 — "Sonsuz Mod'a devam" yalnız TEMEL run'ın sonunda (trainer'da ve
        Kumarhane Run'da yok; run zaten sonsuzsa tekrar gösterilmez). */
     const canEndless = !Game.trainerMode && !Game.state.endless && Game.state.runMode !== 'hizli';
@@ -7348,6 +7399,7 @@
       `<div class="ep-defeat ep-trophy"><div class="ep-def-title">${t('epLastBoss')}</div>`
       + `<div class="ep-def-name">${lb ? T.bossName(lb.key, lb.name) : '—'}</div>` + lbArt + `</div>`;
     const foot =
+      (finNew ? `<div class="ep-note ep-final">${t('finalUnlocked')}</div>` : '') +
       (openedModes.length ? `<div class="ep-note">${t('modeUnlocked', openedModes.map(m => t('modeName_' + m.key)).join(', '))}</div>` : '') +
       /* Sonsuz Mod AYRI BİR MOD DEĞİL (P53): menüde düğmesi yok, yalnız burada bir SEÇİM. */
       (canEndless ? `<button class="ep-btn ep-blue" id="rcEndless">${t('epEndless')}</button>`
@@ -7676,7 +7728,7 @@
      hover ipuçları aynen kullanılır. Eski "hepsi alt alta" çizimi
      renderCollectionAll olarak durur (`__test.collectionView('all')`).
      ============================================================ */
-  const COL_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+  const COL_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
   const COL_PAGE = 12;
   let colView = 'hub', colPage = 0, colFilter = 'all';
   const byRarity = (arr) => arr.map((d, i) => ({ d, i }))
@@ -7727,10 +7779,17 @@
     });
     return c;
   }
+  function colFinalCard(d) {
+    const c = colJokerCard(d);
+    if (!Finals.has(d.key)) { c.classList.add('col-locked'); c.title = t('finalLockedHint'); }
+    return c;
+  }
   const COL_CATS = [
     { key: 'jokers', ico: '🃏', big: true, filters: ['all', 'common', 'rare', 'legendary', 'mythic'],
-      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => !d.casino && d.rarity !== 'epic')), card: (d) => colJokerCard(d) },
+      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => !d.casino && d.rarity !== 'epic' && d.rarity !== 'final')), card: (d) => colJokerCard(d) },
     { key: 'boss', ico: '👹', items: () => Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic'), card: (d) => colJokerCard(d) },
+    /* P71 — FİNAL jokerleri: açılmamışsa gri/kilitli (Kumarhane finalini yenince açılır) */
+    { key: 'final', ico: '💋', items: () => Object.values(JOKER_DEFS).filter(d => d.rarity === 'final'), card: (d) => colFinalCard(d) },
     { key: 'casino', ico: '🎰', items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.casino)), card: (d) => colJokerCard(d) },
     { key: 'consum', ico: '🪄', items: () => byRarity(Object.values(CONSUMABLES)), card: (d) => colConsumCard(d) },
     { key: 'special', ico: '💠', items: () => Object.values(SPECIAL_TILES), card: (d) => colSpecialCard(d) },
@@ -7824,7 +7883,7 @@
   }
 
   function renderCollectionAll() {
-    const order = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+    const order = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
     const all = Object.values(JOKER_DEFS);
     $('colSub').textContent = t('colSub', all.length);
     /* PLAYTEST 20 · GRUP R — MODLAR durum listesi.
@@ -7879,7 +7938,7 @@
       const artRow = COL_ART_RARITIES.has(rar) || rarityHasArt(rar);
       grid.className = artRow ? 'col-grid col-jk-row' : 'col-grid';
       for (const def of defs) {
-        const tile2 = colJokerCard(def);
+        const tile2 = rar === 'final' ? colFinalCard(def) : colJokerCard(def);
         grid.appendChild(tile2);
       }
       el.colBody.appendChild(grid);
@@ -8023,8 +8082,8 @@
       document.body.appendChild(p);
     }
     const rows = [
-      [t('riStage'), `${s.stage}/${chCount()}`],
-      [t('riRound'), `${s.roundInStage}/3`],
+      [t('riStage'), stageText(s)],
+      [t('riRound'), roundText(s)],
       [t('riTurn'), `${s.turn}/${s.maxTurns}`],
       [t('riScore'), `${s.score} / ${s.target}`],
       [t('riCoins'), `$${s.coins}`],
@@ -8224,7 +8283,7 @@
      DMC "Void" tarzı sandbox. Girişte joker/tüketilebilir/coin/el seçimi;
      haritada boss seçici + opsiyonel store filtresi. Kayıt alınmaz. */
 
-  const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+  const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
 
   // Rarity gruplu, tıkla-seç joker ızgarası (kurulum + store filtresi ortak)
   /* P54 (kullanıcı isteği 2026-09-29: "trainer'da jokerleri koleksiyondaki
@@ -8570,13 +8629,13 @@
     // Playtest 19 — Grup E: Füzyon kullanım menüsü
     fuzyonMenu,
     // Playtest 19 — Grup G: The Cheating bildirimi
-    cheatFlash,
+    cheatFlash, goNextRound,
     // P37 — bildirim kartları kapalı; eski testler kendi kontrolleri için açar
     setNotes: (on) => { NOTES_ENABLED = !!on; },
     // Playtest 18 — Grup E: dil değişimini test tarafında da gerçek akışla uygula
     applyStaticTexts, fitPauseMenu,
     // Playtest 20 — Grup R: mod kilit sistemi
-    Modes,
+    Modes, Finals,
     // P60 — run raporu + ipucu penceresi
     Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell,
     // P61 — Kumarhane hissi

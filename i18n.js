@@ -100,11 +100,12 @@
       colSub: (n) => `Tüm jokerler (${n}), değnekler, özel taşlar ve stage sonu güçlendirmeleri. Üzerine gelerek incele.`,
       colConsumHead: '🎴 Değnekler',
       colHubSub: 'Bir kategori seç — kartların üzerine gelerek incele.',
-      colCat_jokers: 'Jokerler', colCat_boss: 'Boss Jokerleri', colCat_casino: 'Kumarhane Jokerleri',
+      colCat_jokers: 'Jokerler', colCat_boss: 'Boss Jokerleri', colCat_casino: 'Kumarhane Jokerleri', colCat_final: 'Final',
       colCat_consum: 'Değnekler', colCat_special: 'Özel Taşlar', colCat_upgrade: 'Güçlendirmeler', colCat_modes: 'Oyun Modları',
       colCatSub_jokers: 'Store ve paketlerden gelen jokerler — nadirliğe göre süz.',
       colCatSub_boss: 'Yendiğin boss\'un kartı ödül olarak gelir.',
       colCatSub_casino: 'Yalnız Kumarhane Run\'da çıkar.',
+      colCatSub_final: 'Kumarhane finalini yenince kalıcı açılır; her run\'a katılır.',
       colCatSub_consum: 'Tek kullanımlık değnekler.',
       colCatSub_special: 'Destene kalıcı eklenen özel taşlar.',
       colCatSub_upgrade: 'Stage sonu ödül çarkındaki kalıcı güçlendirmeler.',
@@ -152,13 +153,13 @@
       colModesHead: '🎮 OYUN MODLARI',
       modeName_base: 'Temel Run (8 Stage)',
       modeName_trainer: 'Trainer Modu',
-      modeName_hizli: 'Kumarhane Run (4 Stage)',      // P58 · Grup C (anahtar 'hizli' kaldı)
+      modeName_hizli: 'Kumarhane Run (4 Stage + Final)',      // P58 · Grup C (anahtar 'hizli' kaldı)
       modeLockedTip: 'İlk Temel Run’ı tamamlayınca açılır.',
       /* MADDE D4 — mod seçim katmanı */
       modePickTitle: 'RUN MODU SEÇ',
       modePickBody: 'Klasik ilerleyiş mi, kumarhane mi?',
       modeDesc_base: '8 stage · 24 raund. Hedefler 250’den başlar, ekonomi standart.',
-      modeDesc_hizli: '4 stage · 12 raund. Her raund kör bahis: hedefi büyüt, ödülü büyüt; '
+      modeDesc_hizli: '4 stage + Final · 13 raund. Her raund kör bahis: hedefi büyüt, ödülü büyüt; '
         + 'tutturunca KATLA. Yan bahis, Yüksek mi Alçak mı ve kendine özel jokerler. Store yalnız stage sonunda. 2 joker ve +1.0x ile başlarsın.',
       betTitle: 'BAHSİNİ KOY',
       betSub: 'Elini görmeden seç — kör bahis. Kaybetmek Game Over.',
@@ -203,7 +204,7 @@
       rpDesc_hizli: 'Her raund kör bahis koy, hedefi tutturunca Katla. Yan bahis, Yüksek mi Alçak mı ve kendine özel jokerler. Store yalnız stage sonunda.',
       rpBack: 'Geri', rpNew: 'Yeni Run', rpCont: 'Devam Et', rpPlay: 'OYNA', rpContinueBtn: 'DEVAM ET',
       rpSoon: 'ÇOK YAKINDA', rpSoonName: '???', rpSoonDesc: 'Bu mod üzerinde çalışıyoruz — çok yakında burada.',
-      rpStats_base: '8 Stage · 24 Raund', rpStats_hizli: '4 Stage · 12 Raund',
+      rpStats_base: '8 Stage · 24 Raund', rpStats_hizli: '4 Stage + Final · 13 Raund',
       rpOverwrite: 'Yeni run başlatırsan kayıtlı run silinir.',
       rpStage: 'Stage', rpRound: 'Raund', rpCoins: 'Coin', rpBest: 'En İyi Açılım', rpMult: 'Kalıcı Çarpan',
       rpWhere_inStore: 'Store’da bıraktın — oradan devam edersin.',
@@ -282,6 +283,10 @@
       modeOpen: 'Açık',
       modeDone: 'Tamamlandı ✓',
       modeUnlocked: (n) => `🔓 Yeni mod açıldı: ${n}`,
+      stageFinal: 'FİNAL', mapFinal: 'FİNAL',
+      finalUnlocked: '💋 Lady Luck artık her run\'da seninle!',
+      finalStart: (n, u) => `💋 ${n} seninle (${u} raund)`,
+      finalLockedHint: 'Kumarhane finalinde Lady Luck\'ı yen',
       colBack: '← Geri',
       colCount: (n) => `${n} joker`,
       colDeckTag: '◈ deste',
@@ -578,6 +583,8 @@
       bossFreedomExtra: (list, owed) =>
         `⚔ İşaretliler: ${list}${owed ? ` — açılımda kullanman gereken ${owed} taş var!` : ''}`,
       bossAlienExtra: (n) => `👽 Bu turda elinde <b>${n}</b> gizli uzaylı var — hangileri olduğunu göremezsin`,
+      bossLadyExtra: (j, face) => `💋 Büyülü: ${j || '—'}${face ? ' · Çalınan: ' + face : ''}`,
+      ladyStealTitle: '💋 KALBİN ÇALINDI',
       /* Şeytan'ın Teklifi pop-up (Grup A4) */
       seytanTitle: '😈 ŞEYTAN\'IN TEKLİFİ',
       seytanBody: (coins, score, mult) =>
@@ -1012,11 +1019,12 @@
       colSub: (n) => `All jokers (${n}), consumables, special tiles and stage-end upgrades. Hover to inspect.`,
       colConsumHead: '🎴 Wands',
       colHubSub: 'Pick a category — hover the cards to inspect.',
-      colCat_jokers: 'Jokers', colCat_boss: 'Boss Jokers', colCat_casino: 'Casino Jokers',
+      colCat_jokers: 'Jokers', colCat_boss: 'Boss Jokers', colCat_casino: 'Casino Jokers', colCat_final: 'Final',
       colCat_consum: 'Wands', colCat_special: 'Special Tiles', colCat_upgrade: 'Upgrades', colCat_modes: 'Game Modes',
       colCatSub_jokers: 'Jokers from the shop and packs — filter by rarity.',
       colCatSub_boss: 'A beaten boss gives its card as a reward.',
       colCatSub_casino: 'Only appear in Casino Run.',
+      colCatSub_final: 'Unlocked for good by beating the Casino finale; joins every run.',
       colCatSub_consum: 'Single-use wands.',
       colCatSub_special: 'Special tiles added to your deck for good.',
       colCatSub_upgrade: 'Permanent upgrades from the stage-end reward wheel.',
@@ -1063,12 +1071,12 @@
       colModesHead: '🎮 GAME MODES',
       modeName_base: 'Base Run (8 Stages)',
       modeName_trainer: 'Trainer Mode',
-      modeName_hizli: 'Casino Run (4 Stages)',
+      modeName_hizli: 'Casino Run (4 Stages + Final)',
       modeLockedTip: 'Unlocks when you finish your first Base Run.',
       modePickTitle: 'CHOOSE RUN MODE',
       modePickBody: 'Classic climb or the casino?',
       modeDesc_base: '8 stages · 24 rounds. Targets start at 250, standard economy.',
-      modeDesc_hizli: '4 stages · 12 rounds. Blind bet every round: bigger target, bigger reward; '
+      modeDesc_hizli: '4 stages + Final · 13 rounds. Blind bet every round: bigger target, bigger reward; '
         + 'hit it and DOUBLE. Side bets, Higher or Lower and its own jokers. Store only at stage end. Start with 2 jokers and +1.0x.',
       betTitle: 'PLACE YOUR BET',
       betSub: 'Pick before seeing your hand — a blind bet. Losing is Game Over.',
@@ -1110,7 +1118,7 @@
       rpDesc_hizli: 'Place a blind bet every round and Double when you hit the target. Side bets, Higher or Lower and its own jokers. Shop only at stage end.',
       rpBack: 'Back', rpNew: 'New Run', rpCont: 'Continue', rpPlay: 'PLAY', rpContinueBtn: 'CONTINUE',
       rpSoon: 'COMING SOON', rpSoonName: '???', rpSoonDesc: 'We are working on this mode — coming soon.',
-      rpStats_base: '8 Stages · 24 Rounds', rpStats_hizli: '4 Stages · 12 Rounds',
+      rpStats_base: '8 Stages · 24 Rounds', rpStats_hizli: '4 Stages + Final · 13 Rounds',
       rpOverwrite: 'Starting a new run deletes your saved run.',
       rpStage: 'Stage', rpRound: 'Round', rpCoins: 'Coins', rpBest: 'Best Meld', rpMult: 'Permanent Mult',
       rpWhere_inStore: 'You left in the shop — you continue there.',
@@ -1187,6 +1195,10 @@
       modeOpen: 'Open',
       modeDone: 'Completed ✓',
       modeUnlocked: (n) => `🔓 New mode unlocked: ${n}`,
+      stageFinal: 'FINAL', mapFinal: 'FINAL',
+      finalUnlocked: '💋 Lady Luck now joins every run!',
+      finalStart: (n, u) => `💋 ${n} is with you (${u} rounds)`,
+      finalLockedHint: 'Beat Lady Luck in the Casino finale',
       colBack: '← Back',
       colCount: (n) => `${n} jokers`,
       colDeckTag: '◈ deck',
@@ -1428,6 +1440,8 @@
       bossFreedomExtra: (list, owed) =>
         `⚔ Marked: ${list}${owed ? ` — ${owed} tile(s) you still must meld!` : ''}`,
       bossAlienExtra: (n) => `👽 <b>${n}</b> hidden aliens in your hand this turn — you cannot see which`,
+      bossLadyExtra: (j, face) => `💋 Charmed: ${j || '—'}${face ? ' · Stolen: ' + face : ''}`,
+      ladyStealTitle: '💋 LADY LUCK STOLE A TILE',
       seytanTitle: '😈 THE DEVIL\'S BARGAIN',
       seytanBody: (coins, score, mult) =>
         `All <b>${coins} coins</b> in your purse were sacrificed.<br>` +
@@ -1848,10 +1862,12 @@
     kelebek: { name: 'Butterfly Effect', desc: 'Meld a different type than last turn for a surprise reward: +2.0x, +200 pts or +8 coins.' },
     aynaKral: { name: 'Mirror King', desc: 'Your meld scores bank as a reflection. Skip melding a turn to claim it: 2 melds ×1.5, 3+ melds ×2.' },
     karaKedi: { name: 'Black Cat', desc: 'Draw the lowest tile and it permanently becomes a 13; +80 pts when melded.' },
+    ladyLuck: { name: 'Lady Luck', desc: 'Each draw refills your hand to 21; each turn one scoring joker pays x2.' },
   };
 
   /* Boss kısıtlama açıklamaları (BOSSES[].desc EN) */
   const BOSS_EN = {
+    ladyLuck: 'Each turn she charms one joker: its points flip NEGATIVE and its other effects go silent. She also steals your highest tile.',
     godzilla: 'The round lasts 3 turns, there is no turn 4. In exchange the target is 10% lower.',
     karaKedi: 'Every 13 from the deck reaches you as a 1. Starting hand included.',
     kirby: 'At every turn start 3 of your tiles lose 1 value.',
@@ -2323,6 +2339,10 @@
     /* Grup E (Playtest 8) — yeni özel taşlar */
     [/^⭐ Yıldız Taşı: bu raundda \+(\d+) ekstra taş çekeceksin$/, '⭐ Star Tile: you will draw +$1 extra tiles this round'],
     [/^⭐ Yıldız Taşı: \+(\d+) ekstra taş$/, '⭐ Star Tile: +$1 extra tiles'],
+    [/^⭐ Sahnenin Yıldızı: (.+) bu tur ×(\d+) veriyor$/, '⭐ Star of the Show: $1 pays ×$2 this turn'],
+    [/^💋 FİNAL: Lady Luck masada seni bekliyor$/, '💋 FINAL: Lady Luck is waiting at the table'],
+    [/^💋 Lady Luck (.+) jokerini büyüledi — bu tur puanı TERS döner, diğer etkisi susar$/, '💋 Lady Luck charmed $1 — this turn its points flip, other effects go silent'],
+    [/^💋 Lady Luck kalbini çaldı: (.+)$/, '💋 Lady Luck stole your heart: $1'],
     [/^⏳ Zaman Taşı: bu raund jokerlerinin süresi azalmayacak$/, '⏳ Time Tile: no joker will lose duration this round'],
     [/^⏳ Zaman Taşı: hiçbir jokerin süresi azalmadı$/, '⏳ Time Tile: no joker lost any duration'],
     [/^🔥 Ateş Taşı elinde yanıyor: -(\d+) puan$/, '🔥 Fire Tile burns in your hand: -$1 pts'],
@@ -2531,7 +2551,7 @@
     specialDesc(key, fallback) { return lang === 'en' ? (SPECIAL_EN[key]?.desc || fallback) : fallback; },
     rarity(r) {
       if (r === 'epic') return this.t('rarityEpic');
-      return { common: 'Common', rare: 'Rare', legendary: 'Legendary', mythic: 'Mythic' }[r] || r;
+      return { common: 'Common', rare: 'Rare', legendary: 'Legendary', mythic: 'Mythic', final: 'Final' }[r] || r;
     },
     typeName(type) { return this.t({ cift: 'typeCift', per: 'typePer', sirali: 'typeSirali' }[type]); },
     ev: evTranslate,
