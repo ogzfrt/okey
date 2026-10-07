@@ -1033,7 +1033,11 @@ const GLITCH_JOKER_BONUS = 100;  // P35 · Grup C: 6 → 60 · P49 · Grup B: 60
    yazılı değil (açıklama metinleri de yüzdeyi buradan türetmiyor, elle
    yazıyor: BUNGIE_SNAP değişirse JOKER_DEFS.bungieGum.desc ve i18n'deki
    İngilizce karşılığı da güncellenmelidir). */
-const BUNGIE_SNAP = 0.50;
+/* P79 (kullanıcı 2026-10-07: "Bungie Gum genelde çalışmıyor, eskisi gibi %25 olsun")
+   → deneme bitti, %25'e dönüldü. Katla sonrası "taş geri gelmiyor" raporu da
+   incelendi: Katla akışı doğru (taşlar sonraki tur başında döner), algıyı
+   %50 kopma yaratıyordu. */
+const BUNGIE_SNAP = 0.25;
 
 /* PLAYTEST 10 · GRUP A — Zombie jokeri (deste jokeri, boss varyantı ayrı).
    Enfekte taş açılımda kullanılırsa taş başına bu çarpan + bu sabit puan. */
@@ -2133,7 +2137,7 @@ const JOKER_DEFS = {
      Risk tarafı (GDD'deki %25 kopma) korundu ama aynı eyleme bağlandı:
      her açılımda %25 ihtimalle sakız kopar ve taşlar geri dönmez. */
   bungieGum: { key: 'bungieGum', name: 'Bungie Gum', rarity: 'rare', uses: 4,
-    desc: 'Açtığın taşlar sakıza yapışır: açılım bu tur masada durur, sonraki tur başında ıstakana döner. Her açılımda %50 kopma riski.' },
+    desc: 'Açtığın taşlar sakıza yapışır: açılım bu tur masada durur, sonraki tur başında ıstakana döner. Her açılımda %25 kopma riski.' },
   fuzyon: { key: 'fuzyon', name: 'Füzyon', rarity: 'rare', uses: 3,
     desc: 'İki jokerini birleştirir: biri erir, efekti ve süresi diğerine geçer.' },
 

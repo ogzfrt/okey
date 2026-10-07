@@ -6716,6 +6716,16 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 /* P45: store kenar çubuğundaki değnek raund içindeki omuzla AYNI boyda (81×110) —
    kullanıcı: "store'da da raund içinde göründüğü gibi görünmek zorunda" */
 #storeSide #storeConsumRow .consum-card.art-only .c-icon.cs-art { width: 81px; height: 110px; margin: 0 auto; }
+/* P79 (kullanıcı: "değnek store UI'ında düzgün gözükmüyor") — P67 store yeniden
+   kurulunca değnek rafı #storeSide'dan #storeLeftInv › .st-sh-body'ye taşındı;
+   yukarıdaki iki kural eski yeri hedeflediği için çizimli değnek krem kabuk
+   içinde 26×35'lik küçük ikon olarak çiziliyordu. Yeni raf da raund içindeki
+   omuzla AYNI: kabuk yok, çizim kartı kenardan kenara doldurur. */
+#storeStage .st-sh-body .consum-card.art-only {
+  background: none; border: 0; border-left: 0; padding: 0; gap: 0; overflow: visible;
+  box-shadow: none; justify-content: center; align-items: center;
+}
+#storeStage .st-sh-body .consum-card.art-only .c-icon.cs-art { width: 100%; height: 100%; margin: 0; }
 .consum-card.art-only.picking { outline: 3px solid #2ecc71; outline-offset: 2px; }
 
 /* P41 (kullanıcı isteği 2026-09-14) — EYLEM ROZETİ (#actBadge, ui.js attachActs).
@@ -9646,7 +9656,14 @@ html[data-theme="boss"] :is(.st-panel, .tp-box, .pk-box, .pp-box) {
 html[data-theme="boss"] :is(.pk-title, .tp-box h3) { color: var(--boss-glow); }
 html[data-theme="boss"] .gm-stage .gm-score-val,
 html[data-theme="boss"] .gm-stage .gm-score-val * { color: var(--gm-dark) !important; }
-html[data-theme="boss"] .gm-stage #turnIndicator.gm-turn { color: var(--boss-glow); text-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
+html[data-theme="boss"] .gm-stage #turnIndicator.gm-turn { color: var(--boss-ink, var(--boss-glow)); text-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+/* P79 — sahnenin doğrudan üstündeki yazı: deste sayacı */
+html[data-theme="boss"] .gm-stage #pileCol #deckCount.gm-deck-count { color: var(--boss-ink, var(--gm-light)); text-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+/* P79 — tur kutuları (kullanıcı: Misunderstood'da "tur göstergesi hiç anlaşılmıyor"):
+   oynanan turlar parlak dolu kutu, kalan turlar koyu + çerçeveli BOŞ kutu —
+   her sahnede ayrışır (eskiden kalanlar sabit açık yeşildi, beyaz 'dolu'yla karışıyordu). */
+html[data-theme="boss"] .gm-stage .gm-turn i { background: var(--boss-pip-off, rgba(0, 0, 0, .45)); box-shadow: inset 0 0 0 3px var(--boss-pip, var(--gm-turn-on)); opacity: .75; }
+html[data-theme="boss"] .gm-stage .gm-turn i.on { background: var(--boss-pip, var(--gm-turn-on)); box-shadow: 0 0 0 2px rgba(0, 0, 0, .55), 0 0 12px var(--boss-glow-soft); opacity: 1; }
 /* @@BOSS-UI-BEGIN — tools/theme/build_boss_ui.py ÜRETİR, elle düzenleme */
 html[data-theme="boss"][data-boss-ui="godzilla"] {
   --gm-dark: #173A4A; --gm-light: #DDF2F8; --gm-panel: #6FB8D8; --gm-bg: #173A4A;
@@ -9824,6 +9841,7 @@ html[data-theme="boss"][data-boss-ui="misunderstood"] {
   --st-head: #0C0C14; --st-rule: rgba(12, 12, 20, .35); --st-glow: rgba(255, 255, 255, .25);
 }
 html[data-theme="boss"][data-boss-ui="kelebek"] {
+  --boss-ink: #26323A; --boss-pip: #26323A; --boss-pip-off: rgba(255, 231, 188, .7);
   --gm-dark: #26323A; --gm-light: #FFE7BC; --gm-panel: #F2B266; --gm-bg: #26323A;
   --gm-coin-ink: #26323A; --boss-glow: #FFE7BC; --boss-glow-soft: rgba(255, 231, 188, .45);
   --boss-bg: url('assets/game/boss/kelebek/bg.png');
@@ -9894,7 +9912,7 @@ html[data-theme="boss"][data-boss-ui="ahtapot"] {
   --st-head: #22303A; --st-rule: rgba(34, 48, 58, .35); --st-glow: rgba(154, 220, 240, .25);
 }
 html[data-theme="boss"][data-boss-ui="fatality"] {
-  --gm-dark: #5E0C0E; --gm-light: #F2DACC; --gm-panel: #C83A2E; --gm-bg: #5E0C0E;
+  --gm-dark: #5E0C0E; --gm-light: #F2DACC; --gm-panel: #E26A50; --gm-bg: #5E0C0E;
   --gm-coin-ink: #5E0C0E; --boss-glow: #FF7A4A; --boss-glow-soft: rgba(255, 122, 74, .45);
   --boss-bg: url('assets/game/boss/fatality/bg.png');
   --img-action-bar: url('assets/game/boss/fatality/action-bar.svg');
@@ -9964,7 +9982,7 @@ html[data-theme="boss"][data-boss-ui="zombie"] {
   --st-head: #24424A; --st-rule: rgba(36, 66, 74, .35); --st-glow: rgba(154, 240, 200, .25);
 }
 html[data-theme="boss"][data-boss-ui="freedom"] {
-  --gm-turn-on: #FFF6DC;
+  --gm-turn-on: #FFF6DC; --boss-pip: #B0174E; --boss-pip-off: rgba(255, 246, 220, .85); --boss-ink: #B0174E;
   --gm-dark: #B0174E; --gm-light: #FFF6DC; --gm-panel: #F2CD38; --gm-bg: #B0174E;
   --gm-coin-ink: #B0174E; --boss-glow: #B0174E; --boss-glow-soft: rgba(176, 23, 78, .45);
   --boss-bg: url('assets/game/boss/freedom/bg.png');

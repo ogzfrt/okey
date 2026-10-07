@@ -1828,7 +1828,7 @@
     yankee: { name: 'Yankee', desc: 'Hold at least 1 pair at turn end: banks +1.0x (cap +5.0x). Melding a Pair halves the bank.' },
     dedikodu: { name: 'Gossip Table', desc: 'Keeps 3 face-up tiles beside you. Once a turn, swap one for a tile in your hand.' },
     terzi: { name: 'Chameleon', desc: 'Tiles of its colour count as colourless: they fit into ANY combo at ANY position.' },
-    bungieGum: { name: 'Bungie Gum', desc: 'Melded tiles stick to the gum: the meld stays on the table this turn and returns to your rack next turn. 50% chance the gum snaps on each meld.' },
+    bungieGum: { name: 'Bungie Gum', desc: 'Melded tiles stick to the gum: the meld stays on the table this turn and returns to your rack next turn. 25% chance the gum snaps on each meld.' },
     fuzyon: { name: 'Fusion', desc: 'Merges two of your jokers: one melts, its effect and duration pass to the other.' },
     sisyphus: { name: 'Sisyphus', desc: 'The boulder climbs as you meld turn after turn: +2.0x on turn 2, +4.0x on turn 3, +8.0x on turn 4. The boulder carries over between rounds but drops one step each new round; skip a turn and it rolls back down.' },
     midas: { name: 'Midas', desc: '+2 coins for every tile you meld. Paid at round end.' },
