@@ -7110,6 +7110,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .art-preload { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; pointer-events: none; }
 .art-preload > div { width: 1px; height: 1px; background-image: var(--jk-art); }
 .jk-nostradamus  { --jk-art: url('assets/game/joker/nostradamus.svg'); }   /* P71 · Figma 428:2 */
+.jk-rusvet       { --jk-art: url('assets/game/joker/bahsis.svg'); }   /* P73 · Figma 444:41 "Bahşiş" → Bahşiş Kavanozu */
+.jk-midas        { --jk-art: url('assets/game/joker/midas.svg'); }    /* P73 · Figma 444:84 */
 .jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P72 · Figma 444:2 */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek

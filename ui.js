@@ -7899,7 +7899,8 @@
     'kaptan', 'ucKagitci',                    // P57 · Figma 390:2 (Legendary 2/15) + 390:44 (boss 20/20)
     'medusa',                                 // P67 · Figma 420:2 (Legendary 3/15)
     'nostradamus',                            // P71 · Figma 428:2 (Legendary 4/15)
-    'ladyLuck']);                             // P72 · Figma 444:2 (FINAL_BOSS_JOKERLER 436:2) — Kumarhane finali
+    'ladyLuck',                               // P72 · Figma 444:2 (FINAL_BOSS_JOKERLER 436:2) — Kumarhane finali
+    'rusvet', 'midas']);                      // P73 · Figma 444:41 Bahşiş + 444:84 Midas (Legendary 6/15)
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
