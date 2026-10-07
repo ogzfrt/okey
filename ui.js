@@ -7974,7 +7974,8 @@
     'medusa',                                 // P67 · Figma 420:2 (Legendary 3/15)
     'nostradamus',                            // P71 · Figma 428:2 (Legendary 4/15)
     'ladyLuck',                               // P72 · Figma 444:2 (FINAL_BOSS_JOKERLER 436:2) — Kumarhane finali
-    'rusvet', 'midas']);                      // P73 · Figma 444:41 Bahşiş + 444:84 Midas (Legendary 6/15)
+    'rusvet', 'midas',                        // P73 · Figma 444:41 Bahşiş + 444:84 Midas (Legendary 6/15)
+    'ucuncuTeker']);                          // P75 · Figma 450:2 (Legendary 7/15)
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',

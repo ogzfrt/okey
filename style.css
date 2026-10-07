@@ -7112,6 +7112,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-nostradamus  { --jk-art: url('assets/game/joker/nostradamus.svg'); }   /* P71 · Figma 428:2 */
 .jk-rusvet       { --jk-art: url('assets/game/joker/bahsis.svg'); }   /* P73 · Figma 444:41 "Bahşiş" → Bahşiş Kavanozu */
 .jk-midas        { --jk-art: url('assets/game/joker/midas.svg'); }    /* P73 · Figma 444:84 */
+.jk-ucuncuTeker  { --jk-art: url('assets/game/joker/ucuncu-teker.svg'); }   /* P75 · Figma 450:2 */
 .jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P72 · Figma 444:2 */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
