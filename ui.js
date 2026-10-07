@@ -3875,6 +3875,7 @@
   }, 1000);
 
   function render() {
+    applyRunTheme();   // P78 — boss raundu arayüzü (raund ekran değişmeden başlayıp bitebilir)
     const s = Game.state;
     hideTip(); // hover'daki eleman yeniden çizimde kaybolabilir
     /* P54 · Grup A — Üç Kağıtçı'nın bekleyen seçimi (tur başında motor kurar).
@@ -6515,16 +6516,36 @@
   function baseRunActive() {
     try { return curScreen() !== 'menu' && !!Game.state && !(Game.kumarhaneOn && Game.kumarhaneOn()); } catch (e) { return false; }
   }
-  function applyRunTheme() {
-    let key;
+  /* P78 — BOSS RAUNDU ARAYÜZLERİ (kullanıcı 2026-10-07): boss raundunun oyun
+     ekranı o boss'un temasına geçer — kendi 3 tonlu paleti + SÜRREAL arka plan
+     (tools/theme/build_boss_ui.py; style.css @@BOSS-UI blokları). Run temasının
+     (Kumarhane / Kozmik / renk teması) ÜSTÜNDEdir; harita ve store run temasında
+     kalır. Ayarlar → BOSS ARAYÜZÜ ile kapatılabilir (varsayılan açık).
+     Boss karakter çizimleri Figma'dan gelince arka planlar onlara göre yenilenecek. */
+  const BOSS_UI_KEY = 'okeyBossUi';
+  const BOSS_UI_KEYS = new Set(['godzilla', 'karaKedi', 'kirby', 'cellat', 'misunderstood', 'kelebek', 'ahtapot', 'fatality', 'zombie', 'freedom', 'uzayli', 'ucKagitci', 'dervish', 'terziIgne', 'avukat', 'ritim', 'kahin', 'tuccar', 'corporates', 'aynaKral', 'ladyLuck']);
+  let bossUiOn = (() => { try { return localStorage.getItem(BOSS_UI_KEY) !== '0'; } catch (e) { return true; } })();
+  function bossUiActive() {
     try {
-      key = casinoThemeOn && casinoRunActive() ? 'kumarhane'
+      const s = Game.state;
+      if (!bossUiOn || curScreen() !== 'game' || !s || !s.boss || !Game.isBossRound()) return null;
+      return BOSS_UI_KEYS.has(s.boss.key) ? s.boss.key : null;
+    } catch (e) { return null; }
+  }
+  function applyRunTheme() {
+    let key, boss = null;
+    try {
+      boss = bossUiActive();
+      key = boss ? 'boss'
+        : casinoThemeOn && casinoRunActive() ? 'kumarhane'
         : cosmicThemeOn && baseRunActive() ? 'kozmik' : themeKey;
     } catch (e) { return; }   // modül kurulumu bitmeden çağrıldıysa (TDZ)
     const root = document.documentElement;
-    root.dataset.csPattern = casinoPattern;
-    if (key === 'yesil') delete root.dataset.theme;
-    else root.dataset.theme = key;
+    if (root.dataset.csPattern !== casinoPattern) root.dataset.csPattern = casinoPattern;
+    if (boss) { if (root.dataset.bossUi !== boss) root.dataset.bossUi = boss; }
+    else if (root.dataset.bossUi) delete root.dataset.bossUi;
+    if (key === 'yesil') { if (root.dataset.theme) delete root.dataset.theme; }
+    else if (root.dataset.theme !== key) root.dataset.theme = key;
     if (key === 'kozmik') {
       const st = Math.max(1, (Game.state && Game.state.stage) || 1);
       root.style.setProperty('--kz-hue', KOZMIK_HUES[(st - 1) % KOZMIK_HUES.length] + 'deg');
@@ -6573,6 +6594,12 @@
       `<div class="set-langs">` +
       `<button class="set-lang set-cosmic${cosmicThemeOn ? ' on' : ''}" data-cosmic="1">🌌 ${t('musicOn')}</button>` +
       `<button class="set-lang set-cosmic${cosmicThemeOn ? '' : ' on'}" data-cosmic="0">${t('musicOff')}</button>` +
+      `</div></div>` +
+      /* P78 — boss raundu arayüzleri */
+      `<div class="set-row"><span class="set-label">${t('bossUiLabel')}</span>` +
+      `<div class="set-langs">` +
+      `<button class="set-lang set-bossui${bossUiOn ? ' on' : ''}" data-bossui="1">👹 ${t('musicOn')}</button>` +
+      `<button class="set-lang set-bossui${bossUiOn ? '' : ' on'}" data-bossui="0">${t('musicOff')}</button>` +
       `</div></div>` +
       /* P67 — ses efektleri (düğme/taş sesleri): aç/kapa + seviye */
       `<div class="set-row"><span class="set-label">${t('sfxSetLabel')}</span>` +
@@ -6647,6 +6674,13 @@
        ekran (oyun, store, ödül çarkı, modallar) yeniden çizim beklemeden
        döner. Yine de sayaç/etiket metinleri seçili temaya göre "on"
        sınıfını taşısın diye pencere tazelenir. */
+    ov.querySelectorAll('.set-bossui').forEach(b => b.addEventListener('click', () => {
+      bossUiOn = b.dataset.bossui === '1';
+      try { localStorage.setItem(BOSS_UI_KEY, bossUiOn ? '1' : '0'); } catch (e) {}
+      ov.querySelectorAll('.set-bossui').forEach(x => x.classList.toggle('on', x === b));
+      applyRunTheme();
+      toast(t(bossUiOn ? 'bossUiOnToast' : 'bossUiOffToast'), true);
+    }));
     ov.querySelectorAll('.set-cosmic').forEach(b => b.addEventListener('click', () => {
       cosmicThemeOn = b.dataset.cosmic === '1';
       try { localStorage.setItem(COSMIC_THEME_KEY, cosmicThemeOn ? '1' : '0'); } catch (e) {}
