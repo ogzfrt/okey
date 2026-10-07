@@ -8217,17 +8217,46 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   box-shadow: 0 4px 0 rgba(0, 0, 0, .35);
 }
 .gm-stage .gm-well.hidden { display: none; }
-.gm-well .aw-head { display: flex; justify-content: space-between; align-items: center; font: 700 17px/1 var(--gm-font); }
+.gm-well .aw-head { display: flex; justify-content: space-between; align-items: center; font: 700 16px/1 var(--gm-font); }
 .gm-well .aw-count { color: var(--gm-turn-on); }
-.gm-well .aw-phase { font: 700 12px/1.3 var(--gm-font); margin: 5px 0 7px; opacity: .92; }
-.gm-well .aw-phase b { color: var(--gm-turn-on); }
-.gm-well .aw-slots { --tw: 54px; display: flex; gap: 10px; justify-content: center;
-  background: rgba(0, 0, 0, .28); border-radius: 6px; padding: 8px 6px; }
-.gm-well .aw-empty { width: var(--tw); height: calc(var(--tw) * 1.42); border: 2px dashed rgba(255, 255, 255, .25); border-radius: calc(var(--tw) * .16); box-sizing: border-box; }
+/* P77 — kompakt: büyük ay simgesi + 4 yuva tek sırada; takas yazısı kalktı */
+.gm-well .aw-row { display: flex; align-items: center; gap: 10px; margin-top: 6px;
+  background: rgba(0, 0, 0, .28); border-radius: 6px; padding: 6px 8px; }
+.gm-well .aw-moon { font-size: 38px; line-height: 1; filter: drop-shadow(0 0 6px rgba(200, 210, 255, .55)); flex: 0 0 auto; }
+.gm-well .aw-slots { --tw: 44px; display: flex; gap: 8px; flex: 1; justify-content: flex-start; }
+.gm-well .aw-slots > .tile { width: var(--tw); height: calc(var(--tw) * 1.42); flex: 0 0 var(--tw); }
+.gm-well .aw-empty { width: var(--tw); height: calc(var(--tw) * 1.42); border: 2px dashed rgba(255, 255, 255, .25); border-radius: calc(var(--tw) * .16); box-sizing: border-box; flex: 0 0 var(--tw); }
 .gm-well .aw-tile { cursor: default; }
-.gm-well .aw-tile.aw-can { cursor: pointer; }
-.gm-well .aw-tile.aw-can:hover { transform: translateY(-4px); }
-.gm-well .aw-hint { font: 700 10.5px/1.3 var(--gm-font); margin-top: 6px; opacity: .8; }
+.gm-well .aw-status { font: 700 12px/1.3 var(--gm-font); margin-top: 6px; color: var(--gm-turn-on); }
+.gm-stage .gm-well.aw-full { box-shadow: 0 0 0 2px #E8EEFF, 0 0 18px rgba(220, 230, 255, .8), 0 4px 0 rgba(0, 0, 0, .35);
+  animation: awPulse 1.2s ease-in-out infinite; }
+.gm-stage .gm-well.aw-dolunay { box-shadow: 0 0 0 2px #FFF2B8, 0 0 22px rgba(255, 236, 160, .9), 0 4px 0 rgba(0, 0, 0, .35); }
+@keyframes awPulse { 50% { box-shadow: 0 0 0 2px #E8EEFF, 0 0 30px rgba(220, 230, 255, 1), 0 4px 0 rgba(0, 0, 0, .35); } }
+/* Dolunay turunda Ay Taşları OKEY: altın-beyaz ay halesi + 🌕 rozeti (okey stili
+   `.tile.okey::after { display: none }` ile rozeti gizliyordu → geri açılır) */
+.tile.moon-tile::after { display: block; }
+.tile.moon-tile.moon-full { outline: 4px solid #FFF2B8; outline-offset: 1px;
+  box-shadow: 0 0 22px 6px rgba(255, 236, 160, .95), 0 3px 6px rgba(0, 0, 0, .35); animation: moonOkey 1.4s ease-in-out infinite; }
+@keyframes moonOkey { 50% { box-shadow: 0 0 34px 10px rgba(255, 246, 200, 1), 0 3px 6px rgba(0, 0, 0, .35); } }
+/* 🌕 DOLUNAY sahnesi: ekran kararır, dev ay yükselir, yazı belirir */
+#dolunayFx { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: flex-start;
+  flex-direction: column; padding-top: 14vh; box-sizing: border-box; cursor: pointer; animation: dlIn .35s ease-out; }
+#dolunayFx.out { opacity: 0; transition: opacity .45s; }
+#dolunayFx .dl-sky { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, rgba(30, 32, 70, .55), rgba(4, 4, 16, .88) 70%); }
+#dolunayFx .dl-moon { position: relative; width: 220px; height: 220px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 36%, #FFFDF0 0 18%, #F4EBC6 40%, #D8CC9B 72%, #B1A67B 100%);
+  box-shadow: 0 0 60px 20px rgba(255, 244, 200, .55), 0 0 140px 60px rgba(180, 190, 255, .35);
+  image-rendering: pixelated; animation: dlRise 1s cubic-bezier(.2, .9, .3, 1.2); }
+#dolunayFx .dl-moon::before, #dolunayFx .dl-moon::after { content: ''; position: absolute; border-radius: 50%; background: rgba(177, 166, 123, .45); }
+#dolunayFx .dl-moon::before { width: 46px; height: 46px; left: 52%; top: 26%; }
+#dolunayFx .dl-moon::after { width: 30px; height: 30px; left: 28%; top: 60%; }
+#dolunayFx .dl-text { position: relative; margin-top: 30px; padding: 10px 26px; background: rgba(4, 4, 16, .55); border-radius: 10px; text-align: center; font-family: var(--gm-font); color: #FFF6D8;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, .6); animation: dlIn .6s .35s both; }
+#dolunayFx .dl-text b { display: block; font-size: 64px; letter-spacing: 2px; }
+#dolunayFx .dl-text span { display: block; font-size: 22px; margin-top: 8px; opacity: .92; }
+@keyframes dlRise { from { transform: translateY(160px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dlIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #dolunayFx, #dolunayFx * { animation: none !important; } }
 .tile.moon-tile { box-shadow: 0 0 0 2px #8EA2E8, 0 0 10px rgba(150, 170, 255, .65), 0 3px 6px rgba(0, 0, 0, .35); position: relative; }
 .tile.moon-tile::after {
   content: attr(data-moon); position: absolute; top: -8px; right: -8px;

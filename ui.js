@@ -807,10 +807,11 @@
     if (tile.apple) d.classList.add('apple-tile');        // P31 · Grup I — Yasak Elma
     if (tile.pinkyOkey) d.classList.add('pinky-okey');    // P31 · Grup C — Pinky Warrior
     if (tile.special) d.classList.add('sp-' + tile.special);
-    /* P59 · Ay Takvimi — Ay Taşı (kalıcı ya da raund içi) evre simgesini taşır */
+    /* P59/P77 — Ay Taşı (kalıcı ya da raund içi) ay simgesini taşır; Dolunay turunda OKEY parlar */
     if (Game.isMoonTile && Game.isMoonTile(tile)) {
       d.classList.add('moon-tile');
       d.dataset.moon = Game.moonIconNow ? Game.moonIconNow() : '🌙';
+      if (Game.moonFullNow && Game.moonFullNow()) d.classList.add('moon-full');
     }
     if (tile.stoned) d.classList.add('stoned');
     if (tile.bungie) d.classList.add('bungie-back');   // Grup Q: sakızdan geri dönen taş
@@ -1341,8 +1342,8 @@
     if (recs.some((r) => r.key === 'godzilla') && num(s.godzillaLevel)) out.push('S' + num(s.godzillaLevel));
     // P54 · Grup B / P57 — Öteki Dünya: geride bekleyen el + ay evresi
     if (recs.some((r) => r.key === 'otekiDunya') && Game.otekiState) {
-      const o = Game.otekiState();   // P59 · Ay Takvimi
-      out.push(t('tipNowWell', o.count, o.max, o.moon, t('moonName' + o.phase)));
+      const o = Game.otekiState();   // P77 · Ay Döngüsü
+      out.push(t('tipNowWell', o.count, o.max, o.moon));
     }
     /* P54 · Bölüm 1 · Madde 1 — birikim artık kartın İÇİNDE, kendi şeridinde:
        sola etiket, sağa değer; kenar boşlukları açıklama satırlarıyla aynı.
@@ -1761,9 +1762,11 @@
   }
 
   /* ============================================================
-     P59 · ÖTEKİ DÜNYA — AY KUYUSU paneli (sol sütun, boss kutusunun altı).
-     Takas: elinden bir taş seç, sonra kuyudan bir Ay Taşına tıkla.
+     P77 · ÖTEKİ DÜNYA — AY KUYUSU paneli (sol sütun). Takas KALKTI: panel
+     yalnız gösterir — dolan ay, kuyudaki taşlar, Dolunay'a kaç taş kaldı.
+     Kuyu dolunca SONRAKİ tur başında 🌕 DOLUNAY sahnesi oynar (dolunayFx).
      ============================================================ */
+  let dolunaySeen = null;
   function renderWell() {
     const box = document.getElementById('ayWell');
     if (!box) return;
@@ -1773,32 +1776,44 @@
     box.classList.toggle('hidden', !show);
     if (!show) return;
     if (!Hints.seen('ayKuyusu')) setTimeout(() => Hints.show('ayKuyusu'), 200);   // P60
+    box.classList.toggle('aw-full', o.full && !o.dolunay);
+    box.classList.toggle('aw-dolunay', !!o.dolunay);
+    const status = o.dolunay ? t('wellDolunay') : o.full ? t('wellFull') : t('wellLeft', o.left);
     box.innerHTML =
-      `<div class="aw-head"><span class="aw-title">🌙 ${t('wellTitle')}</span>`
+      `<div class="aw-head"><span class="aw-title">${t('wellTitle')}</span>`
       + `<span class="aw-count">${o.count}/${o.max}</span></div>`
-      + `<div class="aw-phase"><b>${o.moon} ${t('moonName' + o.phase)}</b> · ${t('moonEffect' + o.phase)}</div>`
-      + `<div class="aw-slots"></div>`
-      + `<div class="aw-hint">${o.canSwap ? t('wellHint') : T.ev(o.reason || '')}</div>`;
+      + `<div class="aw-row"><div class="aw-moon" aria-hidden="true">${o.moon}</div><div class="aw-slots"></div></div>`
+      + `<div class="aw-status">${status}</div>`;
     const slots = box.querySelector('.aw-slots');
+    slots.style.setProperty('--n', o.max);
     const list = s.otekiHand || [];
     for (let i = 0; i < o.max; i++) {
       const tl = list[i];
       if (!tl) { const e = document.createElement('div'); e.className = 'aw-empty'; slots.appendChild(e); continue; }
       const te = tileEl(tl, false);
       te.classList.add('aw-tile');
-      if (o.canSwap) te.classList.add('aw-can');
-      te.addEventListener('click', () => {
-        const sel = [...selection];
-        if (sel.length !== 1) { toast(t('wellPickOne')); return; }
-        const r = Game.ayTakas(sel[0], tl.id);
-        if (!r.ok) { toast(T.ev(r.error)); return; }
-        selection.clear();
-        SFX.coin();
-        toast(T.ev(r.note), true);
-        render();
-      });
       slots.appendChild(te);
     }
+    /* 🌕 DOLUNAY sahnesi — tur başına bir kez */
+    const key = o.dolunay ? `${s.stage}-${s.roundInStage}-${s.turn}` : null;
+    if (key && dolunaySeen !== key) {
+      dolunaySeen = key;
+      const n = s.hand.filter((x) => Game.isMoonTile(x)).length;
+      setTimeout(() => showDolunay(n), 150);
+    }
+  }
+
+  function showDolunay(n) {
+    document.getElementById('dolunayFx')?.remove();
+    const fx = document.createElement('div');
+    fx.id = 'dolunayFx';
+    fx.innerHTML = `<div class="dl-sky"></div><div class="dl-moon"></div>`
+      + `<div class="dl-text"><b>${t('dolunayTitle')}</b><span>${t('dolunaySub', n)}</span></div>`;
+    document.body.appendChild(fx);
+    try { SFX.coin(); setTimeout(() => SFX.coin(), 180); setTimeout(() => SFX.coin(), 360); } catch (e) { /* sessiz */ }
+    const close = () => { fx.classList.add('out'); setTimeout(() => fx.remove(), 450); };
+    fx.addEventListener('pointerdown', close);
+    setTimeout(close, 2200);
   }
 
   /* P58 — füzyonlu kartta birden fazla elle kullanılan efekt: hangisi? */
@@ -1979,9 +1994,9 @@
       const n = (Game.state.otekiHand || []).length;
       const b = document.createElement('span');
       b.className = 'jt-charge' + (n ? ' on' : '');
-      if (j.key === 'otekiDunya') tile2.classList.toggle('oteki-flip', !!(o && o.phase === 2));
+      if (j.key === 'otekiDunya') tile2.classList.toggle('oteki-flip', !!(o && o.dolunay));
       b.textContent = `${o ? o.moon : '🌙'}${n}`;
-      b.title = o ? t('tipNowWell', n, o.max, o.moon, t('moonName' + o.phase)) : '';
+      b.title = o ? t('tipNowWell', n, o.max, o.moon) : '';
       tile2.appendChild(b);
     }
     /* P57 (kullanıcı isteği) — THE CORPORATES ŞİRKETİNE DÖNÜŞÜR: raundun

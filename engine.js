@@ -1220,51 +1220,42 @@ const BOSS_CHEAT_DECK_N = 2;   // desteden çalınan taş sayısı
    Boss: tur sonunda çekilen taşlar ters gelir, bir sonraki tur başında açılır. */
 const UC_PEEK_COST = 3;
 
-/* ÖTEKİ DÜNYA — üçüncü sürüm: AY TAKVİMİ (P59 · kullanıcı kararı 2026-10-02).
-   Geçmiş: P54'te The World'ün yerine "ikinci el" olarak doğdu, P57'de sınırsız
-   geçiş + hayalet + sis + Kavuşma + Tutulma ile yeniden kuruldu. Kullanıcı
-   "çalıştıramadım, nasıl kullanılacağı net değil" dedi; teşhis: öteki el
-   GÖRÜNMÜYORDU, yedi alt kural üst üsteydi, Kavuşma'nın düğmesi yoktu ve
-   öteki el yalnız atılan (işe yaramaz) taşlarla dolup durağan kalıyordu.
-   Yeni sistem (tek görünür alan, tek karar, tek ritim):
-   · 🌙 AY KUYUSU: ıstakanın yanında her zaman görünen AY_WELL_SIZE yuvalı
-     alan (motor: s.otekiHand — taş bölgesi adı kayıt uyumu için kaldı).
-     Her tur başında desteden 1 taş düşer; kuyu doluysa en eski taş yere düşer.
-   · DISCARD kuyuya düşer ve KALICI Ay Taşı olur (özel taş `ayTasi`, kopya
-     tavanı 5; tavandaysa yalnız o raund Ay Taşı = `moonTemp`). Desteden
-     düşen ya da takasla giren taş yalnız o raund Ay Taşıdır.
-   · TAKAS: tur başına 1 kez, elindeki bir taş ↔ kuyudaki bir Ay Taşı.
-   · AY EVRESİ (tur 1-4, sonra döner) her Ay Taşını dönüştürür — kuyuda,
-     elde, sonraki raundlarda destede (kalıcı Ay Taşı kendi başına da evreye uyar):
-       🌒 Hilal   renk serbest · 🌓 Yarım sayı ±1 esner ·
-       🌕 Dolunay OKEY olur      · 🌘 Karanlık yüzü kapanır, açılımda ×2 puan. */
-const AY_WELL_SIZE = 5;
-/* Güç ayarları (nesne içinde: denge araçları bellekte değiştirebilsin) —
-   gelgit: DOLUNAY turunda kuyunun tamamı ıstakaya akar (Ay Taşları o tur okey);
-   tileMult: Öteki Dünya slottayken açılımda kullanılan HER Ay Taşı +çarpan. */
-/* ÖLÇÜM (uzman bot, tek raund, 150 raund/stage — raund başına ek puan, S1·S3·S5·S8):
-     onaylanan kurallar (gelgit yok, çarpan yok)  +13 · −13 · +6 · −20
-     + gelgit                                     +218 · +214 · +302 · +289
-     + gelgit + Ay Taşı başına +0.5x              +615 · +536 · +784 · +800
-     + gelgit + Ay Taşı başına +1.0x (SEÇİLEN)    +991 · +798 · +1272 · +1252
-     Gökyüzü Ejderhası (karşılaştırma)            +544 · +618 · +633 · +704
-   Kullanıcı kararı (2026-10-02): gelgit + 1.0x — en güçlü Mythic. */
-const AY = { gelgit: true, tileMult: 1.0 };
-const MOON_ICONS = ['🌒', '🌓', '🌕', '🌘'];
-const MOON_NAMES = ['Hilal', 'Yarım', 'Dolunay', 'Karanlık'];
-const MOON_HILAL = 0, MOON_YARIM = 1, MOON_DOLUNAY = 2, MOON_KARANLIK = 3;
-const moonPhaseOf = (turn) => (turn >= 1 ? (turn - 1) % 4 : -1);
-const moonIcon = (turn) => (moonPhaseOf(turn) >= 0 ? MOON_ICONS[moonPhaseOf(turn)] : '🌑');
+/* ===== P77 · ÖTEKİ DÜNYA — AY DÖNGÜSÜ (kullanıcı kararı 2026-10-07) =====
+   P59 Ay Takvimi "kullanıcı dostu değil, mythic'liği hissedilmiyor" bulundu:
+   dört evre kuralı (Hilal renk serbest · Yarım ±1 · Karanlık ×2) ve turda 1
+   takas KALKTI. Yerine tek döngü:
+   · 🌙 AY KUYUSU (AY.wellSize yuva, motor bölgesi hâlâ s.otekiHand).
+   · Her tur başında desteden 1 taş kuyuya düşer; ATTIĞIN her taş da yere değil
+     kuyuya düşer ve KALICI Ay Taşı olur (özel taş `ayTasi`, kopya tavanı 5;
+     tavandaysa yalnız o raund Ay Taşı = `moonTemp`). Kalıcılık kullanıcı kararı.
+   · Kuyu dolunca 🌕 DOLUNAY: SONRAKİ tur başında kuyu ıstakana akar; o tur
+     elindeki BÜTÜN Ay Taşları OKEY'dir (s.moonFullTurn). Kuyu boşalır, ay
+     yeniden dolar → hızlı atan raundda iki Dolunay görebilir.
+   · Öteki Dünya slottayken açılımda kullanılan her Ay Taşı +AY.tileMult.
+   Kuyu doluyken gelen taş en eskiyi yere düşürür. */
+const AY_WELL_SIZE = 4;
+/* Güç ayarları (nesne içinde: denge araçları bellekte değiştirebilsin).
+   ÖLÇÜM (uzman bot, tek raund, 150 raund/stage — raund başına ek puan, S1·S3·S5·S8):
+     P59 Ay Takvimi (eski)                         +1026 · +797 · +1229 · +1266
+     Ay Döngüsü, 1 taş/tur, sonraki tur Dolunay   +348 · +371 · +731 · +768 (+1.0x)
+     2 taş/tur, dolduğu an Dolunay, +1.0x          +934 · +1015 · +806 · +837
+     2 taş/tur, dolduğu an Dolunay, +1.5x (SEÇİLEN) +1275 · +1249 · +1172 · +1210
+     2 taş/tur, dolduğu an Dolunay, +2.0x          +1573 · +1639 · +1469 · +1479
+     Gökyüzü Ejderhası (karşılaştırma)             ≈ +500 · +600 · +650 · +750
+   Bot raundda ~2 Dolunay görür. Kullanıcı: "daha güçlü olmalı" → +1.5x. */
+const AY = { wellSize: AY_WELL_SIZE, tileMult: 1.5, drop: 2 };
+/* Ayın dolma görünümü: kuyudaki taş sayısı / kuyu boyu → 🌑 🌒 🌓 🌔 🌕 */
+const MOON_FILL = ['🌑', '🌒', '🌓', '🌔', '🌕'];
+const moonFillIcon = (n, max) => MOON_FILL[Math.max(0, Math.min(4, Math.round(4 * n / Math.max(1, max))))];
 /* Kalıcı Ay Taşı ya da bu raundun Ay Taşı mı? */
 function isMoonTile(t) {
   return !!t && !t.jokerTile && (t.special === 'ayTasi' || !!t.moonTemp);
 }
-/* Oynanan raundun ay evresi (raund dışında -1). bukalemunColor gibi küresel
-   okur: renk/okey denetimleri motor nesnesine erişmeden çağrılıyor. */
-function moonPhaseNow() {
+/* 🌕 Bu tur DOLUNAY mı? (Ay Kuyusu bir önceki tur doldu ve ıstakaya aktı).
+   bukalemunColor gibi küresel okur: okey denetimi motor nesnesine erişmeden çağrılıyor. */
+function moonFullNow() {
   const s = (typeof Game !== 'undefined' && Game.state) || null;
-  if (!s || s.status !== 'playing') return -1;
-  return moonPhaseOf(s.turn);
+  return !!s && s.status === 'playing' && s.moonFullTurn === s.turn;
 }
 /* PLAYTEST 30 · GRUP F — Robin Hood KALDIRILDI, yerine VASİYET geldi.
    Vasiyet süresi dolan jokerlerin efektini `j.legacy` deposunda taşır;
@@ -1701,11 +1692,11 @@ const SPECIAL_TILES = {
      (Kıyamet onu susturmaz), yuttuğu şey elin değil kendi geçmişidir ve
      PUAN ekseninde çalışır. Ortak olan yalnız temadır. */
   /* P57 — AY TAŞI: yalnız Öteki Dünya'nın discard'ı ile doğar (`noStore`:
-     store/paket havuzuna girmez). Puanı turun ay evresine bağlıdır: bekletip
-     dolunayda (3. tur) açmayı ödüllendirir — Ateş Taşı'nın tersi. */
+     store/paket havuzuna girmez). P77: evreler kalktı — Dolunay turunda okey,
+     Öteki Dünya slottayken açılımda +AY.tileMult. */
   ayTasi: { key: 'ayTasi', name: 'Ay Taşı', icon: '🌙', price: 0, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
     noStore: true,
-    desc: 'Öteki Dünya ile doğar, kalıcıdır. Evreyle dönüşür: Hilal renk serbest · Yarım ±1 · 🌕 Dolunay OKEY · Karanlık ×2.' },
+    desc: 'Öteki Dünya ile doğar, kalıcıdır. 🌕 Dolunay turunda OKEY; Öteki Dünya slottayken açılımda +1.5x.' },
   karaDelikTasi: { key: 'karaDelikTasi', name: 'Kara Delik Taşı', icon: '🕳', price: 9, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
     desc: `Destene kalıcı girer. Açılımda +${KD_TASI_BASE} puan — her kullanımda kalıcı +${KD_TASI_STEP} yoğunlaşır (en çok +${KD_TASI_MAX}). Atarsan işlek işlemez.` },
   aynaTasi: { key: 'aynaTasi', name: 'Ayna Taşı', icon: '🪞', price: 13, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
@@ -2358,7 +2349,7 @@ const JOKER_DEFS = {
      ıstaka: kartına tıklayınca iki el yer değiştirir (tur başına bir kez).
      P59: AY TAKVİMİ olarak yeniden kuruldu — bkz. AY_WELL_SIZE üstündeki blok. */
   otekiDunya: { key: 'otekiDunya', name: 'Öteki Dünya', rarity: 'mythic', uses: 1,
-    desc: 'Ay Kuyusu: her tur 1 taş, discard oraya 🌙 Ay Taşı olur; turda 1 takas. Ay Taşı +1x; dolunayda kuyu eline akar, OKEY.' },
+    desc: 'Attığın taş Ay Kuyusu’na düşer, kalıcı 🌙 Ay Taşı olur. Kuyu dolunca DOLUNAY: taşlar eline akar, o tur OKEY; Ay Taşı +1.5x.' },
   kagit: { key: 'kagit', name: 'Kağıt', rarity: 'mythic', uses: 1,
     desc: 'Her raund başında elindeki en düşük taş KALICI olarak okeye dönüşür (Okey Mührü gibi: her stage o stage’in okeyi olur).' },
 
@@ -3042,7 +3033,6 @@ function bukalemunColor() {
 const isColorWild = (t) => {
   if (!t) return false;
   if (t.stoned || t.special === 'yankiTasi') return true;
-  if (isMoonTile(t) && moonPhaseNow() === MOON_HILAL) return true;   // P59 · 🌒 Hilal
   return !!t.color && t.color === bukalemunColor();
 };
 
@@ -3668,8 +3658,8 @@ const Game = {
      işaretlenir: değer dönüşümleri (Kara Kedi, Sir.by...) okey YARATAMAZ,
      var olan okeyi de BOZAMAZ. */
   isOkeyTile(t) {
-    /* P59 · 🌕 Dolunay — HER Ay Taşı okeydir (sahte okey kopyası Ay Taşı olduysa o da) */
-    if (isMoonTile(t) && moonPhaseNow() === MOON_DOLUNAY) return true;
+    /* P77 · 🌕 DOLUNAY turu — elindeki HER Ay Taşı okeydir (sahte okey kopyası Ay Taşı olduysa o da) */
+    if (isMoonTile(t) && moonFullNow()) return true;
     if (t.fakeOkey) return false;                                        // Sahte okey joker DEĞİL — normal okey kopyası
     return !!t.isOkeyReal;
   },
@@ -5036,7 +5026,7 @@ const Game = {
     s.yildizPick = null;
     s.ucKagit = null;         // P54 · Grup A — Üç Kağıtçı seçimi raunda taşmaz
     s.otekiHand = [];         // P54 · Grup B — Öteki Dünya'nın eli deste kurulmadan boşalır
-    s.ayTakasTurn = null;     // P59 — Ay Kuyusu takası turda bir kez
+    s.moonFullTurn = null;    // P77 — Dolunay turu (kuyu ıstakaya aktığı tur)
     s.bungieSnap = null;      // P58 — Bungie Gum'ın son kopması (üst kutuda gösterilir)
     s.bet = null;             // P58 · Kumarhane — bu raundun bahsi (kör, raunda girerken)
     s.betBaseTarget = null;
@@ -6811,7 +6801,7 @@ const Game = {
       if (hit) { const add = round2(RULET_PER * me); mult += add; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} ×${me} taş +${add.toFixed(1)}x` }); }
       else { mult -= RULET_MISS; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} tutmadı −${RULET_MISS.toFixed(1)}x` }); }
     }
-    /* P59 — Öteki Dünya slottayken açılımdaki her Ay Taşı +AY.tileMult */
+    /* P59/P77 — Öteki Dünya slottayken açılımdaki her Ay Taşı +AY.tileMult */
     if (AY.tileMult > 0 && this._otekiOpen()) {
       const mn = ctx.tiles.filter(isMoonTile).length;
       if (mn) {
@@ -6819,15 +6809,6 @@ const Game = {
         mult += m;
         const oj = this.slotRecs().find(j => j.key === 'otekiDunya');
         triggered.push({ id: oj ? oj.id : 'oteki', name: 'Öteki Dünya', text: `🌙 ${mn} Ay Taşı +${m.toFixed(1)}x` });
-      }
-    }
-    /* P59 · 🌘 Karanlık — açılımdaki Ay Taşları ×2 puan (değerleri bir kez daha eklenir) */
-    if (moonPhaseOf(s.turn) === MOON_KARANLIK) {
-      let add = 0;
-      for (const c of ctx.combos) for (const t of c.tiles) if (isMoonTile(t)) add += this.tileValue(t, c);
-      if (add) {
-        flat += add;
-        triggered.push({ id: 'ayTasi', name: 'Ay Taşı', text: `🌘 Karanlık ×2 (+${add})` });
       }
     }
     const bakirN = spN('bakir');
@@ -7088,7 +7069,7 @@ const Game = {
        BAŞARILI olunca açılır (aşağıda, `_revealTiles`). */
     const freeColors = this._freePerColors();
     // Grup A: okey, ıstakada bırakıldığı hücreye göre değer alır
-    const res = this._resolveWithMoon(tiles, (t) => this.isOkeyTile(t), freeColors, this._posOpts());   // P59 · 🌓 Yarım
+    const res = resolveCombo(tiles, (t) => this.isOkeyTile(t), freeColors, this._posOpts());
     if (!res) return { ok: false, error: 'Geçersiz kombinasyon — Per, Sıralı veya Çift kurallarına uymuyor.' };
     const type = res.type;
 
@@ -8211,6 +8192,7 @@ const Game = {
       if (toOteki && s.otekiHand.length < MAX_HAND) this._otekiFall(t, events);
       else s.discardPile.push(t);
     }
+    if (toOteki && picks.length) events.push(this._moonLine());   // P77 — ay ne kadar doldu
     const tile = picks[0] || null;   // tekli yollar için geriye dönük kısayol
     if (picks.length > 1)
       events.push(`🗑 ${picks.length} taş atıldı: `
@@ -10813,8 +10795,8 @@ const Game = {
     return !!s && this.hasActive('otekiDunya') && Array.isArray(s.otekiHand);
   },
   isMoonTile(t) { return isMoonTile(t); },
-  moonPhase() { return moonPhaseOf(this.state ? this.state.turn : 0); },
-  moonIconNow() { return moonIcon(this.state ? this.state.turn : 0); },
+  moonFullNow() { return moonFullNow(); },
+  moonIconNow() { return moonFullNow() ? '🌕' : '🌙'; },
 
   /* Geri alınan kombinasyonun taşları ele döner (P57'deki dünya ayrımı kalktı) */
   _toWorld(tiles) {
@@ -10833,7 +10815,7 @@ const Game = {
     const s = this.state;
     t.slot = this._freeSlotIn(s.otekiHand);
     s.otekiHand.push(t);
-    while (s.otekiHand.length > AY_WELL_SIZE) {
+    while (s.otekiHand.length > AY.wellSize) {
       const old = s.otekiHand.shift();
       delete old.moonTemp; delete old.faceDown; delete old.fog; delete old.moonDark;
       s.discardPile.push(old);
@@ -10863,109 +10845,72 @@ const Game = {
     this._wellPush(t, events);
   },
 
-  /* Tur başı: kuyuya desteden 1 taş düşer (raund içi Ay Taşı) + evre dönüşümü.
-     Evre dönüşümü Öteki Dünya slotta olmasa da kalıcı Ay Taşlarına uygulanır
-     (Karanlık'ta yüzü kapanır, ertesi tur açılır). */
+  /* P77 · Tur başı: desteden AY.drop taş TEK TEK kuyuya düşer (raund içi Ay
+     Taşı). Kuyu dolduğu AN (ya da bir önceki turdan dolu kaldıysa tur başında)
+     🌕 DOLUNAY: kuyu ıstakaya akar ve bu tur elindeki bütün Ay Taşları okey
+     olur. Turda en çok bir Dolunay; ondan sonra düşen taşlar kuyuda birikir.
+     Taşlar tek tek düştüğü için dolu kuyu taşmaz — attığın kalıcı Ay Taşı yere
+     itilmez. */
   _otekiTurnStart(events) {
     const s = this.state;
-    const ph = moonPhaseOf(s.turn);
-    const moonTiles = [...(s.hand || []), ...(s.otekiHand || [])].filter(isMoonTile);
-    for (const t of moonTiles) {
-      if (ph === MOON_KARANLIK) {
-        if (!t.faceDown) { t.faceDown = true; t.fog = true; t.moonDark = true; }
-      } else if (t.moonDark) {
-        delete t.faceDown; delete t.fog; delete t.moonDark;
-      }
+    /* P59 kalıntısı: eski kayıtta Karanlık evresinde kapanmış yüzler açılır */
+    for (const t of [...(s.hand || []), ...(s.otekiHand || [])]) {
+      if (t.moonDark) { delete t.faceDown; delete t.fog; delete t.moonDark; }
     }
     if (!this._otekiOpen()) return;
-    /* 🌕 DOLUNAY GELGİTİ — kuyu ıstakaya boşalır */
-    if (AY.gelgit && ph === MOON_DOLUNAY && s.otekiHand.length) {
-      const n = s.otekiHand.length;
-      for (const t of s.otekiHand) { t.slot = this._freeSlotIn(s.hand); s.hand.push(t); }
-      s.otekiHand = [];
-      events.push(`🌕 Dolunay gelgiti: Ay Kuyusu'ndaki ${n} Ay Taşı ıstakana aktı — bu tur hepsi OKEY`);
-    }
-    const i = s.deck.findIndex(t => !t.jokerTile);
-    if (i >= 0) {
+    this._dolunay(events);
+    for (let k = 0; k < AY.drop; k++) {
+      const i = s.deck.findIndex(t => !t.jokerTile);
+      if (i < 0) break;
       const t = s.deck.splice(i, 1)[0];
       if (t.special !== 'ayTasi') t.moonTemp = true;
-      if (ph === MOON_KARANLIK) { t.faceDown = true; t.fog = true; t.moonDark = true; }
       this._wellPush(t, events);
+      this._dolunay(events);
     }
-    events.push(`${MOON_ICONS[ph]} Ay ${MOON_NAMES[ph]}: Ay Kuyusu ${s.otekiHand.length}/${AY_WELL_SIZE}`);
+    events.push(this._moonLine());
+  },
+
+  /* 🌕 Kuyu doluysa (ve bu tur henüz Dolunay olmadıysa) ıstakaya boşalt */
+  _dolunay(events) {
+    const s = this.state;
+    if (s.otekiHand.length < AY.wellSize || s.moonFullTurn === s.turn) return;
+    let n = 0;
+    while (s.otekiHand.length && s.hand.length < MAX_HAND) {
+      const t = s.otekiHand.shift();
+      t.slot = this._freeSlotIn(s.hand);
+      s.hand.push(t);
+      n++;
+    }
+    s.moonFullTurn = s.turn;
+    s.dolunayCount = (s.dolunayCount || 0) + 1;
+    events.push(`🌕 DOLUNAY! Ay Kuyusu'ndaki ${n} Ay Taşı ıstakana aktı — bu tur elindeki bütün Ay Taşları OKEY`);
+  },
+
+  /* Kuyunun durumu tek satır: "🌓 Ay Kuyusu 2/4" ya da dolduysa Dolunay haberi */
+  _moonLine() {
+    const s = this.state;
+    const n = (s.otekiHand || []).length;
+    return n >= AY.wellSize
+      ? `🌕 Ay doldu (${n}/${AY.wellSize}) — sonraki tur DOLUNAY`
+      : `${moonFillIcon(n, AY.wellSize)} Ay Kuyusu ${n}/${AY.wellSize}`;
   },
 
   /* P57 kalıntıları — dünya ayrımı yok: Kavuşma/Tutulma hiç tetiklenmez */
   _kavusmaNow() { return false; },
   _otekiEclipse() { return 0; },
 
-  /* 🌓 Yarım: Ay Taşları kombinasyonda bir üst ya da alt sayının yerine
-     geçebilir. Önce taşlar oldukları gibi denenir; olmazsa Ay Taşlarının
-     ±1 kaydırılmış kopyalarıyla (en çok 3 Ay Taşı, 3^k deneme). Dönen
-     `values` asıl taş kimlikleriyle eşleşir — puan kaydırılmış sayıdan sayılır. */
-  _resolveWithMoon(tiles, isOkeyFn, freeColors, opts) {
-    const res = resolveCombo(tiles, isOkeyFn, freeColors, opts);
-    if (res || moonPhaseNow() !== MOON_YARIM) return res;
-    const flex = tiles.map((t, i) => (isMoonTile(t) && !isOkeyFn(t) ? i : -1)).filter(i => i >= 0).slice(0, 3);
-    if (!flex.length) return null;
-    const total = Math.pow(3, flex.length);
-    for (let code = 0; code < total; code++) {
-      let c = code;
-      const proxies = tiles.slice();
-      let ok = true, moved = false;
-      for (const idx of flex) {
-        const d = (c % 3) - 1; c = Math.floor(c / 3);   // basamak: 0 → −1 · 1 → 0 · 2 → +1
-        const n = tiles[idx].number + d;
-        if (n < 1 || n > 13) { ok = false; break; }
-        if (d) { proxies[idx] = { ...tiles[idx], number: n }; moved = true; }
-      }
-      if (!ok || !moved) continue;   // hiç kaydırmayan deneme yukarıda zaten yapıldı
-      const r = resolveCombo(proxies, isOkeyFn, freeColors, opts);
-      if (r) return r;
-    }
-    return null;
-  },
-
-  /* 🔁 TAKAS — tur başına 1 kez: elindeki bir taş ↔ kuyudaki bir Ay Taşı */
+  /* P77 — Ay Kuyusu durumu (UI paneli, joker rozeti, ipucu). Takas KALKTI. */
   otekiState() {
     const s = this.state;
     if (!s) return null;
     const j = this.slotRecs().find(x => x.key === 'otekiDunya');
-    const ph = moonPhaseOf(s.turn);
-    const turnKey = `${s.stage}-${s.roundInStage}-${s.turn}`;
-    let reason = null;
-    if (!j) reason = 'Öteki Dünya slotta değil.';
-    else if (s.jokersDisabled) reason = 'Jokerler bu raund susturuldu.';
-    else if (s.status !== 'playing' || s.phase !== 'meld') reason = 'Takas yalnız açılım aşamasında yapılır.';
-    else if (s.ayTakasTurn === turnKey) reason = 'Bu tur zaten takas yaptın.';
-    else if (!(s.otekiHand || []).length) reason = 'Ay Kuyusu boş.';
+    const count = (s.otekiHand || []).length, max = AY.wellSize;
+    const dolunay = moonFullNow();
     return {
-      id: j ? j.id : null, count: (s.otekiHand || []).length, max: AY_WELL_SIZE,
-      phase: ph, moon: ph >= 0 ? MOON_ICONS[ph] : '🌑', phaseName: ph >= 0 ? MOON_NAMES[ph] : '',
-      canSwap: !reason, reason,
+      id: j ? j.id : null, count, max, full: count >= max, dolunay,
+      moon: dolunay || count >= max ? '🌕' : moonFillIcon(count, max),
+      left: Math.max(0, max - count), tileMult: AY.tileMult,
     };
-  },
-
-  ayTakas(handId, wellId) {
-    const s = this.state;
-    const st = this.otekiState();
-    if (!st || !st.canSwap) return { ok: false, error: st ? st.reason : 'Öteki Dünya slotta değil.' };
-    const h = s.hand.find(t => t.id === handId);
-    const w = (s.otekiHand || []).find(t => t.id === wellId);
-    if (!h) return { ok: false, error: 'Önce elinden bir taş seç.' };
-    if (!w) return { ok: false, error: 'Kuyudan bir Ay Taşı seç.' };
-    if (h.ghost || h.jokerTile || h.sewn || h.bossSewn)
-      return { ok: false, error: 'Bu taş kuyuya verilemez.' };
-    s.hand = s.hand.filter(t => t !== h);
-    s.otekiHand = s.otekiHand.filter(t => t !== w);
-    w.slot = h.slot;
-    s.hand.push(w);
-    if (h.special !== 'ayTasi') h.moonTemp = true;
-    h.slot = this._freeSlotIn(s.otekiHand);
-    s.otekiHand.push(h);
-    s.ayTakasTurn = `${s.stage}-${s.roundInStage}-${s.turn}`;
-    if (s.paratonerBait === h.id) s.paratonerBait = null;
-    return { ok: true, note: `🔁 Takas: ${COLOR_TR[h.color]} ${h.number} kuyuya, 🌙 ${COLOR_TR[w.color]} ${w.number} eline` };
   },
 
   /* RÜŞVET (P34) — taş atma aşamasında, tur başına bir kez. Önce desteden
@@ -11590,7 +11535,7 @@ const Game = {
   _setupOteki(notes) {
     const s = this.state;
     if (!Array.isArray(s.otekiHand)) s.otekiHand = [];
-    notes.push(`🌙 Öteki Dünya: Ay Kuyusu açıldı — her tur 1 taş düşer, attığın taş Ay Taşı olur`);
+    notes.push(`🌙 Öteki Dünya: Ay Kuyusu açıldı — her tur ${AY.drop} taş düşer, attığın taş Ay Taşı olur; kuyu dolunca DOLUNAY`);
   },
 
   /* Satış kilidi (Grup B) — Lanetli Kaptan bir kez kurtardıysa artık
@@ -12136,7 +12081,7 @@ const Game = {
     if (st.ucKagit === undefined) st.ucKagit = null;        // P54 · Grup A
     if (!Array.isArray(st.otekiHand)) st.otekiHand = [];    // P54 · Grup B
     if (!Array.isArray(st.betPicks)) st.betPicks = [];      // P58 · Kumarhane
-    if (st.ayTakasTurn === undefined) st.ayTakasTurn = null;    // P59 — Ay Takvimi
+    if (st.moonFullTurn === undefined) st.moonFullTurn = null;  // P77 — Ay Döngüsü
     for (const k of ['otekiSide', 'otekiAway', 'otekiFresh', 'otekiGhostTurn', 'kavusmaDone']) delete st[k];   // P57 kalıntıları
     delete st.otekiSwapTurn;
     if (st.appleEaten == null) st.appleEaten = false;       // P31 · Grup I
@@ -12446,7 +12391,7 @@ if (typeof module !== 'undefined') {
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, hiLoOdds, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_PERM, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, MOON_NAMES, moonIcon, moonPhaseOf, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, hiLoOdds, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_PERM, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

@@ -274,11 +274,10 @@
         + '💰 Kasada kal — ödülünü al, raund biter.\n'
         + '🎲 Katla — hedef ×2 olur; tutarsa bahis ödülü ×2, tutmazsa <b>GAME OVER</b>.\n'
         + 'Puanın hedefin çok üstündeyse ve önünde en az 2 tur varsa düşünmeye değer.',
-      hint_ayKuyusu: '<b>AY KUYUSU</b> (Öteki Dünya): her tur desteden kuyuya 1 taş düşer. Attığın taş da '
+      hint_ayKuyusu: '<b>AY KUYUSU</b> (Öteki Dünya): her tur desteden kuyuya 2 taş düşer. Attığın taş da '
         + 'buraya düşer ve <b>KALICI</b> 🌙 Ay Taşı olur.\n'
-        + 'Turda 1 takas: ıstakandan bir taş seç, sonra kuyudaki taşa tıkla.\n'
-        + 'Ay Taşları evreye göre değişir: 🌒 renk serbest · 🌓 sayı ±1 · 🌕 OKEY (kuyu ıstakana akar) · '
-        + '🌘 kapalı, açılımda ×2. Açılımdaki her Ay Taşı +1x.',
+        + 'Kuyu dolduğu an 🌕 <b>DOLUNAY</b>: kuyu ıstakana akar ve o tur elindeki bütün Ay Taşları <b>OKEY</b> olur (attığın taşla dolarsa sonraki tur başında). '
+        + 'Ne kadar çok atarsan ay o kadar hızlı dolar.\nAçılımdaki her Ay Taşı +1.5x.',
       hint_catchUp: 'ACİL RAF: paran azaldığı için en ucuz kart indirime girdi ve bu '
         + 'store’da yenileme bedava. Stage başına bir kez olur.',
       hint_tradeUp: 'TAKAS: bir jokerine tıklayıp farkı ödeyerek onu bir üst '
@@ -662,13 +661,11 @@
       tipNow: (v) => `Şu an: ${v}`,
       tipNowK: 'ŞU AN',
       tipNowTiles: (n) => `öteki dünyada ${n} taş`,
-      tipNowWell: (n, mx, m, name) => `Ay Kuyusu ${n}/${mx} · ${m} ${name}`,
+      tipNowWell: (n, mx, m) => `${m} Ay Kuyusu ${n}/${mx}`,
       wellTitle: 'AY KUYUSU',
-      wellHint: 'Takas: elinden 1 taş seç, sonra kuyudan bir Ay Taşına tıkla (turda 1)',
-      wellPickOne: 'Önce elinden TEK bir taş seç, sonra kuyudaki Ay Taşına tıkla.',
-      moonName0: 'Hilal', moonName1: 'Yarım', moonName2: 'Dolunay', moonName3: 'Karanlık',
-      moonEffect0: 'Ay Taşlarının rengi serbest', moonEffect1: 'Ay Taşları sayıca ±1 esner',
-      moonEffect2: 'kuyu ıstakana akar, Ay Taşları OKEY', moonEffect3: 'Ay Taşları kapalı, açılımda ×2 puan',
+      wellLeft: (n) => `${n} taş daha → 🌕 DOLUNAY`, wellFull: '🌕 Ay doldu — sonraki tur DOLUNAY',
+      wellDolunay: '🌕 DOLUNAY — Ay Taşların bu tur OKEY', dolunayTitle: 'DOLUNAY',
+      dolunaySub: (n) => `${n} Ay Taşı ıstakanda · bu tur hepsi OKEY`,
       fogName: 'Sisli Taş',
       fogTag: 'Öteki Dünya',
       fogDesc: 'Bu dünyadan uzak kaldın, taşın yüzünü unuttun. Açılımda ya da atışta yüzü açılır.',
@@ -1196,11 +1193,10 @@
         + '💰 Cash out — take your reward, the round ends.\n'
         + '🎲 Double — the target doubles; hit it and the bet reward is ×2, miss it and it is <b>GAME OVER</b>.\n'
         + 'Worth it when your score is far above the target and you have at least 2 turns left.',
-      hint_ayKuyusu: '<b>MOON WELL</b> (Other World): every turn 1 tile falls from the deck into the well. '
+      hint_ayKuyusu: '<b>MOON WELL</b> (Other World): every turn 2 tiles fall from the deck into the well. '
         + 'Your discard falls in too and becomes a <b>PERMANENT</b> 🌙 Moon Tile.\n'
-        + '1 swap per turn: select a tile on your rack, then click a tile in the well.\n'
-        + 'Moon Tiles change with the phase: 🌒 any colour · 🌓 number ±1 · 🌕 OKEY (the well flows to your rack) · '
-        + '🌘 face down, ×2 when melded. Every Moon Tile in a meld gives +1x.',
+        + 'The moment the well is full: 🌕 <b>FULL MOON</b> — the well flows to your rack and every Moon Tile in your hand is an <b>OKEY</b> that turn (filled by your discard: at the start of next turn). '
+        + 'The more you discard, the faster the moon fills.\nEvery Moon Tile in a meld gives +1.5x.',
       hint_catchUp: 'RELIEF SHELF: you were low on coins, so the cheapest card is '
         + 'discounted and this shop\'s reroll is free. Once per stage.',
       hint_tradeUp: 'TRADE UP: click one of your jokers and pay the difference to swap it '
@@ -1518,13 +1514,11 @@
       tipNow: (v) => `Now: ${v}`,
       tipNowK: 'NOW',
       tipNowTiles: (n) => `${n} tiles in the other world`,
-      tipNowWell: (n, mx, m, name) => `Moon Well ${n}/${mx} · ${m} ${name}`,
+      tipNowWell: (n, mx, m) => `${m} Moon Well ${n}/${mx}`,
       wellTitle: 'MOON WELL',
-      wellHint: 'Swap: pick 1 tile from your hand, then click a Moon Tile in the well (1 per turn)',
-      wellPickOne: 'First pick ONE tile from your hand, then click a Moon Tile in the well.',
-      moonName0: 'Crescent', moonName1: 'Half Moon', moonName2: 'Full Moon', moonName3: 'Dark Moon',
-      moonEffect0: 'Moon Tiles are colour-free', moonEffect1: 'Moon Tiles flex ±1 in number',
-      moonEffect2: 'the well flows to your rack, Moon Tiles are OKEYS', moonEffect3: 'Moon Tiles face down, ×2 points when melded',
+      wellLeft: (n) => `${n} more → 🌕 FULL MOON`, wellFull: '🌕 The moon is full — FULL MOON next turn',
+      wellDolunay: '🌕 FULL MOON — your Moon Tiles are OKEYS this turn', dolunayTitle: 'FULL MOON',
+      dolunaySub: (n) => `${n} Moon Tiles on your rack · all OKEYS this turn`,
       fogName: 'Fogged Tile',
       fogTag: 'Other World',
       fogDesc: 'You stayed away from this world and forgot this tile\'s face. It shows when you meld or discard it.',
@@ -1867,7 +1861,7 @@
     uzayli: { name: 'Alien', desc: 'In hand, copies 3 of your tiles every turn. A copy scores +100 pts in a meld and vanishes at round end.' },
     ahtapot: { name: 'Octopus', desc: '8 arms: +0.5x per arm on every meld. One arm is sacrificed each turn and gives an extra +1.5x that turn.' },
     ucKagitci: { name: 'Three-Card Monte', desc: '3 face-down tiles every turn, you take one; one is a one-turn okey. Peek at one for 3 coins.' },
-    otekiDunya: { name: 'Other World', desc: 'Moon Well: 1 tile a turn, your discard becomes a 🌙 Moon Tile there; 1 swap a turn. Moon Tile +1x; at full moon the well flows to you as OKEYS.' },
+    otekiDunya: { name: 'Other World', desc: 'Your discard falls into the Moon Well as a permanent 🌙 Moon Tile. Full well = FULL MOON: tiles flow to you as OKEYS; Moon Tile +1.5x.' },
     terziIgne: { name: "Tailor's Needle", desc: 'In hand, sews 2 of your tiles every turn. A sewn tile cannot be discarded; meld it for +2.0x.' },
     freedom: { name: 'Freedom Fighters', desc: 'Marks 5 tiles when acquired. A marked tile that reaches your hand is worth 10x its value.' },
     avukat: { name: 'Lawyer', desc: 'At every round end it defends your rarest joker: 75% it is saved, 25% both are destroyed.' },
@@ -1945,7 +1939,7 @@
     aynaTasi: { name: 'Mirror Tile', desc: 'Joins your deck permanently. The highest tile of its combo scores 3 times.' },
     yildizTasi: { name: 'Star Tile', desc: 'Joins your deck permanently. Meld it and 3 tiles are revealed from the deck — take one, the rest go back.' },
     zamanTasi: { name: 'Time Tile', desc: 'Joins your deck permanently. Meld it and no joker ages this round.' },
-    ayTasi: { name: 'Moon Tile', desc: 'Born from the Other World, permanent. Shifts with the phase: Crescent colour-free · Half ±1 · 🌕 Full OKEY · Dark ×2.' },
+    ayTasi: { name: 'Moon Tile', desc: 'Born from the Other World, permanent. 🌕 OKEY on a Full Moon turn; +1.5x in a meld while the Other World is in a slot.' },
     ates: { name: 'Fire Tile', desc: 'Joins your deck permanently. +120 pts when melded. While it waits in hand it burns 15 pts a turn.' },
   };
 
@@ -2134,12 +2128,12 @@
     [/^🌙 (.+) Ay Kuyusu'na düştü ve KALICI Ay Taşı oldu$/, '🌙 $1 fell into the Moon Well and became a PERMANENT Moon Tile'],
     [/^🌙 (.+) Ay Kuyusu'na düştü$/, '🌙 $1 fell into the Moon Well'],
     [/^🌙 Ay Kuyusu taştı: (.+) yere düştü$/, '🌙 The Moon Well overflowed: $1 fell to the floor'],
-    [/^(🌒|🌓|🌕|🌘) Ay (Hilal|Yarım|Dolunay|Karanlık): Ay Kuyusu (\d+)\/(\d+)$/, (m) => `${m[1]} ${({ Hilal: 'Crescent', Yarım: 'Half Moon', Dolunay: 'Full Moon', Karanlık: 'Dark Moon' })[m[2]]}: Moon Well ${m[3]}/${m[4]}`],
     [/^🔁 Takas: (.+) kuyuya, 🌙 (.+) eline$/, '🔁 Swap: $1 into the well, 🌙 $2 to your hand'],
-    [/^🌙 Öteki Dünya: Ay Kuyusu açıldı — her tur 1 taş düşer, attığın taş Ay Taşı olur$/, '🌙 Other World: the Moon Well opened — 1 tile falls in each turn, your discards become Moon Tiles'],
-    [/^🌘 Karanlık ×2 \(\+(\d+)\)$/, '🌘 Dark Moon ×2 (+$1)'],
+    [/^🌙 Öteki Dünya: Ay Kuyusu açıldı — her tur (\d+) taş düşer, attığın taş Ay Taşı olur; kuyu dolunca DOLUNAY$/, '🌙 Other World: the Moon Well opened — $1 tiles fall in each turn, your discards become Moon Tiles; a full well brings the FULL MOON'],
     [/^🌙 (\d+) Ay Taşı \+([\d.]+)x$/, '🌙 $1 Moon Tiles +$2x'],
-    [/^🌕 Dolunay gelgiti: Ay Kuyusu'ndaki (\d+) Ay Taşı ıstakana aktı — bu tur hepsi OKEY$/, '🌕 Full-moon tide: the $1 Moon Tiles in the well flowed to your rack — all OKEYS this turn'],
+    [/^🌕 DOLUNAY! Ay Kuyusu'ndaki (\d+) Ay Taşı ıstakana aktı — bu tur elindeki bütün Ay Taşları OKEY$/, '🌕 FULL MOON! The $1 Moon Tiles in the well flowed to your rack — every Moon Tile in your hand is an OKEY this turn'],
+    [/^🌕 Ay doldu \((\d+)\/(\d+)\) — sonraki tur DOLUNAY$/, '🌕 The moon is full ($1/$2) — FULL MOON next turn'],
+    [/^(🌑|🌒|🌓|🌔) Ay Kuyusu (\d+)\/(\d+)$/, '$1 Moon Well $2/$3'],
     [/^Takas yalnız açılım aşamasında yapılır\.$/, 'You can only swap during the meld phase.'],
     [/^Bu tur zaten takas yaptın\.$/, 'You already swapped this turn.'],
     [/^Ay Kuyusu boş\.$/, 'The Moon Well is empty.'],
