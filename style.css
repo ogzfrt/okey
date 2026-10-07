@@ -9424,6 +9424,19 @@ html[data-theme="kumarhane"] {
    ışık havuzu sınırı oluşmasın; tuval saydam, masa kenardan kenara kesintisiz. */
 html[data-theme="kumarhane"] body.game-open,
 html[data-theme="kumarhane"] #storeOverlay#storeOverlay { background: var(--cs-felt); }
+/* P74 — Ayarlar › KUMARHANE DESENİ: art deco (koyu zümrüt + köşelerden altın güneş
+   yelpazeleri, ortası sakin; tam ekran piksel-art, dosyada ×4 büyütülmüş) */
+html[data-theme="kumarhane"][data-cs-pattern="deco"] {
+  --cs-felt: url('assets/game/desen/art-deco.png') center / cover no-repeat, #0C3E27;
+}
+/* P74 — üçüncü seçenek: Kraliyet çuhası (ton üstüne ton iskambil deseni, 192 px karo) */
+html[data-theme="kumarhane"][data-cs-pattern="kraliyet"] {
+  --cs-felt:
+    radial-gradient(ellipse 62% 58% at 50% 46%, rgba(255, 255, 220, .14), rgba(255, 255, 220, 0) 62%),
+    radial-gradient(ellipse 95% 95% at 50% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, .42) 100%),
+    url('assets/game/desen/kraliyet-cuha.png') 0 0 / 192px 192px repeat,
+    #11693C;
+}
 html[data-theme="kumarhane"] :is(#gameScreen, #mapScreen) .gm-stage,
 html[data-theme="kumarhane"] #storeOverlay #storeStage { background: transparent; }
 /* tuvalin doğrudan zeminde duran yazıları çuha üstünde okunur olsun */

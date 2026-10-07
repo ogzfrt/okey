@@ -2214,6 +2214,8 @@
       }).join(' ')).join(' | ');
     }
 
+    /* P74 — her ölçüye AYRI kalıp: per(['P - .', ...], kökler, akorlar) */
+    const per = (pats, roots, chords) => roots.map((r, i) => gen(pats[i % pats.length], [r], chords)).join(' | ');
     /* kanon / yankı: diziyi k adım geriden çal */
     const shift = (str, k) => {
       const bar = str.split('|')[0].trim().split(/\s+/).length;
@@ -2272,6 +2274,8 @@
       glass:  { type: 'sine', vol: .07, a: .002, dec: 1.3, sus: .08, rel: 1.6 },                        // cam / celesta
       needle: { type: 'square', vol: .028, a: .001, dec: .03, sus: .05, rel: .02, cut: 7000 },          // iğne ucu
       saw:    { type: 'sawtooth', vol: .05, a: .002, dec: .08, sus: .55, rel: .03, cut: 3400 },         // ritim oyunu lead
+      /* P74 — Rat Pack lounge: vibrafon (yumuşak vuruş, uzun sönüm, hafif titreşim) */
+      vibes:  { type: 'sine', vol: .075, a: .003, dec: .9, sus: .12, rel: .9, vib: 5.5, vd: .004, uni: 3 },
     };
     const HICAZ = { D: ['D3', 'F#3', 'A3'], G: ['G3', 'Bb3', 'D4'], C: ['C3', 'Eb3', 'G3'], Eb: ['Eb3', 'G3', 'Bb3'] };
     const MAJ = { G: ['G3', 'B3', 'D4'], D: ['D3', 'F#3', 'A3'], C: ['C3', 'E3', 'G3'], E: ['E3', 'G3', 'B3'], A: ['A3', 'C4', 'E4'] };
@@ -2286,8 +2290,6 @@
     /* P71c — yeni boss parçalarının akorları (hiçbiri menünün D Hicaz'ı değil) */
     const NOIR = { C: ['C3', 'Eb3', 'G3', 'Bb3'], Ab: ['Ab2', 'C3', 'Eb3', 'Gb3'], G: ['G2', 'B2', 'D3', 'F3'],
                    F: ['F3', 'Ab3', 'C4', 'Eb4'], D: ['D3', 'F3', 'Ab3', 'C4'] };                    // C minör caz (ii-V)
-    const TORCH = { Bb: ['Bb2', 'Db3', 'F3', 'Ab3'], Gb: ['Gb2', 'Bb2', 'Db3', 'E3'], Eb: ['Eb3', 'Gb3', 'Bb3', 'Db4'],
-                    F: ['F2', 'A2', 'C3', 'Eb3'], Db: ['Db3', 'F3', 'Ab3', 'C4'] };                  // Bb minör torch
     const MORPH = { Eb: ['Eb3', 'G3', 'Bb3', 'D4'], C: ['C3', 'Eb3', 'G3', 'D4'], Ab: ['Ab2', 'C3', 'Eb3', 'G3'],
                     Bb: ['Bb2', 'Eb3', 'F3', 'Ab3'], Db: ['Db3', 'F3', 'Ab3', 'C4'], G: ['G2', 'Bb2', 'D3', 'Eb3'] }; // belirsiz modal
     const ZOMB = { B: ['B2', 'F3', 'C4'], C: ['C3', 'F#3', 'C#4'], 'C#': ['C#3', 'G3', 'D4'], D: ['D3', 'G#3', 'D#4'] }; // triton + küçük ikili
@@ -2295,9 +2297,16 @@
     const EMAJ = { E: ['E3', 'G#3', 'B3'], 'C#': ['C#3', 'E3', 'G#3'], A: ['A2', 'C#3', 'E3'], B: ['B2', 'D#3', 'F#3'] }; // E majör I-vi-IV-V
     const KURDI = { E: ['E3', 'G3', 'B3'], A: ['A2', 'C3', 'E3'], G: ['G2', 'B2', 'D3'], F: ['F2', 'A2', 'C3'], D: ['D3', 'F3', 'A3'] }; // E Kürdi
     const GMIN = { G: ['G3', 'Bb3', 'D4'], Eb: ['Eb3', 'G3', 'Bb3'], D: ['D3', 'F#3', 'A3'] };
-    /* P72c — Kumarhane modunun kendi müziği: F majör big band + Db majör bossa */
-    const VEGAS = { F: ['F3', 'A3', 'C4', 'E4'], D: ['D3', 'F3', 'A3', 'C4'], G: ['G3', 'Bb3', 'D4', 'F4'],
-                    C: ['C3', 'E3', 'G3', 'Bb3'], A: ['A2', 'C#3', 'E3', 'G3'] };
+    /* P74 — Kumarhane teması "Vegas lounge / Rat Pack" (kullanıcı seçimi): Bb majör
+       swing, I-VI-ii-V; store = Db majör bossa */
+    const RAT = { Bb: ['Bb2', 'D3', 'F3', 'A3'], G: ['G2', 'B2', 'D3', 'F3'], C: ['C3', 'Eb3', 'G3', 'Bb3'],
+                  F: ['F2', 'A2', 'C3', 'Eb3'], D: ['D3', 'F3', 'A3', 'C4'], Eb: ['Eb3', 'G3', 'Bb3', 'D4'] };
+    const RAT_R = ['Bb', 'G', 'C', 'F', 'D', 'G', 'C', 'F', 'Eb', 'Eb', 'Bb', 'G', 'C', 'F', 'Bb', 'F'];
+    /* Lady Luck — G minör caz (minör ii-V: Aø7 D7 → Gm7) */
+    const JAZZ = { G: ['G2', 'Bb2', 'D3', 'F3'], C: ['C3', 'Eb3', 'G3', 'Bb3'], A: ['A2', 'C3', 'Eb3', 'G3'],
+                   D: ['D3', 'F#3', 'A3', 'C4'], Eb: ['Eb3', 'G3', 'Bb3', 'D4'], F: ['F2', 'A2', 'C3', 'Eb3'],
+                   Bb: ['Bb2', 'D3', 'F3', 'A3'] };
+    const JAZZ_R = ['G', 'G', 'C', 'C', 'A', 'D', 'G', 'G', 'Eb', 'Eb', 'C', 'F', 'Bb', 'A', 'D', 'G'];
     const BOSSA = { Db: ['Db3', 'F3', 'Ab3', 'C4'], Gb: ['Gb2', 'Bb2', 'Db3', 'F3'], Eb: ['Eb3', 'Gb3', 'Bb3', 'Db4'],
                     Ab: ['Ab2', 'C3', 'Eb3', 'Gb3'] };
     const AMIN_PH = { A: ['A4', 'C5', 'E5'], Bb: ['Bb4', 'D5', 'F5'], D: ['D4', 'F4', 'A4'], G: ['G4', 'Bb4', 'D5'] };  // A Frig (Kahin)
@@ -2346,17 +2355,37 @@
          kendine has tema müziği olsun"). Kumarhane run'ında harita + normal raund
          = Vegas gecesi big band swing; store = kokteyl lounge bossa. Boss raundu
          yine boss'un kendi parçası (final: Lady Luck). Menü temalarından ayrı dünya. */
-      kumarhane: { bpm: 132, div: 3, dv: .55, gain: .7, parts: [
-        { i: 'brass', s: 'C5 - - A4 . C5 F5 - - E5 - D5 | C5 - - - - . A4 . C5 D5 - F5 | ' +
-                         'Bb4 - - D5 . Bb4 G4 - - A4 - Bb4 | C5 - - - - - . . . G4 . A4 | ' +
-                         'C5 - - A4 . C5 F5 - - G5 - A5 | G5 - - E5 . C#5 A4 - - . . . | ' +
-                         'F5 - - D5 . A4 F4 - - E4 - F4 | E5 - - - - - D5 . C5 . . .' },
-        { i: 'upright', s: 'F2 - - A2 - - C3 - - A2 - - | D2 - - F2 - - A2 - - C3 - - | ' +
-                           'G2 - - A2 - - Bb2 - - B2 - - | C2 - - E2 - - G2 - - E2 - - | ' +
-                           'F2 - - G2 - - A2 - - C3 - - | A2 - - C#3 - - E3 - - C#3 - - | ' +
-                           'D3 - - C3 - - A2 - - F2 - - | G2 - - E2 - - C2 - - E2 - -' },
-        { i: 'ep', s: gen('. . P . . . . . P . P .', ['F', 'D', 'G', 'C', 'F', 'A', 'D', 'C'], VEGAS) },
-      ], drums: 'K..S.HK..S.H' },
+      /* P74 — kullanıcı big band'i ve "casino spy"ı beğenmedi ("kumarhane hissi
+         vermiyor"), "Vegas lounge / Rat Pack" yönünü seçti: Sinatra dönemi
+         kumarhane barı. Bb majör orta swing (126, üçleme ızgarası), kısık
+         trompet melodisi, vibrafon cevapları, yürüyen kontrbas (çeyrek nota,
+         bir sonraki köke yarım sesle yaklaşır), 2 ve 4'te piyano, ride + fırça;
+         ölçü sonlarında bakır vuruşları. 16 ölçü (≈30 sn). */
+      kumarhane: { bpm: 126, div: 3, dv: .45, gain: .7, parts: [
+        { i: 'mute', s: 'F4 - D5 - - - C5 - Bb4 A4 - - | B4 - - D5 - F5 - - - . . . | ' +
+                        'Eb5 - - D5 - C5 Bb4 - - G4 - - | A4 - - C5 - Eb5 - - - . . . | ' +
+                        'F5 - - E5 - D5 C5 - - A4 - - | B4 - - D5 - G5 - - - F5 - - | ' +
+                        'Eb5 - - - - - D5 - C5 Bb4 - G4 | A4 - - - - - . . . F4 - A4 | ' +
+                        'Bb4 - - - - - G5 - - F5 - - | D5 - - - - - . . . Bb4 - C5 | ' +
+                        'D5 - - F5 - D5 C5 - - Bb4 - - | B4 - - - - - D5 - - F5 - - | ' +
+                        'G5 - - F5 - Eb5 D5 - - C5 - - | Eb5 - - D5 - C5 A4 - - F4 - - | ' +
+                        'Bb4 - - - - - - - - D5 - C5 | Bb4 - - A4 - - C5 - - . . .' },
+        { i: 'vibes', s: per(['. . . . . . . . . . . .', '. . . . . . . . . G5 - F5', '. . . . . . . . . . . .', '. . . . . . . . . C6 - A5',
+                              '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . . . .', 'C6 - A5 F5 - - . . . . . .',
+                              '. . . . . . . . . . . .', '. . . . . . F5 - G5 A5 - -', '. . . . . . . . . . . .', '. . . . . . . . . . . .',
+                              '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . F5 - A5'], RAT_R, RAT) },
+        { i: 'upright', s: 'Bb2 - - D3 - - F3 - - Ab2 - - | G2 - - B2 - - D3 - - Db3 - - | C3 - - Eb3 - - G3 - - Gb3 - - | ' +
+                           'F3 - - Eb3 - - C3 - - Eb3 - - | D3 - - F3 - - A3 - - Ab3 - - | G3 - - F3 - - D3 - - Db3 - - | ' +
+                           'C3 - - Bb2 - - G2 - - Gb2 - - | F2 - - A2 - - C3 - - E3 - - | Eb3 - - G3 - - Bb3 - - D3 - - | ' +
+                           'Eb3 - - D3 - - C3 - - B2 - - | Bb2 - - D3 - - F3 - - Ab2 - - | G2 - - B2 - - D3 - - Db3 - - | ' +
+                           'C3 - - Eb3 - - G3 - - Gb3 - - | F3 - - Eb3 - - C3 - - B2 - - | Bb2 - - C3 - - D3 - - E3 - - | ' +
+                           'F3 - - Eb3 - - C3 - - B2 - -' },
+        { i: 'ep', s: gen('. . . P - . . . . P - .', RAT_R, RAT) },
+        { i: 'tbrass', s: per(['. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . P - . P - -',
+                               '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . P - . P - -',
+                               '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . P - . P - -',
+                               '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . . . .', 'P - . P - . P - - - - -'], RAT_R, RAT) },
+      ], drums: 'K..B.HH..B.H' },
       kumarhaneStore: { bpm: 100, div: 4, dv: .35, gain: .73, parts: [
         { i: 'mute', s: 'F5 - - - Eb5 - Db5 - C5 - - - Db5 - - - | Bb4 - - - Ab4 - Gb4 - F4 - - - Gb4 - Ab4 - | ' +
                         'Gb4 - - - F4 - Eb4 - Db4 - - - Eb4 - F4 - | Ab4 - - - - - Gb4 - F4 - Eb4 - C4 - - -' },
@@ -2525,17 +2554,33 @@
                            'A4 - - - - - E5 - | F5 - E5 - D5 - C5 - | B4 - C5 - D5 - E5 - | E5 - - - - - - -') },
       ], drums: 'K.s.x.s.K.s.x.ss' + 'K.s.x.s.K.sKx.s.' },
 
-      /* Lady Luck — Kumarhane FİNALİ (YENİ): duman altı caz kulübünde torch şarkı.
-         Bb minör, 12/8 yavaş (66 bpm, üçleme ızgarası), kadife şarkıcı sesi
-         kromatik kayışlarla; lounge piyano vuruşları, kontrbas 1-3, fırça. */
-      ladyLuck: { bpm: 66, div: 3, dv: .35, gain: .8, parts: [
-        { i: 'vox', s: 'F4 - - - - Gb4 F4 - - Db4 - - | Eb4 - - - - - Db4 - Bb3 - - - | ' +
-                       'Gb4 - - - - Ab4 Gb4 - - Eb4 - - | F4 - - - - - A3 - - C4 - Eb4 | ' +
-                       'Db5 - - - - C5 Bb4 - - F4 - - | Ab4 - - - - Bb4 Ab4 - - F4 - Db4 | ' +
-                       'Eb4 - - - Db4 - Bb3 - - Db4 - E4 | F4 - - - - - - - - . . .' },
-        { i: 'ep', s: gen('P . . . P . P . . . P .', ['Bb', 'Gb', 'Eb', 'F', 'Bb', 'Db', 'Gb', 'F'], TORCH) },
-        { i: 'upright', s: gen('R - - - - - F - - - - -', ['Bb', 'Gb', 'Eb', 'F', 'Bb', 'Db', 'Gb', 'F'], TORCH) },
-      ], drums: 'K..B..H..B..' },
+      /* Lady Luck — Kumarhane FİNALİ. P74 (kullanıcı: "jazz esintisi olsun; o karakter
+         kumarhane lady'si ve şarkıcı gibi"): caz kulübünde sahneye çıkan şarkıcı.
+         G minör, 100 bpm swing; minör ii-V (Aø7 D7 → Gm7), kadife ses melodisi
+         blue note'larla (D7'de Eb), boşluklarında kısık trompet cevapları,
+         yürüyen kontrbas, 2 ve 4'te parmak şıklatma, ride. 16 ölçü (≈38 sn).
+         Final haritasında da çalar. */
+      ladyLuck: { bpm: 100, div: 3, dv: .5, gain: .8, parts: [
+        { i: 'vox', s: 'D5 - - - - - Bb4 - C5 D5 - - | F5 - - D5 - Bb4 - - - . . . | ' +
+                       'Eb5 - - - - - C5 - D5 Eb5 - - | G5 - - F5 - Eb5 - - - . . . | ' +
+                       'Eb5 - - - - - C5 - - A4 - - | F#4 - - A4 - C5 Eb5 - - D5 - - | ' +
+                       'D5 - - - - - - - - . . . | . . . Bb4 - C5 D5 - F5 G5 - - | ' +
+                       'Bb5 - - - - - G5 - - D5 - - | F5 - - Eb5 - D5 - - - . . . | ' +
+                       'Eb5 - - D5 - C5 Bb4 - - G4 - - | A4 - - C5 - Eb5 - - - F5 - - | ' +
+                       'D5 - - - - - A4 - Bb4 C5 - - | Eb5 - - D5 - C5 - - - A4 - - | ' +
+                       'Eb5 - - D5 - C5 Bb4 - A4 F#4 - - | G4 - - - - - - - - . . .' },
+        { i: 'mute', s: per(['. . . . . . . . . . . .', '. . . . . . . . . A4 - Bb4', '. . . . . . . . . . . .', '. . . . . . . . . Bb4 - A4',
+                             '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . F5 - D5', '. . . . . . . . . . . .',
+                             '. . . . . . . . . . . .', '. . . . . . . . . C5 - Bb4', '. . . . . . . . . . . .', '. . . . . . . . . . . .',
+                             '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . . . .', '. . . . . . . . . F#4 - A4'], JAZZ_R, JAZZ) },
+        { i: 'upright', s: 'G2 - - Bb2 - - D3 - - F#2 - - | G2 - - A2 - - Bb2 - - B2 - - | C3 - - Eb3 - - G3 - - B2 - - | ' +
+                           'C3 - - Eb3 - - C3 - - Bb2 - - | A2 - - C3 - - Eb3 - - Db3 - - | D3 - - F#3 - - A3 - - Ab3 - - | ' +
+                           'G3 - - F3 - - D3 - - Bb2 - - | G2 - - Bb2 - - D3 - - E3 - - | Eb3 - - G3 - - Bb3 - - D3 - - | ' +
+                           'Eb3 - - D3 - - C3 - - Db3 - - | C3 - - Eb3 - - G3 - - Gb3 - - | F3 - - Eb3 - - C3 - - B2 - - | ' +
+                           'Bb2 - - D3 - - F3 - - Bb2 - - | A2 - - C3 - - Eb3 - - Db3 - - | D3 - - C3 - - A2 - - Ab2 - - | ' +
+                           'G2 - - Bb2 - - D3 - - F#2 - -' },
+        { i: 'ep', s: gen('. . . P - . . . . . P -', JAZZ_R, JAZZ) },
+      ], drums: 'K..C.HH..C.H' },
 
       /* ── beğenilen parçalar: karakter AYNI, yalnız menü benzerliği kalktı ── */
       /* Kara Kedi — sinsi pizzicato + yürüyen bas; fırça */
@@ -2764,6 +2809,13 @@
           return own && TRACKS[own] ? own : 'bossGenel';     // boss'un kendi müziği
         } catch (e) { return theme; }
       }
+      /* P74 — final stage'in haritası da final boss'un parçasını çalar */
+      try {
+        if (curScreen() === 'map' && Game.isFinalStage && Game.isFinalStage() && Game.state.boss) {
+          const fin = 'b_' + Game.state.boss.key;
+          if (TRACKS[fin]) return fin;
+        }
+      } catch (e) { /* yok */ }
       return theme;                   // menü + harita: seçili tema
     }
 
@@ -6425,6 +6477,15 @@
      menü ve normal run'lar her zaman kullanıcının seçtiği temada. */
   const CASINO_THEME_KEY = 'okeyCasinoTheme';
   let casinoThemeOn = (() => { try { return localStorage.getItem(CASINO_THEME_KEY) !== '0'; } catch (e) { return true; } })();
+  /* P74 — KUMARHANE DESENİ (kullanıcı 2026-10-07): masa zemini için alternatif
+     desen; Ayarlar'dan seçilir. 'cuha' = eski yeşil çuha (varsayılan),
+     'deco' = art deco yeşil-altın (tools/theme/build_art_deco.py; Vegas halısı,
+     blackjack yayı ve masa çerçevesi beğenilmedi),
+     'kraliyet' = ton üstüne ton iskambil desenli çuha (tools/theme/build_royal_felt.py)
+     — üç seçenek arkadaş testinde karşılaştırılıyor. */
+  const CASINO_PATTERN_KEY = 'okeyCasinoPattern';
+  const CASINO_PATTERNS = ['cuha', 'deco', 'kraliyet'];
+  let casinoPattern = (() => { try { const v = localStorage.getItem(CASINO_PATTERN_KEY); return CASINO_PATTERNS.includes(v) ? v : 'cuha'; } catch (e) { return 'cuha'; } })();
   function casinoRunActive() {
     try { return curScreen() !== 'menu' && !!Game.state && !!Game.kumarhaneOn && Game.kumarhaneOn(); } catch (e) { return false; }
   }
@@ -6444,6 +6505,7 @@
         : cosmicThemeOn && baseRunActive() ? 'kozmik' : themeKey;
     } catch (e) { return; }   // modül kurulumu bitmeden çağrıldıysa (TDZ)
     const root = document.documentElement;
+    root.dataset.csPattern = casinoPattern;
     if (key === 'yesil') delete root.dataset.theme;
     else root.dataset.theme = key;
     if (key === 'kozmik') {
@@ -6483,6 +6545,11 @@
       `<div class="set-langs">` +
       `<button class="set-lang set-casino${casinoThemeOn ? ' on' : ''}" data-casino="1">🎰 ${t('musicOn')}</button>` +
       `<button class="set-lang set-casino${casinoThemeOn ? '' : ' on'}" data-casino="0">${t('musicOff')}</button>` +
+      `</div></div>` +
+      /* P74 — Kumarhane masa deseni */
+      `<div class="set-row"><span class="set-label">${t('casinoPatternLabel')}</span>` +
+      `<div class="set-langs">` +
+      CASINO_PATTERNS.map(k => `<button class="set-lang set-cspat${casinoPattern === k ? ' on' : ''}" data-cspat="${k}">${t('csPat_' + k)}</button>`).join('') +
       `</div></div>` +
       /* P72 — Temel Run'a özel Kozmik tema */
       `<div class="set-row"><span class="set-label">${t('cosmicThemeLabel')}</span>` +
@@ -6569,6 +6636,13 @@
       ov.querySelectorAll('.set-cosmic').forEach(x => x.classList.toggle('on', x === b));
       applyRunTheme();
       toast(t(cosmicThemeOn ? 'cosmicThemeOnToast' : 'cosmicThemeOffToast'), true);
+    }));
+    ov.querySelectorAll('.set-cspat').forEach(b => b.addEventListener('click', () => {
+      casinoPattern = CASINO_PATTERNS.includes(b.dataset.cspat) ? b.dataset.cspat : 'cuha';
+      try { localStorage.setItem(CASINO_PATTERN_KEY, casinoPattern); } catch (e) {}
+      ov.querySelectorAll('.set-cspat').forEach(x => x.classList.toggle('on', x === b));
+      applyRunTheme();
+      toast(t('csPatToast', t('csPat_' + casinoPattern)), true);
     }));
     ov.querySelectorAll('.set-casino').forEach(b => b.addEventListener('click', () => {
       casinoThemeOn = b.dataset.casino === '1';
