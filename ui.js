@@ -2294,6 +2294,11 @@
     const EMAJ = { E: ['E3', 'G#3', 'B3'], 'C#': ['C#3', 'E3', 'G#3'], A: ['A2', 'C#3', 'E3'], B: ['B2', 'D#3', 'F#3'] }; // E majör I-vi-IV-V
     const KURDI = { E: ['E3', 'G3', 'B3'], A: ['A2', 'C3', 'E3'], G: ['G2', 'B2', 'D3'], F: ['F2', 'A2', 'C3'], D: ['D3', 'F3', 'A3'] }; // E Kürdi
     const GMIN = { G: ['G3', 'Bb3', 'D4'], Eb: ['Eb3', 'G3', 'Bb3'], D: ['D3', 'F#3', 'A3'] };
+    /* P72c — Kumarhane modunun kendi müziği: F majör big band + Db majör bossa */
+    const VEGAS = { F: ['F3', 'A3', 'C4', 'E4'], D: ['D3', 'F3', 'A3', 'C4'], G: ['G3', 'Bb3', 'D4', 'F4'],
+                    C: ['C3', 'E3', 'G3', 'Bb3'], A: ['A2', 'C#3', 'E3', 'G3'] };
+    const BOSSA = { Db: ['Db3', 'F3', 'Ab3', 'C4'], Gb: ['Gb2', 'Bb2', 'Db3', 'F3'], Eb: ['Eb3', 'Gb3', 'Bb3', 'Db4'],
+                    Ab: ['Ab2', 'C3', 'Eb3', 'Gb3'] };
     const AMIN_PH = { A: ['A4', 'C5', 'E5'], Bb: ['Bb4', 'D5', 'F5'], D: ['D4', 'F4', 'A4'], G: ['G4', 'Bb4', 'D5'] };  // A Frig (Kahin)
     /* Ayna Kral teması: 4 ölçü + aynı melodinin D etrafında ters çevrilmiş (ayna) hâli */
     const AYNA = 'D4 - F4 A4 D5 - - - | C#5 - E5 - A4 - - - | Bb4 - A4 G4 F4 - E4 - | D4 - - - A3 - - - | ' +
@@ -2336,6 +2341,27 @@
         { i: 'bass', s: gen('R . . . O . R . R . . . O . F .', T_C, NAT) },
         { i: 'pad', s: gen('P - - - - - - - - - - - - - - -', T_C, NAT) },
       ], drums: 'D...T.k.D.k.T.k.' },
+      /* P72c — KUMARHANE MODUNUN KENDİ MÜZİĞİ (kullanıcı: "kumarhane modunun direkt
+         kendine has tema müziği olsun"). Kumarhane run'ında harita + normal raund
+         = Vegas gecesi big band swing; store = kokteyl lounge bossa. Boss raundu
+         yine boss'un kendi parçası (final: Lady Luck). Menü temalarından ayrı dünya. */
+      kumarhane: { bpm: 132, div: 3, dv: .55, gain: .7, parts: [
+        { i: 'brass', s: 'C5 - - A4 . C5 F5 - - E5 - D5 | C5 - - - - . A4 . C5 D5 - F5 | ' +
+                         'Bb4 - - D5 . Bb4 G4 - - A4 - Bb4 | C5 - - - - - . . . G4 . A4 | ' +
+                         'C5 - - A4 . C5 F5 - - G5 - A5 | G5 - - E5 . C#5 A4 - - . . . | ' +
+                         'F5 - - D5 . A4 F4 - - E4 - F4 | E5 - - - - - D5 . C5 . . .' },
+        { i: 'upright', s: 'F2 - - A2 - - C3 - - A2 - - | D2 - - F2 - - A2 - - C3 - - | ' +
+                           'G2 - - A2 - - Bb2 - - B2 - - | C2 - - E2 - - G2 - - E2 - - | ' +
+                           'F2 - - G2 - - A2 - - C3 - - | A2 - - C#3 - - E3 - - C#3 - - | ' +
+                           'D3 - - C3 - - A2 - - F2 - - | G2 - - E2 - - C2 - - E2 - -' },
+        { i: 'ep', s: gen('. . P . . . . . P . P .', ['F', 'D', 'G', 'C', 'F', 'A', 'D', 'C'], VEGAS) },
+      ], drums: 'K..S.HK..S.H' },
+      kumarhaneStore: { bpm: 100, div: 4, dv: .35, gain: .73, parts: [
+        { i: 'mute', s: 'F5 - - - Eb5 - Db5 - C5 - - - Db5 - - - | Bb4 - - - Ab4 - Gb4 - F4 - - - Gb4 - Ab4 - | ' +
+                        'Gb4 - - - F4 - Eb4 - Db4 - - - Eb4 - F4 - | Ab4 - - - - - Gb4 - F4 - Eb4 - C4 - - -' },
+        { i: 'ep', s: gen('P . . P . . P . . P . . P . . .', ['Db', 'Gb', 'Eb', 'Ab'], BOSSA) },
+        { i: 'upright', s: gen('R . . F . . . . R . . F . . . .', ['Db', 'Gb', 'Eb', 'Ab'], BOSSA) },
+      ], drums: 'K..H..H.B..H..H.' },
       /* Boss · genel — müziği olmayan (yeni) bir boss için yedek. P71c: eskiden
          D Hicaz + ney'di (menünün tıpkısı) → G minör yaylı ostinato + bakır, kick/trampet */
       bossGenel: { bpm: 104, div: 4, dv: .7, gain: .55, parts: [
@@ -2725,8 +2751,11 @@
       if (force) return force;
       if (preview && document.getElementById('settingsOv')) return preview;
       preview = null;
-      const theme = 'tema' + set;
-      if (storeOpen() || upgradeOpen()) return 'store' + set;
+      /* P72c — Kumarhane run'ı (menü dışı) kendi tema + store müziğini çalar */
+      let kumar = false;
+      try { kumar = curScreen() !== 'menu' && !!Game.state && !!Game.kumarhaneOn && Game.kumarhaneOn(); } catch (e) { /* yok */ }
+      const theme = kumar ? 'kumarhane' : 'tema' + set;
+      if (storeOpen() || upgradeOpen()) return kumar ? 'kumarhaneStore' : 'store' + set;
       if (curScreen() === 'game') {
         try {
           if (!Game.state || !Game.isBossRound()) return theme;
@@ -2936,36 +2965,131 @@
 
   /* ---------- Ritim Jokeri mini oyunu (GDD 10) ---------- */
 
+  /* P72 — RİTİM: DAVUL TEKRARI (kullanıcı seçimi 2026-10-06). Eski "kayan
+     işaretçiyi tek tıkla durdur" mini oyunu ritimle ilgisizdi; artık oyun bir
+     davul kalıbı çalar, oyuncu aynı ritmi Boşluk / Enter / tık ile tekrarlar.
+     Süre oyuncunun İLK vuruşuyla başlar (acele yok); her vuruş beklenen anına
+     göre ±tolerans içinde olmalı. Ödül/ceza motorda aynen (setRitimResult). */
+  const RITIM_BEAT_MS = 600;   // 100 bpm
+  const RITIM_TOL = [140, 115, 95];
+  /* aralıklar vuruş (beat) cinsinden; her kalıp ölçü içinde müzikal */
+  const RITIM_PATTERNS = [
+    [[1, 1], [0.5, 0.5], [1, 0.5], [0.5, 1]],
+    [[1, 0.5, 0.5], [0.5, 0.5, 1], [0.5, 1, 0.5], [1, 1, 0.5], [0.5, 0.5, 0.5]],
+    [[1, 0.5, 0.5, 1], [0.5, 1, 0.5, 0.5], [1.5, 0.5, 1, 0.5], [0.5, 0.5, 1.5, 0.5], [1, 0.5, 1.5, 0.5]],
+  ];
+  /* kalıp → ilk vuruşa göre beklenen anlar (ms) */
+  function ritimPattern(level, rnd = Math.random) {
+    const set = RITIM_PATTERNS[Math.max(1, Math.min(3, level)) - 1];
+    const gaps = set[Math.floor(rnd() * set.length)];
+    const at = [0];
+    for (const g of gaps) at.push(at[at.length - 1] + g * RITIM_BEAT_MS);
+    return at;
+  }
+  /* vuruşları değerlendir: taps = oyuncunun anları (ilk vuruşa göre, ms) */
+  function ritimJudge(expect, taps, tol) {
+    const hits = expect.map((e, i) => {
+      if (taps[i] == null) return { ok: false, miss: true, err: null };
+      const err = Math.round(taps[i] - e);
+      return { ok: Math.abs(err) <= tol, miss: false, err };
+    });
+    return { hits, success: hits.every(h => h.ok) };
+  }
+  const ritimDrum = (accent) => { beep(accent ? 150 : 120, .16, 'sine', .3); beep(1900, .025, 'square', .05); };
+  const ritimTap = () => { beep(240, .1, 'triangle', .22); beep(2600, .02, 'square', .04); };
+
   function showRitim(level, cb, isBoss) {
-    const zone = [20, 14, 9][level - 1];
-    const period = 1150 - level * 180;
+    level = Math.max(1, Math.min(3, level || 1));
+    const tol = RITIM_TOL[level - 1];
+    const expect = ritimPattern(level);
+    const span = expect[expect.length - 1] || 1;
     const ov = document.createElement('div');
     ov.id = 'ritimOv';
+    ov.className = 'pk-ov tone-violet';
     ov.innerHTML =
-      `<div class="rt-box"><h3>${t(isBoss ? 'ritimTitleBoss' : 'ritimTitle', level)}</h3>` +
-      `<p>${t(isBoss ? 'ritimBodyBoss' : 'ritimBody')}</p>` +
-      `<div class="rt-bar"><div class="rt-zone" style="left:${50 - zone}%;width:${zone * 2}%"></div>` +
-      `<div class="rt-marker"></div></div>` +
-      `<button class="btn primary" id="rtStop">${t('ritimStop')}</button></div>`;
+      `<div class="pk-box rt-box2">` +
+      `<div class="pk-title">🥁 ${t(isBoss ? 'ritimTitleBoss' : 'ritimTitle', level)}</div>` +
+      `<div class="pk-sub-title">${t(isBoss ? 'ritimBodyBoss' : 'ritimBody', expect.length)}</div>` +
+      `<button class="rt-pad" id="rtPad" type="button" aria-label="${t('ritimPad')}">🥁</button>` +
+      `<div class="rt-lane">${expect.map((e, i) =>
+        `<span class="rt-dot" data-i="${i}" style="left:${(4 + 92 * e / span).toFixed(1)}%"></span>`).join('')}</div>` +
+      `<div class="rt-status" id="rtStatus">${t('ritimListen')}</div>` +
+      `<div class="pk-foot"><button class="ep-btn" id="rtReplay" disabled>${t('ritimReplay')}</button></div>` +
+      `</div>`;
     document.body.appendChild(ov);
     Music.duck(true);   // P71c — boss/joker müziği zamanlamayı şaşırtmasın
-    const marker = ov.querySelector('.rt-marker');
-    const t0 = performance.now();
-    let raf;
-    const tickFn = (tm) => {
-      const ph = ((tm - t0) % (period * 2)) / period;
-      const pos = ph <= 1 ? ph : 2 - ph;
-      marker.style.left = (pos * 100) + '%';
-      raf = requestAnimationFrame(tickFn);
-    };
-    raf = requestAnimationFrame(tickFn);
-    ov.querySelector('#rtStop').addEventListener('click', () => {
-      cancelAnimationFrame(raf);
-      const left = parseFloat(marker.style.left) || 0;
-      ov.remove();
-      Music.duck(false);
-      cb(Math.abs(left - 50) <= zone);
+    const pad = ov.querySelector('#rtPad'), status = ov.querySelector('#rtStatus');
+    const replayBtn = ov.querySelector('#rtReplay');
+    const dots = [...ov.querySelectorAll('.rt-dot')];
+    let phase = 'listen', taps = [], t0 = 0, timers = [], replayUsed = false, done = false;
+    const later = (fn, ms) => { const h = setTimeout(fn, ms); timers.push(h); return h; };
+    const flash = () => { pad.classList.remove('hit'); void pad.offsetWidth; pad.classList.add('hit'); };
+
+    function play() {
+      phase = 'listen';
+      replayBtn.disabled = true;
+      status.textContent = t('ritimListen');
+      dots.forEach(d => d.classList.remove('lit', 'ok', 'bad'));
+      expect.forEach((e, i) => later(() => {
+        if (done) return;
+        ritimDrum(i === 0); flash(); dots[i].classList.add('lit');
+      }, 450 + e));
+      later(() => {
+        if (done) return;
+        phase = 'play';
+        dots.forEach(d => d.classList.remove('lit'));
+        status.textContent = t('ritimYourTurn');
+        replayBtn.disabled = replayUsed;
+      }, 450 + span + 350);
+    }
+
+    function finish(success, msg) {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      document.removeEventListener('keydown', onKey, true);
+      status.textContent = msg || (success ? t('ritimWinShort') : t('ritimLoseShort'));
+      status.classList.add(success ? 'win' : 'lose');
+      setTimeout(() => { ov.remove(); Music.duck(false); cb(success); }, 1100);
+    }
+    ov.__finish = (success) => finish(!!success);   // test kancası
+    ov.__expect = expect;                              // test: beklenen vuruş anları (ms)
+
+    function judgeAndFinish() {
+      const j = ritimJudge(expect, taps, tol);
+      const bad = j.hits.findIndex(h => !h.ok);
+      let msg;
+      if (j.success) msg = t('ritimWinShort');
+      else if (j.hits[bad].miss) msg = t('ritimMissed', bad + 1);
+      else msg = t(j.hits[bad].err < 0 ? 'ritimEarly' : 'ritimLate', bad + 1, (Math.abs(j.hits[bad].err) / 1000).toFixed(2));
+      finish(j.success, msg);
+    }
+
+    function hit() {
+      if (done || phase !== 'play') return;
+      const now = performance.now();
+      if (!taps.length) { t0 = now; replayBtn.disabled = true; }
+      const at = now - t0;
+      const i = taps.length;
+      taps.push(at);
+      ritimTap(); flash();
+      const ok = Math.abs(at - expect[i]) <= tol;
+      dots[i].classList.add(ok ? 'ok' : 'bad');
+      if (taps.length >= expect.length) { phase = 'over'; later(judgeAndFinish, 250); return; }
+      /* sıradaki vuruş hiç gelmezse kaçırılmış say */
+      timers.forEach(clearTimeout); timers = [];
+      later(() => { if (phase === 'play') { phase = 'over'; judgeAndFinish(); } }, expect[i + 1] - at + tol + 500);
+    }
+    function onKey(e) {
+      if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); hit(); }
+    }
+    pad.addEventListener('pointerdown', (e) => { e.preventDefault(); hit(); });
+    document.addEventListener('keydown', onKey, true);
+    replayBtn.addEventListener('click', () => {
+      if (replayUsed || taps.length || phase !== 'play') return;
+      replayUsed = true; play();
     });
+    play();
   }
 
   /* ============================================================
@@ -6302,13 +6426,28 @@
   function casinoRunActive() {
     try { return curScreen() !== 'menu' && !!Game.state && !!Game.kumarhaneOn && Game.kumarhaneOn(); } catch (e) { return false; }
   }
+  /* P72 — KOZMİK TEMA (kullanıcı 2026-10-06): Temel Run'a özel; Kumarhane
+     temasıyla aynı kalıp. Bulutsu rengi stage'e göre kayar (yolculuk). */
+  const COSMIC_THEME_KEY = 'okeyCosmicTheme';
+  let cosmicThemeOn = (() => { try { return localStorage.getItem(COSMIC_THEME_KEY) !== '0'; } catch (e) { return true; } })();
+  /* S1 mor → S2 çivit → S3 camgöbeği → S4 deniz yeşili → S5 macenta → S6 kızıl → S7 turuncu → S8 altın */
+  const KOZMIK_HUES = [0, -45, -90, -140, 45, 80, 110, 140];
+  function baseRunActive() {
+    try { return curScreen() !== 'menu' && !!Game.state && !(Game.kumarhaneOn && Game.kumarhaneOn()); } catch (e) { return false; }
+  }
   function applyRunTheme() {
     let key;
-    try { key = casinoThemeOn && casinoRunActive() ? 'kumarhane' : themeKey; }
-    catch (e) { return; }   // modül kurulumu bitmeden çağrıldıysa (TDZ)
+    try {
+      key = casinoThemeOn && casinoRunActive() ? 'kumarhane'
+        : cosmicThemeOn && baseRunActive() ? 'kozmik' : themeKey;
+    } catch (e) { return; }   // modül kurulumu bitmeden çağrıldıysa (TDZ)
     const root = document.documentElement;
     if (key === 'yesil') delete root.dataset.theme;
     else root.dataset.theme = key;
+    if (key === 'kozmik') {
+      const st = Math.max(1, (Game.state && Game.state.stage) || 1);
+      root.style.setProperty('--kz-hue', KOZMIK_HUES[(st - 1) % KOZMIK_HUES.length] + 'deg');
+    }
   }
 
   /* index.html <head> içindeki satır temayı ilk boyamadan önce zaten
@@ -6342,6 +6481,12 @@
       `<div class="set-langs">` +
       `<button class="set-lang set-casino${casinoThemeOn ? ' on' : ''}" data-casino="1">🎰 ${t('musicOn')}</button>` +
       `<button class="set-lang set-casino${casinoThemeOn ? '' : ' on'}" data-casino="0">${t('musicOff')}</button>` +
+      `</div></div>` +
+      /* P72 — Temel Run'a özel Kozmik tema */
+      `<div class="set-row"><span class="set-label">${t('cosmicThemeLabel')}</span>` +
+      `<div class="set-langs">` +
+      `<button class="set-lang set-cosmic${cosmicThemeOn ? ' on' : ''}" data-cosmic="1">🌌 ${t('musicOn')}</button>` +
+      `<button class="set-lang set-cosmic${cosmicThemeOn ? '' : ' on'}" data-cosmic="0">${t('musicOff')}</button>` +
       `</div></div>` +
       /* P67 — ses efektleri (düğme/taş sesleri): aç/kapa + seviye */
       `<div class="set-row"><span class="set-label">${t('sfxSetLabel')}</span>` +
@@ -6416,6 +6561,13 @@
        ekran (oyun, store, ödül çarkı, modallar) yeniden çizim beklemeden
        döner. Yine de sayaç/etiket metinleri seçili temaya göre "on"
        sınıfını taşısın diye pencere tazelenir. */
+    ov.querySelectorAll('.set-cosmic').forEach(b => b.addEventListener('click', () => {
+      cosmicThemeOn = b.dataset.cosmic === '1';
+      try { localStorage.setItem(COSMIC_THEME_KEY, cosmicThemeOn ? '1' : '0'); } catch (e) {}
+      ov.querySelectorAll('.set-cosmic').forEach(x => x.classList.toggle('on', x === b));
+      applyRunTheme();
+      toast(t(cosmicThemeOn ? 'cosmicThemeOnToast' : 'cosmicThemeOffToast'), true);
+    }));
     ov.querySelectorAll('.set-casino').forEach(b => b.addEventListener('click', () => {
       casinoThemeOn = b.dataset.casino === '1';
       try { localStorage.setItem(CASINO_THEME_KEY, casinoThemeOn ? '1' : '0'); } catch (e) {}
@@ -7743,7 +7895,8 @@
     'otekiDunya',                             // P55 · Figma 387:3 — Mythic 10/10
     'kaptan', 'ucKagitci',                    // P57 · Figma 390:2 (Legendary 2/15) + 390:44 (boss 20/20)
     'medusa',                                 // P67 · Figma 420:2 (Legendary 3/15)
-    'nostradamus']);                          // P71 · Figma 428:2 (Legendary 4/15)
+    'nostradamus',                            // P71 · Figma 428:2 (Legendary 4/15)
+    'ladyLuck']);                             // P72 · Figma 444:2 (FINAL_BOSS_JOKERLER 436:2) — Kumarhane finali
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
@@ -7860,6 +8013,8 @@
     const out = [];
     for (const n of [1, 2, 3]) out.push({ key: 'tema' + n, rarity: 'tema', name: t('musicSet' + n), desc: t('mus_tema' + n) });
     for (const n of [1, 2, 3]) out.push({ key: 'store' + n, rarity: 'store', name: 'Store · ' + t('musicSet' + n), desc: t('mus_store' + n) });
+    out.push({ key: 'kumarhane', rarity: 'tema', name: t('musKumarhane'), desc: t('mus_kumarhane') });            // P72c
+    out.push({ key: 'kumarhaneStore', rarity: 'store', name: 'Store · ' + t('musKumarhane'), desc: t('mus_kumarhaneStore') });
     for (const b of BOSSES) if (Music.TRACKS['b_' + b.key]) {
       out.push({ key: 'b_' + b.key, rarity: 'boss', boss: b.key, name: T.bossName(b.key, b.name), desc: t('mus_b_' + b.key) });
     }
@@ -8782,5 +8937,5 @@
     // P61 — Kumarhane hissi
     Music, applyRunTheme,
     showHiLo, showSideBet, showRuletPick, kumarStartPanels, showJackpot, pickRunMode, showSettings, showRunPick,
-    collectionView: (v) => showCollection(v), showRitim };
+    collectionView: (v) => showCollection(v), showRitim, ritimPattern, ritimJudge };
 })();

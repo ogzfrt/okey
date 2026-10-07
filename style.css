@@ -1328,51 +1328,32 @@ body::before {
 #okeyBanner .ob-name { font-weight: 800; margin-top: 7px; font-size: 15px; }
 #okeyBanner .ob-skip { font-size: 10px; color: #55557a; margin-top: 9px; letter-spacing: 1px; }
 
-/* ---------- Ritim mini oyunu (GDD 10) ---------- */
-#ritimOv {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  background: rgba(10,10,25,.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ---------- Ritim mini oyunu — P72 davul tekrarı (pk-ov kalıbı) ---------- */
+#ritimOv .rt-box2 { width: min(460px, calc(100vw - 32px)); text-align: center; }
+#ritimOv .rt-pad {
+  display: block; margin: 6px auto 14px; width: 132px; height: 132px; border-radius: 50%;
+  border: 4px solid #22384A; background: radial-gradient(circle at 40% 35%, #FFF6DD, #E9C88E 70%, #C99A55);
+  font-size: 54px; line-height: 1; cursor: pointer; box-shadow: 0 6px 0 #22384A;
+  touch-action: manipulation; user-select: none;
 }
-#ritimOv .rt-box {
-  background: #232340;
-  border: 1px solid #9B59B6;
-  border-radius: 16px;
-  padding: 22px 28px;
-  text-align: center;
-  width: min(430px, 92vw);
-  box-shadow: 0 0 40px rgba(155,89,182,.35);
+#ritimOv .rt-pad:active { transform: translateY(3px); box-shadow: 0 3px 0 #22384A; }
+#ritimOv .rt-pad.hit { animation: rtHit .18s ease-out; }
+@keyframes rtHit { 0% { transform: scale(.92); filter: brightness(1.25); } 100% { transform: none; filter: none; } }
+#ritimOv .rt-lane {
+  position: relative; height: 26px; margin: 0 4px 10px; border-radius: 999px;
+  background: rgba(0, 0, 0, .28); border: 2px solid var(--gm-edge, rgba(255, 255, 255, .45));
 }
-#ritimOv p { color: #9a9abc; font-size: 12px; margin: 8px 0 14px; }
-#ritimOv .rt-bar {
-  position: relative;
-  height: 26px;
-  border-radius: 999px;
-  background: #16162a;
-  border: 1px solid #3a3a5e;
-  margin-bottom: 16px;
-  overflow: hidden;
+#ritimOv .rt-dot {
+  position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
+  background: #fff; border: 2px solid #22384A; transition: background .1s, transform .1s;
 }
-#ritimOv .rt-zone {
-  position: absolute;
-  top: 0; bottom: 0;
-  background: rgba(245,166,35,.4);
-  border-left: 1px solid var(--gold);
-  border-right: 1px solid var(--gold);
-}
-#ritimOv .rt-marker {
-  position: absolute;
-  top: -2px; bottom: -2px;
-  width: 5px;
-  margin-left: -2px;
-  background: #fff;
-  border-radius: 3px;
-  box-shadow: 0 0 10px rgba(255,255,255,.9);
-}
+#ritimOv .rt-dot.lit { background: #A98BD4; transform: scale(1.35); }
+#ritimOv .rt-dot.ok { background: #3FAF5A; }
+#ritimOv .rt-dot.bad { background: #D9534F; }
+/* durum satırı panelin AÇIK yazı rengiyle (koyu panelde okunur — kozmik temada görünmüyordu) */
+#ritimOv .rt-status { font-size: 13px; font-weight: 800; color: var(--gm-light, #FFF); min-height: 18px; }
+#ritimOv .rt-status.win { color: #7CF29A; }
+#ritimOv .rt-status.lose { color: #FF8A80; }
 
 /* ---------- Fuzyon secici ---------- */
 #fuzyonPick {
@@ -1628,11 +1609,6 @@ body::before {
 #fuzyonMenu p { color: var(--muted); }
 #fuzyonPick .fz-opt { background: #FBFCFE; border-color: var(--line); border-left-width: 5px; color: var(--ink); }
 #fuzyonPick .fz-opt span { color: var(--muted); }
-#ritimOv { background: rgba(30,45,60,.55); }
-#ritimOv .rt-box { background: #fff; border-color: #9B59B6; }
-#ritimOv p { color: var(--muted); }
-#ritimOv .rt-bar { background: #EDF2F6; border-color: #C9D4DF; }
-#ritimOv .rt-marker { background: var(--ink); box-shadow: 0 0 10px rgba(34,56,74,.55); }
 #okeyBanner { background: rgba(30,45,60,.5); }
 #okeyBanner .ob-box { background: #fff; border-color: var(--gold); box-shadow: 0 20px 60px rgba(34,56,74,.3); }
 #okeyBanner .ob-sub { color: var(--muted); }
@@ -7134,6 +7110,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .art-preload { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; pointer-events: none; }
 .art-preload > div { width: 1px; height: 1px; background-image: var(--jk-art); }
 .jk-nostradamus  { --jk-art: url('assets/game/joker/nostradamus.svg'); }   /* P71 · Figma 428:2 */
+.jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P72 · Figma 444:2 */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
@@ -9490,6 +9467,116 @@ html[data-theme="kumarhane"] .gm-stage .map-card .mc-t-rew :is(.mc-coins, .mc-co
 html[data-theme="kumarhane"] :is(.gm-stage, #storeStage) .gm-score-val,
 html[data-theme="kumarhane"] :is(.gm-stage, #storeStage) .gm-score-val * { color: var(--gm-dark) !important; }
 html[data-theme="kumarhane"] .gm-stage #turnIndicator.gm-turn { color: var(--cs-gold); text-shadow: 0 2px 0 rgba(0, 0, 0, .5); }
+
+/* ============================================================
+   P72 — KOZMİK TEMA (kullanıcı 2026-10-06: Temel Run'a kumarhane gibi bütün
+   bir tema; konsept "Kozmik yolculuk"; "ana menüdekinin aynısını uygulama,
+   kendin baştan yarat"). YALNIZ Temel Run'ın oyun / harita / store /
+   pencerelerinde, Ayarlar → Kozmik Tema açıkken (varsayılan açık); ana menü
+   ve Kumarhane run'ı etkilenmez. ui.js applyRunTheme.
+   ZEMİN = build_cosmos.py'nin ürettiği piksel-art bulutsu (#cosmos katmanı,
+   pixelated). Run bir YOLCULUK: bulutsunun rengi her stage'de kayar
+   (--kz-hue, ui.js KOZMIK_HUES; S1 mor → S4 deniz yeşili → S5 macenta →
+   S8 altın). EŞYALAR = gece çivit · yıldız beyazı · bulutsu moru; ıstaka ve
+   panellerin neon parıltısı o stage'in rengini izler (--kz-neon).
+   ============================================================ */
+#cosmos { display: none; }
+html[data-theme="kozmik"] {
+  --gm-dark:  #1B1640;            /* gece çivit: çerçeve, düğme, pencere zemini, koyu yazı */
+  --gm-light: #E8E4FF;            /* yıldız beyazı */
+  --gm-panel: #7C6FD6;            /* bulutsu moru yüzey */
+  --gm-bg:    #05060F;
+  --kz-hue:   0deg;
+  --kz-neon:  hsl(calc(285deg + var(--kz-hue)) 95% 74%);
+  --kz-neon-soft: hsl(calc(285deg + var(--kz-hue)) 90% 70% / .45);
+  --gm-edge:  var(--kz-neon);     /* pencere/raf/plaka kenarı neon */
+  --gm-turn-on: var(--kz-neon);
+  --gm-coin-ink: #1B1640;
+  --img-action-bar: url('assets/game/kozmik/action-bar.svg');
+  --img-btn-info: url('assets/game/kozmik/btn-info.svg');
+  --img-btn-open: url('assets/game/kozmik/btn-open.svg');
+  --img-btn-pause: url('assets/game/kozmik/btn-pause.svg');
+  --img-btn-small: url('assets/game/kozmik/btn-small.svg');
+  --img-chip-round: url('assets/game/kozmik/chip-round.svg');
+  --img-meld-row: url('assets/game/kozmik/meld-row.svg');
+  --img-map-card: url('assets/game/kozmik/map-card.svg');
+  --img-map-okeybox: url('assets/game/kozmik/map-okeybox.svg');
+  --img-map-pill: url('assets/game/kozmik/map-pill.svg');
+  --img-map-select: url('assets/game/kozmik/map-select.svg');
+  --img-map-target: url('assets/game/kozmik/map-target.svg');
+  --img-map-title: url('assets/game/kozmik/map-title.svg');
+  --img-panel-jokers: url('assets/game/kozmik/panel-jokers.svg');
+  --img-panel-okey: url('assets/game/kozmik/panel-okey.svg');
+  --img-panel-score: url('assets/game/kozmik/panel-score.svg');
+  --img-panel-small: url('assets/game/kozmik/panel-small.svg');
+  --img-preview-box: url('assets/game/kozmik/preview-box.svg');
+  --img-rack-cell: url('assets/game/kozmik/rack-cell.svg');
+  --img-rack-outer1: url('assets/game/kozmik/rack-outer1.svg');
+  --img-rack-row: url('assets/game/kozmik/rack-row.svg');
+  --img-shoulder: url('assets/game/kozmik/shoulder.svg');
+  --img-tray-3: url('assets/game/kozmik/tray-3.svg');
+  --img-tile-back: url('assets/game/kozmik/tile-back.png');
+  --img-panel-coin: url('assets/game/kozmik/panel-coin.svg');
+  /* eski store kabuğu tokenları */
+  --st-edge:      #1B1640;
+  --st-edge-soft: rgba(27, 22, 64, .38);
+  --st-bg:        #E8E4FF;
+  --st-stripe:    rgba(27, 22, 64, .05);
+  --st-glow:      var(--kz-neon-soft);
+  --st-head:      #1B1640;
+  --st-rule:      rgba(27, 22, 64, .35);
+}
+
+/* --- zemin: piksel-art bulutsu, stage'le renk kayar, yavaşça süzülür --- */
+html[data-theme="kozmik"] body.game-open { background: #05060F; }
+html[data-theme="kozmik"] body.game-open #cosmos {
+  display: block; position: fixed; inset: -3%; z-index: -1; pointer-events: none;
+  background: url('assets/game/kozmik/cosmos.png') center / cover no-repeat #05060F;
+  image-rendering: pixelated;
+  filter: hue-rotate(var(--kz-hue));
+  transition: filter 1.2s ease;
+  animation: kzDrift 90s ease-in-out infinite alternate;
+}
+@keyframes kzDrift { from { transform: translate(-1%, .5%) scale(1.02); } to { transform: translate(1%, -.5%) scale(1.05); } }
+@media (prefers-reduced-motion: reduce) { html[data-theme="kozmik"] body.game-open #cosmos { animation: none; } }
+/* store katmanı oyunu ÖRTMELİ (şeffaf olunca arkadaki ıstaka görünüyordu) → kendi bulutsusu */
+html[data-theme="kozmik"] #storeOverlay#storeOverlay { background: #05060F; backdrop-filter: none; isolation: isolate; overflow: hidden; }
+html[data-theme="kozmik"] #storeOverlay::before {
+  content: ''; position: absolute; inset: -3%; z-index: -1; pointer-events: none;
+  background: url('assets/game/kozmik/cosmos.png') center / cover no-repeat;
+  image-rendering: pixelated; filter: hue-rotate(var(--kz-hue));
+}
+html[data-theme="kozmik"] :is(#gameScreen, #mapScreen) .gm-stage,
+html[data-theme="kozmik"] #storeOverlay #storeStage { background: transparent; color: var(--gm-light); }
+
+/* --- eşyalar: neon parıltı + gölge → bulutsudan net ayrılır --- */
+html[data-theme="kozmik"] .gm-stage #rack {
+  filter: drop-shadow(0 0 2px var(--kz-neon)) drop-shadow(0 0 18px var(--kz-neon-soft)) drop-shadow(0 12px 14px rgba(0, 0, 0, .55));
+}
+html[data-theme="kozmik"] :is(.gm-stage, #storeStage) :is(.gm-jokers, .gm-left > *, .gm-coin, .map-card, #actionBar, .gm-shoulder, .st-inv) {
+  filter: drop-shadow(0 0 1.5px var(--kz-neon)) drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
+}
+/* --- pencereler: çivit cam, neon kenar + iç çizgi --- */
+html[data-theme="kozmik"] :is(.st-panel, .tp-box, .pk-box, .pp-box, .st-inv, #storeDeckRow, #storePlate) {
+  box-shadow: inset 0 0 0 3px var(--kz-neon-soft), 0 0 24px var(--kz-neon-soft), 0 10px 0 rgba(0, 0, 0, .5);
+}
+html[data-theme="kozmik"] :is(.pk-title, .tp-box h3) { color: var(--kz-neon); }
+html[data-theme="kozmik"] #storeStage #storePlate h2#storeTitle { color: var(--kz-neon); text-shadow: 0 4px 0 rgba(0, 0, 0, .5); }
+html[data-theme="kozmik"] #storeStage .store-row .sr-head { color: var(--kz-neon); opacity: 1; }
+html[data-theme="kozmik"] #storeStage .store-row.st-well {
+  background: rgba(5, 6, 15, .45);
+  box-shadow: inset 0 4px 0 rgba(0, 0, 0, .35), inset 0 0 0 2px var(--kz-neon-soft);
+}
+html[data-theme="kozmik"] #storeStage .sr-grid .store-item { box-shadow: 0 0 0 3px var(--kz-neon), 0 6px 0 rgba(0, 0, 0, .5); }
+html[data-theme="kozmik"] #storeStage .st-btn.st-go { background: var(--kz-neon); border-color: var(--kz-neon); color: #12102C; }
+html[data-theme="kozmik"] #storeStage .st-btn.st-ghost { border-color: var(--kz-neon); color: var(--kz-neon); }
+html[data-theme="kozmik"] #storeStage .st-inv .st-sh-tab { color: var(--kz-neon); }
+
+/* okunurluk: açık zeminli SVG'lerin üstündeki beyaz yazılar çivit; bulutsu üstündekiler neon */
+html[data-theme="kozmik"] .gm-stage .map-card :is(.mc-select, .mc-pill, .mc-t-lbl, .mc-t-val, .mc-t-rew) { color: var(--gm-dark); }
+html[data-theme="kozmik"] :is(.gm-stage, #storeStage) .gm-score-val,
+html[data-theme="kozmik"] :is(.gm-stage, #storeStage) .gm-score-val * { color: var(--gm-dark) !important; }
+html[data-theme="kozmik"] .gm-stage #turnIndicator.gm-turn { color: var(--kz-neon); text-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
 
 /* P71 — FİNAL nadirlik (Lady Luck): kırmızı-altın */
 .r-final { border-left-color: #C8102E; box-shadow: 0 0 14px rgba(230,190,78,.45); }
