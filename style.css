@@ -8906,6 +8906,18 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 #storeStage #storeMenuPop.hidden { display: none; }
 #storeStage #storeMenuPop .btn { font-family: var(--gm-font); font-size: 20px; width: 100%; box-sizing: border-box; overflow: hidden; }
+/* P75 — pause menüsü düğmeleri TEMAYA bağlı (kullanıcı: Kozmik temada "okunmuyor").
+   Kök neden: genel `.btn.ghost` her temada sabit gri-mavi yazı + şeffaf zemin
+   kullanıyordu; Kozmik'in mor (#7C6FD6) ve Kumarhane'nin altın panelinde yazı
+   zemine karışıyordu. Artık oyunun diğer düğmeleri gibi: koyu tema zemini +
+   açık tema yazısı (her temada yüksek karşıtlık). */
+:is(#gameScreen, #mapScreen) :is(#menuPop, #mapMenuPop) .btn,
+#storeStage #storeMenuPop .btn {
+  background: var(--gm-dark); color: var(--gm-light);
+  border: 2px solid var(--gm-dark); opacity: 1;
+}
+:is(#gameScreen, #mapScreen) :is(#menuPop, #mapMenuPop) .btn:hover,
+#storeStage #storeMenuPop .btn:hover { filter: brightness(1.2); }
 
 /* --- sol sütun: haritanın aynısı; eski #storeSide/#storeSign kuralları ezilir --- */
 #storeStage #storeSide.gm-left {
