@@ -998,6 +998,7 @@
     const finalOnly = Game.isFinalStage();   // P71 — final stage'inde tek kart (Lady Luck)
     el.mapStage.textContent = stageText(s);
     el.mapRound.textContent = roundText(s);
+    fitStageVal(el.mapStage); fitStageVal(el.mapRound);
     el.mapScoreVal.textContent = String(s.score ?? 0);
     el.mapCoinVal.textContent = String(s.coins);
     el.mapOkey.innerHTML = '';
@@ -3835,6 +3836,7 @@
       : roundName(s.roundInStage === 1 ? 1 : 2);
     el.stageVal.textContent = stageText(s);
     el.roundVal.textContent = roundText(s);
+    fitStageVal(el.stageVal); fitStageVal(el.roundVal);
     el.coinVal.textContent = s.coins;   // Figma: "$" ayrı katman, ikon yok
     /* Figma: sol alttaki OKEY bloğu — başlık ayrı, kutuda GERÇEK TAŞ
        görseli durur (mini çip değil), böylece oyuncu ıstakadaki okeyle
@@ -7157,6 +7159,7 @@
     $('storeCoinVal').textContent = String(s.coins);
     $('storeStageVal').textContent = stageText(s);
     el.ssRound.textContent = roundText(s);
+    fitStageVal($('storeStageVal')); fitStageVal(el.ssRound);
     $('storeScoreVal').textContent = String(s.score ?? 0);
     const okBox = $('storeOkey');
     okBox.innerHTML = '';
@@ -8455,6 +8458,27 @@
   /* Yazı boyunu base'ten min'e doğru 1px azaltarak metni kutuya sığdırır.
      `checkH` verilirse yükseklik de denetlenir: sarmalanan (çok satırlı)
      butonlarda metin yalnız yana değil AŞAĞI da taşabiliyor. */
+  /* P72 — "FİNAL" yazısı "5/8" için ölçülmüş kutulara sığmıyordu (kenarlara
+     dayanıyordu): yalnız final stage'de kutuya sığana kadar küçülür. */
+  function fitStageVal(node) {
+    if (!node) return;
+    node.style.fontSize = '';
+    if (!(Game.isFinalStage && Game.isFinalStage())) return;
+    if (!node.offsetWidth) return;
+    /* kenardan pay bırakarak sığdır: metin kutunun %82'sine inene kadar 1px küçült */
+    const rg = document.createRange();
+    let size = parseFloat(getComputedStyle(node).fontSize) || 24;
+    const min = Math.max(10, Math.round(size * .45));
+    const room = node.clientWidth * .82;
+    for (;;) {
+      rg.selectNodeContents(node);
+      const w = rg.getBoundingClientRect().width / ((node.getBoundingClientRect().width / node.offsetWidth) || 1);
+      if (w <= room || size <= min) break;
+      size -= 1;
+      node.style.fontSize = size + 'px';
+    }
+  }
+
   function fitText(node, base, min, checkH) {
     if (!node || node.classList.contains('hidden') || !node.offsetWidth) return;
     node.style.fontSize = base + 'px';
