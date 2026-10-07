@@ -2600,12 +2600,25 @@ const TUCCAR_BOSS_OFFERS = [
 ];
 
 /* The Corporates BOSS Koşulu (GDD 13.4): tek şirket, RAUND BOYU geçerli ve
-   çok daha ağır görev; başarısızlık doğrudan Game Over. */
+   ağır görev; başarısızlık doğrudan Game Over.
+   P81 (kullanıcı 2026-10-07: Kaioken için pas geçip son turda 3+ kombinasyon
+   açtı, hedefi geçti ama Game Over oldu — "HER turunda" kuralı görünmüyordu
+   ve pas geçmeye dayanan jokerlerle oynanmıyordu) → KURAL YUMUŞADI: görevler
+   "her tur" değil "raund boyunca"; bir tur pas geçip sonra patlatmak mümkün.
+   Görev kurtarılamaz olduğu AN Game Over olur (raundu boşuna oynatmaz) ve
+   üst kutuda canlı ilerleme yazar (corpProgress). */
+/* ÖLÇÜM (uzman bot, puan hedefi kapalı, 120 raund/stage — görevi raund sonunda tutma oranı S1·S3·S5·S8):
+     ESKİ "HER turunda" kuralları   Kurogane %0 · Abyssal %0 · Verdatek %0-3
+     ilk deneme: Abyssal "bir turda 3 + toplam 6" → %99-100 (bot ilk turda zaten 5 açıyor: görev boşaldı)
+     SEÇİLEN: aşağıdaki eşikler (tablo GDD 22.1b-55). */
+const CORP_BOSS_CIFT = 3;          // Kurogane: raund boyunca YALNIZ Çift, en az 3 Çift
+const CORP_BOSS_TURN3 = 3;         // Abyssal: açılım yaptığın HER turda en az 3 kombinasyon (pas serbest)
+const CORP_BOSS_PASS = 1;          // Verdatek: en fazla 1 tur pas
 const CORPS_BOSS = {
-  kizil: { text: 'Bu raundun HER turunda yalnızca Çift aç' },
-  derin: { text: 'Bu raundun HER turunda en az 3 kombinasyon aç' },
+  kizil: { text: `Raund boyunca YALNIZCA Çift aç — en az ${CORP_BOSS_CIFT} Çift` },
+  derin: { text: `Açılım yaptığın her turda en az ${CORP_BOSS_TURN3} kombinasyon aç — pas geçebilirsin` },
   altin: { text: 'Raundu en geç 2. turda geç' },
-  yesil: { text: 'Bu raundun HER turunda açılım yap — hiç pas geçme' },
+  yesil: { text: `En fazla ${CORP_BOSS_PASS} tur pas geç — diğer her turda açılım yap` },
 };
 
 /* GDD 10/18 — The Corporates şirketleri (raund bazlı görev uyarlaması)
@@ -7945,7 +7958,7 @@ const Game = {
     // Grup F: boss şirket görevi tur bazlı denetlenir
     s.turnComboCount = (s.turnComboCount || 0) + r.ctx.count;
     s.turnAllCift = (s.turnAllCift !== false) && r.ctx.count > 0 && r.ctx.count === r.ctx.ciftCount;
-    if (this.bossOn() && s.corpTask?.boss) this._bossCorpTurn(events);
+    if (this.bossOn() && s.corpTask?.boss) this._bossCorpTurn(events, r.ctx);
     // Freedom Fighters BOSS Koşulu (Grup F): eline gelen işaretli taşlar
     // açılımda KULLANILMAK ZORUNDA — kullanılanları burada işaretliyoruz
     if (this.bossOn() && s.boss.key === 'freedom')
@@ -8247,10 +8260,12 @@ const Game = {
         s.turnScore = 0;
       }
     }
-    if (s.corpTask?.key === 'yesil' && !s.openedThisTurn) s.corpTask.failed = true;
-    // Grup F: boss şirket görevi — açılımsız geçilen tur da denetlenir
-    if (this.bossOn() && s.corpTask?.boss && !s.openedThisTurn)
-      this._bossCorpTurn(events);
+    if (s.corpTask?.key === 'yesil' && !s.corpTask.boss && !s.openedThisTurn) s.corpTask.failed = true;   // P81: boss görevi kendi pas hakkını sayar
+    // Grup F / P81: boss şirket görevi tur sonunda denetlenir; kurtarılamazsa raund biter
+    if (this.bossOn() && s.corpTask?.boss) {
+      this._bossCorpTurn(events, null, !s.openedThisTurn);
+      if (s.status === 'lost') return { ok: true, roundOver: true, events };
+    }
     s.consecMeldTurns = s.openedThisTurn ? s.consecMeldTurns + 1 : 0;
     this._sisyphusTurnEnd();   // P48 — raundlar arası kaya
     s.skipStreak = s.openedThisTurn ? 0 : s.skipStreak + 1;
@@ -8911,32 +8926,76 @@ const Game = {
     if (s.boss.key === 'corporates' && s.corpTask?.boss) {
       const c = s.corpTask;
       // altin raund bazlı: kazanılan tura bakılır (turn bazlı takip yok)
-      if (c.key === 'altin') c.done = (s.wonOnTurn ?? s.turn) <= 2;
-      else c.done = !c.failed; // diğerleri her tur denetlenir (bkz. _bossCorpTurn)
+      if (c.failed && s.bossFail) return s.bossFail;   // P81 — anında düşen görev (nedeniyle)
+      if (c.key === 'altin') c.done = !c.failed && (s.wonOnTurn ?? s.turn) <= 2;
+      else if (c.key === 'kizil') c.done = !c.failed && (c.ciftTotal || 0) >= CORP_BOSS_CIFT;
+      else if (c.key === 'derin') c.done = !c.failed && (c.bestTurn || 0) >= CORP_BOSS_TURN3;
+      else c.done = !c.failed;   // Verdatek: pas sayısı _bossCorpTurn'de
       if (!c.done)
-        return `👹 ${c.name}: "${c.text}" görevi tamamlanmadı — GAME OVER`;
+        return `👹 ${c.name}: "${c.text}" görevi tamamlanmadı (${this.corpProgress()}) — GAME OVER`;
     }
     return null;
   },
 
-  /* Boss şirket görevinin O TURU denetlenir (GDD 13.4: görev RAUND BOYU, yani
-     her turda geçerli). Açılım onaylanınca ve pas geçilince çağrılır. */
-  _bossCorpTurn(events) {
+  /* P81 — boss şirket görevi "raund boyunca". İki kapıdan çağrılır:
+     açılım onayında (ctx = o açılımın bağlamı) ve her tur sonunda (ctx yok,
+     `passed` = açılımsız geçildi). Sayaçları günceller; görev KURTARILAMAZ
+     olduğu an `_corpFailNow` raundu bitirir (Game Over). */
+  _bossCorpTurn(events, ctx, passed) {
     const s = this.state;
     const c = s.corpTask;
     if (!c || !c.boss || c.failed) return;
-    if (c.key === 'kizil' && !(s.openedThisTurn && s.turnComboCount > 0 && s.turnAllCift)) {
-      c.failed = true;
-      events.push('👹 Kurogane görevi bu turda ihlal edildi (yalnızca Çift açmalıydın)');
+    if (ctx) {
+      c.comboTotal = (c.comboTotal || 0) + ctx.count;
+      c.ciftTotal = (c.ciftTotal || 0) + ctx.ciftCount;
+      c.bestTurn = Math.max(c.bestTurn || 0, s.turnComboCount || 0);
+      if (c.key === 'kizil' && ctx.count > ctx.ciftCount)
+        return this._corpFailNow(events, 'Çift olmayan bir kombinasyon açtın');
+      return;
     }
-    if (c.key === 'derin' && s.turnComboCount < 3) {
-      c.failed = true;
-      events.push('👹 Abyssal görevi bu turda ihlal edildi (en az 3 kombinasyon gerekiyordu)');
+    /* tur sonu */
+    if (c.key === 'derin' && !passed && (s.turnComboCount || 0) < CORP_BOSS_TURN3)
+      return this._corpFailNow(events, `bu turda ${s.turnComboCount || 0}/${CORP_BOSS_TURN3} kombinasyon açtın`);
+    if (c.key === 'yesil' && passed) {
+      c.passes = (c.passes || 0) + 1;
+      if (c.passes > CORP_BOSS_PASS)
+        return this._corpFailNow(events, `${c.passes}. kez pas geçtin`);
+      events.push('👹 Verdatek: pas hakkını kullandın — bundan sonra her turda açılım yap');
     }
-    if (c.key === 'yesil' && !s.openedThisTurn) {
-      c.failed = true;
-      events.push('👹 Verdatek görevi bu turda ihlal edildi (pas geçtin)');
+    /* Heliox: 2. tur bitti, raund geçilmedi → görev artık tutamaz */
+    if (c.key === 'altin' && s.turn >= 2 && s.score < s.target)
+      return this._corpFailNow(events, '2. tur bitti, raund geçilmedi');
+    /* son tur bitti: sayaç görevleri tutmadıysa kurtarılamaz */
+    if (s.turn >= s.maxTurns) {
+      if (c.key === 'kizil' && (c.ciftTotal || 0) < CORP_BOSS_CIFT)
+        return this._corpFailNow(events, `raundda ${c.ciftTotal || 0}/${CORP_BOSS_CIFT} Çift açıldı`);
+      if (c.key === 'derin' && (c.bestTurn || 0) < CORP_BOSS_TURN3)
+        return this._corpFailNow(events, 'raundda hiç açılım yapmadın');
     }
+  },
+
+  /* Görev kurtarılamaz oldu → anında GAME OVER (kullanıcı kararı P81: raundu
+     boşuna sonuna kadar oynatma). Boss şartını hiçbir joker kurtaramaz. */
+  _corpFailNow(events, why) {
+    const s = this.state;
+    const c = s.corpTask;
+    c.failed = true;
+    s.bossFail = `👹 ${c.name}: "${c.text}" görevi tutmadı (${why}) — GAME OVER`;
+    s.status = 'lost';
+    s.winStreak = 0;
+    events.push(s.bossFail);
+  },
+
+  /* P81 — üst kutudaki canlı görev ilerlemesi */
+  corpProgress() {
+    const s = this.state;
+    const c = s && s.corpTask;
+    if (!c || !c.boss) return '';
+    if (c.key === 'kizil') return `Çift ${c.ciftTotal || 0}/${CORP_BOSS_CIFT}`;
+    if (c.key === 'derin') return `bu tur ${s.turnComboCount || 0}/${CORP_BOSS_TURN3}`;
+    if (c.key === 'yesil') return `pas ${c.passes || 0}/${CORP_BOSS_PASS}`;
+    if (c.key === 'altin') return `tur ${s.turn}/2`;
+    return '';
   },
 
   /* P48 — SISYPHUS KAYASI tur sonunda güncellenir: açılımlı tur +1, açılımsız

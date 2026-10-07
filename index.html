@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OKEY Roguelike — Prototip</title>
-<link rel="stylesheet" href="style.css?v=fa73895">
+<link rel="stylesheet" href="style.css?v=c0659b5">
 <script>
 /* RENK TEMASI — İLK BOYAMADAN ÖNCE UYGULANIR.
    Tema `html[data-theme]` ile sürülüyor. Bu satır ui.js'e bırakılsaydı
@@ -129,6 +129,20 @@
         <div class="deck-pile"></div>
         <div id="mapDeckCount" class="gm-deck-count"></div>
         <div id="mapDiscardSlot" class="discard-slot"></div>
+      </div>
+
+      <!-- P80 (kullanıcı: "harita arayüzünde backup ve değnek slotlarını göremiyoruz")
+           — store'daki kalıcı envanter panellerinin AYNISI, aynı yerlerde:
+           değnek sol sütunun altında, backup sağda joker panelinin altında. -->
+      <div id="mapLeftInv">
+        <div id="mapTotemShoulder" class="st-shoulder st-inv">
+          <div class="st-sh-tab"><span id="mapConsumTitle">Değnek</span><span id="mapConsumCount" class="gm-sh-count">0/3</span></div>
+          <div class="st-sh-body"><div id="mapConsumRow"></div></div>
+        </div>
+      </div>
+      <div id="mapBackupShoulder" class="st-shoulder st-inv">
+        <div class="st-sh-tab"><span id="mapBackupTitle">backup</span><span id="mapBackupCount" class="gm-sh-count">0/2</span></div>
+        <div class="st-sh-body"><div id="mapBackupRow"></div></div>
       </div>
 
       <!-- merkez: üç raund kartı (Figma 424 / 829 / 1234, y309, 370×718) -->
@@ -475,8 +489,8 @@
   </div>
 
 </div>
-<script src="engine.js?v=fa73895"></script>
-<script src="i18n.js?v=fa73895"></script>
-<script src="ui.js?v=fa73895"></script>
+<script src="engine.js?v=c0659b5"></script>
+<script src="i18n.js?v=c0659b5"></script>
+<script src="ui.js?v=c0659b5"></script>
 </body>
 </html>

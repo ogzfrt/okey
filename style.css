@@ -6721,11 +6721,11 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
    yukarıdaki iki kural eski yeri hedeflediği için çizimli değnek krem kabuk
    içinde 26×35'lik küçük ikon olarak çiziliyordu. Yeni raf da raund içindeki
    omuzla AYNI: kabuk yok, çizim kartı kenardan kenara doldurur. */
-#storeStage .st-sh-body .consum-card.art-only {
+:is(#storeStage, #mapScreen) .st-sh-body .consum-card.art-only {
   background: none; border: 0; border-left: 0; padding: 0; gap: 0; overflow: visible;
   box-shadow: none; justify-content: center; align-items: center;
 }
-#storeStage .st-sh-body .consum-card.art-only .c-icon.cs-art { width: 100%; height: 100%; margin: 0; }
+:is(#storeStage, #mapScreen) .st-sh-body .consum-card.art-only .c-icon.cs-art { width: 100%; height: 100%; margin: 0; }
 .consum-card.art-only.picking { outline: 3px solid #2ecc71; outline-offset: 2px; }
 
 /* P41 (kullanıcı isteği 2026-09-14) — EYLEM ROZETİ (#actBadge, ui.js attachActs).
@@ -9021,7 +9021,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 23px; width: 100%;
   grid-template-columns: none; padding: 0;
 }
-#storeStage :is(#storeSlotsRow, #storeDeckRow, .st-sh-body) :is(.joker-tile, .joker-slot-empty, .consum-card) {
+:is(#storeStage, #mapScreen) :is(#storeSlotsRow, #storeDeckRow, .st-sh-body) :is(.joker-tile, .joker-slot-empty, .consum-card) {
   width: 81px; height: 110px; flex: 0 0 81px; min-width: 0; min-height: 0; box-sizing: border-box;
 }
 #storeStage .joker-slot-empty {
@@ -9035,23 +9035,23 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 }
 
 /* --- envanter paneli (değnek / backup): koyu panel, açık kenar, gömme yuvalar --- */
-#storeStage .st-shoulder.st-inv {
+:is(#storeStage, #mapScreen) .st-shoulder.st-inv {
   position: relative; left: auto; top: auto; width: 100%; height: auto; transform: none;
   background: var(--gm-dark); border: 4px solid var(--gm-edge); border-radius: 8px;
   padding: 10px 12px 12px; box-sizing: border-box; box-shadow: 0 5px 0 rgba(0, 0, 0, .35);
 }
-#storeStage .st-inv .st-sh-tab {
+:is(#storeStage, #mapScreen) .st-inv .st-sh-tab {
   position: static; width: auto; height: auto; clip-path: none; background: none; padding: 0 2px 8px;
   display: flex; align-items: center; gap: 8px; cursor: default;
   font: 700 17px/1 var(--gm-font); color: var(--gm-light); letter-spacing: 1px; text-transform: uppercase; white-space: nowrap;
 }
-#storeStage .st-inv .st-sh-tab .gm-sh-count { margin-left: auto; color: var(--gm-turn-on); letter-spacing: 0; }
-#storeStage .st-inv .st-sh-body {
+:is(#storeStage, #mapScreen) .st-inv .st-sh-tab .gm-sh-count { margin-left: auto; color: var(--gm-turn-on); letter-spacing: 0; }
+:is(#storeStage, #mapScreen) .st-inv .st-sh-body {
   position: static; height: auto; opacity: 1; pointer-events: auto;
   background: rgba(0, 0, 0, .28); box-shadow: inset 0 3px 0 rgba(0, 0, 0, .25);
   border-radius: 6px; padding: 10px;
 }
-#storeStage .st-inv .st-sh-body > div {
+:is(#storeStage, #mapScreen) .st-inv .st-sh-body > div {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 12px; width: auto; margin: 0; padding: 0;
 }
 /* değnek: satırda en çok 3 yuva (4-6 yuva iki satır) */
@@ -9061,6 +9061,22 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 #storeStage #storeBackupShoulder .st-sh-tab { font-size: 15px; padding-bottom: 6px; }
 #storeStage #storeBackupShoulder .st-sh-body { padding: 6px; }
 #storeStage #storeBackupShoulder .st-sh-body > div { flex-wrap: nowrap; gap: 8px; }
+/* P80 — HARİTA ENVANTERİ (kullanıcı: "harita arayüzünde backup ve değnek
+   slotlarını göremiyoruz"): store'daki panellerin aynısı, aynı yerlerde —
+   değnek sol sütunun altında (Stage Okey kutusunun altı), backup sağda
+   joker panelinin altında (deste yığınının üstü). */
+#mapScreen .gm-stage #mapLeftInv {
+  position: absolute; left: 41px; top: 652px; width: 350px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+#mapScreen #mapTotemShoulder .st-sh-body > div { max-width: calc(81px * 3 + 24px); margin: 0 auto; }
+#mapScreen .gm-stage #mapBackupShoulder.st-inv {
+  position: absolute; left: 1638px; top: 566px; width: 211px; padding: 8px;
+}
+#mapScreen #mapBackupShoulder .st-sh-tab { font-size: 15px; padding-bottom: 6px; }
+#mapScreen #mapBackupShoulder .st-sh-body { padding: 6px; }
+#mapScreen #mapBackupShoulder .st-sh-body > div { flex-wrap: nowrap; gap: 8px; }
+#mapScreen .st-sh-body .joker-slot-empty { background: var(--img-tile-back) no-repeat center / 100% 100%; border: 0; border-radius: 0; }
 #storeStage #storeDeckRow:empty { display: none; }
 #storeStage #storeDeckRow {
   position: relative; left: auto; top: auto; width: 100%;
@@ -9514,8 +9530,8 @@ html[data-theme="kumarhane"] #storeStage .store-item .s-buy:disabled { backgroun
 html[data-theme="kumarhane"] #storeStage .store-item .badge-new { background: var(--cs-red); color: #FFF4DA; border-color: var(--cs-red-dk); }
 html[data-theme="kumarhane"] #storeStage .st-btn.st-go { background: var(--cs-gold); border-color: var(--cs-gold); color: #4A0E18; }
 html[data-theme="kumarhane"] #storeStage .st-btn.st-ghost { border-color: var(--cs-gold); color: var(--cs-gold); }
-html[data-theme="kumarhane"] #storeStage .st-inv .st-sh-tab { color: var(--cs-gold); }
-html[data-theme="kumarhane"] #storeStage .st-inv .st-sh-tab .gm-sh-count { color: var(--gm-light); }
+html[data-theme="kumarhane"] :is(#storeStage, #mapScreen) .st-inv .st-sh-tab { color: var(--cs-gold); }
+html[data-theme="kumarhane"] :is(#storeStage, #mapScreen) .st-inv .st-sh-tab .gm-sh-count { color: var(--gm-light); }
 html[data-theme="kumarhane"] :is(.pk-title, .tp-box h3) { color: var(--cs-gold); }
 
 /* okunurluk: krem zeminli SVG'lerin üstündeki beyaz yazılar bordo, çuha üstündekiler altın */
@@ -9627,7 +9643,7 @@ html[data-theme="kozmik"] #storeStage .store-row.st-well {
 html[data-theme="kozmik"] #storeStage .sr-grid .store-item { box-shadow: 0 0 0 3px var(--kz-neon), 0 6px 0 rgba(0, 0, 0, .5); }
 html[data-theme="kozmik"] #storeStage .st-btn.st-go { background: var(--kz-neon); border-color: var(--kz-neon); color: #12102C; }
 html[data-theme="kozmik"] #storeStage .st-btn.st-ghost { border-color: var(--kz-neon); color: var(--kz-neon); }
-html[data-theme="kozmik"] #storeStage .st-inv .st-sh-tab { color: var(--kz-neon); }
+html[data-theme="kozmik"] :is(#storeStage, #mapScreen) .st-inv .st-sh-tab { color: var(--kz-neon); }
 
 /* okunurluk: açık zeminli SVG'lerin üstündeki beyaz yazılar çivit; bulutsu üstündekiler neon */
 html[data-theme="kozmik"] .gm-stage .map-card :is(.mc-select, .mc-pill, .mc-t-lbl, .mc-t-val, .mc-t-rew) { color: var(--gm-dark); }

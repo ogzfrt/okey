@@ -16,6 +16,7 @@
       tasarımda karşılığı olmadığı için KALDIRILDI. */
    'mapStage','mapRound','mapScoreVal','mapCoinVal','mapOkey','mapCards',
    'mapJokerSlots','mapDeckCount','mapDiscardSlot',
+   'mapConsumRow','mapBackupRow','mapConsumCount','mapBackupCount',   // P80 — haritada envanter
    'btnMapPause','btnMapInfo','mapMenuPop','btnMapGoMenu','btnMapSettings',
    'roundChip','coinChip','okeyChip','bossChip','turnIndicator','kahinChip',
    'scoreNow','scoreTarget','progressFill','permMult',
@@ -1016,6 +1017,18 @@
       d.className = 'joker-slot-empty';
       el.mapJokerSlots.appendChild(d);
     }
+
+    /* P80 — değnek + backup envanteri (store'daki panellerle aynı): kartlar
+       oyundaki gibi — üstüne gelince açıklama, değnek sol tıkla kullanılır. */
+    const mapEmpty = () => { const d = document.createElement('div'); d.className = 'joker-slot-empty'; return d; };
+    el.mapBackupCount.textContent = `${s.backup.length}/2`;
+    el.mapBackupRow.innerHTML = '';
+    s.backup.forEach(j => el.mapBackupRow.appendChild(jokerCard(j, { backup: true })));
+    for (let k = s.backup.length; k < 2; k++) el.mapBackupRow.appendChild(mapEmpty());
+    el.mapConsumCount.textContent = `${s.consumables.length}/${Game.consumCap()}`;
+    el.mapConsumRow.innerHTML = '';
+    s.consumables.forEach((key, i) => el.mapConsumRow.appendChild(consumCard(key, i)));
+    for (let k = s.consumables.length; k < Game.consumCap(); k++) el.mapConsumRow.appendChild(mapEmpty());
 
     /* Deste / atılan — Figma'da METİN ETİKETİ YOK: kart, altında
        kalan/toplam sayacı ve boş atılan slotu. */
@@ -3845,7 +3858,9 @@
     }
     if (k === 'aynaKral' && (s.bossMirrorDebt || 0) > 0) n.push(t('bossMirrorExtra', s.bossMirrorDebt));
     if (k === 'corporates' && s.corpTask)
-      n.push(`${T.ev(s.corpTask.name)}: ${T.ev(s.corpTask.text)}${s.corpTask.failed ? ' — ' + t('bossTaskFailed') : ''}`);
+      /* P81 — canlı ilerleme: "en iyi tur 1/3 · toplam 2/6" */
+      n.push(`${T.ev(s.corpTask.name)}: ${T.ev(s.corpTask.text)}${s.corpTask.failed ? ' — ' + t('bossTaskFailed')
+        : (s.corpTask.boss && Game.corpProgress ? ' · ' + T.ev(Game.corpProgress()) : '')}`);
     if (k === 'freedom' && (s.bossFreedomMarks || []).length) {
       const owed = [...s.hand, ...s.discardPile].filter(x => x.ffMarkedTile && !x.ffUsedInMeld).length;
       n.push(t('bossFreedomExtra', s.bossFreedomMarks.map(m => `${T.color(m.color)} ${m.number}`).join(', '), owed));
@@ -3876,6 +3891,7 @@
 
   function render() {
     applyRunTheme();   // P78 — boss raundu arayüzü (raund ekran değişmeden başlayıp bitebilir)
+    if (curScreen() === 'map') setTimeout(() => { if (curScreen() === 'map') renderMap(); }, 0);   // P80 — haritadaki envanter tazelensin
     const s = Game.state;
     hideTip(); // hover'daki eleman yeniden çizimde kaybolabilir
     /* P54 · Grup A — Üç Kağıtçı'nın bekleyen seçimi (tur başında motor kurar).
@@ -6791,6 +6807,8 @@
     $('ssSlotsTitle').textContent = t('storeSlotsTitle');
     $('ssBackupTitle').textContent = t('backupTitle').toLowerCase();
     $('ssConsumTitle').textContent = t('totemTitle');
+    $('mapBackupTitle').textContent = t('backupTitle').toLowerCase();   // P80
+    $('mapConsumTitle').textContent = t('totemTitle');
     el.btnStoreContinue.innerHTML = `<b>${t('stNext')}</b>`;
   }
 
