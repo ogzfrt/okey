@@ -6478,14 +6478,16 @@
   const CASINO_THEME_KEY = 'okeyCasinoTheme';
   let casinoThemeOn = (() => { try { return localStorage.getItem(CASINO_THEME_KEY) !== '0'; } catch (e) { return true; } })();
   /* P74 — KUMARHANE DESENİ (kullanıcı 2026-10-07): masa zemini için alternatif
-     desen; Ayarlar'dan seçilir. 'cuha' = eski yeşil çuha (varsayılan),
+     desen; Ayarlar'dan seçilir. P76: eski 'cuha' (yeşil çuha + silik kart
+     simgeleri) kullanıcı isteğiyle KALDIRILDI; kayıtlı 'cuha' seçimi
+     varsayılana (Kraliyet) düşer.
+     'kraliyet' = ton üstüne ton iskambil desenli çuha (VARSAYILAN; temanın
+     temel zemini, tools/theme/build_royal_felt.py),
      'deco' = art deco yeşil-altın (tools/theme/build_art_deco.py; Vegas halısı,
-     blackjack yayı ve masa çerçevesi beğenilmedi),
-     'kraliyet' = ton üstüne ton iskambil desenli çuha (tools/theme/build_royal_felt.py)
-     — üç seçenek arkadaş testinde karşılaştırılıyor. */
+     blackjack yayı ve masa çerçevesi beğenilmedi). */
   const CASINO_PATTERN_KEY = 'okeyCasinoPattern';
-  const CASINO_PATTERNS = ['cuha', 'deco', 'kraliyet'];
-  let casinoPattern = (() => { try { const v = localStorage.getItem(CASINO_PATTERN_KEY); return CASINO_PATTERNS.includes(v) ? v : 'cuha'; } catch (e) { return 'cuha'; } })();
+  const CASINO_PATTERNS = ['kraliyet', 'deco'];
+  let casinoPattern = (() => { try { const v = localStorage.getItem(CASINO_PATTERN_KEY); return CASINO_PATTERNS.includes(v) ? v : 'kraliyet'; } catch (e) { return 'kraliyet'; } })();
   function casinoRunActive() {
     try { return curScreen() !== 'menu' && !!Game.state && !!Game.kumarhaneOn && Game.kumarhaneOn(); } catch (e) { return false; }
   }
@@ -6638,7 +6640,7 @@
       toast(t(cosmicThemeOn ? 'cosmicThemeOnToast' : 'cosmicThemeOffToast'), true);
     }));
     ov.querySelectorAll('.set-cspat').forEach(b => b.addEventListener('click', () => {
-      casinoPattern = CASINO_PATTERNS.includes(b.dataset.cspat) ? b.dataset.cspat : 'cuha';
+      casinoPattern = CASINO_PATTERNS.includes(b.dataset.cspat) ? b.dataset.cspat : 'kraliyet';
       try { localStorage.setItem(CASINO_PATTERN_KEY, casinoPattern); } catch (e) {}
       ov.querySelectorAll('.set-cspat').forEach(x => x.classList.toggle('on', x === b));
       applyRunTheme();
