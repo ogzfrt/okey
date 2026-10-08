@@ -228,7 +228,7 @@
     const mk = () => {
       const c = document.createElement('div');
       c.className = 'trainer-chip';
-      c.textContent = t('trBadge');
+      c.textContent = Game.state && Game.state.bossTest ? t('trBadgeBoss') : t('trBadge');
       return c;
     };
     /* Oyun ekranı: Figma düzeninde sol istatistik sütununun akışına girer
@@ -1165,72 +1165,73 @@
     if (Game.trainerMode) el.mapCards.parentElement.appendChild(trainerMapBar());
   }
 
-  /* Trainer barı (yalnız trainer modunda; tasarımın parçası DEĞİLDİR,
-     geliştirme aracıdır ve normal oyunda hiç çizilmez). */
+  /* Trainer barı (yalnız trainer modunda; geliştirme aracıdır ve normal
+     oyunda hiç çizilmez). P83: oyunun panel dilinde, sol sütunun altında. */
   function trainerMapBar() {
     const s = Game.state;
     const bar = document.createElement('div');
     bar.id = 'trainerMapBar';
+    const mkSel = (id, opts, cur) => {
+      const sel = document.createElement('select');
+      sel.id = id;   // testler konuma değil id'ye baksın
+      for (const [v, label] of opts) {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = label;
+        if (v === cur) o.selected = true;
+        sel.appendChild(o);
+      }
+      return sel;
+    };
+    const mkLbl = (txt, ...ctl) => {
+      const l = document.createElement('label');
+      l.className = 'tmb-f';
+      const sp = document.createElement('span');
+      sp.textContent = txt;
+      l.append(sp, ...ctl);
+      return l;
+    };
+    const line = (cls, ...kids) => { const d = document.createElement('div'); d.className = 'tmb-line ' + cls; d.append(...kids); return d; };
+
+    // başlık plakası + store filtresi
     const tag = document.createElement('span');
+    const noEmoji = (x) => String(x).replace(/^[^\p{L}\p{N}]+/u, '');
     tag.className = 'tr-tag';
-    tag.textContent = t('trTag');
-    bar.appendChild(tag);
-    const bl = document.createElement('label');
-    bl.append(t('trBossPick') + ' ');
-    const sel = document.createElement('select');
-    sel.id = 'trBossSel';   // testler konuma değil id'ye baksın
-    for (const b of BOSSES) {
-      const o = document.createElement('option');
-      o.value = b.key;
-      o.textContent = T.bossName(b.key, b.name);
-      if (s.boss?.key === b.key) o.selected = true;
-      sel.appendChild(o);
-    }
-    sel.addEventListener('change', () => { Game.setBoss(sel.value); renderMap(); });
-    bl.appendChild(sel);
-    bar.appendChild(bl);
-    // Stage atlama — Sonsuz Mod'da üst sınır yok (1..12 pratik liste)
-    const jl = document.createElement('label');
-    jl.append(t('trJump') + ' ');
-    const jsel = document.createElement('select');
-    jsel.id = 'trJumpSel';
+    tag.textContent = noEmoji(t('trTag'));
+    const fb = document.createElement('button');
+    fb.type = 'button';
+    fb.className = 'btn ghost tmb-btn';
+    fb.textContent = noEmoji(t('trFilterBtn')) + (s.trainerStoreFilter?.length ? ` (${s.trainerStoreFilter.length})` : '');
+    fb.addEventListener('click', showTrainerFilter);
+    /* P83 — bu stage'in boss raunduna hemen gir (aradaki raundlar atlanır) */
+    const go = document.createElement('button');
+    go.type = 'button';
+    go.className = 'tmb-go';
+    go.textContent = t('trGoBoss');
+    go.title = t('trGoBossTip');
+    go.disabled = s.roundInStage === 3;
+    go.addEventListener('click', () => {
+      const r = Game.trainerGoBoss();
+      if (!r.ok) { toast(r.error, false); return; }
+      enterTrainerRound();
+    });
+    bar.appendChild(line('tmb-head', tag, go));
+
+    // boss seçici
+    const bsel = mkSel('trBossSel', BOSSES.map(b => [b.key, T.bossName(b.key, b.name)]), s.boss?.key);
+    bsel.addEventListener('change', () => { Game.setBoss(bsel.value); renderMap(); });
+    bar.appendChild(line('tmb-wide', mkLbl(t('trBarBoss'), bsel)));
+
+    // stage atlama — Sonsuz Mod'da üst sınır yok (1..12 pratik liste)
     const maxCh = Number.isFinite(Game.totalStages()) ? Game.totalStages() : 12;
-    for (let c = 1; c <= maxCh; c++) {
-      const o = document.createElement('option');
-      o.value = String(c);
-      o.textContent = String(c);
-      if (s.stage === c) o.selected = true;
-      jsel.appendChild(o);
-    }
+    const jsel = mkSel('trJumpSel', Array.from({ length: maxCh }, (_, i) => [String(i + 1), String(i + 1)]), String(s.stage));
     jsel.addEventListener('change', () => {
       const r = Game.jumpToStage(parseInt(jsel.value, 10));
       if (r.ok) { toast(t('trJumped', r.stage), true); renderMap(); showOkeyBanner(); }
     });
-    jl.appendChild(jsel);
-    bar.appendChild(jl);
     /* Grup K — Okey Taşını run içinde de elle seç. */
-    const ol = document.createElement('label');
-    ol.append(t('trOkey') + ' ');
-    const ocol = document.createElement('select');
-    ocol.id = 'trOkeyColorSel';
-    const orand = document.createElement('option');
-    orand.value = ''; orand.textContent = t('trOkeyRandom');
-    if (!s.trainerOkey) orand.selected = true;
-    ocol.appendChild(orand);
-    for (const c of COLORS) {
-      const o = document.createElement('option');
-      o.value = c; o.textContent = T.color(c);
-      if (s.trainerOkey?.color === c) o.selected = true;
-      ocol.appendChild(o);
-    }
-    const onum = document.createElement('select');
-    onum.id = 'trOkeyNumSel';
-    for (let n = 1; n <= 13; n++) {
-      const o = document.createElement('option');
-      o.value = String(n); o.textContent = String(n);
-      if ((s.trainerOkey?.number ?? s.okey.number) === n) o.selected = true;
-      onum.appendChild(o);
-    }
+    const ocol = mkSel('trOkeyColorSel', [['', t('trOkeyRandom')]].concat(COLORS.map(c => [c, T.color(c)])), s.trainerOkey?.color || '');
+    const onum = mkSel('trOkeyNumSel', Array.from({ length: 13 }, (_, i) => [String(i + 1), String(i + 1)]),
+      String(s.trainerOkey?.number ?? s.okey.number));
     const applyOkey = () => {
       const r = ocol.value
         ? Game.setTrainerOkey(ocol.value, parseInt(onum.value, 10))
@@ -1242,39 +1243,24 @@
     };
     ocol.addEventListener('change', applyOkey);
     onum.addEventListener('change', () => { if (ocol.value) applyOkey(); });
-    ol.append(ocol, onum);
-    bar.appendChild(ol);
-    const fb = document.createElement('button');
-    fb.className = 'btn ghost';
-    fb.textContent = t('trFilterBtn') + (s.trainerStoreFilter?.length ? ` (${s.trainerStoreFilter.length})` : '');
-    fb.addEventListener('click', showTrainerFilter);
-    bar.appendChild(fb);
+    const stageLbl = mkLbl(t('trBarStage'), jsel);
+    const okeyLine = line('tmb-wide', mkLbl(t('trBarOkey'), ocol, onum));
+
     /* Joker süresi — kurulumda seçilir, store'dan alım öncesi de değişir. */
-    const ul = document.createElement('label');
-    ul.append(t('trUses') + ' ');
-    const usel = document.createElement('select');
-    usel.id = 'trUsesSel';
     const cur = s.trainerJokerUses;
-    const opts = [['def', t('trUsesDefault')]]
+    const curV = cur == null ? 'def' : cur === Infinity ? 'inf' : String(cur);
+    const usel = mkSel('trUsesSel', [['def', t('trUsesDefault')]]
       .concat([1, 2, 3, 4, 5, 8, 10, 20].map(n => [String(n), String(n)]))
-      .concat([['inf', t('trUsesInf')]]);
-    for (const [v, label] of opts) {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = label;
-      const isCur = (v === 'def' && cur == null)
-        || (v === 'inf' && cur === Infinity)
-        || (cur != null && Number.isFinite(cur) && String(cur) === v);
-      if (isCur) o.selected = true;
-      usel.appendChild(o);
-    }
+      .concat([['inf', t('trUsesInf')]]), curV);
     usel.addEventListener('change', () => {
       const r = Game.setTrainerJokerUses(
         usel.value === 'def' ? null : usel.value === 'inf' ? Infinity : usel.value);
       if (r.ok) toast(t('trUsesSet', r.uses === Infinity ? t('trUsesInf')
         : r.uses == null ? t('trUsesDefault') : r.uses), true);
     });
-    ul.appendChild(usel);
-    bar.appendChild(ul);
+    bar.appendChild(line('', stageLbl, mkLbl(t('trBarUses'), usel)));
+    bar.appendChild(okeyLine);
+    bar.appendChild(line('tmb-foot', fb));
     return bar;
   }
 
@@ -6818,6 +6804,8 @@
     const s = Game.state;
     const won = s.status === 'won';
     if (won) SFX.win(); else SFX.lose();
+    /* P83 — boss testi: store / Game Over yok, sonuç penceresi (tekrar · başka boss · menü) */
+    if (Game.trainerMode && s.bossTest) { showBossTestEnd(won); return; }
 
     // Öğreticide kayıp = raundu tekrar dene (run bitmez)
     if (TUT.active && !won) {
@@ -8775,184 +8763,375 @@
     return wrap;
   }
 
-  function showTrainerSetup() {
+  /* P83 — TRAINER KURULUMU OYUNUN UI DİLİNDE + BOSS TESTİ (kullanıcı 2026-10-08:
+     "trainer mod'a boss raundlarını sadece başlatıp test edebileceğim bir arayüz"
+     + "trainer modunun seçim arayüzü falan hepsini oyuna uygun yap").
+     Pencere = oyunun pencere dili (P62b/P64): tema koyu panel, açık kenar, üstte
+     başlık PLAKASI, gömme koyu iç alan, açık kartlar, STOP gibi basılan düğmeler.
+     İki sekme:
+       · SERBEST RUN — eski kurulum: kadroyla run'a başlar, haritadan ilerler.
+       · BOSS TESTİ  — boss seç → doğrudan o boss'un raundu (Game.startBossTest);
+                       raund bitince sonuç penceresi (tekrar / başka boss / menü).
+     Kadro (joker / değnek / deste) ve seçenekler iki sekmede ORTAK ve pencere
+     kapanınca da hatırlanır (trPrefs): aynı kadroyla başka boss'u denemek tek tık.
+     Düzen: solda kayan seçim alanı (.tr-body), sağda sabit ayar sütunu (.tr-foot)
+     — "Başlat" hiçbir zaman kaydırma arkasında kalmaz (P20 · Grup K kuralı).
+     Test kancaları korunur: .tr-panel/.tr-body/.tr-foot, h3 başlıklar, .tr-pick
+     kartlar, #trMode/#trStages/#trCoins/#trHand/#trRack/#trUses/#trOkey* seçiciler,
+     .tr-acts .btn.primary (başlat) / .btn.ghost (vazgeç). */
+  const trPrefs = { tab: 'run', boss: null, jokers: new Set(), consums: new Set(), specials: new Set(), opts: null };
+  let lastBossTest = null;
+  const TR_TIER_LBL = { 1: 'trTier1', 2: 'trTier2', 3: 'trTier3', 4: 'trTierF' };
+
+  function showTrainerSetup(o = {}) {
     document.getElementById('trainerSetup')?.remove();
-    const selJ = new Set(), selC = new Set();
+    if (o.tab) trPrefs.tab = o.tab;
+    const selJ = trPrefs.jokers, selC = trPrefs.consums, selS = trPrefs.specials;
     const ov = document.createElement('div');
     ov.id = 'trainerSetup';
-    /* PLAYTEST 20 · GRUP K — POP-UP İSKELETİ (kullanıcı raporu: "çok aşağı
-       kaydırma gerektiriyor").
-       ÖLÇÜM (1920×1080): panel 880×950, içerik 1100px → 152px taşma; üstelik
-       panel ekran yüksekliğinin %88'ini kaplıyordu, yani bir pop-up gibi
-       değil bir SAYFA gibi duruyordu.
-       YENİ YAPI üç parçalıdır ve yalnız ORTA parça kayar:
-         · .tr-head  — başlık + alt açıklama (SABİT)
-         · .tr-body  — joker/değnek seçim ızgaraları (gerekirse kayar)
-         · .tr-foot  — seçenek satırı + düğmeler (SABİT, hep görünür)
-       Böylece "Testi Başlat" düğmesi hiçbir zaman kaydırma arkasında
-       kalmaz; kaydırma varsa da yalnız seçim ızgarasındadır. */
+    ov.className = 'tr-ov';
     const panel = document.createElement('div');
     panel.className = 'tr-panel';
+    panel.dataset.tab = trPrefs.tab;
     const head = document.createElement('div');
     head.className = 'tr-head';
-    head.innerHTML = `<h2>${t('trTitle')}</h2><p class="tr-sub">${t('trSubtitle')}</p>`;
+    head.innerHTML = `<div class="tr-plate">${t('trTitle')}</div>` +
+      `<div class="tr-tabs">` +
+      `<button type="button" class="tr-tab" data-tab="run">${t('trTabRun')}</button>` +
+      `<button type="button" class="tr-tab" data-tab="boss">${t('trTabBoss')}</button></div>` +
+      `<p class="tr-sub">${t('trSubtitle')}</p>`;
     panel.appendChild(head);
+    const main = document.createElement('div');
+    main.className = 'tr-main';
+    panel.appendChild(main);
     const body = document.createElement('div');
     body.className = 'tr-body';
-    panel.appendChild(body);
+    main.appendChild(body);
+    const foot = document.createElement('div');
+    foot.className = 'tr-foot';
+    main.appendChild(foot);
 
+    /* ---- BOSS SEÇİMİ (yalnız BOSS TESTİ sekmesi) — kademe kademe ---- */
+    const bossSec = document.createElement('div');
+    bossSec.className = 'tr-sec tr-boss-only';
+    const bh = document.createElement('h3');
+    bossSec.appendChild(bh);
+    const allBosses = BOSSES.concat(Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}));
+    if (!trPrefs.boss || !allBosses.some(b => b.key === trPrefs.boss)) trPrefs.boss = allBosses[0].key;
+    const tierOf = (b) => (b.final ? 4 : (BOSS_TIER[b.key] || 2));
+    const bossBtns = [];
+    for (const tier of [1, 2, 3, 4]) {
+      const list = allBosses.filter(b => tierOf(b) === tier);
+      if (!list.length) continue;
+      const lab = document.createElement('div');
+      lab.className = 'tr-rar tr-tier tr-tier-' + tier;
+      lab.textContent = t(TR_TIER_LBL[tier]);
+      bossSec.appendChild(lab);
+      const g = document.createElement('div');
+      g.className = 'tr-boss-grid';
+      for (const b of list) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tr-boss' + (b.final ? ' tr-boss-final' : '');
+        btn.dataset.boss = b.key;
+        const has = JOKER_ART.has(b.key);
+        btn.innerHTML = `<span class="tr-boss-art ${has ? 'jk-' + b.key : 'blank'}"></span>` +
+          `<span class="tr-boss-name">${T.bossName(b.key, b.name)}</span><span class="tr-check">✓</span>`;
+        btn.addEventListener('click', () => { trPrefs.boss = b.key; updBoss(); });
+        g.appendChild(btn);
+        bossBtns.push(btn);
+      }
+      bossSec.appendChild(g);
+    }
+    body.appendChild(bossSec);
+
+    /* ---- KADRO: jokerler ---- */
+    const jsec = document.createElement('div');
+    jsec.className = 'tr-sec';
     const jh = document.createElement('h3');
     const updJh = () => { jh.textContent = `${t('trJokers')} — ${t('trPicked', selJ.size)}`; };
     updJh();
-    body.appendChild(jh);
+    jsec.appendChild(jh);
     const warn = document.createElement('p');
     warn.className = 'tr-hint';
     warn.textContent = t('trSlotWarn');
-    body.appendChild(warn);
-    body.appendChild(jokerPickGrid(selJ, (k) => {
+    jsec.appendChild(warn);
+    jsec.appendChild(jokerPickGrid(selJ, (k) => {
       selJ.has(k) ? selJ.delete(k) : selJ.add(k);
-      updJh();
+      updJh(); updSum();
     }));
+    body.appendChild(jsec);
 
+    /* ---- değnekler ---- */
+    const csec = document.createElement('div');
+    csec.className = 'tr-sec';
     const ch = document.createElement('h3');
-    /* P22 · Grup D: taban kapasite 3 → 2. Sınır artık motordan okunur; elle
-       yazılsaydı Trainer 3 değnek seçtirir, motor ikisini alıp üçüncüyü
-       sessizce düşürürdü (newRunTrainer consumCap() ile sınırlıdır). */
+    /* P22 · Grup D: sınır motordan okunur (elle yazılsaydı Trainer 3 değnek
+       seçtirir, motor üçüncüyü sessizce düşürürdü). */
     const cMax = MAX_CONSUMABLES;
+    while (selC.size > cMax) selC.delete([...selC].pop());
     const updCh = () => { ch.textContent = `${t('trConsums', cMax)} — ${t('trPicked', selC.size)}`; };
     updCh();
-    body.appendChild(ch);
+    csec.appendChild(ch);
     const cg = document.createElement('div');
     cg.className = 'tr-grid col-grid col-cs-row';
     for (const d of Object.values(CONSUMABLES)) {
-      const b = trPickCard(colConsumCard(d), T.consumName(d.key, d.name), false, () => {
+      const b = trPickCard(colConsumCard(d), T.consumName(d.key, d.name), selC.has(d.key), () => {
         if (selC.has(d.key)) selC.delete(d.key);
         else if (selC.size < cMax) selC.add(d.key);
         b.classList.toggle('on', selC.has(d.key));
-        updCh();
+        updCh(); updSum();
       });
       cg.appendChild(b);
     }
-    body.appendChild(cg);
+    csec.appendChild(cg);
+    body.appendChild(csec);
 
-    /* P42 (kullanıcı isteği 2026-09-14) — DESTE İÇERİĞİ: seçilen özel taş
-       türleri destenin TAMAMINA dağıtılır (okey yüzü hariç), test edilecek
-       taş her çekişte ele gelir. Hiç seçilmezse deste normaldir. Joker
-       taşları burada yok — onlar yukarıdaki joker seçimiyle alınır. */
-    const selS = new Set();
+    /* ---- deste içeriği (P42): seçilen özel taşlar destenin tamamına dağılır ---- */
+    const ssec = document.createElement('div');
+    ssec.className = 'tr-sec';
     const sh = document.createElement('h3');
     const updSh = () => { sh.textContent = `${t('trDeckSp')} — ${t('trPicked', selS.size)}`; };
     updSh();
-    /* açıklama başlığın ipucunda: ayrı paragraf pop-up'ı kaydırmaya zorluyordu
-       (P20 · Grup K kuralı: kurulum ekranı 1920×1080'de kaydırmasız sığar) */
     sh.title = t('trDeckSpHint');
-    body.appendChild(sh);
+    ssec.appendChild(sh);
     const sg = document.createElement('div');
     sg.className = 'tr-grid tr-deck-sp col-grid col-sp-row';
     for (const d of Object.values(SPECIAL_TILES)) {
-      const b = trPickCard(colSpecialCard(d), T.specialName(d.key, d.name), false, () => {
+      const b = trPickCard(colSpecialCard(d), T.specialName(d.key, d.name), selS.has(d.key), () => {
         selS.has(d.key) ? selS.delete(d.key) : selS.add(d.key);
         b.classList.toggle('on', selS.has(d.key));
-        updSh();
+        updSh(); updSum();
       });
       b.dataset.sp = d.key;
       sg.appendChild(b);
     }
-    body.appendChild(sg);
+    ssec.appendChild(sg);
+    body.appendChild(ssec);
 
-    // GRUP K (P20): seçenekler ve düğmeler sabit alt barda
-    const foot = document.createElement('div');
-    foot.className = 'tr-foot';
-    panel.appendChild(foot);
+    /* ---- SAĞ SÜTUN: boss özeti + ayarlar + düğmeler ---- */
+    const fscroll = document.createElement('div');
+    fscroll.className = 'tr-foot-scroll';
+    foot.appendChild(fscroll);
+    const sum = document.createElement('div');
+    sum.className = 'tr-boss-sum tr-boss-only';
+    fscroll.appendChild(sum);
 
     const row = document.createElement('div');
     row.className = 'tr-opts';
-    /* P58 · Grup D — OYUN MODU: liste motorun RUN_MODES'undan gelir, yeni
-       mod eklenince burada kendiliğinden belirir. Varsayılan Temel Run.
-       Mod değişince stage seçimi o modun stage sayısına çekilir. */
     const modeKeys = Game.runModeKeys ? Game.runModeKeys() : ['base'];
     const modeName = (k) => { const v = t('modeName_' + k); return v && v !== 'modeName_' + k ? v : k; };
+    const opt = (lbl, ctl, cls = '') => `<label class="tr-opt ${cls}"><span class="tr-opt-l">${lbl}</span>${ctl}</label>`;
+    const strip = (s) => String(s).replace(/^[^\p{L}\p{N}]+/u, '').replace(/:\s*$/, '');
     row.innerHTML =
-      `<label>${t('trMode')} <select id="trMode">` +
-      modeKeys.map(k => `<option value="${k}"${k === 'base' ? ' selected' : ''}>${modeName(k)}</option>`).join('') +
-      `</select></label>` +
-      `<label>${t('trStages')} <select id="trStages">` +
-      `<option value="1">1</option><option value="3">3</option><option value="4">4</option>` +
-      `<option value="6">6</option><option value="8" selected>8</option>` +
-      `<option value="12">12</option>` +
-      `<option value="inf">${t('trInfinite')}</option>` +
-      `</select></label>` +
-      `<label>${t('trCoins')} <input id="trCoins" type="number" min="0" max="999" value="20"></label>` +
-      `<label>${t('trHand')} <select id="trHand">` +
-      `<option selected>15</option><option>17</option><option>19</option><option>21</option>` +
-      `</select></label>` +
-      /* PLAYTEST 20 · GRUP J — EL DÜZENİ (deneysel, yalnız Trainer).
-         Ana oyun moduna DOKUNULMAZ: serbest düzen yalnız buradan
-         seçilebilir ve yalnız trainer run'ında çizilir. */
-      `<label>${t('trRack')} <select id="trRack">` +
-      `<option value="classic" selected>${t('trRackClassic')}</option>` +
-      `<option value="free">${t('trRackFree')}</option>` +
-      `</select></label>` +
-      /* Joker süresi (2026-08-26): farklı testler için jokerin kaç raund
-         elde kalacağı elle seçilir; "Varsayılan" her jokerin kendi süresi. */
-      `<label>${t('trUses')} <select id="trUses">` +
-      `<option value="def" selected>${t('trUsesDefault')}</option>` +
-      [1, 2, 3, 4, 5, 8, 10, 20].map(n => `<option value="${n}">${n}</option>`).join('') +
-      `<option value="inf">${t('trUsesInf')}</option>` +
-      `</select></label>` +
+      opt(strip(t('trMode')), `<select id="trMode">` +
+        modeKeys.map(k => `<option value="${k}"${k === 'base' ? ' selected' : ''}>${modeName(k)}</option>`).join('') + `</select>`, 'tr-wide') +
+      opt(strip(t('trStages')), `<select id="trStages">` +
+        `<option value="1">1</option><option value="3">3</option><option value="4">4</option>` +
+        `<option value="6">6</option><option value="8" selected>8</option><option value="12">12</option>` +
+        `<option value="inf">${t('trInfinite')}</option></select>`, 'tr-run-only') +
+      opt(t('trBossStage'), `<select id="trBossStage"><option value="auto" selected>${t('trStageAuto')}</option>` +
+        Array.from({ length: 8 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('') + `</select>`, 'tr-boss-only') +
+      opt(strip(t('trCoins')), `<input id="trCoins" type="number" min="0" max="999" value="20">`) +
+      opt(strip(t('trHand')), `<select id="trHand"><option selected>15</option><option>17</option><option>19</option><option>21</option></select>`) +
+      /* Joker süresi (2026-08-26): "Varsayılan" her jokerin kendi süresi */
+      opt(strip(t('trUses')), `<select id="trUses"><option value="def" selected>${t('trUsesDefault')}</option>` +
+        [1, 2, 3, 4, 5, 8, 10, 20].map(n => `<option value="${n}">${n}</option>`).join('') +
+        `<option value="inf">${t('trUsesInf')}</option></select>`) +
+      /* PLAYTEST 20 · GRUP J — EL DÜZENİ (deneysel, yalnız Trainer) */
+      opt(strip(t('trRack')), `<select id="trRack"><option value="classic" selected>${t('trRackClassic')}</option>` +
+        `<option value="free">${t('trRackFree')}</option></select>`, 'tr-wide') +
       /* Grup K — Okey Taşını elle seç; "Rastgele" seçilirse mevcut mantık sürer */
-      `<label>${t('trOkey')} <select id="trOkeyColor">` +
-      `<option value="">${t('trOkeyRandom')}</option>` +
-      COLORS.map(c => `<option value="${c}">${T.color(c)}</option>`).join('') +
-      `</select>` +
-      `<select id="trOkeyNum">` +
-      Array.from({ length: 13 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('') +
-      `</select></label>`;
-    foot.appendChild(row);
-    row.querySelector('#trMode').addEventListener('change', (e) => {
+      opt(strip(t('trOkey')), `<span class="tr-pair"><select id="trOkeyColor"><option value="">${t('trOkeyRandom')}</option>` +
+        COLORS.map(c => `<option value="${c}">${T.color(c)}</option>`).join('') + `</select>` +
+        `<select id="trOkeyNum">` + Array.from({ length: 13 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('') +
+        `</select></span>`, 'tr-wide');
+    fscroll.appendChild(row);
+    const $o = (id) => row.querySelector('#' + id);
+    // önceki kurulumun seçenekleri geri gelir
+    if (trPrefs.opts) for (const [id, v] of Object.entries(trPrefs.opts)) { const e = $o(id); if (e && v != null) e.value = v; }
+    $o('trMode').addEventListener('change', (e) => {
       const n = Game.runModeStages ? Game.runModeStages(e.target.value) : 8;
-      const sel = row.querySelector('#trStages');
-      if (![...sel.options].some(o => o.value === String(n)))
+      const sel = $o('trStages');
+      if (![...sel.options].some(x => x.value === String(n)))
         sel.insertAdjacentHTML('beforeend', `<option value="${n}">${n}</option>`);
       sel.value = String(n);
+      updBoss();
     });
+    $o('trBossStage').addEventListener('change', updBoss);
+
+    const sumLine = document.createElement('div');
+    sumLine.className = 'tr-sum-line';
+    fscroll.appendChild(sumLine);
+    function updSum() { sumLine.textContent = t('trSummary', selJ.size, selC.size, selS.size); }
+    updSum();
 
     const acts = document.createElement('div');
     acts.className = 'tr-acts';
     const bStart = document.createElement('button');
-    bStart.className = 'btn primary';
-    bStart.textContent = t('trStart');
-    bStart.addEventListener('click', () => {
-      hideTip();
-      const chSel = panel.querySelector('#trStages').value;
-      Game.newTrainerRun({
-        mode: panel.querySelector('#trMode').value || 'base',   // P58 · Grup D
+    bStart.className = 'btn primary ep-btn ep-blue';
+    const bCancel = document.createElement('button');
+    bCancel.className = 'btn ghost ep-btn ep-ghost';
+    bCancel.textContent = t('trCancel');
+    acts.append(bStart, bCancel);
+    foot.appendChild(acts);
+
+    const saveOpts = () => {
+      trPrefs.opts = {};
+      for (const id of ['trMode', 'trStages', 'trBossStage', 'trCoins', 'trHand', 'trRack', 'trUses', 'trOkeyColor', 'trOkeyNum'])
+        trPrefs.opts[id] = $o(id).disabled ? ($o(id).dataset.prev || $o(id).value) : $o(id).value;
+    };
+    const cfgNow = () => {
+      const chSel = $o('trStages').value;
+      return {
+        mode: $o('trMode').value || 'base',   // P58 · Grup D
         stages: chSel === 'inf' ? Infinity : parseInt(chSel, 10),
         jokers: [...selJ],
         consumables: [...selC],
         deckSpecials: [...selS],   // P42: deste içeriği (özel taşlar)
-        coins: parseInt(panel.querySelector('#trCoins').value, 10) || 0,
-        handSize: parseInt(panel.querySelector('#trHand').value, 10) || undefined,
-        jokerUses: usesCfg(panel.querySelector('#trUses').value),
+        coins: parseInt($o('trCoins').value, 10) || 0,
+        handSize: parseInt($o('trHand').value, 10) || undefined,
+        jokerUses: usesCfg($o('trUses').value),
         okey: okeyCfg(panel),
-        rack: panel.querySelector('#trRack').value,   // GRUP J (P20)
-      });
+        rack: $o('trRack').value,   // GRUP J (P20)
+      };
+    };
+
+    function updBoss() {
+      const key = trPrefs.boss;
+      for (const b of bossBtns) b.classList.toggle('on', b.dataset.boss === key);
+      const def = allBosses.find(b => b.key === key);
+      bh.textContent = `${t('trBossHead')} — ${T.bossName(def.key, def.name)}`;
+      const st = $o('trBossStage').value;
+      const modeSel = $o('trMode');
+      const info = Game.bossTestInfo(key, modeSel.disabled ? (modeSel.dataset.prev || modeSel.value) : modeSel.value, st === 'auto' ? null : st);
+      /* final boss (Lady Luck) kendi modunda oynanır — seçici o modu gösterir ve kilitlenir */
+      const lock = info.final && trPrefs.tab === 'boss';
+      if (lock && !modeSel.disabled) { modeSel.dataset.prev = modeSel.value; modeSel.value = info.mode; modeSel.disabled = true; }
+      else if (!lock && modeSel.disabled) { modeSel.disabled = false; modeSel.value = modeSel.dataset.prev || modeSel.value; }
+      const has = JOKER_ART.has(key);
+      sum.innerHTML =
+        `<div class="tr-bs-art ${has ? 'jk-' + key : 'blank'}"></div>` +
+        `<div class="tr-bs-txt"><div class="tr-bs-name">${T.bossName(def.key, def.name)}</div>` +
+        `<div class="tr-bs-tier">${t('trBossWhere', modeName(info.mode), info.stage)}</div>` +
+        `<div class="tr-bs-desc">${T.bossDesc ? T.bossDesc(def.key, def.desc) : def.desc}</div>` +
+        `<div class="tr-bs-target">${t('trBossTarget', info.target)}</div></div>`;
+    }
+    function setTab(tab) {
+      trPrefs.tab = tab;
+      panel.dataset.tab = tab;
+      head.querySelectorAll('.tr-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+      bStart.textContent = tab === 'boss' ? t('trBossStart') : t('trStart');
+      body.scrollTop = 0;
+      updBoss();
+      fitBossNames();
+    }
+    // uzun boss adları (THE MISUNDERSTOOD) kartın genişliğine sığana kadar küçülür
+    function fitBossNames() {
+      if (!ov.isConnected) return;
+      fitTileNames(ov);
+      const run = () => { if (trPrefs.tab === 'boss') body.querySelectorAll('.tr-boss-name').forEach(n => fitText(n, 11, 7)); };
+      run();
+      if (document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(() => ov.isConnected && run());
+    }
+    head.querySelectorAll('.tr-tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+    setTab(trPrefs.tab);
+
+    bStart.addEventListener('click', () => {
+      hideTip();
+      saveOpts();
+      const cfg = cfgNow();
+      if (trPrefs.tab === 'boss') {
+        const st = $o('trBossStage').value;
+        startBossTestRun({ ...cfg, boss: trPrefs.boss, stage: st === 'auto' ? null : parseInt(st, 10) });
+        ov.remove();
+        return;
+      }
+      Game.newTrainerRun(cfg);
       ov.remove();
       updateTrainerBadge();
       showScreen('map');
       showOkeyBanner();
     });
-    const bCancel = document.createElement('button');
-    bCancel.className = 'btn ghost';
-    bCancel.textContent = t('trCancel');
-    bCancel.addEventListener('click', () => { hideTip(); ov.remove(); });
-    acts.append(bStart, bCancel);
-    foot.appendChild(acts);
+    bCancel.addEventListener('click', () => { hideTip(); saveOpts(); ov.remove(); });
 
     ov.appendChild(panel);
     document.body.appendChild(ov);
+    fitBossNames();
   }
-  el.btnTrainer.addEventListener('click', showTrainerSetup);
+  el.btnTrainer.addEventListener('click', () => showTrainerSetup());
+  // çizimsiz joker kutuları: piksel yazı geniş — uzun ad (Silahşorlar) kutuya sığana kadar küçülür
+  function fitTileNames(root) {
+    const run = () => root.querySelectorAll('.tr-col-tiles .jt-name').forEach(n => fitText(n, 11, 7));
+    run();
+    /* piksel yazı tipi henüz inmediyse ölçü yedek (dar) yazı tipiyle yapılır → hazır olunca tazele */
+    if (document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(() => root.isConnected && run());
+  }
+
+  /* P83 — BOSS TESTİ: kur, doğrudan boss raunduna gir; bitince sonuç penceresi */
+  function startBossTestRun(cfg) {
+    lastBossTest = cfg;
+    const r = Game.startBossTest(cfg);
+    if (!r.ok) { toast(r.error, false); return; }
+    updateTrainerBadge();
+    enterTrainerRound();
+  }
+  /* haritadaki SEÇ düğmesiyle aynı giriş: boss sesi, Kumarhane'de kör bahis,
+     raund başı olayları + pop-up'lar, Rulet/yan bahis panelleri */
+  function enterTrainerRound() {
+    SFX.boss();
+    const go = () => {
+      showScreen('game');
+      flushRoundStart();
+      setTimeout(kumarStartPanels, 1500);
+    };
+    if (Game.needsBet && Game.needsBet()) showBetPicker(go);
+    else go();
+  }
+  function showBossTestEnd(won) {
+    const s = Game.state;
+    document.getElementById('bossTestEnd')?.remove();
+    const b = s.boss || {};
+    const name = T.bossName(b.key, b.name);
+    const has = JOKER_ART.has(b.key);
+    const why = won ? '' : (s.bossFail ? T.ev(s.bossFail) : t('btNoTarget'));
+    const row = (l, v) => `<div class="ep-row"><span class="ep-lbl">${l}</span><span class="ep-val">${v}</span></div>`;
+    const ov = document.createElement('div');
+    ov.id = 'bossTestEnd';
+    ov.className = 'ep-ov ' + (won ? 'ep-win' : 'ep-lose');
+    ov.innerHTML =
+      `<div class="ep-box bt-box"><div class="ep-title">${won ? t('btWon') : t('btLost')}</div>` +
+      `<div class="ep-body bt-body">` +
+        `<div class="ep-defeat"><div class="ep-def-title">${t('btBoss')}</div><div class="ep-def-name">${name}</div>` +
+          (has ? `<div class="ep-def-art jk-${b.key}"></div>` : '') +
+          `<div class="ep-def-why">${T.bossDesc ? T.bossDesc(b.key, b.desc) : (b.desc || '')}</div></div>` +
+        `<div class="ep-left">` +
+          row(t('btScore'), `${s.score} <i>/ ${s.target}</i>`) +
+          row(t('btTurn'), won && s.wonOnTurn ? `${s.wonOnTurn}. <i>/ ${s.maxTurns}</i>` : `${s.turn} <i>/ ${s.maxTurns}</i>`) +
+          row(t('btStage'), `${s.stage} <i>/ ${Game.totalStages()}</i>`) +
+          (why ? `<div class="bt-why">${why}</div>` : '') +
+        `</div></div>` +
+      `<div class="ep-foot">` +
+        `<button type="button" class="ep-btn ep-blue" data-a="again">${t('btAgain')}</button>` +
+        `<button type="button" class="ep-btn" data-a="pick">${t('btPick')}</button>` +
+        `<button type="button" class="ep-btn ep-ghost" data-a="menu">${t('btMenu')}</button>` +
+      `</div></div>`;
+    const leave = () => {
+      ov.remove();
+      el.overlay.classList.add('hidden');
+      el.storeOverlay.classList.add('hidden');
+      el.upgradeOverlay.classList.add('hidden');
+      document.querySelectorAll('.pk-ov, #okeyBanner').forEach(e => e.remove());
+    };
+    ov.querySelector('[data-a="again"]').addEventListener('click', () => { leave(); startBossTestRun(lastBossTest); });
+    ov.querySelector('[data-a="pick"]').addEventListener('click', () => {
+      leave(); Game.trainerMode = false; updateTrainerBadge(); showScreen('menu'); showTrainerSetup({ tab: 'boss' });
+    });
+    ov.querySelector('[data-a="menu"]').addEventListener('click', () => {
+      leave(); Game.trainerMode = false; updateTrainerBadge(); showScreen('menu');
+    });
+    document.body.appendChild(ov);
+  }
 
   // Raund girişinde opsiyonel store filtresi (yalnız trainer'da görünür)
   function showTrainerFilter() {
@@ -8962,12 +9141,16 @@
     ov.id = 'trainerFilter';
     const panel = document.createElement('div');
     panel.className = 'tr-panel';
-    panel.innerHTML = `<h2>${t('trFilterTitle')}</h2><p class="tr-sub">${t('trFilterHint')}</p>`;
-    panel.appendChild(jokerPickGrid(cur, (k) => { cur.has(k) ? cur.delete(k) : cur.add(k); }));
+    ov.className = 'tr-ov';
+    panel.innerHTML = `<div class="tr-head"><div class="tr-plate">${t('trFilterTitle')}</div><p class="tr-sub">${t('trFilterHint')}</p></div>`;
+    const fb = document.createElement('div');
+    fb.className = 'tr-body';
+    fb.appendChild(jokerPickGrid(cur, (k) => { cur.has(k) ? cur.delete(k) : cur.add(k); }));
+    panel.appendChild(fb);
     const acts = document.createElement('div');
     acts.className = 'tr-acts';
     const bOk = document.createElement('button');
-    bOk.className = 'btn primary';
+    bOk.className = 'btn primary ep-btn ep-blue';
     bOk.textContent = 'OK';
     bOk.addEventListener('click', () => {
       hideTip();
@@ -8977,7 +9160,7 @@
       renderMap();
     });
     const bClear = document.createElement('button');
-    bClear.className = 'btn ghost';
+    bClear.className = 'btn ghost ep-btn ep-ghost';
     bClear.textContent = t('trFilterClear');
     bClear.addEventListener('click', () => {
       hideTip();
@@ -8989,6 +9172,7 @@
     panel.appendChild(acts);
     ov.appendChild(panel);
     document.body.appendChild(ov);
+    fitTileNames(ov);
   }
   /* ---------- Başlat: ana menü (dev: #map / #game ile ekran atla) ---------- */
   /* ============================================================

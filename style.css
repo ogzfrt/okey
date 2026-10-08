@@ -10453,3 +10453,227 @@ html[data-theme="boss"][data-boss-ui="ladyLuck"] {
 /* Trainer / Koleksiyon başlıkları ve filtre çipi */
 .col-rar-head.tr-final { color: #C8102E; }
 .tr-rar.tr-final { color: #C8102E; }
+
+/* ============================================================
+   P83 — TRAINER OYUNUN UI DİLİNDE + BOSS TESTİ (kullanıcı 2026-10-08:
+   "trainer modunun seçim arayüzü falan hepsini oyuna uygun yap").
+   Pencere dili P62b/P64 ile aynı: tema koyu panel, açık kenar, başlık
+   PLAKASI, gömme koyu iç alan, açık satırlar, STOP gibi basılan düğmeler.
+   Eski beyaz web paneli (.tr-panel #FCFAF4, mor kesikli harita barı, mor
+   gradyan çip) bu bloğun altında kalır; blok dosyanın SONUNDA ki aynı
+   özgüllükteki eski kurallar sessizce kazanmasın.
+   ============================================================ */
+#trainerSetup.tr-ov, #trainerFilter.tr-ov {
+  position: fixed; inset: 0; z-index: 400;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 16px 16px; box-sizing: border-box;
+  background: rgba(14, 22, 32, .78); backdrop-filter: blur(3px);
+  font-family: var(--gm-font);
+}
+.tr-ov .tr-panel {
+  width: min(1560px, 96vw); height: min(930px, calc(100vh - 64px)); max-height: none;
+  display: flex; flex-direction: column; overflow: visible; box-sizing: border-box;
+  background: var(--gm-dark); color: var(--gm-light);
+  border: 4px solid var(--gm-edge); border-radius: 10px;
+  padding: 0 22px 18px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45), 0 22px 50px rgba(0, 0, 0, .5);
+  animation: modalIn .35s cubic-bezier(.2, .9, .3, 1.15);
+}
+#trainerFilter .tr-panel { width: min(1240px, 94vw); }
+.tr-ov .tr-head { flex: 0 0 auto; text-align: center; }
+.tr-ov .tr-plate {
+  display: inline-block; position: relative; top: -26px; margin: 0 0 -14px;
+  background: var(--gm-dark); color: var(--gm-light);
+  border: 4px solid var(--gm-edge); border-radius: 8px;
+  padding: 8px 28px; font: 700 28px/1 var(--gm-font); letter-spacing: -1px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+.tr-ov .tr-tabs { display: flex; justify-content: center; gap: 12px; margin: 0 0 6px; }
+.tr-ov .tr-tab {
+  cursor: pointer; background: var(--gm-dark); color: var(--gm-light);
+  border: 4px solid var(--gm-edge); border-radius: 8px;
+  padding: 9px 28px; font: 700 20px/1 var(--gm-font); letter-spacing: -1px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45); transition: transform .06s ease, box-shadow .06s ease;
+}
+.tr-ov .tr-tab:hover { filter: brightness(1.12); }
+.tr-ov .tr-tab:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.tr-ov .tr-tab.on { background: var(--gm-light); color: var(--gm-dark); }
+.tr-ov .tr-sub {
+  margin: 6px 0 10px; color: var(--gm-light); opacity: .78;
+  font: 12.5px/1.35 system-ui, 'Segoe UI', sans-serif;
+}
+.tr-ov .tr-main { flex: 1 1 auto; min-height: 0; display: flex; gap: 16px; }
+.tr-ov .tr-body {
+  flex: 1 1 auto; min-width: 0; min-height: 0; overflow-y: auto; padding: 12px 16px 16px;
+  background: rgba(0, 0, 0, .28); border-radius: 8px; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35);
+  scrollbar-width: thin; scrollbar-color: var(--gm-light) transparent;
+}
+.tr-ov .tr-foot {
+  flex: 0 0 400px; min-height: 0; overflow: visible; display: flex; flex-direction: column; gap: 10px;
+  border-top: 0; margin: 0; padding: 0 2px 6px;
+}
+/* ayarlar kayar, düğmeler HEP görünür (küçük ekranda da) */
+.tr-ov .tr-foot-scroll {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+  padding: 0 2px 4px; scrollbar-width: thin; scrollbar-color: var(--gm-light) transparent;
+}
+.tr-ov .tr-opt select:disabled { opacity: .7; cursor: default; }
+.tr-panel:not([data-tab="boss"]) .tr-boss-only, #trainerFilter .tr-boss-only { display: none !important; }
+.tr-panel[data-tab="boss"] .tr-run-only { display: none !important; }
+.tr-ov .tr-sec + .tr-sec { margin-top: 16px; padding-top: 14px; border-top: 2px dashed color-mix(in srgb, var(--gm-light) 32%, transparent); }
+.tr-ov .tr-body h3 { margin: 0 0 6px; font: 700 22px/1.1 var(--gm-font); letter-spacing: -1px; color: var(--gm-light); }
+.tr-ov .tr-hint { margin: 0 0 6px; color: var(--gm-light); opacity: .7; font: 12px/1.3 system-ui, 'Segoe UI', sans-serif; }
+/* nadirlik / kademe başlığı = küçük renkli plaka */
+.tr-ov .tr-rar {
+  display: block; width: max-content; margin: 12px 0 8px; padding: 5px 10px 4px; border-radius: 4px;
+  font: 700 13px/1 var(--gm-font); letter-spacing: 0; text-transform: uppercase;
+  color: #fff; background: var(--tr-rc, #5E6E7E); box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+.tr-ov .tr-rar.tr-common { --tr-rc: #5E6E7E; }
+.tr-ov .tr-rar.tr-rare { --tr-rc: #2F6FB0; }
+.tr-ov .tr-rar.tr-epic { --tr-rc: #7A37B4; }
+.tr-ov .tr-rar.tr-legendary { --tr-rc: #B07708; }
+.tr-ov .tr-rar.tr-mythic { --tr-rc: #C22A86; }
+.tr-ov .tr-rar.tr-final { --tr-rc: #B01E2E; color: #fff; }
+.tr-ov .tr-rar.tr-tier-1 { --tr-rc: #3E8E52; }
+.tr-ov .tr-rar.tr-tier-2 { --tr-rc: #B07708; }
+.tr-ov .tr-rar.tr-tier-3 { --tr-rc: #B0302A; }
+.tr-ov .tr-rar.tr-tier-4 { --tr-rc: #7A1A3A; }
+/* seçili kart: temanın vurgu tonu */
+.tr-ov .tr-card.on { outline-color: var(--gm-turn-on); }
+.tr-ov .tr-card .tr-check, .tr-ov .tr-boss .tr-check {
+  background: var(--gm-turn-on); color: var(--gm-dark); font: 800 12px/20px system-ui, sans-serif;
+}
+/* boss kartları */
+.tr-boss-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+.tr-boss {
+  position: relative; width: 120px; box-sizing: border-box; padding: 8px 4px 7px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--gm-light); color: var(--gm-dark);
+  border: 3px solid var(--gm-edge); border-radius: 8px; box-shadow: 0 4px 0 rgba(0, 0, 0, .4);
+  font: 700 11px/1.05 var(--gm-font); letter-spacing: -.8px;
+  transition: transform .06s ease, box-shadow .06s ease;
+}
+.tr-boss:hover { filter: brightness(1.06); }
+.tr-boss:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.tr-boss.on { background: var(--gm-turn-on); border-color: var(--gm-turn-on); box-shadow: 0 0 0 3px var(--gm-dark), 0 0 0 6px var(--gm-turn-on), 0 4px 0 6px rgba(0, 0, 0, .4); }
+.tr-boss-art { width: 66px; height: 90px; background: var(--jk-art) center / 100% 100% no-repeat; image-rendering: pixelated; }
+.tr-boss-art.blank, .tr-bs-art.blank { background: rgba(0, 0, 0, .18); border: 2px dashed currentColor; border-radius: 4px; box-sizing: border-box; }
+.tr-boss-name { width: 100%; min-height: 2.1em; display: flex; align-items: center; justify-content: center; text-align: center; text-transform: uppercase; }
+.tr-boss .tr-check {
+  position: absolute; top: -9px; right: -9px; width: 20px; height: 20px; border-radius: 50%;
+  text-align: center; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); display: none; z-index: 2;
+  border: 2px solid var(--gm-dark);
+}
+.tr-boss.on .tr-check { display: block; }
+/* sağ sütun: seçili boss özeti */
+.tr-ov .tr-boss-sum {
+  display: flex; gap: 12px; align-items: flex-start; text-align: left;
+  background: rgba(0, 0, 0, .28); border-radius: 8px; padding: 12px; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35);
+}
+.tr-bs-art { flex: 0 0 66px; height: 90px; background: var(--jk-art) center / 100% 100% no-repeat; image-rendering: pixelated; }
+.tr-bs-txt { min-width: 0; }
+.tr-bs-name { font: 700 20px/1 var(--gm-font); letter-spacing: -1px; color: var(--gm-turn-on); text-transform: uppercase; }
+.tr-bs-tier { margin: 5px 0 6px; font: 700 12px/1.25 var(--gm-font); opacity: .85; }
+.tr-bs-desc { font: 12.5px/1.35 system-ui, 'Segoe UI', sans-serif; opacity: .95; }
+.tr-bs-target {
+  display: inline-block; margin-top: 8px; padding: 5px 8px 4px; border-radius: 4px; white-space: nowrap;
+  background: var(--gm-light); color: var(--gm-dark); font: 700 14px/1 var(--gm-font); letter-spacing: -.6px;
+}
+/* ayar kutuları: iki sütun, etiket üstte / seçici altta (piksel yazı geniş —
+   yan yana dizilince etiket de değer de kesiliyordu) */
+.tr-ov .tr-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; font: inherit; }
+.tr-ov .tr-opt {
+  display: flex; flex-direction: column; align-items: stretch; gap: 5px; min-width: 0;
+  background: var(--gm-light); color: var(--gm-dark); border-radius: 6px; padding: 7px 6px 6px;
+  font: 700 13px/1 var(--gm-font); letter-spacing: -.6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+.tr-ov .tr-opt.tr-wide { grid-column: 1 / -1; }
+.tr-ov .tr-opt-l { padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-block: .45em .3em; margin-block: -.45em -.3em; }
+.tr-ov .tr-opt :is(select, input) {
+  margin: 0; width: 100%; min-width: 0; max-width: none; height: 32px; box-sizing: border-box; padding: 0 6px;
+  background: var(--gm-dark); color: var(--gm-light); border: 0; border-radius: 4px;
+  font: 700 13px/1 var(--gm-font); letter-spacing: -.7px; cursor: pointer;
+}
+.tr-ov .tr-opt input { cursor: text; }
+.tr-ov .tr-pair { display: flex; gap: 6px; }
+.tr-ov .tr-pair select { flex: 1; width: auto; }
+.tr-ov .tr-pair select + select { flex: 0 0 64px; }
+.tr-ov select option, #trainerMapBar select option { background: var(--gm-dark); color: var(--gm-light); }
+.tr-ov .tr-sum-line { text-align: center; font: 700 12px/1.3 var(--gm-font); letter-spacing: -.5px; opacity: .85; }
+/* gizli boss bölümünden sonraki ilk bölümün üst çizgisi olmasın */
+.tr-panel:not([data-tab="boss"]) .tr-boss-only + .tr-sec { margin-top: 0; padding-top: 0; border-top: 0; }
+/* çizimsiz joker kutuları: piksel yazı geniş — ad kutuya sığsın */
+.tr-ov .tr-col-tiles { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+.tr-ov .tr-col-tiles .col-tile { font-size: 11px; letter-spacing: -.7px; overflow: hidden; }
+.tr-ov .tr-col-tiles .col-tile .jt-name { width: 100%; max-width: 100%; box-sizing: border-box; letter-spacing: -.7px; }
+.tr-ov .tr-acts { flex: 0 0 auto; margin-top: 0; display: flex; flex-direction: column; gap: 10px; justify-content: flex-end; }
+#trainerFilter .tr-acts { margin-top: 14px; flex-direction: row; justify-content: center; }
+#trainerFilter .tr-acts .ep-btn { width: min(320px, 45%); }
+.tr-ov .tr-acts .btn.ep-btn {
+  width: 100%; transform: none; padding: 10px; border-radius: 8px;
+  background: var(--gm-light); color: var(--gm-dark); border: 4px solid var(--gm-edge);
+  font: 700 20px/1 var(--gm-font); letter-spacing: -1px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+.tr-ov .tr-acts .btn.ep-btn.ep-blue { background: var(--gm-turn-on); border-color: var(--gm-turn-on); color: var(--gm-dark); font-size: 18px; padding: 14px 6px; white-space: nowrap; letter-spacing: -1.2px; }
+.tr-ov .tr-acts .btn.ep-btn.ep-ghost { background: transparent; color: var(--gm-light); border: 3px solid var(--gm-light); font-size: 16px; padding: 8px 10px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+.tr-ov .tr-acts .btn.ep-btn:hover { filter: brightness(1.12); transform: none; }
+.tr-ov .tr-acts .btn.ep-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+@media (max-width: 1100px) {
+  .tr-ov .tr-main { flex-direction: column; }
+  .tr-ov .tr-foot { flex: 0 0 auto; max-height: 50%; }
+}
+
+/* boss testi sonuç penceresi (oyun sonu panelinin dili) */
+.bt-box .bt-body { grid-template-columns: 1fr 1.3fr; }
+.bt-box .ep-left { justify-content: center; }
+.bt-why {
+  margin-top: 4px; padding: 10px 12px; border-radius: 6px; text-align: left;
+  background: rgba(0, 0, 0, .25); border: 3px solid var(--gm-turn-on); color: var(--gm-light);
+  font: 13px/1.4 system-ui, 'Segoe UI', sans-serif;
+}
+.bt-box .ep-foot .ep-btn { width: min(380px, 100%); }
+
+/* harita trainer paneli — sol sütunun altında, oyunun koyu panel dilinde */
+.gm-stage #trainerMapBar {
+  position: absolute; left: 41px; top: 850px; width: 350px; box-sizing: border-box; margin: 0;
+  display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 5px;
+  padding: 7px 9px 8px; z-index: 5; pointer-events: auto;
+  background: var(--gm-dark); color: var(--gm-light);
+  border: 4px solid var(--gm-edge); border-radius: 10px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+  font: 700 14px/1 var(--gm-font); letter-spacing: -.5px;
+}
+#trainerMapBar .tmb-line { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+#trainerMapBar .tmb-f { display: flex; align-items: center; gap: 5px; min-width: 0; }
+#trainerMapBar .tmb-f > span { white-space: nowrap; opacity: .85; font-size: 13px; }
+#trainerMapBar .tmb-line > .tmb-f { flex: 1 1 0; }
+#trainerMapBar .tmb-line > .tmb-f:first-child:not(:only-child) { flex: .7 1 0; }
+#trainerMapBar .tmb-f select { flex: 1 1 auto; min-width: 0; width: 0; }
+#trainerMapBar .tmb-wide .tmb-f select + select { flex: 0 0 58px; }
+#trainerMapBar .tmb-f > span { flex: 0 0 auto; }
+#trainerMapBar .tmb-foot .btn.tmb-btn { flex: 1; }
+.gm-stage #trainerMapBar select {
+  height: 26px; padding: 0 3px; margin: 0; max-width: none; box-sizing: border-box;
+  background: var(--gm-light); color: var(--gm-dark); border: 0; border-radius: 4px;
+  font: 700 13px/1 var(--gm-font); letter-spacing: -.5px; cursor: pointer;
+}
+#trainerMapBar .tr-tag { color: var(--gm-turn-on); font: 700 18px/1 var(--gm-font); letter-spacing: -.5px; white-space: nowrap; }
+.gm-stage #trainerMapBar .btn.tmb-btn {
+  background: transparent; color: var(--gm-light); border: 2px solid var(--gm-light); border-radius: 6px;
+  padding: 5px 8px; font: 700 12px/1 var(--gm-font); letter-spacing: -.3px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+#trainerMapBar .tmb-go {
+  cursor: pointer; background: var(--gm-turn-on); color: var(--gm-dark); border: 0; border-radius: 6px;
+  padding: 7px 10px; font: 700 13px/1 var(--gm-font); letter-spacing: -.3px; box-shadow: 0 3px 0 rgba(0, 0, 0, .45);
+  white-space: nowrap;
+}
+#trainerMapBar .tmb-go:hover:not([disabled]) { filter: brightness(1.1); }
+#trainerMapBar .tmb-go:active:not([disabled]) { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .45); }
+#trainerMapBar .tmb-go[disabled] { opacity: .45; cursor: default; }
+
+/* TRAINER rozeti — mor gradyan hap yerine oyunun plakası */
+.trainer-chip {
+  background: var(--gm-dark); color: var(--gm-turn-on);
+  border: 3px solid var(--gm-light); border-radius: 6px; box-shadow: 0 4px 0 rgba(0, 0, 0, .45);
+  font: 700 16px/1 var(--gm-font); letter-spacing: -.5px; padding: 6px 12px;
+}

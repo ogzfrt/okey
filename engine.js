@@ -4656,6 +4656,57 @@ const Game = {
     return { ok: true, stage: ch };
   },
 
+  /* P83 — BOSS TESTİ (kullanıcı 2026-10-08: "trainer mod'a boss raundlarını
+     sadece başlatıp test edebileceğim bir arayüz"). Trainer kurulumundan seçilen
+     boss'un raunduna DOĞRUDAN girilir: harita, store, önceki raundlar yok.
+     Kadro (joker / değnek / deste / coin / okey) newTrainerRun ile aynı kurulur.
+       · stage: boss'un zorluk kademesine göre olağan stage'i (bossTestInfo) ya da
+         elle seçilen stage — hedef puan o stage'in boss hedefidir.
+       · final boss (Lady Luck) kendi modunda ve final stage'inde oynanır
+         (Kumarhane S5, FINAL_TARGET).
+     Raund bitince UI sonuç penceresini açar (state.bossTest). Normal run'da kapalı. */
+  bossTestInfo(key, mode, stage) {
+    const def = FINAL_BOSSES[key] || BOSSES.find(b => b.key === key);
+    if (!def) return null;
+    if (def.final) mode = Object.keys(RUN_MODES).find(k => RUN_MODES[k].finalBoss === def.key) || mode;
+    const m = RUN_MODES[mode] || RUN_MODES.base;
+    const tier = def.final ? 4 : (BOSS_TIER[def.key] || 2);
+    let st = def.final ? m.stages + 1 : Math.floor(Number(stage));
+    if (!def.final && !(st >= 1)) st = Math.max(1, Math.round(m.stages * ({ 1: .3, 2: .6, 3: .9 })[tier]));
+    if (!def.final) st = Math.min(m.stages, st);
+    const tbl = m.targets || STAGE_TARGETS;
+    const target = tbl[Math.min(st, tbl.length) - 1][2];
+    return { key: def.key, mode: m.key, stage: st, target, tier, final: !!def.final, stages: m.stages };
+  },
+  startBossTest(cfg = {}) {
+    const info = this.bossTestInfo(cfg.boss, cfg.mode || 'base', cfg.stage);
+    if (!info) return { ok: false, error: 'Boss bulunamadı.' };
+    const def = FINAL_BOSSES[info.key] || BOSSES.find(b => b.key === info.key);
+    this.newTrainerRun({ ...cfg, mode: info.mode, stages: info.stages + (info.final ? 1 : 0) });
+    const s = this.state;
+    s.bossTest = info.key;
+    s.stage = info.stage;
+    s.roundInStage = 3;
+    s.store = null; s.pendingLocks = null; s.upgradeOffer = null;
+    s.status = 'playing';
+    s.okey = this._rollOkey();
+    s.bossOrder[(info.stage - 1) % s.bossOrder.length] = def;
+    s.boss = null;                         // _startRound bossOrder'dan bu stage'in boss'unu alır
+    this._startRound();
+    return { ok: true, boss: info.key, stage: info.stage, mode: info.mode, target: s.target };
+  },
+  /* Trainer haritası: bu stage'in boss raunduna hemen geç (aradaki raundlar
+     atlanır, ödülleri verilmez — yalnız test kolaylığı). */
+  trainerGoBoss() {
+    if (!this.trainerMode) return { ok: false, error: 'Yalnız Trainer modunda.' };
+    const s = this.state;
+    if (!s || s.status !== 'playing') return { ok: false, error: 'Şu an oynanan bir raund yok.' };
+    s.roundInStage = 3;
+    s.store = null;
+    this._startRound();
+    return { ok: true, boss: s.boss && s.boss.key };
+  },
+
   /* DESTE BÜTÜNLÜK DENETİMİ (Playtest 6, Grup A7)
      Normal Okey destesinde her (renk+sayı) kombinasyonundan EN FAZLA 2 adet
      bulunur. Playtest'te aynı elde 3 adet Mavi 13 görüldü. Kök neden:
@@ -12450,7 +12501,7 @@ if (typeof module !== 'undefined') {
   module.exports = {
     Game, detectCombo, isCift, isPer, isSirali, getCarpan, computeScore,
     sortPer, sortCift, sortSirali, createDeck, resolveCombo,
-    COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, FINAL_BOSSES, FINAL_TARGET,
+    COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, FINAL_BOSSES, FINAL_TARGET, BOSS_TIER,
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
