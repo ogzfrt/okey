@@ -10751,3 +10751,15 @@ html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .g
 
 /* P86 — Ayarlar: kilitli seçenek notu (FİNAL BOSS JOKERİ, final yenilmeden) */
 .set-note.set-finaljk-lock { align-self: center; font-size: 13px; opacity: .8; white-space: nowrap; }
+
+/* P87 — Ayarlar kısa ekranda da sığar: satır sayısı arttı (FİNAL JOKERİYLE BAŞLA,
+   FİNAL KİLİTLERİ). 1366×768'de pencere üstten taşıyor, Kapat ekran dışında
+   kalıyordu → alçak ekranda satır aralığı sıklaşır; yine de sığmazsa katman
+   kayar ve pencere üstte hizalanır (safe center: taşınca üstü kesilmez). */
+#settingsOv { overflow-y: auto; align-items: safe center; padding: 34px 0 12px; box-sizing: border-box; }
+@media (max-height: 900px) {
+  #settingsOv .set-row { margin-bottom: 9px; }
+  #settingsOv .tp-box { padding-bottom: 16px; }
+}
+@media (max-height: 820px) { #settingsOv .tp-box { zoom: .9; } }
+@media (max-height: 700px) { #settingsOv .tp-box { zoom: .78; } }

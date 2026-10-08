@@ -6646,9 +6646,24 @@
       /* P60/P61 — ilk kez ipuçlarını yeniden göster */
       `<div class="set-row"><span class="set-label">${t('hintsLabel')}</span>` +
       `<div class="set-langs"><button class="set-lang" id="setHintsReset">↺ ${t('hintsReset')}</button></div></div>` +
+      /* P87 (kullanıcı 2026-10-08, prototipte test için) — final kilitlerini sıfırla:
+         Lady Luck yenilmemiş gibi olur (maskot kalpsiz, final jokeri yeniden kilitli).
+         İki adımlı: ilk tık "Emin misin?" sorar. */
+      `<div class="set-row"><span class="set-label">${t('finalsResetLabel')}</span>` +
+      `<div class="set-langs"><button class="set-lang" id="setFinalsReset"${Finals.list().length ? '' : ' disabled'}>` +
+      `↺ ${t(Finals.list().length ? 'finalsReset' : 'finalsResetNone')}</button></div></div>` +
       `<button class="btn ghost" id="setClose">${t('close')}</button></div>`;
     document.body.appendChild(ov);
     ov.querySelector('#setHintsReset').addEventListener('click', () => { Hints.reset(); toast(t('hintsResetDone'), true); });
+    const fr = ov.querySelector('#setFinalsReset');
+    fr.addEventListener('click', () => {
+      if (!fr.dataset.confirm) { fr.dataset.confirm = '1'; fr.classList.add('on'); fr.textContent = '⚠ ' + t('finalsResetConfirm'); return; }
+      try { localStorage.removeItem(FINALS_KEY); } catch (e) {}
+      updateMascotItems();
+      toast(t('finalsResetDone'), true);
+      ov.remove();
+      showSettings();   // satırlar (FİNAL JOKERİYLE BAŞLA kilidi, bu düğme) tazelensin
+    });
     const sOn = ov.querySelector('#setSfxOn'), sVol = ov.querySelector('#setSfxVol');
     const sfxBtn = () => { sOn.classList.toggle('on', sfxOn); sOn.textContent = sfxOn ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff'); };
     sOn.addEventListener('click', () => {
