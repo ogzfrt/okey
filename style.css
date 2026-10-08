@@ -4875,6 +4875,10 @@ body.game-open #overlay { align-items: center; justify-content: center; }
   display: flex; flex-direction: column; gap: 6px;
 }
 .gm-stage #bossBanner.gm-boss-cond.hidden { display: none; }
+/* P84 — eski (Figma öncesi) mor bossPulse nabzı oyun tuvalinde KAPALI: kutu temalarda
+   filtreli panelin içinde; box-shadow animasyonu boss raundu boyunca her karede
+   filtreyle birlikte yeniden raster ettiriyordu (boşta 3 sn'de ~2 sn raster). */
+.gm-stage #bossBanner.gm-boss-cond { animation: none; box-shadow: none; }
 .gm-stage .gm-boss-cond b,
 .gm-stage .gm-boss-cond .bb-val { color: var(--gm-turn-on); }
 .gm-stage .gm-boss-cond .bb-name { display: none; }  /* ad zaten çipte */
@@ -9502,9 +9506,8 @@ html[data-theme="kumarhane"] :is(#gameScreen, #mapScreen) .gm-stage,
 html[data-theme="kumarhane"] #storeOverlay #storeStage { color: var(--gm-light); }
 
 /* --- masa eşyaları: altın parıltı + gölge → yeşil masadan ayrılır --- */
-html[data-theme="kumarhane"] .gm-stage #rack {
-  filter: drop-shadow(0 0 2px #F5CF55) drop-shadow(0 0 16px rgba(245, 207, 85, .5)) drop-shadow(0 12px 14px rgba(0, 0, 0, .45));
-}
+/* P84: ıstaka hâlesi önceden çizilmiş görsel (filtre DEĞİL) — renk buradan */
+html[data-theme="kumarhane"] .gm-stage #rack { --img-rack-glow: url('assets/game/kumarhane/rack-glow.png'); }
 html[data-theme="kumarhane"] :is(.gm-stage, #storeStage) :is(.gm-jokers, .gm-left > *, .gm-coin, .map-card, #actionBar, .gm-shoulder, .st-inv) {
   filter: drop-shadow(0 0 1.5px rgba(245, 207, 85, .95)) drop-shadow(0 8px 10px rgba(0, 0, 0, .4));
 }
@@ -9623,9 +9626,9 @@ html[data-theme="kozmik"] :is(#gameScreen, #mapScreen) .gm-stage,
 html[data-theme="kozmik"] #storeOverlay #storeStage { background: transparent; color: var(--gm-light); }
 
 /* --- eşyalar: neon parıltı + gölge → bulutsudan net ayrılır --- */
-html[data-theme="kozmik"] .gm-stage #rack {
-  filter: drop-shadow(0 0 2px var(--kz-neon)) drop-shadow(0 0 18px var(--kz-neon-soft)) drop-shadow(0 12px 14px rgba(0, 0, 0, .55));
-}
+/* P84: ıstaka hâlesi önceden çizilmiş görsel (filtre DEĞİL); stage'le değişen neon rengi korunur */
+html[data-theme="kozmik"] .gm-stage #rack { --img-rack-glow: url('assets/game/kozmik/rack-glow.png'); }
+html[data-theme="kozmik"] .gm-stage #rack::after { filter: hue-rotate(var(--kz-hue)); }   /* renk matrisi — ucuz */
 html[data-theme="kozmik"] :is(.gm-stage, #storeStage) :is(.gm-jokers, .gm-left > *, .gm-coin, .map-card, #actionBar, .gm-shoulder, .st-inv) {
   filter: drop-shadow(0 0 1.5px var(--kz-neon)) drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
 }
@@ -9660,9 +9663,8 @@ html[data-theme="kozmik"] .gm-stage #turnIndicator.gm-turn { color: var(--kz-neo
 html[data-theme="boss"] { --gm-edge: var(--boss-glow); --gm-turn-on: var(--boss-glow); }
 html[data-theme="boss"] body.game-open { background: var(--boss-bg) center / cover no-repeat, var(--gm-dark); }
 html[data-theme="boss"] :is(#gameScreen, #mapScreen) .gm-stage { background: transparent; color: var(--gm-light); }
-html[data-theme="boss"] .gm-stage #rack {
-  filter: drop-shadow(0 0 2px var(--boss-glow)) drop-shadow(0 0 16px var(--boss-glow-soft)) drop-shadow(0 12px 14px rgba(0, 0, 0, .5));
-}
+/* P84: ıstaka hâlesi önceden çizilmiş görsel (filtre DEĞİL) — boss rengindeki
+   görsel @@BOSS-UI bloğunda (--img-rack-glow, build_boss_ui.py) */
 html[data-theme="boss"] .gm-stage :is(.gm-jokers, .gm-left > *, .gm-coin, #actionBar, .gm-shoulder) {
   filter: drop-shadow(0 0 1.5px var(--boss-glow)) drop-shadow(0 8px 10px rgba(0, 0, 0, .5));
 }
@@ -9689,7 +9691,8 @@ html[data-theme="boss"] #gameScreen .gm-stage::before {
   width: var(--boss-char-w, 0); height: var(--boss-char-h, 0);
   background: var(--boss-char, none) center / 100% 100% no-repeat;
   image-rendering: auto;
-  filter: drop-shadow(0 0 2px var(--boss-glow-soft)) drop-shadow(0 0 30px rgba(0, 0, 0, .55));
+  /* P84: parıltı + gölge character.png'nin İÇİNDE (filtre her yeniden çizimde
+     542×793'lük alanı 30px bulanıklıkla baştan hesaplıyordu) */
 }
 /* @@BOSS-UI-BEGIN — tools/theme/build_boss_ui.py ÜRETİR, elle düzenleme */
 html[data-theme="boss"][data-boss-ui="godzilla"] {
@@ -9724,6 +9727,7 @@ html[data-theme="boss"][data-boss-ui="godzilla"] {
   --img-tray-3: url('assets/game/boss/godzilla/tray-3.svg');
   --img-tray-4: url('assets/game/boss/godzilla/tray-4.svg');
   --img-tile-back: url('assets/game/boss/godzilla/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/godzilla/rack-glow.png');
   --st-edge: #173A4A; --st-edge-soft: rgba(23, 58, 74, .38); --st-bg: #DDF2F8;
   --st-head: #173A4A; --st-rule: rgba(23, 58, 74, .35); --st-glow: rgba(143, 230, 255, .25);
 }
@@ -9759,6 +9763,7 @@ html[data-theme="boss"][data-boss-ui="karaKedi"] {
   --img-tray-3: url('assets/game/boss/kara-kedi/tray-3.svg');
   --img-tray-4: url('assets/game/boss/kara-kedi/tray-4.svg');
   --img-tile-back: url('assets/game/boss/kara-kedi/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/kara-kedi/rack-glow.png');
   --st-edge: #1A1A1A; --st-edge-soft: rgba(26, 26, 26, .38); --st-bg: #E8E2C8;
   --st-head: #1A1A1A; --st-rule: rgba(26, 26, 26, .35); --st-glow: rgba(244, 238, 138, .25);
 }
@@ -9794,6 +9799,7 @@ html[data-theme="boss"][data-boss-ui="kirby"] {
   --img-tray-3: url('assets/game/boss/sir-by/tray-3.svg');
   --img-tray-4: url('assets/game/boss/sir-by/tray-4.svg');
   --img-tile-back: url('assets/game/boss/sir-by/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/sir-by/rack-glow.png');
   --st-edge: #1E1E1E; --st-edge-soft: rgba(30, 30, 30, .38); --st-bg: #ECE8DC;
   --st-head: #1E1E1E; --st-rule: rgba(30, 30, 30, .35); --st-glow: rgba(232, 228, 218, .25);
 }
@@ -9829,6 +9835,7 @@ html[data-theme="boss"][data-boss-ui="cellat"] {
   --img-tray-3: url('assets/game/boss/cellat/tray-3.svg');
   --img-tray-4: url('assets/game/boss/cellat/tray-4.svg');
   --img-tile-back: url('assets/game/boss/cellat/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/cellat/rack-glow.png');
   --st-edge: #3A2418; --st-edge-soft: rgba(58, 36, 24, .38); --st-bg: #E6DCC6;
   --st-head: #3A2418; --st-rule: rgba(58, 36, 24, .35); --st-glow: rgba(224, 176, 96, .25);
 }
@@ -9864,6 +9871,7 @@ html[data-theme="boss"][data-boss-ui="misunderstood"] {
   --img-tray-3: url('assets/game/boss/misunderstood/tray-3.svg');
   --img-tray-4: url('assets/game/boss/misunderstood/tray-4.svg');
   --img-tile-back: url('assets/game/boss/misunderstood/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/misunderstood/rack-glow.png');
   --st-edge: #0C0C14; --st-edge-soft: rgba(12, 12, 20, .38); --st-bg: #DAD6EA;
   --st-head: #0C0C14; --st-rule: rgba(12, 12, 20, .35); --st-glow: rgba(255, 255, 255, .25);
 }
@@ -9900,6 +9908,7 @@ html[data-theme="boss"][data-boss-ui="kelebek"] {
   --img-tray-3: url('assets/game/boss/kelebek/tray-3.svg');
   --img-tray-4: url('assets/game/boss/kelebek/tray-4.svg');
   --img-tile-back: url('assets/game/boss/kelebek/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/kelebek/rack-glow.png');
   --st-edge: #26323A; --st-edge-soft: rgba(38, 50, 58, .38); --st-bg: #FFE7BC;
   --st-head: #26323A; --st-rule: rgba(38, 50, 58, .35); --st-glow: rgba(255, 231, 188, .25);
 }
@@ -9935,6 +9944,7 @@ html[data-theme="boss"][data-boss-ui="ahtapot"] {
   --img-tray-3: url('assets/game/boss/ahtapot/tray-3.svg');
   --img-tray-4: url('assets/game/boss/ahtapot/tray-4.svg');
   --img-tile-back: url('assets/game/boss/ahtapot/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/ahtapot/rack-glow.png');
   --st-edge: #22303A; --st-edge-soft: rgba(34, 48, 58, .38); --st-bg: #DCE4EA;
   --st-head: #22303A; --st-rule: rgba(34, 48, 58, .35); --st-glow: rgba(154, 220, 240, .25);
 }
@@ -9970,6 +9980,7 @@ html[data-theme="boss"][data-boss-ui="fatality"] {
   --img-tray-3: url('assets/game/boss/fatality/tray-3.svg');
   --img-tray-4: url('assets/game/boss/fatality/tray-4.svg');
   --img-tile-back: url('assets/game/boss/fatality/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/fatality/rack-glow.png');
   --st-edge: #5E0C0E; --st-edge-soft: rgba(94, 12, 14, .38); --st-bg: #F2DACC;
   --st-head: #5E0C0E; --st-rule: rgba(94, 12, 14, .35); --st-glow: rgba(255, 122, 74, .25);
 }
@@ -10005,6 +10016,7 @@ html[data-theme="boss"][data-boss-ui="zombie"] {
   --img-tray-3: url('assets/game/boss/zombie/tray-3.svg');
   --img-tray-4: url('assets/game/boss/zombie/tray-4.svg');
   --img-tile-back: url('assets/game/boss/zombie/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/zombie/rack-glow.png');
   --st-edge: #24424A; --st-edge-soft: rgba(36, 66, 74, .38); --st-bg: #DCECEE;
   --st-head: #24424A; --st-rule: rgba(36, 66, 74, .35); --st-glow: rgba(154, 240, 200, .25);
 }
@@ -10041,6 +10053,7 @@ html[data-theme="boss"][data-boss-ui="freedom"] {
   --img-tray-3: url('assets/game/boss/freedom/tray-3.svg');
   --img-tray-4: url('assets/game/boss/freedom/tray-4.svg');
   --img-tile-back: url('assets/game/boss/freedom/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/freedom/rack-glow.png');
   --st-edge: #B0174E; --st-edge-soft: rgba(176, 23, 78, .38); --st-bg: #FFF6DC;
   --st-head: #B0174E; --st-rule: rgba(176, 23, 78, .35); --st-glow: rgba(176, 23, 78, .25);
 }
@@ -10076,6 +10089,7 @@ html[data-theme="boss"][data-boss-ui="uzayli"] {
   --img-tray-3: url('assets/game/boss/uzayli/tray-3.svg');
   --img-tray-4: url('assets/game/boss/uzayli/tray-4.svg');
   --img-tile-back: url('assets/game/boss/uzayli/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/uzayli/rack-glow.png');
   --st-edge: #3A1A22; --st-edge-soft: rgba(58, 26, 34, .38); --st-bg: #F2D6CE;
   --st-head: #3A1A22; --st-rule: rgba(58, 26, 34, .35); --st-glow: rgba(122, 176, 255, .25);
 }
@@ -10111,6 +10125,7 @@ html[data-theme="boss"][data-boss-ui="ucKagitci"] {
   --img-tray-3: url('assets/game/boss/uc-kagitci/tray-3.svg');
   --img-tray-4: url('assets/game/boss/uc-kagitci/tray-4.svg');
   --img-tile-back: url('assets/game/boss/uc-kagitci/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/uc-kagitci/rack-glow.png');
   --st-edge: #3A1E10; --st-edge-soft: rgba(58, 30, 16, .38); --st-bg: #F4E2C2;
   --st-head: #3A1E10; --st-rule: rgba(58, 30, 16, .35); --st-glow: rgba(255, 192, 112, .25);
 }
@@ -10146,6 +10161,7 @@ html[data-theme="boss"][data-boss-ui="dervish"] {
   --img-tray-3: url('assets/game/boss/glitch/tray-3.svg');
   --img-tray-4: url('assets/game/boss/glitch/tray-4.svg');
   --img-tile-back: url('assets/game/boss/glitch/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/glitch/rack-glow.png');
   --st-edge: #0A0A12; --st-edge-soft: rgba(10, 10, 18, .38); --st-bg: #DFFFE6;
   --st-head: #0A0A12; --st-rule: rgba(10, 10, 18, .35); --st-glow: rgba(57, 216, 106, .25);
 }
@@ -10181,6 +10197,7 @@ html[data-theme="boss"][data-boss-ui="terziIgne"] {
   --img-tray-3: url('assets/game/boss/terzi-ignesi/tray-3.svg');
   --img-tray-4: url('assets/game/boss/terzi-ignesi/tray-4.svg');
   --img-tile-back: url('assets/game/boss/terzi-ignesi/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/terzi-ignesi/rack-glow.png');
   --st-edge: #26324A; --st-edge-soft: rgba(38, 50, 74, .38); --st-bg: #EEE4F6;
   --st-head: #26324A; --st-rule: rgba(38, 50, 74, .35); --st-glow: rgba(208, 168, 255, .25);
 }
@@ -10216,6 +10233,7 @@ html[data-theme="boss"][data-boss-ui="avukat"] {
   --img-tray-3: url('assets/game/boss/avukat/tray-3.svg');
   --img-tray-4: url('assets/game/boss/avukat/tray-4.svg');
   --img-tile-back: url('assets/game/boss/avukat/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/avukat/rack-glow.png');
   --st-edge: #1E2A3A; --st-edge-soft: rgba(30, 42, 58, .38); --st-bg: #FBF6E4;
   --st-head: #1E2A3A; --st-rule: rgba(30, 42, 58, .35); --st-glow: rgba(232, 216, 144, .25);
 }
@@ -10251,6 +10269,7 @@ html[data-theme="boss"][data-boss-ui="ritim"] {
   --img-tray-3: url('assets/game/boss/ritim/tray-3.svg');
   --img-tray-4: url('assets/game/boss/ritim/tray-4.svg');
   --img-tile-back: url('assets/game/boss/ritim/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/ritim/rack-glow.png');
   --st-edge: #134A6E; --st-edge-soft: rgba(19, 74, 110, .38); --st-bg: #E3F5FF;
   --st-head: #134A6E; --st-rule: rgba(19, 74, 110, .35); --st-glow: rgba(138, 216, 255, .25);
 }
@@ -10286,6 +10305,7 @@ html[data-theme="boss"][data-boss-ui="kahin"] {
   --img-tray-3: url('assets/game/boss/kahin/tray-3.svg');
   --img-tray-4: url('assets/game/boss/kahin/tray-4.svg');
   --img-tile-back: url('assets/game/boss/kahin/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/kahin/rack-glow.png');
   --st-edge: #3A2214; --st-edge-soft: rgba(58, 34, 20, .38); --st-bg: #F2E2C6;
   --st-head: #3A2214; --st-rule: rgba(58, 34, 20, .35); --st-glow: rgba(122, 224, 216, .25);
 }
@@ -10321,6 +10341,7 @@ html[data-theme="boss"][data-boss-ui="tuccar"] {
   --img-tray-3: url('assets/game/boss/tuccar/tray-3.svg');
   --img-tray-4: url('assets/game/boss/tuccar/tray-4.svg');
   --img-tile-back: url('assets/game/boss/tuccar/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/tuccar/rack-glow.png');
   --st-edge: #3A2A18; --st-edge-soft: rgba(58, 42, 24, .38); --st-bg: #F4E6CC;
   --st-head: #3A2A18; --st-rule: rgba(58, 42, 24, .35); --st-glow: rgba(255, 208, 128, .25);
 }
@@ -10356,6 +10377,7 @@ html[data-theme="boss"][data-boss-ui="corporates"] {
   --img-tray-3: url('assets/game/boss/corporates/tray-3.svg');
   --img-tray-4: url('assets/game/boss/corporates/tray-4.svg');
   --img-tile-back: url('assets/game/boss/corporates/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/corporates/rack-glow.png');
   --st-edge: #2C3034; --st-edge-soft: rgba(44, 48, 52, .38); --st-bg: #DEE6C6;
   --st-head: #2C3034; --st-rule: rgba(44, 48, 52, .35); --st-glow: rgba(184, 216, 112, .25);
 }
@@ -10391,6 +10413,7 @@ html[data-theme="boss"][data-boss-ui="aynaKral"] {
   --img-tray-3: url('assets/game/boss/ayna-kral/tray-3.svg');
   --img-tray-4: url('assets/game/boss/ayna-kral/tray-4.svg');
   --img-tile-back: url('assets/game/boss/ayna-kral/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/ayna-kral/rack-glow.png');
   --st-edge: #22304A; --st-edge-soft: rgba(34, 48, 74, .38); --st-bg: #E8F0FA;
   --st-head: #22304A; --st-rule: rgba(34, 48, 74, .35); --st-glow: rgba(191, 224, 255, .25);
 }
@@ -10426,8 +10449,9 @@ html[data-theme="boss"][data-boss-ui="ladyLuck"] {
   --img-tray-3: url('assets/game/boss/lady-luck/tray-3.svg');
   --img-tray-4: url('assets/game/boss/lady-luck/tray-4.svg');
   --img-tile-back: url('assets/game/boss/lady-luck/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/lady-luck/rack-glow.png');
   --boss-char: url('assets/game/boss/lady-luck/character.png');
-  --boss-char-x: 706px; --boss-char-y: 0px; --boss-char-w: 542px; --boss-char-h: 793px;
+  --boss-char-x: 685px; --boss-char-y: 0px; --boss-char-w: 593px; --boss-char-h: 819px;
   --st-edge: #5E1022; --st-edge-soft: rgba(94, 16, 34, .38); --st-bg: #FFF1DE;
   --st-head: #5E1022; --st-rule: rgba(94, 16, 34, .35); --st-glow: rgba(244, 200, 96, .25);
 }
@@ -10676,4 +10700,34 @@ html[data-theme="boss"][data-boss-ui="ladyLuck"] {
   background: var(--gm-dark); color: var(--gm-turn-on);
   border: 3px solid var(--gm-light); border-radius: 6px; box-shadow: 0 4px 0 rgba(0, 0, 0, .45);
   font: 700 16px/1 var(--gm-font); letter-spacing: -.5px; padding: 6px 12px;
+}
+
+/* ============================================================
+   P84 — PERFORMANS: ıstaka hâlesi ÖNCEDEN ÇİZİLMİŞ GÖRSEL (kullanıcı 2026-10-08:
+   "oyun biraz kasıyormuş gibi hissettiriyor").
+   ÖLÇÜM (Chrome izleme kaydı, 6 taş tıklama + ıstaka boyunca sürükleme):
+   raster işi normal raundda ~11.5 sn, boss raundunda ~7-9 sn; JS yalnız
+   0.15-0.5 sn. Filtreler kapatılınca raster 0.5 sn → yükün tamamı filtre,
+   en büyük payı ıstakanınki (yalnız onu kaldırmak 11.5 → 2.2 sn).
+   Kök neden: Kumarhane / Kozmik / boss temalarının üç katmanlı parıltısı
+   (2px + 16-18px bulanık hâle + 12px gölge) 1500×330'luk #rack'e ve içindeki
+   ~80 taşa birlikte uygulanıyordu → her taş seçişinde / sürüklemede bütün
+   ıstaka üç bulanıklıkla baştan raster ediliyordu. Filtreyi ayrı katmana almak
+   işi ekran kartına itiyor (GPU'suz makinede daha kötü) → hâle artık
+   tools/theme/build_rack_glow.js ile BİR KEZ çizilmiş iki görsel:
+     ::before  rack-shadow.png  alt gölge (siyah)
+     ::after   rack-glow.png    temanın renginde hâle (--img-rack-glow; Kozmik'te
+                                stage'le değişen neon hue-rotate ile aynen sürer)
+   İkisinin de çerçeve alanı oyuk; çerçeve #rack'in kendi zemininde kalır.
+   ============================================================ */
+html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::before,
+html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::after {
+  content: ''; position: absolute; left: -48px; top: -48px; width: 1598px; height: 427px;
+  z-index: -1; pointer-events: none;
+}
+html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::before {
+  background: url('assets/game/rack-shadow.png') no-repeat 0 0 / 100% 100%;
+}
+html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::after {
+  background: var(--img-rack-glow, none) no-repeat 0 0 / 100% 100%;
 }
