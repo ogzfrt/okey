@@ -6574,122 +6574,257 @@
      uyguladı; burada yalnız modül durumunu onunla hizalıyoruz. */
   applyTheme(themeKey, false);
 
-  function showSettings() {
+  /* P88 — KALICI İSTATİSTİKLER (kullanıcı 2026-10-08: "Balatro'daki gibi o ana kadarki
+     tüm statlarımızı görelim"). Run içi sayaçlar (statBestMeld, statTypes,
+     statTilesMelded …) run bitince kayboluyordu; runLog da yalnız o run'ı tutar.
+     Burada her RAUND SONUNDA run sayaçlarının o ana kadarki FARKI kalıcı kayda
+     (okeyStats) eklenir — run yarıda bırakılsa da sayılır, iki kez sayılmaz
+     (state.lsSnap). Run sonu (kazanç/kayıp) run sayısı + seri. Trainer ve
+     öğretici yazmaz (kayıt kuralı). Sayım bu güncellemeyle başladı (o.since). */
+  const STATS_KEY = 'okeyStats';
+  const LStats = {
+    read() { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch (e) { return {}; } },
+    _w(o) { try { localStorage.setItem(STATS_KEY, JSON.stringify(o)); } catch (e) {} },
+    off() { return !!(Game.trainerMode || Game.tutorialMode || TUT.active); },
+    _sync(o, s) {
+      const snap = s.lsSnap || (s.lsSnap = { types: {}, tiles: 0, disc: 0, bought: 0, rr: 0 });
+      o.types = o.types || {};
+      for (const [k, v] of Object.entries(s.statTypes || {})) {
+        const d = (v || 0) - (snap.types[k] || 0);
+        if (d > 0) o.types[k] = (o.types[k] || 0) + d;
+        snap.types[k] = v || 0;
+      }
+      const add = (key, cur, sk) => { const d = (cur || 0) - (snap[sk] || 0); if (d > 0) o[key] = (o[key] || 0) + d; snap[sk] = cur || 0; };
+      add('tiles', s.statTilesMelded, 'tiles');
+      add('disc', s.statDiscarded, 'disc');
+      add('bought', s.statBought, 'bought');
+      add('rerolls', s.statRerolls, 'rr');
+      o.bestMeld = Math.max(o.bestMeld || 0, s.statBestMeld || 0);
+      o.maxCoins = Math.max(o.maxCoins || 0, s.coins || 0);
+      o.bestScore = Math.max(o.bestScore || 0, s.totalScore || 0);
+      if (!o.since) o.since = Date.now();
+    },
+    round(s, won) {
+      if (this.off() || !s) return;
+      const o = this.read();
+      this._sync(o, s);
+      o.rounds = (o.rounds || 0) + 1;
+      if (won) o.roundsWon = (o.roundsWon || 0) + 1;
+      const fin = Game.isFinalStage && Game.isFinalStage();
+      o.bestStage = Math.max(o.bestStage || 0, s.stage || 0);
+      o.bestRound = Math.max(o.bestRound || 0, (s.stage - 1) * 3 + (fin ? 1 : s.roundInStage));
+      if (won && Game.isBossRound() && s.boss) {
+        o.bosses = (o.bosses || 0) + 1;
+        o.bossKeys = o.bossKeys || {};
+        o.bossKeys[s.boss.key] = (o.bossKeys[s.boss.key] || 0) + 1;
+      }
+      this._w(o);
+    },
+    run(s, won) {
+      if (this.off() || !s || s.lsRunDone) return;     // Sonsuz Mod'da ikinci kez sayılmaz
+      const o = this.read();
+      this._sync(o, s);
+      o.runs = (o.runs || 0) + 1;
+      if (won) { o.runsWon = (o.runsWon || 0) + 1; o.streak = (o.streak || 0) + 1; } else o.streak = 0;
+      o.bestStreak = Math.max(o.bestStreak || 0, o.streak || 0);
+      const m = s.runMode || 'base';
+      o.modes = o.modes || {};
+      o.modes[m] = o.modes[m] || { runs: 0, won: 0 };
+      o.modes[m].runs++;
+      if (won) o.modes[m].won++;
+      s.lsRunDone = true;
+      this._w(o);
+    },
+  };
+
+  /* İSTATİSTİK sekmesi — Balatro'nun iki sütunu (rekorlar · ilerleme), bizim
+     oyun sonu paneli satırlarıyla (ep-row: açık etiket + koyu değer kutusu). */
+  function statsPane() {
+    const o = LStats.read();
+    const fmt = (n) => Number(n || 0).toLocaleString(T.lang === 'en' ? 'en-US' : 'tr-TR');
+    const most = Object.entries(o.types || {}).sort((a, b) => b[1] - a[1])[0];
+    const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+    const bar = (label, a, b) => {
+      const p = pct(a, b);
+      return `<div class="ep-row st-prog"><span class="ep-lbl">${label}</span>` +
+        `<span class="ep-val st-bar" style="--p:${p}%">${p}% <i>(${a}/${b})</i></span></div>`;
+    };
+    const jokTotal = Object.keys(JOKER_DEFS).length;
+    const jokOwned = [...ownedEver].filter((k) => JOKER_DEFS[k]).length;
+    const bossTotal = BOSSES.length;
+    const bossBeat = Object.keys(o.bossKeys || {}).filter((k) => BOSSES.some((b) => b.key === k)).length;
+    const modeKeys = Game.runModeKeys ? Game.runModeKeys() : ['base'];
+    const modeDone = modeKeys.filter((k) => Modes.done(k) || (o.modes && o.modes[k] && o.modes[k].won)).length;
+    const finTotal = Object.keys(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).length;
+    const finDone = Finals.list().length;
+    const prog = Math.round((pct(jokOwned, jokTotal) + pct(bossBeat, bossTotal) + pct(modeDone, modeKeys.length) + pct(finDone, finTotal)) / 4);
+    const since = o.since ? new Date(o.since).toLocaleDateString(T.lang === 'en' ? 'en-GB' : 'tr-TR') : '—';
+    const left =
+      epRow(t('stBestMeld'), fmt(o.bestMeld), 'c-red', true) +
+      epRow(t('stBestRound'), o.bestRound ? `${o.bestRound} <i>· S${o.bestStage}</i>` : '—', '', true) +
+      epRow(t('stMostType'), most && most[1] > 0 ? `${T.typeName(most[0])} <i>(${fmt(most[1])})</i>` : '—', '', true) +
+      epRow(t('stMaxCoins'), `$${fmt(o.maxCoins)}`, 'c-orange', true) +
+      epRow(t('stBestScore'), fmt(o.bestScore), '', true) +
+      epRow(t('stBestStreak'), `${o.bestStreak || 0} <i>(${o.streak || 0})</i>`, '', true);
+    const right =
+      `<div class="ep-row st-prog st-total"><span class="ep-lbl">${t('stProgress')}</span>` +
+      `<span class="ep-val st-bar" style="--p:${prog}%">${prog}%</span></div>` +
+      bar(t('stCollection'), jokOwned, jokTotal) +
+      bar(t('stBosses'), bossBeat, bossTotal) +
+      bar(t('stModes'), modeDone, modeKeys.length) +
+      bar(t('stFinals'), finDone, finTotal) +
+      epRow(t('stRuns'), `${fmt(o.runs)} <i>· ${t('stWon', fmt(o.runsWon))}</i>`) +
+      epRow(t('stRounds'), `${fmt(o.rounds)} <i>· ${t('stWon', fmt(o.roundsWon))}</i>`) +
+      epRow(t('stTiles'), fmt(o.tiles));
+    return `<div class="st-cols"><div class="st-col">${left}</div><div class="st-col">${right}</div></div>` +
+      `<p class="st-since">${t('stSince', since)}</p>`;
+  }
+
+  /* P88 — AYARLAR baştan (kullanıcı 2026-10-08: Gambonanza / Balatro ayarlarından
+     ilham, "bizim ui-design'a uygun"). Referanslardan YALNIZ YAPI alındı:
+       · üstte SEKMELER (Oyun · Görünüm · Ses · Ekstra) — tek uzun liste 768'e sığmıyordu
+       · seçimler ‹ DEĞER › seçici; altında KONUM NOKTALARI (Balatro) — nokta = seçenek
+         düğmesi, tıklanınca doğrudan seçer (eski sınıf/veri adları noktada: .set-lang
+         [data-lang], .set-theme[data-theme] (mini palet), .set-cspat, .set-mset)
+       · aç/kapa = TİK KUTULU KART (Gambonanza) — .set-chk.set-<ad>, açıkken .on
+       · ses = 0…100 kaydırıcılı kart · ekstra = "GİT" düğmeli satır (Gambonanza Reset data)
+       · sağ üstte ✕, altta geniş KAPAT
+     Görsel dil bizim: tema koyu panel + açık kenar + başlık plakası, gömme koyu iç alan,
+     açık kartlar + koyu yazı, vurgu --gm-turn-on, STOP gibi basılan düğmeler. */
+  let setTabNow = 'game';
+  const CS_PREVIEW = { kraliyet: 'pat-kraliyet', deco: 'pat-deco' };
+
+  function showSettings(tab) {
+    if (typeof tab === 'string') setTabNow = tab;   // testler / kısayol: belirli sekmeyle aç
     const old = document.getElementById('settingsOv');
     if (old) old.remove();
     const ov = document.createElement('div');
     ov.id = 'settingsOv';
+    ov.className = 'set-ov';
+    const sr = (x) => `<span class="sr">${x}</span>`;
+    /* ‹ değer › seçici; opts: [{ v, text, cls, attr, inner }] */
+    const cyc = (key, label, opts, cur, preview = '') => {
+      const c = opts.find((o) => o.v === cur) || opts[0];
+      return `<div class="set-card set-cyc" data-cyc="${key}">` +
+        `<span class="set-label">${label}</span>${preview}` +
+        `<div class="cyc-row"><button type="button" class="cyc-arr cyc-prev" aria-label="‹">‹</button>` +
+        `<span class="cyc-val">${c.text}</span>` +
+        `<button type="button" class="cyc-arr cyc-next" aria-label="›">›</button></div>` +
+        `<div class="cyc-dots">` + opts.map((o) =>
+          `<button type="button" class="cyc-dot ${o.cls}${o.v === cur ? ' on' : ''}" ${o.attr}="${o.v}" data-text="${o.text}" title="${o.text}">${o.inner || ''}${sr(o.text)}</button>`).join('') +
+        `</div></div>`;
+    };
+    /* tik kutulu kart */
+    const chk = (cls, label, on, icon = '') =>
+      `<button type="button" class="set-card set-chk ${cls}${on ? ' on' : ''}" aria-pressed="${on}">` +
+      `<span class="chk-ico">${icon}</span><span class="set-label">${label}</span>` +
+      `<span class="chk-box">${sr(t(on ? 'musicOn' : 'musicOff'))}</span></button>`;
+    const vol = (id, label, on, v) =>
+      `<div class="set-card set-vol"><div class="vol-head">` +
+      `<button type="button" class="chk-mini${on ? ' on' : ''}" id="${id}On">${sr(t(on ? 'musicOn' : 'musicOff'))}</button>` +
+      `<span class="set-label">${label}</span><b id="${id}Pct">${v}%</b></div>` +
+      `<div class="vol-row"><span>0</span><input type="range" id="${id}Vol" min="0" max="100" step="5" value="${v}" aria-label="${label}"><span>100</span></div></div>`;
+    const go = (id, label, desc, dis = false) =>
+      `<div class="set-card set-go-row"><span class="go-txt"><span class="set-label">${label}</span><small>${desc}</small></span>` +
+      `<button type="button" class="set-go" id="${id}"${dis ? ' disabled' : ''}>${t(dis ? 'setGoNone' : 'setGo')}</button></div>`;
+
+    const finalsOn = Finals.list().length > 0;
+    const tabs = [['game', t('setTab_game')], ['look', t('setTab_look')], ['audio', t('setTab_audio')], ['stats', t('setTab_stats')], ['extra', t('setTab_extra')]];
+    const panes = {
+      game:
+        cyc('lang', t('language'), [{ v: 'tr', text: 'Türkçe', cls: 'set-lang', attr: 'data-lang' }, { v: 'en', text: 'English', cls: 'set-lang', attr: 'data-lang' }], T.lang) +
+        `<div class="set-grid">` +
+        (finalsOn
+          ? chk('set-finaljk', t('finalJokerLabel'), finalJokerOn, '💋')
+          : `<div class="set-card set-chk set-locked"><span class="chk-ico">💋</span><span class="set-label">${t('finalJokerLabel')}</span><span class="set-note set-finaljk-lock">🔒 ${t('finalJokerLocked')}</span></div>`) +
+        `</div>`,
+      look:
+        `<div class="set-two">` +
+        cyc('theme', t('colorTheme'), THEMES.map((th) => ({ v: th.key, text: t('theme_' + th.key), cls: 'set-theme', attr: 'data-theme',
+          inner: `<span class="sw">${th.sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span>` })), themeKey,
+          `<span class="set-prev prev-theme">${(THEMES.find((x) => x.key === themeKey) || THEMES[0]).sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span>`) +
+        cyc('cspat', t('casinoPatternLabel'), CASINO_PATTERNS.map((k) => ({ v: k, text: t('csPat_' + k), cls: 'set-cspat', attr: 'data-cspat' })), casinoPattern,
+          `<span class="set-prev prev-pat ${CS_PREVIEW[casinoPattern] || ''}"></span>`) +
+        `</div><div class="set-grid">` +
+        chk('set-cosmic', t('cosmicThemeLabel'), cosmicThemeOn, '🌌') +
+        chk('set-casino', t('casinoThemeLabel'), casinoThemeOn, '🎰') +
+        chk('set-bossui', t('bossUiLabel'), bossUiOn, '👹') +
+        `</div>`,
+      audio:
+        vol('setMusic', t('musicLabel'), Music.on, Music.vol) +
+        vol('setSfx', t('sfxSetLabel'), sfxOn, sfxVol) +
+        cyc('mset', t('musicSetLabel'), [1, 2, 3].map((n) => ({ v: n, text: '♪ ' + t('musicSet' + n), cls: 'set-mset', attr: 'data-mset' })), Music.set),
+      stats: statsPane(),
+      extra:
+        go('setHintsReset', t('hintsLabel'), t('hintsResetDesc')) +
+        go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn),
+    };
     ov.innerHTML =
-      `<div class="tp-box"><h3>${t('settingsTitle')}</h3>` +
-      `<div class="set-row"><span class="set-label">${t('language')}</span>` +
-      `<div class="set-langs">` +
-      `<button class="set-lang${T.lang === 'tr' ? ' on' : ''}" data-lang="tr">🇹🇷 Türkçe</button>` +
-      `<button class="set-lang${T.lang === 'en' ? ' on' : ''}" data-lang="en">🇬🇧 English</button>` +
-      `</div></div>` +
-      /* Renk teması — dil satırının hemen altında, aynı kalıpta.
-         Her seçenek kendi üç tonunu şerit olarak gösterir (swatch), böylece
-         oyuncu adı okumadan da hangi paleti seçtiğini görür. */
-      `<div class="set-row"><span class="set-label">${t('colorTheme')}</span>` +
-      `<div class="set-themes">` +
-      THEMES.map(th =>
-        `<button class="set-theme${th.key === themeKey ? ' on' : ''}" data-theme="${th.key}">` +
-        `<span class="sw">${th.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span>` +
-        `<span>${t('theme_' + th.key)}</span></button>`).join('') +
-      `</div></div>` +
-      /* P68 — Kumarhane run'ına özel tema */
-      `<div class="set-row"><span class="set-label">${t('casinoThemeLabel')}</span>` +
-      `<div class="set-langs">` +
-      `<button class="set-lang set-casino${casinoThemeOn ? ' on' : ''}" data-casino="1">🎰 ${t('musicOn')}</button>` +
-      `<button class="set-lang set-casino${casinoThemeOn ? '' : ' on'}" data-casino="0">${t('musicOff')}</button>` +
-      `</div></div>` +
-      /* P74 — Kumarhane masa deseni */
-      `<div class="set-row"><span class="set-label">${t('casinoPatternLabel')}</span>` +
-      `<div class="set-langs">` +
-      CASINO_PATTERNS.map(k => `<button class="set-lang set-cspat${casinoPattern === k ? ' on' : ''}" data-cspat="${k}">${t('csPat_' + k)}</button>`).join('') +
-      `</div></div>` +
-      /* P72 — Temel Run'a özel Kozmik tema */
-      `<div class="set-row"><span class="set-label">${t('cosmicThemeLabel')}</span>` +
-      `<div class="set-langs">` +
-      `<button class="set-lang set-cosmic${cosmicThemeOn ? ' on' : ''}" data-cosmic="1">🌌 ${t('musicOn')}</button>` +
-      `<button class="set-lang set-cosmic${cosmicThemeOn ? '' : ' on'}" data-cosmic="0">${t('musicOff')}</button>` +
-      `</div></div>` +
-      /* P86 — final boss jokeri ile başla (yalnız bir final yenildiyse seçilebilir) */
-      `<div class="set-row"><span class="set-label">${t('finalJokerLabel')}</span>` +
-      `<div class="set-langs">` +
-      (Finals.list().length
-        ? `<button class="set-lang set-finaljk${finalJokerOn ? ' on' : ''}" data-finaljk="1">💋 ${t('musicOn')}</button>` +
-          `<button class="set-lang set-finaljk${finalJokerOn ? '' : ' on'}" data-finaljk="0">${t('musicOff')}</button>`
-        : `<span class="set-note set-finaljk-lock">🔒 ${t('finalJokerLocked')}</span>`) +
-      `</div></div>` +
-      /* P78 — boss raundu arayüzleri */
-      `<div class="set-row"><span class="set-label">${t('bossUiLabel')}</span>` +
-      `<div class="set-langs">` +
-      `<button class="set-lang set-bossui${bossUiOn ? ' on' : ''}" data-bossui="1">👹 ${t('musicOn')}</button>` +
-      `<button class="set-lang set-bossui${bossUiOn ? '' : ' on'}" data-bossui="0">${t('musicOff')}</button>` +
-      `</div></div>` +
-      /* P67 — ses efektleri (düğme/taş sesleri): aç/kapa + seviye */
-      `<div class="set-row"><span class="set-label">${t('sfxSetLabel')}</span>` +
-      `<div class="set-langs set-music"><button class="set-lang${sfxOn ? ' on' : ''}" id="setSfxOn">` +
-      `${sfxOn ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff')}</button>` +
-      `<input type="range" id="setSfxVol" min="0" max="100" step="5" value="${sfxVol}" aria-label="${t('sfxSetLabel')}">` +
-      `<b id="setSfxPct">${sfxVol}%</b></div></div>` +
-      /* P66 — müzik: aç/kapa + ses seviyesi */
-      `<div class="set-row"><span class="set-label">${t('musicLabel')}</span>` +
-      `<div class="set-langs set-music"><button class="set-lang${Music.on ? ' on' : ''}" id="setMusicOn">` +
-      `${Music.on ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff')}</button>` +
-      `<input type="range" id="setMusicVol" min="0" max="100" step="5" value="${Music.vol}" aria-label="${t('musicLabel')}">` +
-      `<b id="setMusicPct">${Music.vol}%</b></div></div>` +
-      `<div class="set-row"><span class="set-label">${t('musicSetLabel')}</span>` +
-      `<div class="set-langs">` +
-      [1, 2, 3].map(n => `<button class="set-lang set-mset${Music.set === n ? ' on' : ''}" data-mset="${n}">♪ ${t('musicSet' + n)}</button>`).join('') +
-      `</div></div>` +
-      /* P60/P61 — ilk kez ipuçlarını yeniden göster */
-      `<div class="set-row"><span class="set-label">${t('hintsLabel')}</span>` +
-      `<div class="set-langs"><button class="set-lang" id="setHintsReset">↺ ${t('hintsReset')}</button></div></div>` +
-      /* P87 (kullanıcı 2026-10-08, prototipte test için) — final kilitlerini sıfırla:
-         Lady Luck yenilmemiş gibi olur (maskot kalpsiz, final jokeri yeniden kilitli).
-         İki adımlı: ilk tık "Emin misin?" sorar. */
-      `<div class="set-row"><span class="set-label">${t('finalsResetLabel')}</span>` +
-      `<div class="set-langs"><button class="set-lang" id="setFinalsReset"${Finals.list().length ? '' : ' disabled'}>` +
-      `↺ ${t(Finals.list().length ? 'finalsReset' : 'finalsResetNone')}</button></div></div>` +
-      `<button class="btn ghost" id="setClose">${t('close')}</button></div>`;
+      `<div class="tp-box set-box"><div class="set-plate">${t('settingsTitle')}</div>` +
+      `<button type="button" class="set-x" id="setX" aria-label="${t('close')}">✕</button>` +
+      `<div class="set-tabs">` + tabs.map(([k, l]) => `<button type="button" class="set-tab${k === setTabNow ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('') + `</div>` +
+      `<div class="set-body">` + Object.entries(panes).map(([k, h]) => `<div class="set-pane${k === setTabNow ? ' on' : ''}" data-pane="${k}">${h}</div>`).join('') + `</div>` +
+      `<button type="button" class="ep-btn ep-blue set-back" id="setClose">${t('close')}</button></div>`;
     document.body.appendChild(ov);
+
+    /* sekmeler */
+    ov.querySelectorAll('.set-tab').forEach((b) => b.addEventListener('click', () => {
+      setTabNow = b.dataset.tab;
+      ov.querySelectorAll('.set-tab').forEach((x) => x.classList.toggle('on', x === b));
+      ov.querySelectorAll('.set-pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === setTabNow));
+    }));
+    /* ‹ › oklar: bir sonraki / önceki noktaya tıklar (seçim kodu noktalarda) */
+    ov.querySelectorAll('.set-cyc').forEach((card) => {
+      const step = (d) => {
+        const dots = [...card.querySelectorAll('.cyc-dot')];
+        const i = Math.max(0, dots.findIndex((x) => x.classList.contains('on')));
+        dots[(i + d + dots.length) % dots.length].click();
+      };
+      card.querySelector('.cyc-prev').addEventListener('click', () => step(-1));
+      card.querySelector('.cyc-next').addEventListener('click', () => step(1));
+    });
+    /* nokta seçiminden SONRA (kabarcık) değer yazısı + önizleme güncellenir */
+    ov.addEventListener('click', (e) => {
+      const d = e.target.closest('.cyc-dot');
+      if (!d || !ov.isConnected) return;
+      const card = d.closest('.set-cyc');
+      card.querySelector('.cyc-val').textContent = d.dataset.text;
+      const pv = card.querySelector('.prev-pat');
+      if (pv) pv.className = 'set-prev prev-pat ' + (CS_PREVIEW[d.dataset.cspat] || '');
+    });
+    const setChk = (b, on) => { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+      const s = b.querySelector('.sr'); if (s) s.textContent = t(on ? 'musicOn' : 'musicOff'); };
+
     ov.querySelector('#setHintsReset').addEventListener('click', () => { Hints.reset(); toast(t('hintsResetDone'), true); });
     const fr = ov.querySelector('#setFinalsReset');
     fr.addEventListener('click', () => {
-      if (!fr.dataset.confirm) { fr.dataset.confirm = '1'; fr.classList.add('on'); fr.textContent = '⚠ ' + t('finalsResetConfirm'); return; }
+      if (!fr.dataset.confirm) { fr.dataset.confirm = '1'; fr.classList.add('warn'); fr.textContent = '⚠ ' + t('finalsResetConfirm'); return; }
       try { localStorage.removeItem(FINALS_KEY); } catch (e) {}
       updateMascotItems();
       toast(t('finalsResetDone'), true);
       ov.remove();
-      showSettings();   // satırlar (FİNAL JOKERİYLE BAŞLA kilidi, bu düğme) tazelensin
+      showSettings();   // FİNAL JOKERİYLE BAŞLA kilidi ve bu satır tazelensin
     });
     const sOn = ov.querySelector('#setSfxOn'), sVol = ov.querySelector('#setSfxVol');
-    const sfxBtn = () => { sOn.classList.toggle('on', sfxOn); sOn.textContent = sfxOn ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff'); };
     sOn.addEventListener('click', () => {
       sfxOn = !sfxOn;
       localStorage.setItem('okeySfx', sfxOn ? '1' : '0');
-      sfxBtn();
+      setChk(sOn, sfxOn);
       if (sfxOn) SFX.tick();
     });
     sVol.addEventListener('input', () => {
       sfxVol = Math.max(0, Math.min(100, +sVol.value || 0));
       localStorage.setItem('okeySfxVol', String(sfxVol));
       ov.querySelector('#setSfxPct').textContent = sfxVol + '%';
-      if (!sfxOn && sfxVol > 0) { sfxOn = true; localStorage.setItem('okeySfx', '1'); sfxBtn(); }
+      if (!sfxOn && sfxVol > 0) { sfxOn = true; localStorage.setItem('okeySfx', '1'); setChk(sOn, true); }
     });
     sVol.addEventListener('change', () => SFX.tick());   // bırakınca örnek ses
     const mOn = ov.querySelector('#setMusicOn'), mVol = ov.querySelector('#setMusicVol');
-    mOn.addEventListener('click', () => {
-      Music.setOn(!Music.on);
-      mOn.classList.toggle('on', Music.on);
-      mOn.textContent = Music.on ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff');
-    });
-    ov.querySelectorAll('.set-mset').forEach(b => b.addEventListener('click', () => {
+    mOn.addEventListener('click', () => { Music.setOn(!Music.on); setChk(mOn, Music.on); });
+    ov.querySelectorAll('.set-mset').forEach((b) => b.addEventListener('click', () => {
       Music.setSet(b.dataset.mset);
-      ov.querySelectorAll('.set-mset').forEach(x => x.classList.toggle('on', x === b));
-      mOn.classList.toggle('on', Music.on);
-      mOn.textContent = Music.on ? '🔊 ' + t('musicOn') : '🔇 ' + t('musicOff');
+      ov.querySelectorAll('.set-mset').forEach((x) => x.classList.toggle('on', x === b));
+      setChk(mOn, Music.on);
       toast(t('musicPreview', t('musicSet' + Music.set)), true);
     }));
     mVol.addEventListener('input', () => {
@@ -6699,7 +6834,8 @@
     });
     ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
     ov.querySelector('#setClose').addEventListener('click', () => ov.remove());
-    ov.querySelectorAll('.set-lang[data-lang]').forEach(b => b.addEventListener('click', () => {
+    ov.querySelector('#setX').addEventListener('click', () => ov.remove());
+    ov.querySelectorAll('.set-lang[data-lang]').forEach((b) => b.addEventListener('click', () => {
       if (b.dataset.lang === T.lang) return;
       T.setLang(b.dataset.lang);
       applyStaticTexts();
@@ -6711,45 +6847,42 @@
       showSettings();
       toast(t('langChanged'), true);
     }));
-    /* Tema anında uygulanır: CSS değişkeni değiştiği için açık olan HER
-       ekran (oyun, store, ödül çarkı, modallar) yeniden çizim beklemeden
-       döner. Yine de sayaç/etiket metinleri seçili temaya göre "on"
-       sınıfını taşısın diye pencere tazelenir. */
-    ov.querySelectorAll('.set-finaljk').forEach(b => b.addEventListener('click', () => {
-      finalJokerOn = b.dataset.finaljk === '1';
-      try { localStorage.setItem(FINAL_JOKER_KEY, finalJokerOn ? '1' : '0'); } catch (e) {}
-      ov.querySelectorAll('.set-finaljk').forEach(x => x.classList.toggle('on', x === b));
-      toast(t(finalJokerOn ? 'finalJokerOnToast' : 'finalJokerOffToast'), true);
-    }));
-    ov.querySelectorAll('.set-bossui').forEach(b => b.addEventListener('click', () => {
-      bossUiOn = b.dataset.bossui === '1';
-      try { localStorage.setItem(BOSS_UI_KEY, bossUiOn ? '1' : '0'); } catch (e) {}
-      ov.querySelectorAll('.set-bossui').forEach(x => x.classList.toggle('on', x === b));
+    const tog = (sel, get, set) => {
+      const b = ov.querySelector(sel);
+      if (b) b.addEventListener('click', () => { set(!get()); setChk(b, get()); });
+    };
+    tog('.set-finaljk', () => finalJokerOn, (v) => {
+      finalJokerOn = v;
+      try { localStorage.setItem(FINAL_JOKER_KEY, v ? '1' : '0'); } catch (e) {}
+      toast(t(v ? 'finalJokerOnToast' : 'finalJokerOffToast'), true);
+    });
+    tog('.set-bossui', () => bossUiOn, (v) => {
+      bossUiOn = v;
+      try { localStorage.setItem(BOSS_UI_KEY, v ? '1' : '0'); } catch (e) {}
       applyRunTheme();
-      toast(t(bossUiOn ? 'bossUiOnToast' : 'bossUiOffToast'), true);
-    }));
-    ov.querySelectorAll('.set-cosmic').forEach(b => b.addEventListener('click', () => {
-      cosmicThemeOn = b.dataset.cosmic === '1';
-      try { localStorage.setItem(COSMIC_THEME_KEY, cosmicThemeOn ? '1' : '0'); } catch (e) {}
-      ov.querySelectorAll('.set-cosmic').forEach(x => x.classList.toggle('on', x === b));
+      toast(t(v ? 'bossUiOnToast' : 'bossUiOffToast'), true);
+    });
+    tog('.set-cosmic', () => cosmicThemeOn, (v) => {
+      cosmicThemeOn = v;
+      try { localStorage.setItem(COSMIC_THEME_KEY, v ? '1' : '0'); } catch (e) {}
       applyRunTheme();
-      toast(t(cosmicThemeOn ? 'cosmicThemeOnToast' : 'cosmicThemeOffToast'), true);
-    }));
-    ov.querySelectorAll('.set-cspat').forEach(b => b.addEventListener('click', () => {
+      toast(t(v ? 'cosmicThemeOnToast' : 'cosmicThemeOffToast'), true);
+    });
+    tog('.set-casino', () => casinoThemeOn, (v) => {
+      casinoThemeOn = v;
+      try { localStorage.setItem(CASINO_THEME_KEY, v ? '1' : '0'); } catch (e) {}
+      applyRunTheme();
+      toast(t(v ? 'casinoThemeOnToast' : 'casinoThemeOffToast'), true);
+    });
+    ov.querySelectorAll('.set-cspat').forEach((b) => b.addEventListener('click', () => {
       casinoPattern = CASINO_PATTERNS.includes(b.dataset.cspat) ? b.dataset.cspat : 'kraliyet';
       try { localStorage.setItem(CASINO_PATTERN_KEY, casinoPattern); } catch (e) {}
-      ov.querySelectorAll('.set-cspat').forEach(x => x.classList.toggle('on', x === b));
+      ov.querySelectorAll('.set-cspat').forEach((x) => x.classList.toggle('on', x === b));
       applyRunTheme();
       toast(t('csPatToast', t('csPat_' + casinoPattern)), true);
     }));
-    ov.querySelectorAll('.set-casino').forEach(b => b.addEventListener('click', () => {
-      casinoThemeOn = b.dataset.casino === '1';
-      try { localStorage.setItem(CASINO_THEME_KEY, casinoThemeOn ? '1' : '0'); } catch (e) {}
-      ov.querySelectorAll('.set-casino').forEach(x => x.classList.toggle('on', x === b));
-      applyRunTheme();
-      toast(t(casinoThemeOn ? 'casinoThemeOnToast' : 'casinoThemeOffToast'), true);
-    }));
-    ov.querySelectorAll('.set-theme').forEach(b => b.addEventListener('click', () => {
+    /* Tema anında uygulanır (CSS değişkeni); pencere yeni temanın renkleriyle tazelenir. */
+    ov.querySelectorAll('.set-theme').forEach((b) => b.addEventListener('click', () => {
       if (b.dataset.theme === themeKey) return;
       applyTheme(b.dataset.theme);
       ov.remove();
@@ -6854,6 +6987,7 @@
        açılır (normal run'da bu, run sonunda Game.finalBeaten() ile olur). */
     if (Game.trainerMode && won && Game.isBossRound() && s.boss && s.boss.final && Finals.unlock(s.boss.key))
       setTimeout(() => toast(t('finalUnlockedTrainer', T.bossName(s.boss.key, s.boss.name)), true), 300);
+    LStats.round(s, won);   // P88 — kalıcı istatistik (trainer / öğretici yazmaz)
     /* P83 — boss testi: store / Game Over yok, sonuç penceresi (tekrar · başka boss · menü) */
     if (Game.trainerMode && s.bossTest) { showBossTestEnd(won); return; }
 
@@ -7775,6 +7909,7 @@
   /* GAME OVER — kullanıcı örneği 2 */
   function showGameOver() {
     const s = Game.state;
+    LStats.run(s, false);   // P88
     const st = endStats(s);
     clearSave();
     SFX.lose();
@@ -7809,6 +7944,7 @@
 
   /* RUN TAMAMLANDI — kullanıcı örneği 3 */
   function showRunComplete() {
+    LStats.run(Game.state, true);   // P88
     const res = Game.completeRun();
     const st0 = res.stats || Game.runStats();
     clearSave();
@@ -9321,7 +9457,7 @@
   else showScreen('menu');
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
-  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun,
+  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     // Playtest 17 — Grup A/F doğrulaması için
     notify, showCoinFlip, pickFuzyon, flushRoundStart,

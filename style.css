@@ -10752,14 +10752,155 @@ html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .g
 /* P86 — Ayarlar: kilitli seçenek notu (FİNAL BOSS JOKERİ, final yenilmeden) */
 .set-note.set-finaljk-lock { align-self: center; font-size: 13px; opacity: .8; white-space: nowrap; }
 
-/* P87 — Ayarlar kısa ekranda da sığar: satır sayısı arttı (FİNAL JOKERİYLE BAŞLA,
-   FİNAL KİLİTLERİ). 1366×768'de pencere üstten taşıyor, Kapat ekran dışında
-   kalıyordu → alçak ekranda satır aralığı sıklaşır; yine de sığmazsa katman
-   kayar ve pencere üstte hizalanır (safe center: taşınca üstü kesilmez). */
-#settingsOv { overflow-y: auto; align-items: safe center; padding: 34px 0 12px; box-sizing: border-box; }
-@media (max-height: 900px) {
-  #settingsOv .set-row { margin-bottom: 9px; }
-  #settingsOv .tp-box { padding-bottom: 16px; }
+
+/* ============================================================
+   P88 — AYARLAR BAŞTAN (kullanıcı 2026-10-08: Gambonanza / Balatro ayarlarından
+   ilham, bizim UI dilimizde). Yapı: sekmeler · ‹ değer › seçici + konum noktaları ·
+   tik kutulu kartlar · 0-100 kaydırıcılı ses kartları · GİT düğmeli ekstra satırlar ·
+   sağ üstte ✕ + altta KAPAT. Görsel: tema koyu panel, açık kenar, başlık plakası,
+   gömme koyu iç alan, açık kartlar + koyu yazı. Eski satır kuralları (#settingsOv
+   .set-row / .set-lang / .set-theme …) bu bloğun özgüllüğüyle ezilir.
+   ============================================================ */
+#settingsOv.set-ov {
+  position: fixed; inset: 0; z-index: 400; display: flex; align-items: safe center; justify-content: center;
+  overflow-y: auto; padding: 44px 12px 14px; box-sizing: border-box;
+  background: rgba(14, 22, 32, .78); backdrop-filter: blur(3px);
 }
-@media (max-height: 820px) { #settingsOv .tp-box { zoom: .9; } }
-@media (max-height: 700px) { #settingsOv .tp-box { zoom: .78; } }
+#settingsOv .tp-box.set-box {
+  position: relative; width: min(920px, 96vw); min-width: 0; box-sizing: border-box; margin: auto;
+  padding: 0 22px 18px; text-align: center; color: var(--gm-light); font-family: var(--gm-font);
+}
+#settingsOv .set-plate {
+  display: inline-block; position: relative; top: -26px; margin: 0 0 -12px;
+  background: var(--gm-dark); color: var(--gm-light); border: 4px solid var(--gm-edge); border-radius: 8px;
+  padding: 8px 30px; font: 700 28px/1 var(--gm-font); letter-spacing: -1px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+#settingsOv .set-x {
+  position: absolute; right: -20px; top: -24px; width: 52px; height: 52px; padding: 0; cursor: pointer;
+  background: var(--gm-light); color: var(--gm-dark); border: 4px solid var(--gm-edge); border-radius: 8px;
+  font: 700 26px/1 var(--gm-font); box-shadow: 0 5px 0 rgba(0, 0, 0, .45); transition: transform .06s ease, box-shadow .06s ease;
+}
+#settingsOv .set-x:hover { filter: brightness(1.1); }
+#settingsOv .set-x:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+#settingsOv .set-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 0 12px; }
+#settingsOv .set-tab {
+  cursor: pointer; background: var(--gm-dark); color: var(--gm-light); border: 4px solid var(--gm-edge); border-radius: 8px;
+  padding: 9px 20px; font: 700 19px/1 var(--gm-font); letter-spacing: -1px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+  transition: transform .06s ease, box-shadow .06s ease;
+}
+#settingsOv .set-tab:hover { filter: brightness(1.12); }
+#settingsOv .set-tab:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+#settingsOv .set-tab.on { background: var(--gm-light); color: var(--gm-dark); }
+#settingsOv .set-body {
+  height: 440px; overflow-y: auto; box-sizing: border-box; padding: 16px;
+  background: rgba(0, 0, 0, .28); border-radius: 8px; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35);
+  scrollbar-width: thin; scrollbar-color: var(--gm-light) transparent;
+}
+#settingsOv .set-pane { display: none; flex-direction: column; align-items: center; gap: 12px; }
+#settingsOv .set-pane.on { display: flex; }
+#settingsOv .set-card {
+  width: min(580px, 100%); box-sizing: border-box; margin: 0;
+  background: var(--gm-light); color: var(--gm-dark); border: 0; border-radius: 8px;
+  padding: 10px 14px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); font-family: var(--gm-font);
+}
+#settingsOv .set-card .set-label {
+  color: var(--gm-dark); font: 700 17px/1.15 var(--gm-font); letter-spacing: -.5px; text-transform: none;
+}
+#settingsOv .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* ‹ değer › seçici */
+#settingsOv .cyc-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+#settingsOv .cyc-arr {
+  flex: 0 0 46px; height: 40px; padding: 0; cursor: pointer; border: 0; border-radius: 6px;
+  background: var(--gm-dark); color: var(--gm-light); font: 700 30px/1 var(--gm-font); box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+#settingsOv .cyc-arr:hover { filter: brightness(1.15); }
+#settingsOv .cyc-arr:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+#settingsOv .cyc-val { flex: 1; font: 700 22px/1 var(--gm-font); letter-spacing: -1px; }
+#settingsOv .cyc-dots { display: flex; justify-content: center; gap: 8px; margin-top: 9px; }
+#settingsOv .set-card .cyc-dot {
+  width: 14px; height: 14px; min-width: 0; padding: 0; margin: 0; cursor: pointer; border-radius: 50%;
+  border: 2px solid var(--gm-dark); background: transparent; box-shadow: none; transform: none;
+}
+#settingsOv .set-card .cyc-dot.on { background: var(--gm-dark); box-shadow: none; }
+/* renk teması noktaları: mini palet */
+#settingsOv .set-card .cyc-dot.set-theme { width: 44px; height: 16px; border-radius: 3px; overflow: hidden; display: block; }
+#settingsOv .set-card .cyc-dot.set-theme .sw { display: flex; width: 100%; height: 100%; }
+#settingsOv .set-card .cyc-dot.set-theme .sw i { flex: 1; display: block; }
+#settingsOv .set-card .cyc-dot.set-theme.on { outline: 3px solid var(--gm-turn-on); outline-offset: 1px; }
+/* önizleme */
+#settingsOv .set-prev { display: block; margin: 9px auto 0; border: 3px solid var(--gm-dark); border-radius: 6px; overflow: hidden; }
+#settingsOv .prev-theme { width: 240px; height: 50px; display: flex; }
+#settingsOv .prev-theme i { flex: 1; }
+#settingsOv .prev-pat { width: 280px; height: 84px; background: center / cover no-repeat; image-rendering: pixelated; }
+#settingsOv .prev-pat.pat-kraliyet { background-image: url('assets/game/desen/kraliyet-cuha.png'); }
+#settingsOv .prev-pat.pat-deco { background-image: url('assets/game/desen/art-deco.png'); }
+/* tik kutulu kartlar */
+#settingsOv .set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; width: 100%; }
+#settingsOv .set-grid .set-card { width: 100%; }
+#settingsOv .set-chk {
+  display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer; min-height: 56px;
+  transition: transform .06s ease, box-shadow .06s ease;
+}
+#settingsOv .set-chk:hover { filter: brightness(1.05); }
+#settingsOv .set-chk:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+#settingsOv .set-chk .set-label { flex: 1; }
+#settingsOv .chk-ico { font-size: 18px; }
+#settingsOv .chk-box, #settingsOv .chk-mini {
+  position: relative; flex: 0 0 32px; width: 32px; height: 32px; box-sizing: border-box; padding: 0;
+  border: 3px solid var(--gm-dark); border-radius: 6px; background: rgba(0, 0, 0, .08);
+  display: flex; align-items: center; justify-content: center;
+}
+#settingsOv .set-chk.on .chk-box, #settingsOv .chk-mini.on { background: var(--gm-dark); }
+#settingsOv .set-chk.on .chk-box::after, #settingsOv .chk-mini.on::after {
+  content: '✓'; color: var(--gm-turn-on); font: 900 22px/1 system-ui, sans-serif;
+}
+#settingsOv .chk-mini { cursor: pointer; }
+#settingsOv .set-locked { cursor: default; opacity: .8; }
+#settingsOv .set-locked .set-finaljk-lock { color: var(--gm-dark); font: 700 12px/1.2 var(--gm-font); opacity: .8; white-space: normal; text-align: right; }
+/* ses kartları */
+#settingsOv .vol-head { display: flex; align-items: center; gap: 10px; }
+#settingsOv .vol-head .set-label { flex: 1; text-align: left; }
+#settingsOv .vol-head b { color: var(--gm-dark); font: 700 18px/1 var(--gm-font); min-width: 56px; text-align: right; }
+#settingsOv .vol-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; font: 700 14px/1 var(--gm-font); }
+#settingsOv .vol-row input[type="range"] { flex: 1; width: auto; accent-color: var(--gm-dark); cursor: pointer; }
+/* GİT satırları */
+#settingsOv .set-go-row { display: flex; align-items: center; gap: 14px; text-align: left; }
+#settingsOv .go-txt { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+#settingsOv .go-txt small { font: 12.5px/1.35 system-ui, 'Segoe UI', sans-serif; opacity: .85; }
+#settingsOv .set-go {
+  flex: 0 0 auto; min-width: 92px; padding: 11px 16px; cursor: pointer;
+  background: var(--gm-dark); color: var(--gm-light); border: 0; border-radius: 6px;
+  font: 700 20px/1 var(--gm-font); box-shadow: 0 4px 0 rgba(0, 0, 0, .35); white-space: nowrap;
+}
+#settingsOv .set-go:hover:not([disabled]) { filter: brightness(1.15); }
+#settingsOv .set-go:active:not([disabled]) { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+#settingsOv .set-go.warn { background: var(--gm-turn-on); color: var(--gm-dark); font-size: 15px; }
+#settingsOv .set-go[disabled] { opacity: .45; cursor: default; }
+#settingsOv .set-back { margin-top: 16px; width: 100%; }
+/* İSTATİSTİK sekmesi (oyun sonu paneli satırları) */
+#settingsOv .st-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; text-align: left; }
+#settingsOv .st-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+#settingsOv .st-col .ep-row { font-size: 14.5px; }
+#settingsOv .st-col .ep-val { min-width: 46%; font-size: 16px; }
+#settingsOv .st-bar {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gm-turn-on) 70%, var(--gm-dark)) var(--p), var(--gm-dark) var(--p));
+}
+#settingsOv .st-total .ep-val { font-size: 18px; }
+#settingsOv .st-since { margin: 10px 0 0; color: var(--gm-light); opacity: .75; font: 12px/1.3 system-ui, 'Segoe UI', sans-serif; text-align: center; }
+@media (max-width: 760px) { #settingsOv .st-cols { grid-template-columns: 1fr; } }
+@media (max-height: 760px) { #settingsOv .set-body { height: 380px; } }
+@media (max-height: 680px) { #settingsOv .set-body { height: 320px; } }
+/* P88 rötuş — iki seçici yan yana (GÖRÜNÜM sığsın) · OYUN kartları aynı genişlik ·
+   İSTATİSTİK etiket payı + çubuk yazısı okunur */
+#settingsOv .set-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+#settingsOv .set-two .set-card { width: 100%; }
+#settingsOv .set-two .prev-theme { width: 100%; max-width: 260px; height: 64px; }
+#settingsOv .set-two .prev-pat { width: 100%; max-width: 260px; height: 64px; }
+#settingsOv .set-pane[data-pane="game"] .set-grid { width: min(580px, 100%); grid-template-columns: 1fr; }
+#settingsOv .set-go-row .set-label { text-transform: uppercase; }
+#settingsOv .st-cols { grid-template-columns: 1.08fr 1fr; }
+#settingsOv .st-col .ep-row { font-size: 13.5px; letter-spacing: -.8px; }
+#settingsOv .st-col .ep-val { min-width: 40%; }
+#settingsOv .st-bar { color: var(--gm-light) !important; text-shadow: 0 2px 0 rgba(0, 0, 0, .55);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gm-turn-on) 55%, var(--gm-dark)) var(--p), var(--gm-dark) var(--p)); }
+@media (max-width: 760px) { #settingsOv .set-two { grid-template-columns: 1fr; } }
