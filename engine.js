@@ -848,10 +848,12 @@ const BOSSES = [
 /* P71 · KUMARHANE FİNALİ (spec 2026-10-05) — modun SABİT final boss'u.
    Rastgele boss havuzunda (BOSSES) DEĞİLDİR; yalnız `finalBoss` alanı olan
    modun son stage'i olarak gelir. `reward` yenince kalıcı açılan joker,
-   `mascotItem` ana menü maskotunun eşya katmanı (çizim gelince bağlanır).
+   `mascotItem` ana menü maskotunun eşya katmanı: index.html'de
+   `.fm-mascot-item[data-final="<anahtar>"]` (P85 — Lady Luck: süzülen kalpler,
+   Figma 455:5792); final yenilince (okeyFinals) menüde görünür.
    Final hedefi (FINAL_TARGET) RUN_MODES'un üstünde tanımlıdır. */
 const FINAL_BOSSES = {
-  ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', final: true, reward: 'ladyLuck', mascotItem: 'ruj',
+  ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', final: true, reward: 'ladyLuck', mascotItem: 'item-lady-luck',
     desc: 'Her tur bir jokerini büyüler: puanı TERS döner, diğer etkisi susar. Istakandaki en yüksek taşı da çalar.' },
 };
 

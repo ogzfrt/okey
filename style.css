@@ -2779,8 +2779,21 @@ body.menu-open #app {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-14px); }
 }
+/* P85 — final boss eşyası (Figma 455:5792 → "MASKOT_LADY_LUCK_İTEM", kalpler
+   1529,247 · 209×200). Maskotla AYNI salınım; sayfa açılışından beri hep
+   oynadığı için (yalnız görünürlüğü değişir) maskotla senkron kalır. */
+.fm-mascot-item {
+  position: absolute;
+  pointer-events: none;
+  visibility: hidden;
+  animation: fmBob 4.2s ease-in-out infinite;
+}
+.fm-item-hearts { left: 1529px; top: 247px; width: 209px; height: 200px; }
+.fm-mascot-item.on { visibility: visible; }
+/* eşyalı maskot (şapkasız varyasyon) açıkken asıl, şapkalı maskot gizlenir */
+.fm-mascot.off { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
-  .fm-mascot { animation: none; }
+  .fm-mascot, .fm-mascot-item { animation: none; }
 }
 
 /* ---------- Pano: plaka + başlık (node 95:439 / 94:2397 / 94:2398) ----------
@@ -7127,7 +7140,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-rusvet       { --jk-art: url('assets/game/joker/bahsis.svg'); }   /* P73 · Figma 444:41 "Bahşiş" → Bahşiş Kavanozu */
 .jk-midas        { --jk-art: url('assets/game/joker/midas.svg'); }    /* P73 · Figma 444:84 */
 .jk-ucuncuTeker  { --jk-art: url('assets/game/joker/ucuncu-teker.svg'); }   /* P75 · Figma 450:2 */
-.jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P72 · Figma 444:2 */
+.jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P85 · Figma 455:6178 (yeniden çizim; eski 444:2) */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
@@ -10722,12 +10735,17 @@ html[data-theme="boss"][data-boss-ui="ladyLuck"] {
    ============================================================ */
 html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::before,
 html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::after {
-  content: ''; position: absolute; left: -48px; top: -48px; width: 1598px; height: 427px;
+  content: ''; position: absolute; left: -48px; top: -48px; width: 1598px;
+  /* görsel 1598×427 ama kutu TUVALİN ALT KENARINDA biter (ıstaka 726+331 → 1057; 1057+23 = 1080):
+     taşan kutu #app'i kaydırılabilir yapıyordu (scrollHeight 1105) → odak / scrollIntoView bütün
+     ekranı 25px kaydırıyordu (browser_p41 yakaladı). Kesilen 25px zaten ekran dışı.
+     Filtrenin taşması kaydırmaya sayılmaz, kutunun sayılır. */
+  height: 402px;
   z-index: -1; pointer-events: none;
 }
 html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::before {
-  background: url('assets/game/rack-shadow.png') no-repeat 0 0 / 100% 100%;
+  background: url('assets/game/rack-shadow.png') no-repeat 0 0 / 1598px 427px;
 }
 html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::after {
-  background: var(--img-rack-glow, none) no-repeat 0 0 / 100% 100%;
+  background: var(--img-rack-glow, none) no-repeat 0 0 / 1598px 427px;
 }

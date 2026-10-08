@@ -253,6 +253,17 @@
     return t((casino ? 'casino' : 'normal') + n);
   }
 
+  /* P85 — FİNAL BOSS EŞYASI ana menü maskotunda: yenilen her finalin eşyası
+     (FINAL_BOSSES[..].mascotItem; index.html .fm-mascot-item[data-final]) görünür.
+     Kayıt doğrudan okunur: showScreen açılışta Finals tanımlanmadan çağrılır. */
+  function updateMascotItems() {
+    let won = {};
+    try { won = JSON.parse(localStorage.getItem('okeyFinals')) || {}; } catch (e) { /* bozuk kayıt: eşya yok */ }
+    document.querySelectorAll('.fm-mascot-item').forEach((im) => im.classList.toggle('on', !!won[im.dataset.final]));
+    const alt = !!document.querySelector('.fm-mascot-alt.on');
+    document.querySelectorAll('.fm-mascot:not(.fm-mascot-alt)').forEach((im) => im.classList.toggle('off', alt));
+  }
+
   function showScreen(name) {
     el.menuScreen.classList.toggle('hidden', name !== 'menu');
     el.mapScreen.classList.toggle('hidden', name !== 'map');
@@ -265,7 +276,7 @@
        yaşıyor — `game-open` tuval kipidir, "oyun oynanıyor" demek değil. */
     document.body.classList.toggle('game-open', name === 'game' || name === 'map');
     fitScale(); // menüye girerken tuval letterbox'ı kalkar, çıkarken geri kurulur
-    if (name === 'menu') fitMenuLabels(); // görünür olunca ölçülebilir
+    if (name === 'menu') { fitMenuLabels(); updateMascotItems(); } // görünür olunca ölçülebilir
     if (name === 'map') { renderMap(); saveGame('between'); }
     if (name === 'game') render();
     applyRunTheme();   // P68 — Kumarhane run'ında kumarhane teması
