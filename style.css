@@ -2790,8 +2790,7 @@ body.menu-open #app {
 }
 .fm-item-hearts { left: 1529px; top: 247px; width: 209px; height: 200px; }
 .fm-mascot-item.on { visibility: visible; }
-/* eşyalı maskot (şapkasız varyasyon) açıkken asıl, şapkalı maskot gizlenir */
-.fm-mascot.off { visibility: hidden; }
+
 @media (prefers-reduced-motion: reduce) {
   .fm-mascot, .fm-mascot-item { animation: none; }
 }
@@ -10749,3 +10748,6 @@ html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .g
 html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .gm-stage #rack::after {
   background: var(--img-rack-glow, none) no-repeat 0 0 / 1598px 427px;
 }
+
+/* P86 — Ayarlar: kilitli seçenek notu (FİNAL BOSS JOKERİ, final yenilmeden) */
+.set-note.set-finaljk-lock { align-self: center; font-size: 13px; opacity: .8; white-space: nowrap; }

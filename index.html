@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OKEY Roguelike — Prototip</title>
-<link rel="stylesheet" href="style.css?v=64af236">
+<link rel="stylesheet" href="style.css?v=bf6c066">
 <script>
 /* RENK TEMASI — İLK BOYAMADAN ÖNCE UYGULANIR.
    Tema `html[data-theme]` ile sürülüyor. Bu satır ui.js'e bırakılsaydı
@@ -45,11 +45,10 @@
            MAIN_MASKOT 248:1667) — placeholder DEĞİL, tasarımın kendi
            vektörü. -->
       <img class="fm-mascot" src="assets/menu3/mascot.svg" alt="">
-      <!-- P85 — final boss eşyası (Figma 455:5792 "MASKOT_LADY_LUCK_İTEM"):
-           Lady Luck yenilince maskot ŞAPKASIZ (tasarımdaki gibi) ve yanında
-           süzülen kalpler (ui.js updateMascotItems; görünürlük okeyFinals'tan).
-           .fm-mascot-alt açılınca şapkalı asıl maskot gizlenir. -->
-      <img class="fm-mascot fm-mascot-alt fm-mascot-item" data-final="ladyLuck" src="assets/menu3/mascot-lady-luck.svg" alt="">
+      <!-- P85/P86 — final boss eşyaları (görünürlük okeyFinals'tan, ui.js
+           updateMascotItems). Lady Luck: süzülen kalpler (Figma 455:5792).
+           Maskot P86'dan beri ŞAPKASIZ (kullanıcı 2026-10-08): sarı şapka Temel
+           Run final boss'unun eşyası olacak — şapkalı çizim tools/menu/mascot-sapkali.svg. -->
       <img class="fm-mascot-item fm-item-hearts" data-final="ladyLuck" src="assets/menu3/item-lady-luck.svg" alt="">
       <div id="menuLogo" class="fm-banner"></div>
       <nav class="fm-buttons">
@@ -495,8 +494,8 @@
   </div>
 
 </div>
-<script src="engine.js?v=64af236"></script>
-<script src="i18n.js?v=64af236"></script>
-<script src="ui.js?v=64af236"></script>
+<script src="engine.js?v=bf6c066"></script>
+<script src="i18n.js?v=bf6c066"></script>
+<script src="ui.js?v=bf6c066"></script>
 </body>
 </html>

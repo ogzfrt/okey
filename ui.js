@@ -260,8 +260,6 @@
     let won = {};
     try { won = JSON.parse(localStorage.getItem('okeyFinals')) || {}; } catch (e) { /* bozuk kayıt: eşya yok */ }
     document.querySelectorAll('.fm-mascot-item').forEach((im) => im.classList.toggle('on', !!won[im.dataset.final]));
-    const alt = !!document.querySelector('.fm-mascot-alt.on');
-    document.querySelectorAll('.fm-mascot:not(.fm-mascot-alt)').forEach((im) => im.classList.toggle('off', alt));
   }
 
   function showScreen(name) {
@@ -5782,7 +5780,7 @@
       selection.clear();
       newTileIds.clear();
       if (mode === 'play') {
-        Game.newRun(undefined, { finals: Finals.list() });
+        Game.newRun(undefined, { finals: finalJokers() });
         showScreen('map');
         showOkeyBanner();
       } else {
@@ -5797,7 +5795,7 @@
 
   function startNewRun(mode) {
     clearSave();
-    Game.newRun(mode, { finals: Finals.list() });
+    Game.newRun(mode, { finals: finalJokers() });
     selection.clear();
     newTileIds.clear();
     showScreen('map');
@@ -6449,6 +6447,13 @@
     },
   };
 
+  /* P86 (kullanıcı 2026-10-08) — FİNAL BOSS JOKERİ ayarı: açık kalıcı final jokerleri
+     her yeni run'a elde başlar (P71 davranışı, varsayılan AÇIK); kapalıyken verilmez.
+     Kilit (okeyFinals) etkilenmez, ayar yalnız run başında okunur. */
+  const FINAL_JOKER_KEY = 'okeyFinalJoker';
+  let finalJokerOn = (() => { try { return localStorage.getItem(FINAL_JOKER_KEY) !== '0'; } catch (e) { return true; } })();
+  function finalJokers() { return finalJokerOn ? Finals.list() : []; }
+
   /* ---------- Ayarlar (Grup C) ---------- */
 
   /* ==========================================================================
@@ -6608,6 +6613,14 @@
       `<button class="set-lang set-cosmic${cosmicThemeOn ? ' on' : ''}" data-cosmic="1">🌌 ${t('musicOn')}</button>` +
       `<button class="set-lang set-cosmic${cosmicThemeOn ? '' : ' on'}" data-cosmic="0">${t('musicOff')}</button>` +
       `</div></div>` +
+      /* P86 — final boss jokeri ile başla (yalnız bir final yenildiyse seçilebilir) */
+      `<div class="set-row"><span class="set-label">${t('finalJokerLabel')}</span>` +
+      `<div class="set-langs">` +
+      (Finals.list().length
+        ? `<button class="set-lang set-finaljk${finalJokerOn ? ' on' : ''}" data-finaljk="1">💋 ${t('musicOn')}</button>` +
+          `<button class="set-lang set-finaljk${finalJokerOn ? '' : ' on'}" data-finaljk="0">${t('musicOff')}</button>`
+        : `<span class="set-note set-finaljk-lock">🔒 ${t('finalJokerLocked')}</span>`) +
+      `</div></div>` +
       /* P78 — boss raundu arayüzleri */
       `<div class="set-row"><span class="set-label">${t('bossUiLabel')}</span>` +
       `<div class="set-langs">` +
@@ -6687,6 +6700,12 @@
        ekran (oyun, store, ödül çarkı, modallar) yeniden çizim beklemeden
        döner. Yine de sayaç/etiket metinleri seçili temaya göre "on"
        sınıfını taşısın diye pencere tazelenir. */
+    ov.querySelectorAll('.set-finaljk').forEach(b => b.addEventListener('click', () => {
+      finalJokerOn = b.dataset.finaljk === '1';
+      try { localStorage.setItem(FINAL_JOKER_KEY, finalJokerOn ? '1' : '0'); } catch (e) {}
+      ov.querySelectorAll('.set-finaljk').forEach(x => x.classList.toggle('on', x === b));
+      toast(t(finalJokerOn ? 'finalJokerOnToast' : 'finalJokerOffToast'), true);
+    }));
     ov.querySelectorAll('.set-bossui').forEach(b => b.addEventListener('click', () => {
       bossUiOn = b.dataset.bossui === '1';
       try { localStorage.setItem(BOSS_UI_KEY, bossUiOn ? '1' : '0'); } catch (e) {}
@@ -6815,6 +6834,11 @@
     const s = Game.state;
     const won = s.status === 'won';
     if (won) SFX.win(); else SFX.lose();
+    /* P86 (kullanıcı 2026-10-08: "prototipi yalnız ben oynuyorum; trainer'da Lady Luck'ı
+       yenersem kilidi açılsın") — Trainer'da final boss raundu kazanılınca ödül kalıcı
+       açılır (normal run'da bu, run sonunda Game.finalBeaten() ile olur). */
+    if (Game.trainerMode && won && Game.isBossRound() && s.boss && s.boss.final && Finals.unlock(s.boss.key))
+      setTimeout(() => toast(t('finalUnlockedTrainer', T.bossName(s.boss.key, s.boss.name)), true), 300);
     /* P83 — boss testi: store / Game Over yok, sonuç penceresi (tekrar · başka boss · menü) */
     if (Game.trainerMode && s.bossTest) { showBossTestEnd(won); return; }
 
@@ -9282,7 +9306,7 @@
   else showScreen('menu');
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
-  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen,
+  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     // Playtest 17 — Grup A/F doğrulaması için
     notify, showCoinFlip, pickFuzyon, flushRoundStart,
