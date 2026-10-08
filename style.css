@@ -9680,6 +9680,17 @@ html[data-theme="boss"] .gm-stage #pileCol #deckCount.gm-deck-count { color: var
    her sahnede ayrışır (eskiden kalanlar sabit açık yeşildi, beyaz 'dolu'yla karışıyordu). */
 html[data-theme="boss"] .gm-stage .gm-turn i { background: var(--boss-pip-off, rgba(0, 0, 0, .45)); box-shadow: inset 0 0 0 3px var(--boss-pip, var(--gm-turn-on)); opacity: .75; }
 html[data-theme="boss"] .gm-stage .gm-turn i.on { background: var(--boss-pip, var(--gm-turn-on)); box-shadow: 0 0 0 2px rgba(0, 0, 0, .55), 0 0 12px var(--boss-glow-soft); opacity: 1; }
+/* P82 — boss karakter çizimi (Figma): sahneye gömülmez, tuvalin içinde en alttaki
+   katman — ekran oranı değişse de arayüze göre taslaktaki yerinde durur.
+   Kutusu (--boss-char-*) build_boss_ui.py BOSS_CHARS'tan yazılır; çizimi olmayan boss'ta boş. */
+html[data-theme="boss"] #gameScreen .gm-stage::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  left: var(--boss-char-x, 0); top: var(--boss-char-y, 0);
+  width: var(--boss-char-w, 0); height: var(--boss-char-h, 0);
+  background: var(--boss-char, none) center / 100% 100% no-repeat;
+  image-rendering: auto;
+  filter: drop-shadow(0 0 2px var(--boss-glow-soft)) drop-shadow(0 0 30px rgba(0, 0, 0, .55));
+}
 /* @@BOSS-UI-BEGIN — tools/theme/build_boss_ui.py ÜRETİR, elle düzenleme */
 html[data-theme="boss"][data-boss-ui="godzilla"] {
   --gm-dark: #173A4A; --gm-light: #DDF2F8; --gm-panel: #6FB8D8; --gm-bg: #173A4A;
@@ -10415,6 +10426,8 @@ html[data-theme="boss"][data-boss-ui="ladyLuck"] {
   --img-tray-3: url('assets/game/boss/lady-luck/tray-3.svg');
   --img-tray-4: url('assets/game/boss/lady-luck/tray-4.svg');
   --img-tile-back: url('assets/game/boss/lady-luck/tile-back.png');
+  --boss-char: url('assets/game/boss/lady-luck/character.png');
+  --boss-char-x: 706px; --boss-char-y: 0px; --boss-char-w: 542px; --boss-char-h: 793px;
   --st-edge: #5E1022; --st-edge-soft: rgba(94, 16, 34, .38); --st-bg: #FFF1DE;
   --st-head: #5E1022; --st-rule: rgba(94, 16, 34, .35); --st-glow: rgba(244, 200, 96, .25);
 }
