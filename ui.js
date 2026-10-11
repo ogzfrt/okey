@@ -8218,7 +8218,9 @@
     'nostradamus',                            // P71 · Figma 428:2 (Legendary 4/15)
     'ladyLuck',                               // P72 · Figma 444:2 (FINAL_BOSS_JOKERLER 436:2) — Kumarhane finali
     'rusvet', 'midas',                        // P73 · Figma 444:41 Bahşiş + 444:84 Midas (Legendary 6/15)
-    'ucuncuTeker']);                          // P75 · Figma 450:2 (Legendary 7/15)
+    'ucuncuTeker',                            // P75 · Figma 450:2 → P89 464:219 "Tek Teker" (eski adı Üçüncü Teker)
+    /* P89 · Figma LEGENDARY_JOKERLER 383:1000 — Legendary 15/15 */
+    'ankaKusu', 'atesTuccari', 'hidra', 'kaioken', 'truva', 'satrancSaati', 'sisyphus', 'vasiyet']);
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',

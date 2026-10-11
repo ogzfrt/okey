@@ -7138,7 +7138,16 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-nostradamus  { --jk-art: url('assets/game/joker/nostradamus.svg'); }   /* P71 · Figma 428:2 */
 .jk-rusvet       { --jk-art: url('assets/game/joker/bahsis.svg'); }   /* P73 · Figma 444:41 "Bahşiş" → Bahşiş Kavanozu */
 .jk-midas        { --jk-art: url('assets/game/joker/midas.svg'); }    /* P73 · Figma 444:84 */
-.jk-ucuncuTeker  { --jk-art: url('assets/game/joker/ucuncu-teker.svg'); }   /* P75 · Figma 450:2 */
+.jk-ucuncuTeker  { --jk-art: url('assets/game/joker/tek-teker.svg'); }   /* P89 · Figma 464:219 "Tek Teker" (eski Üçüncü Teker) */
+/* P89 · Figma 383:1000 — Legendary 15/15 */
+.jk-ankaKusu     { --jk-art: url('assets/game/joker/anka-kusu.svg'); }      /* 464:60 */
+.jk-atesTuccari  { --jk-art: url('assets/game/joker/simsar.svg'); }         /* 464:98 "SİMSAR" */
+.jk-hidra        { --jk-art: url('assets/game/joker/hidra.svg'); }          /* 464:135 */
+.jk-kaioken      { --jk-art: url('assets/game/joker/kaioken.svg'); }        /* 464:150 */
+.jk-truva        { --jk-art: url('assets/game/joker/pandora.svg'); }        /* 464:158 "Pandora" */
+.jk-satrancSaati { --jk-art: url('assets/game/joker/satranc-saati.svg'); }  /* 464:166 */
+.jk-sisyphus     { --jk-art: url('assets/game/joker/sisyphus.svg'); }       /* 464:193 */
+.jk-vasiyet      { --jk-art: url('assets/game/joker/vasiyet.svg'); }        /* 464:243 */
 .jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P85 · Figma 455:6178 (yeniden çizim; eski 444:2) */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek

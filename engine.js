@@ -2171,7 +2171,7 @@ const JOKER_DEFS = {
     desc: 'Game Over’ı 1 kez önler. Bedeli: satılamaz olur, hedefler %20 yükselir.' },
   /* v3 double-dip denetimi: kural açma + çarpan + flat üçlü ödüldü;
      flat kaldırıldı (kuralın kendisi + 0.5x yeterince güçlü) */
-  ucuncuTeker: { key: 'ucuncuTeker', name: 'Üçüncü Teker', rarity: 'legendary', uses: 3,
+  ucuncuTeker: { key: 'ucuncuTeker', name: 'Tek Teker', rarity: 'legendary', uses: 3,
     /* P30 · Grup C: çarpan +1.0x → +3.0x (TEKER_MULT). */
     desc: 'Çift ile Per/Sıralı aynı turda açılabilir. İkisine de +2.0x, ayrıca +200 puan.' },
   /* v3 double-dip denetimi: aynı koşula çarpan+flat ikilisi tek eksene

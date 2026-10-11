@@ -1892,7 +1892,7 @@
     sisyphus: { name: 'Sisyphus', desc: 'The boulder climbs as you meld turn after turn: +2.0x on turn 2, +4.0x on turn 3, +8.0x on turn 4. The boulder carries over between rounds but drops one step each new round; skip a turn and it rolls back down.' },
     midas: { name: 'Midas', desc: '+2 coins for every tile you meld. Paid at round end.' },
     kaptan: { name: 'Cursed Captain', desc: 'Prevents Game Over once. Price: can’t be sold, targets rise 20% while it’s alive.' },
-    ucuncuTeker: { name: 'Third Wheel', desc: 'Pairs and Sets/Runs can share a turn. Both get +2.0x, plus +200 pts.' },
+    ucuncuTeker: { name: 'Unicycle', desc: 'Pairs and Sets/Runs can share a turn. Both get +2.0x, plus +200 pts.' },
     kaioken: { name: 'Kaioken', desc: 'Skip 2 turns: next meld +4.0x. Skip 3: +9.0x.' },
     ankaKusu: { name: 'Phoenix', desc: 'Your melds get +1.5x, +3.5x in its last round. When it expires it becomes a random Mythic for 1 round.' },
     theWorld: { name: 'Crimson King', desc: 'Die on a boss round and it restarts, and you gain +1.5x permanent mult. Price: targets rise 10% for the rest of the run. Once per run.' },
