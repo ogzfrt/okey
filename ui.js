@@ -1644,7 +1644,7 @@
     /* epic */
     kirby: '🌸', cellat: '🪓', dervish: '🌀', misunderstood: '🎭', zombie: '🧟',
     uzayli: '👽', ahtapot: '🐙', ucKagitci: '🃏', otekiDunya: '🌗', terziIgne: '📍', freedom: '🗽',
-    avukat: '⚖️', ladyLuck: '💋', kahin: '👁️', tuccar: '💼', fatality: '💀', ritim: '🥁',
+    avukat: '⚖️', ladyLuck: '💋', orion: '🎩', kahin: '👁️', tuccar: '💼', fatality: '💀', ritim: '🥁',
     corporates: '🏢', godzilla: '🦖', kelebek: '🦋', aynaKral: '🪞', karaKedi: '🐈‍⬛',
   };
   const jokerIcon = (key) => JOKER_ICONS[key] || (JOKER_DEFS[key]?.mech === 'deck' ? '◈' : '🃏');
@@ -1733,7 +1733,10 @@
     const s = Game.state;
     const has = (k) => j.key === k || (j.fused || []).some(f => f.key === k);
     let left = null;
-    if (has('fuzyon')) left = { lbl: t('abUse'), fn: () => pickFuzyon(j.id) };
+    /* P90 — Orion jokeri: sol tık KEMER penceresi (hangi joker kemerde) */
+    if (j.key === 'orion' && !opts.backup && Game.beltOptions && Game._orionJokerOn() && Game.beltOptions().length)
+      left = { lbl: t('abBelt'), fn: () => showBeltPicker() };
+    else if (has('fuzyon')) left = { lbl: t('abUse'), fn: () => pickFuzyon(j.id) };
     else if (opts.backup) left = { lbl: t('abToMain'), fn: () => moveBackupToMain(j) };
     else if (!opts.backup && s && s.status === 'playing' && !storeOpen() && curScreen() === 'game') {
       /* P58 (kullanıcı raporu 2026-10-02) — FÜZYONLU KARTTA ELLE KULLANILAN
@@ -1774,6 +1777,84 @@
      yalnız gösterir — dolan ay, kuyudaki taşlar, Dolunay'a kaç taş kaldı.
      Kuyu dolunca SONRAKİ tur başında 🌕 DOLUNAY sahnesi oynar (dolunayFx).
      ============================================================ */
+  /* ============================================================
+     P90 · ORION paneli (sol sütun, Ay Kuyusu kalıbı): finalde rakip —
+     puanı, hedef (max(taban, Orion)), gizli taş sayısı, attığı taş + AL;
+     Orion jokeriyle eş — eldeki taş, son açılımının sana yazdığı puan.
+     ============================================================ */
+  function renderOrionPanel() {
+    const box = document.getElementById('orionPanel');
+    if (!box) return;
+    const s = Game.state;
+    const u = s && s.status === 'playing' && Game.orionState ? Game.orionState() : null;
+    box.classList.toggle('hidden', !u);
+    if (!u) { box.innerHTML = ''; return; }
+    /* İki satır (sol sütun ıstaka sekmelerine kadar ~130px yer bırakıyor):
+       başlık + puan/hedef · elindeki taş + attığı taş + AL. Eşte tek satır. */
+    const tile = u.drop ? `<b class="up-tile c-${u.drop.color}">${u.drop.number}</b>` : '—';
+    box.classList.toggle('partner', u.mode !== 'race');
+    box.innerHTML = u.mode === 'race'
+      ? `<div class="up-row up-head"><span>🎩 ${t('orionRival')}</span><span class="up-score">${u.score} / ${u.target}</span></div>`
+        + `<div class="up-row"><span class="up-drop">${t('orionDrop')} ${tile}`
+        + (u.drop && s.phase === 'meld' ? `<button class="btn up-take">${t('orionTake')}</button>` : '')
+        + `</span><span>${t('orionHidden')} ${u.handCount}</span></div>`
+      : `<div class="up-row up-head"><span>🎩 ${t('orionPartner')}</span><span>${t('orionHidden')} ${u.handCount}`
+        + (u.last && u.last.gain ? ` · +${u.last.gain}` : '') + `</span></div>`;
+    const b = box.querySelector('.up-take');
+    if (b) b.addEventListener('click', () => {
+      const r = Game.takeOrionDrop();
+      if (!r.ok) { toast(r.error); return; }
+      SFX.tap?.();
+      render();
+    });
+  }
+
+  /* P90 — ORION'UN KEMERİ penceresi: hangi joker kemerde (★ ×1.5 → 2 raundda
+     ★★ ×2 → 4 raundda ★★★ ×4, süresiz). Değnek seçicisiyle aynı pk-ov kalıbı. */
+  function showBeltPicker() {
+    document.querySelectorAll('.belt-ov').forEach((e) => e.remove());
+    const opts = Game.beltOptions ? Game.beltOptions() : [];
+    if (!opts.length) return;
+    hideTip(); hideActBadge();
+    const s = Game.state;
+    const ov = document.createElement('div');
+    ov.className = 'pk-ov tone-violet belt-ov';
+    ov.innerHTML = `<div class="pk-box"><div class="pk-title">🎩 ${t('beltTitle')}</div>`
+      + `<div class="pk-sub-title">${t('beltSub')}</div><div class="pk-body pk-choice"></div>`
+      + `<div class="pk-foot"><button class="btn ghost belt-close">${t('beltLater')}</button></div></div>`;
+    const body = ov.querySelector('.pk-body');
+    for (const j of opts) {
+      const c = document.createElement('button');
+      c.className = 'pk-card belt-pick' + (s.beltId === j.id ? ' on' : '');
+      c.dataset.id = j.id;
+      const now = j.beltStars ? `${t('belt' + j.beltStars)} ×${BELT_K[j.beltStars]}` : t('beltNone');
+      c.innerHTML = `<div class="pk-ico">${jokerIcon(j.key)}</div><div class="pk-name">${T.name(j)}</div>`
+        + `<div class="pk-sub">${now}${s.beltId === j.id ? ' · ' + t('beltNow') : ''}</div>`
+        + `<div class="pk-desc">${T.desc(j)}</div>`;
+      c.addEventListener('click', () => {
+        const r = Game.setBelt(j.id);
+        if (!r.ok) { toast(r.error); return; }
+        ov.remove(); SFX.tap?.(); render();
+        if (storeOpen()) renderStore();
+      });
+      body.appendChild(c);
+    }
+    ov.querySelector('.belt-close').addEventListener('click', () => { beltAsked = beltKey(); ov.remove(); });
+    ov.addEventListener('click', (e) => { if (e.target === ov) { beltAsked = beltKey(); ov.remove(); } });
+    document.body.appendChild(ov);
+  }
+  /* Kemer boşsa (Orion geldi, ilk joker geldi, kemerdeki ustalaştı/satıldı)
+     bir kez sorulur; "SONRA" denirse aynı durumda tekrar sorulmaz. */
+  let beltAsked = null;
+  const beltKey = () => { const s = Game.state; return s ? `${s.stage}:${s.roundInStage}:${s.jokers.map((j) => j.id).join(',')}` : ''; };
+  function maybeBeltPrompt() {
+    if (!Game.beltNeedsPick || !Game.beltNeedsPick()) return;
+    if (beltAsked === beltKey() || document.querySelector('.pk-ov')) return;
+    if (!['game', 'map'].includes(curScreen()) && !storeOpen()) return;
+    beltAsked = beltKey();
+    setTimeout(() => { if (Game.beltNeedsPick() && !document.querySelector('.pk-ov')) showBeltPicker(); }, 450);
+  }
+
   let dolunaySeen = null;
   function renderWell() {
     const box = document.getElementById('ayWell');
@@ -1888,6 +1969,8 @@
     const gs = Game.state;
     if (gs && gs.bossCharmId === j.id && Game.isBossRound() && gs.boss && gs.boss.key === 'ladyLuck') tile2.classList.add('ll-charm');
     if (gs && gs.ladyStarId === j.id) tile2.classList.add('ll-star');
+    /* P90 — finalde Orion'un kemerine taktığı joker (bu raund ona çalışır) */
+    if (gs && gs.orionBeltId === j.id && Game._raceOn && Game._raceOn()) tile2.classList.add('orion-belted');
     if (!jokerSeen.has(j.id)) { jokerSeen.add(j.id); tile2.classList.add('jt-enter'); }
     if (j.noSell) tile2.classList.add('locked-sell');
     /* BOSS (EPIC) JOKER ÇİZİMİ SLOTTA (kullanıcı isteği 2026-09-10).
@@ -2021,6 +2104,13 @@
        Damga basılıyken rozet "Kaldır:" der ve hesap kutusu altın 2 katı
        gösterir; İpotek'in borç hâli tooltip'in ipotekLine satırında yazar. */
     // P45: backup kartındaki "Ana Slota Al" düğmesi kalktı — sol tık (jokerActs → moveBackupToMain)
+    /* P90 — Orion'un Kemeri: ★ ×1.5 · ★★ ×2 · ★★★ ×4 (kemerdeki joker ⟳ işaretli) */
+    if (j.beltStars) {
+      const rb = document.createElement('span');
+      rb.className = 'jt-rank' + (j.beltStars === 3 ? ' full' : '');
+      rb.textContent = `${t('belt' + j.beltStars)} ×${BELT_K[j.beltStars]}${gs && gs.beltId === j.id ? ' ⟳' : ''}`;
+      tile2.appendChild(rb);
+    }
     attachActs(tile2, () => jokerActs(j, opts));   // P41: sol tık kullan / sağ tık sat
     attachTip(tile2, j, { ...opts, actions: jokerActions(j, !!opts.backup) });
     enableJokerDrag(tile2, j, opts.backup ? 'backup' : 'main');
@@ -4079,6 +4169,8 @@
        birebir korunur. */
     el.rack.classList.toggle('rack-free', freeRack());
     renderWell();   // P59 · Öteki Dünya — Ay Kuyusu
+    renderOrionPanel();   // P90 · Orion (final rakibi / eş)
+    maybeBeltPrompt();    // P90 · kemer boşsa sor
     if (freeRack()) {
       const [r1, r2] = freeRows();
       r1.forEach(t2 => el.rackRow1.appendChild(tileEl(t2)));
@@ -4171,7 +4263,7 @@
       /* Bungie Gum (Playtest 10): taşları sakızla ele geri çekilen açılım
          KAPANMIŞ görünür — solar, "işlenebilir" etiketi ve İşle düğmesi
          gösterilmez. Oyuncu geri gelen taşları yeni bir açılımda kullanır. */
-      box.className = 'combo isleme-target' + (c.gumClosed ? ' gum-closed' : '');
+      box.className = 'combo isleme-target' + (c.gumClosed ? ' gum-closed' : '') + (c.owner === 'orion' ? ' orion-combo' : '');   // P90
       const tilesDiv = document.createElement('div');
       tilesDiv.className = 'combo-tiles';
       c.tiles.forEach(t2 => tilesDiv.appendChild(comboTileEl(t2, c)));
@@ -4187,7 +4279,7 @@
       });
       const tag = document.createElement('div');
       tag.className = 'combo-tag';
-      tag.textContent = `${T.typeName(c.type)} · ${t(c.gumClosed ? 'gumClosedTag' : 'islenebilir')}`;
+      tag.textContent = `${c.owner === 'orion' ? '🎩 ORION · ' : ''}${T.typeName(c.type)} · ${t(c.gumClosed ? 'gumClosedTag' : 'islenebilir')}`;   // P90
       box.append(tilesDiv, tag);
       /* Grup I — açık kombinasyondaki okeyi, yerine geçtiği gerçek taşla
          değiştir: gerçek taş kombinasyona girer, okey ele döner. */
@@ -5806,8 +5898,10 @@
       showOpeningReel(opening, Game.state.openingReels, () => showOkeyBanner());
     else showOkeyBanner(); // maskot okeyi ilan eder (GDD 14.2)
     /* P71 — kalıcı final jokeri run'a katıldı */
-    if ((Game.state.finalJokersGiven || []).length)
-      setTimeout(() => toast(t('finalStart', T.name(Game.state.jokers.find(j => j.key === 'ladyLuck') || Game.state.jokers[0]), JOKER_DEFS.ladyLuck.uses), true), 600);
+    (Game.state.finalJokersGiven || []).forEach((k, i) => {
+      const fj = Game.state.jokers.find(j => j.key === k);
+      if (fj) setTimeout(() => toast(t('finalStart', T.name(fj), JOKER_DEFS[k].uses, JOKER_DEFS[k].icon), true), 600 + i * 900);
+    });
     SFX.draw();
   }
 
@@ -6541,7 +6635,7 @@
      kalır. Ayarlar → BOSS ARAYÜZÜ ile kapatılabilir (varsayılan açık).
      Boss karakter çizimleri Figma'dan gelince arka planlar onlara göre yenilenecek. */
   const BOSS_UI_KEY = 'okeyBossUi';
-  const BOSS_UI_KEYS = new Set(['godzilla', 'karaKedi', 'kirby', 'cellat', 'misunderstood', 'kelebek', 'ahtapot', 'fatality', 'zombie', 'freedom', 'uzayli', 'ucKagitci', 'dervish', 'terziIgne', 'avukat', 'ritim', 'kahin', 'tuccar', 'corporates', 'aynaKral', 'ladyLuck']);
+  const BOSS_UI_KEYS = new Set(['godzilla', 'karaKedi', 'kirby', 'cellat', 'misunderstood', 'kelebek', 'ahtapot', 'fatality', 'zombie', 'freedom', 'uzayli', 'ucKagitci', 'dervish', 'terziIgne', 'avukat', 'ritim', 'kahin', 'tuccar', 'corporates', 'aynaKral', 'ladyLuck', 'orion']);
   let bossUiOn = (() => { try { return localStorage.getItem(BOSS_UI_KEY) !== '0'; } catch (e) { return true; } })();
   function bossUiActive() {
     try {
@@ -8376,7 +8470,7 @@
   }
   function colFinalCard(d) {
     const c = colJokerCard(d);
-    if (!Finals.has(d.key)) { c.classList.add('col-locked'); c.title = t('finalLockedHint'); }
+    if (!Finals.has(d.key)) { c.classList.add('col-locked'); c.title = t('finalLockedHint_' + d.key) || t('finalLockedHint'); }
     return c;
   }
   const COL_CATS = [
@@ -9459,7 +9553,7 @@
   else showScreen('menu');
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
-  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings,
+  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     // Playtest 17 — Grup A/F doğrulaması için
     notify, showCoinFlip, pickFuzyon, flushRoundStart,

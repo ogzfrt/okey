@@ -118,6 +118,14 @@ const FINAL_TARGET = 5200;   // P71 — bot ölçümüyle kalibre (BET=mix final
 const LADY_REFILL_TO = 21;   // P71 — tur başı çekişte el bu sayıya tamamlanır
 const LADY_STAR_MULT = 2;    // P71 — Sahnenin Yıldızı: seçilen jokerin katkısı ×2 (denge kolu)
 const LADY_USES = 6;         // P71 — boss jokerlerinin (2–4) belirgin şekilde üstü
+/* P90 — TEMEL RUN FİNALİ · ORION (spec 2026-10-11). Değerler uzman botla
+   kalibre edilir (S8'i geçenlerin ≈%50'si finali geçmeli). */
+const ORION_FLOOR = 4200;                 // taban hedef (S8 boss 3620'nin üstü)
+const ORION_TURN_MULT = [8, 10, 13, 17];   // Orion'un açılım çarpanı, tur tur büyür (P90 ölçüm: final geçiş temiz %63 · kurtarmalı %47 — kullanıcı B'yi seçti)
+const ORION_HAND = 21;                    // Orion'un (rakip ya da eş) eli
+const ORION_DRAW = { race: 5, partner: 5 };   // tur başı çekiş: finalde de jokerdeki eşte de oyuncu kadar (kullanıcı kararı 2026-10-11; eş 5 → güç ≈ Lady Luck ×2, bilerek seçildi)
+const BELT_K = { 1: 1.5, 2: 2, 3: 4 };    // Orion'un Kemeri: ★ · ★★ · ★★★
+const BELT_TWO_AT = 2, BELT_FULL_AT = 4;  // yıldız için kemerde geçen raund
 /* P71 — puanı _calcOpening'deki ÖZEL bloklardan gelen jokerler (effect()
    fonksiyonu olmayanlar). Yıldız adayı = effect() olan + bu liste. */
 const STAR_SCORE_KEYS = ['ankaKusu', 'ayna', 'ejderha', 'godzilla', 'katalizor', 'kirby', 'kumarbaz',
@@ -133,6 +141,7 @@ const RUN_MODES = {
     handBonus: 0,
     startPermMult: 0,
     curveStretch: false,
+    finalBoss: 'orion',     // P90 — 8 stage'in ÜSTÜNE tek raundluk FİNAL (stages 8 kalır: eğri onu okur)
     /* P53 · GRUP D (kullanıcı kararı 2026-09-19) — NORMAL RUN AÇILIŞ JOKERİ
        ALMAZ. P52'de erken oyunu yumuşatmak için 1 Common joker veriliyordu
        (openJokers: 1, openRarity {common:1}); P53'te aynı yumuşatma çok daha
@@ -853,8 +862,13 @@ const BOSSES = [
    Figma 455:5792); final yenilince (okeyFinals) menüde görünür.
    Final hedefi (FINAL_TARGET) RUN_MODES'un üstünde tanımlıdır. */
 const FINAL_BOSSES = {
-  ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', final: true, reward: 'ladyLuck', mascotItem: 'item-lady-luck',
+  ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', final: true, reward: 'ladyLuck', mascotItem: 'item-lady-luck', icon: '💋',
     desc: 'Her tur bir jokerini büyüler: puanı TERS döner, diğer etkisi susar. Istakandaki en yüksek taşı da çalar.' },
+  /* P90 — Temel Run finali ORION (Gökyüzünün Avcısı; şapkalı, pardösülü,
+     kemerli maskeli savaşçı — çizim bitince eklenecek). `target` = taban;
+     asıl hedef raund sonunda max(taban, Orion'un puanı). */
+  orion: { key: 'orion', name: 'Orion', final: true, reward: 'orion', mascotItem: 'item-orion', icon: '🎩', target: ORION_FLOOR,
+    desc: 'Kendi eliyle seninle yarışır; raund sonunda onu ve tabanı geçmelisin. En güçlü jokerini kemerine takar.' },
 };
 
 /* ==========================================================================
@@ -2466,6 +2480,10 @@ const JOKER_DEFS = {
      kalıcı açılır; havuzlarda (store/paket/açılış/bahis) ASLA çıkmaz. */
   ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', rarity: 'final', uses: LADY_USES, icon: '💋',
     desc: 'Çekişte elin 21\'e tamamlanır; her tur bir puan jokerin ×2 verir.' },
+  /* P90 — Temel Run finalinin ödülü (spec §3). Çırak Yetiştir + Orion'un
+     Istakası; mekanik motorun Orion bölümünde (setBelt, _partnerOn). */
+  orion: { key: 'orion', name: 'Orion', rarity: 'final', uses: LADY_USES, icon: '🎩',
+    desc: 'Bir jokerini kemerine bağlar (×1.5 → ×2 → ×4). Eşin olarak 21 taşla açar.' },
 };
 
 /* Tüccar (GDD 10) — her raund başında sunulan takas havuzu.
@@ -3729,6 +3747,15 @@ const Game = {
     const ids = new Set();
     if (this._calcSkipId != null) ids.add(this._calcSkipId);
     if (s && s.bossCharmId != null && !this._calcWithCharm && this._ladyCurseOn()) ids.add(s.bossCharmId);
+    /* P90 — finalde Orion'un kaptığı çırak sana çalışmaz; oyuncunun kendi
+       Orion jokeri finalde susar (masada iki Orion olmaz). */
+    if (s && this._calcOnlyId == null && this._raceOn && this._raceOn()) {
+      if (s.orionBeltId != null) ids.add(s.orionBeltId);
+      for (const j of s.jokers) if (j.key === 'orion') ids.add(j.id);
+    }
+    /* P90 — eş/Orion katkı hesabı: yalnız tek joker (ya da hiç) */
+    if (this._calcOnlyId != null && s)
+      for (const j of s.jokers) if (j.id !== this._calcOnlyId) ids.add(j.id);
     return ids;
   },
   _ladyCurseOn() {
@@ -3774,7 +3801,10 @@ const Game = {
     const tbl = runModeOf(this.state).targets || STAGE_TARGETS;
     const last = tbl.length;
     let base;
-    if (stage <= last) base = tbl[stage - 1][ric - 1];
+    const fm = runModeOf(this.state);
+    const fb = fm.finalBoss && stage === fm.stages + 1 ? FINAL_BOSSES[fm.finalBoss] : null;
+    if (fb && fb.target) base = fb.target;          // P90 — Orion: sabit taban
+    else if (stage <= last) base = tbl[stage - 1][ric - 1];
     else {
       const scale = Math.pow(TARGET_GROWTH, stage - last);
       base = Math.round(tbl[last - 1][ric - 1] * scale / 10) * 10;
@@ -4074,7 +4104,10 @@ const Game = {
       s.stage++;
       /* P71 — final stage normal raund taşımaz: doğrudan boss raunduna açılır */
       s.roundInStage = this.isFinalStage() ? 3 : 1;
-      if (this.isFinalStage()) s.roundStartNotes.push('💋 FİNAL: Lady Luck masada seni bekliyor');
+      if (this.isFinalStage()) {
+        const fd = FINAL_BOSSES[runModeOf(s).finalBoss];
+        s.roundStartNotes.push(`${fd.icon} FİNAL: ${fd.name} masada seni bekliyor`);
+      }
       s.okey = this._rollOkey();
       s.roundStartNotes.push(
         `Stage ${s.stage} — yeni okey ilan edildi: ${COLOR_TR[s.okey.color]} ${s.okey.number}`);
@@ -4677,7 +4710,7 @@ const Game = {
     if (!def.final && !(st >= 1)) st = Math.max(1, Math.round(m.stages * ({ 1: .3, 2: .6, 3: .9 })[tier]));
     if (!def.final) st = Math.min(m.stages, st);
     const tbl = m.targets || STAGE_TARGETS;
-    const target = tbl[Math.min(st, tbl.length) - 1][2];
+    const target = def.final && def.target ? def.target : tbl[Math.min(st, tbl.length) - 1][2];
     return { key: def.key, mode: m.key, stage: st, target, tier, final: !!def.final, stages: m.stages };
   },
   startBossTest(cfg = {}) {
@@ -4793,6 +4826,8 @@ const Game = {
       cheatBag: s.bossCheatBag || [],          // boss'un çaldığı taşlar
       yildiz: (s.yildizPick && s.yildizPick.options) || [], // açılmış yıldız seçenekleri
       oteki: s.otekiHand || [],                // P54 · Grup B — Öteki Dünya'nın eli
+      orion: s.orionHand || [],                  // P90 — Orion'un eli (rakip ya da eş)
+      orionDrop: s.orionDrop ? [s.orionDrop] : [], // P90 — Orion'un attığı açık taş
     };
     const spread = (name, list) => {
       (list || []).forEach((c, i) => { z[`${name}${i}`] = c.tiles || []; });
@@ -5048,6 +5083,10 @@ const Game = {
     // Not listesi en başta kurulur — deste denetimi (_auditDeck) gibi erken
     // çalışan adımlar da buraya yazabilsin diye (eskiden aşağıda kuruluyordu).
     s.roundStartNotes = keepNotes || [];
+    /* P90 — önceki raundun Orion eli/attığı taş yeni deste kurulmadan BOŞALIR:
+       aksi hâlde eski taşlar yeni desteyle aynı anda sayılıp raund başı
+       bütünlük denetiminde "çoğalma" alarmı veriyordu (ölçüm botu yakaladı). */
+    if (this._orionClear) this._orionClear();
     // fresh bayrağı: raund başlarken temizlenir — bu raund boyunca aktif
     // olan her joker, raund sonundaki yaşlanmada (GDD 7.2) süre kaybeder
     for (const j of [...s.jokers, ...s.deckJokers]) j.fresh = false;
@@ -5281,12 +5320,19 @@ const Game = {
     s.bossMirrorDebt = 0;     // Ayna Kral boss: ters yansıma borcu
     s.bossFail = null;        // boss şartı ihlali (hedefe ulaşsan da kaybettirir)
     s.ritimFailed = false;
+    s.playerFinished = false;   // P90 — yarışta eli bitirdi mi
 
     // Boss raundu (GDD 13) — kısıtlama stage başında bilinir, 3. raundda
     // uygulanır. Boss, run başında karılan tekrarsız sıradan gelir (madde 21).
     if (!s.boss || s.roundInStage === 1 || this.isFinalStage()) {
       const ord = s.bossOrder || BOSSES;
       s.boss = ord[(s.stage - 1) % ord.length];
+      /* P90 — Sonsuz Mod finalden sonra döner: final boss yalnız kendi
+         stage'inde gelir, döngüde sıradan boss'lar sürer. */
+      if (s.boss && s.boss.final && !this.isFinalStage() && s.stage > runModeOf(s).stages + 1) {
+        const plain = ord.filter(b => !b.final);
+        s.boss = plain[(s.stage - 1) % plain.length];
+      }
     }
     /* FERMAN (P28 · Grup F) — yazılı ferman varsa boss KURULUMU HİÇ
        ÇALIŞMAZ. İptal etmek yerine hiç kurmamak bilinçli: godzilla tur
@@ -5297,6 +5343,17 @@ const Game = {
       s.bossVoided = true;
       s.fermanPending = false;
       s.roundStartNotes.push('🪶 FERMAN: boss koşulu iptal edildi — raund sıradan bir raund gibi oynanır (hedef aynı, ödül aynı).');
+    }
+    /* P90 — Orion masaya oturur: final yarışı (Task 3) ya da eş (Task 7) */
+    this._orionClear();
+    if (this._raceOn() || (this._partnerOn && this._partnerOn())) this._orionDeal();
+    s.orionBeltId = null;
+    if (this._raceOn()) {
+      const st = this._pickStolen();
+      if (st) {
+        s.orionBeltId = st.id;
+        s.roundStartNotes.push(`🎩 Orion ${st.name} jokerini kemerine taktı — bu raund onun için çalışır`);
+      }
     }
     if (this.bossOn()) {
       if (s.boss.key === 'godzilla') {                                     // GDD 10/15 Boss Koşulu
@@ -6523,48 +6580,73 @@ const Game = {
      yazmaz), bu yüzden jokerli ve jokersiz iki kez çağrılıp aradaki fark
      jokerin GERÇEK katkısı olarak ters (lanet) ya da ×2 (yıldız) uygulanır.
      30 ayrı joker bloğuna tek tek dokunmamak bilinçli. */
+  /* P90 — unvan çarpanı (çırak 1.5 · kalfa 2 · usta 4). Unvan jokerde kalır:
+     Orion jokeri gitse de, çırak bırakılsa da çarpan korunur (kullanıcı kararı). */
+  _rankK(j) { return (j && BELT_K[j.beltStars]) || 1; },
+  /* Bu açılımda katkısı büyütülecek jokerler: unvanlılar + Lady Luck yıldızı.
+     Aynı joker hem yıldız hem unvanlıysa katsayılar ÇARPILIR. */
+  _jokerBoosts() {
+    const s = this.state;
+    if (s.jokersDisabled) return [];
+    const skip = this._recSkipIds();
+    const star = s.ladyStarId != null && this._ladyActive() ? s.ladyStarId : null;
+    const out = [];
+    for (const j of s.jokers) {
+      if (skip.has(j.id)) continue;
+      let k = this._rankK(j);
+      if (j.id === star) k *= LADY_STAR_MULT;
+      if (k !== 1) out.push({ id: j.id, k, name: j.name, star: j.id === star, rank: j.beltStars || 0 });
+    }
+    return out;
+  },
+  _boostMix(out, full, wo, b) {
+    const d = full.final - wo.final;
+    const add = (b.k - 1) * d;
+    const res = Object.assign({}, out);
+    res.final = Math.max(0, Math.round(out.final + add));
+    if (out.carpan != null && full.carpan != null && wo.carpan != null) {
+      res.carpan = round2(out.carpan + (b.k - 1) * (full.carpan - wo.carpan));
+      res.carpanText = `${res.carpan.toFixed(1)}x`;
+    }
+    const tag = b.star ? `⭐ ${b.name} sahnede ×${LADY_STAR_MULT}` : `${'★'.repeat(b.rank)} ${b.name} ×${b.k}`;
+    res.triggered = [...(out.triggered || []), { id: b.star ? 'ladyLuck' : 'orion', name: b.star ? 'Lady Luck' : 'Orion',
+      text: `${tag}: +${Math.round(add)} puan` }];
+    return res;
+  },
   _calcOpening() {
     const s = this.state;
     const charm = !s.jokersDisabled && s.bossCharmId != null && this._ladyCurseOn()
       && s.jokers.find(j => j.id === s.bossCharmId);
-    if (charm) {
-      // büyülü joker ilk geçişte zaten yok sayılıyor; ikinci geçişte geri gelir
-      const [wo, full] = this._calcTwice(
-        () => this._calcOpeningRaw(),
-        () => {
-          this._calcWithCharm = true;
-          try { return this._calcOpeningRaw(); } finally { this._calcWithCharm = false; }
-        });
-      return this._ladyMix(wo, full, -1, charm.name);
-    }
-    const star = s.ladyStarId != null && !s.jokersDisabled && this._ladyActive()
-      && s.jokers.find(j => j.id === s.ladyStarId);
-    if (star) {
-      // ilk geçiş yıldızlı jokerle (full), ikinci geçiş onsuz (wo) — aynı zarlar
-      const [full, wo] = this._calcTwice(
-        () => this._calcOpeningRaw(),
-        () => {
-          this._calcSkipId = star.id;
-          try { return this._calcOpeningRaw(); } finally { this._calcSkipId = null; }
-        });
-      return this._ladyMix(wo, full, LADY_STAR_MULT, star.name);
-    }
-    return this._calcOpeningRaw();
+    const boosts = this._jokerBoosts();
+    const skipRun = (id) => () => { this._calcSkipId = id; try { return this._calcOpeningRaw(); } finally { this._calcSkipId = null; } };
+    const fns = [() => this._calcOpeningRaw()];
+    if (charm) fns.push(() => { this._calcWithCharm = true; try { return this._calcOpeningRaw(); } finally { this._calcWithCharm = false; } });
+    for (const b of boosts) fns.push(skipRun(b.id));
+    if (fns.length === 1) return fns[0]();
+    const res = this._calcMany(fns);
+    let out = charm ? this._ladyMix(res[0], res[1], -1, charm.name) : res[0];
+    const off = charm ? 2 : 1;
+    boosts.forEach((b, i) => { out = this._boostMix(out, res[0], res[off + i], b); });
+    return out;
   },
 
   /* P71 — iki hesap (jokerli/jokersiz) AYNI zarları görsün: ilk geçişin rng
      çekilişleri kaydedilir, ikinci geçiş aynılarını tekrar okur; akış yalnız
      bir kez ilerler (Kelebek _calcOpeningRaw içinde zar atıyor). `rng` Game'in
      kendi özelliğidir (Math.random); gölgelenir ve aynı referansa geri alınır. */
-  _calcTwice(first, second) {
+  _calcMany(fns) {
     const real = this.rng, tape = [];
-    let i = 0, a, b;
+    const out = [];
     this.rng = () => { const v = real.call(this); tape.push(v); return v; };
-    try { a = first(); } finally { this.rng = real; }
-    this.rng = () => (i < tape.length ? tape[i++] : real.call(this));
-    try { b = second(); } finally { this.rng = real; }
-    return [a, b];
+    try { out.push(fns[0]()); } finally { this.rng = real; }
+    for (let f = 1; f < fns.length; f++) {
+      let i = 0;
+      this.rng = () => (i < tape.length ? tape[i++] : real.call(this));
+      try { out.push(fns[f]()); } finally { this.rng = real; }
+    }
+    return out;
   },
+  _calcTwice(first, second) { return this._calcMany([first, second]); },
 
   /* wo = joker yokken, full = joker varken; k katkının kaç katı uygulanır
      (−1 ters, LADY_STAR_MULT yıldız). Ters uygulamada taban: çarpan ≥ 1,
@@ -7242,6 +7324,298 @@ const Game = {
       case 'combo2': return (sol) => staged.length + sol.length >= 2;
       default: return null;
     }
+  },
+
+  /* P90 — USTA'NIN OYUN ZEKÂSI. tools/expert_audit.js `candidatesX`/`bestX`
+     (uzman bot) çekirdeğinin motor içi SAF kopyası: durum yazmaz, verilen taş
+     dizisi üzerinde çalışır. Finaldeki rakip ve jokerdeki eş aynı çekirdeği
+     kullanır. Çift açmaz (yalnız Per/Sıralı — tur türü karışmasın). */
+  _orionCands(tiles) {
+    const h = tiles.filter(t => !t.jokerTile);
+    const okeys = h.filter(t => this.isOkeyTile(t));
+    const plain = h.filter(t => !this.isOkeyTile(t));
+    const out = [];
+    const add = (ts, raw) => out.push({ tiles: ts, val: raw, okeyN: ts.filter(t => this.isOkeyTile(t)).length });
+    const byNum = {};
+    for (const t of plain) (byNum[t.number] = byNum[t.number] || []).push(t);
+    for (const n of Object.keys(byNum).map(Number)) {
+      const byCol = {};
+      for (const t of byNum[n]) if (!byCol[t.color]) byCol[t.color] = t;
+      const cols = Object.values(byCol);
+      const subsets = [];
+      const rec = (i, cur) => { if (cur.length >= 2) subsets.push([...cur]); for (let k = i; k < cols.length; k++) { cur.push(cols[k]); rec(k + 1, cur); cur.pop(); } };
+      rec(0, []);
+      for (const sub of subsets) for (let o = 0; o <= Math.min(okeys.length, 2); o++) {
+        const size = sub.length + o;
+        if (size < 3 || size > 4) continue;
+        add(sub.concat(okeys.slice(0, o)), n * size);
+      }
+    }
+    const byCol = {};
+    for (const t of plain) (byCol[t.color] = byCol[t.color] || []).push(t);
+    for (const col of Object.keys(byCol)) {
+      const have = {};
+      for (const t of byCol[col]) if (!have[t.number]) have[t.number] = t;
+      for (let a = 1; a <= 11; a++) for (let b = a + 2; b <= 13; b++) {
+        const ts = []; let need = 0, okk = true;
+        for (let n = a; n <= b; n++) { if (have[n]) ts.push(have[n]); else if (++need > Math.min(okeys.length, 2)) { okk = false; break; } }
+        if (!okk || !ts.length || ts.length + need < 3) continue;
+        let raw = 0; for (let n = a; n <= b; n++) raw += n;
+        add(ts.concat(okeys.slice(0, need)), raw);
+      }
+    }
+    return out;
+  },
+  _orionBest(tiles, nodeCap = 6000) {
+    const cands = this._orionCands(tiles).sort((a, b) => b.val / b.tiles.length - a.val / a.tiles.length || b.val - a.val);
+    const table = CARPAN_TABLE.per;
+    const okeyAll = tiles.filter(t => !t.jokerTile && this.isOkeyTile(t));
+    let best = { score: 0, set: [] }, nodes = 0;
+    const used = new Set();
+    const rec = (i, set, raw) => {
+      if (++nodes > nodeCap) return;
+      if (set.length) {
+        const sc = raw * table[Math.min(set.length, 7) - 1];
+        if (sc > best.score) best = { score: sc, set: set.map(c => ({ tiles: [...c.tiles], val: c.val })) };
+      }
+      for (let k = i; k < cands.length; k++) {
+        const c = cands[k];
+        if (c.tiles.some(t => !this.isOkeyTile(t) && used.has(t.id))) continue;
+        const free = okeyAll.filter(t => !used.has(t.id)).slice(0, c.okeyN);
+        if (free.length < c.okeyN) continue;
+        const real = c.tiles.filter(t => !this.isOkeyTile(t)).concat(free);
+        real.forEach(t => used.add(t.id));
+        set.push({ tiles: real, val: c.val });
+        rec(k + 1, set, raw + c.val);
+        set.pop();
+        real.forEach(t => used.delete(t.id));
+        if (nodes > nodeCap) return;
+      }
+    };
+    rec(0, [], 0);
+    return best;
+  },
+  _orionCombo(tiles) {
+    const res = resolveCombo(tiles, (t) => this.isOkeyTile(t), this._freePerColors(), {});
+    if (!res || res.type === 'cift') return null;
+    return { type: res.type, tiles: orderComboTiles(res.type, tiles, res.values, (t) => this.isOkeyTile(t)),
+      values: res.values, usedOkey: res.usedOkey, owner: 'orion' };
+  },
+  _orionWants(hand, tile) {
+    if (!tile || tile.jokerTile || tile.ghost) return 0;
+    return Math.max(0, this._orionBest([...hand, tile], 3000).score - this._orionBest(hand, 3000).score);
+  },
+
+  /* P90 — finalde Orion ile yarış açık mı (Ferman/boss kapalıysa yarış yok) */
+  _raceOn() {
+    const s = this.state;
+    return !!(s && s.boss && s.boss.key === 'orion' && s.boss.final && this.isBossRound() && this.bossOn());
+  },
+  /* Raund başı: Orion desteden 21 taş alır (spec §2.1, §3.2) */
+  _orionDeal() {
+    const s = this.state;
+    s.orionHand = s.deck.splice(0, Math.min(ORION_HAND, s.deck.length));
+    s.orionScore = 0; s.orionDrop = null; s.orionDropFresh = false;
+    s.orionLast = null; s.orionDebt = 0; s.orionHandDone = false;
+  },
+  _orionClear() {
+    const s = this.state;
+    s.orionHand = []; s.orionScore = 0; s.orionDrop = null; s.orionDropFresh = false;
+    s.orionLast = null; s.orionDebt = 0; s.orionHandDone = false;
+  },
+  /* Oyuncunun attığı taşlardan Orion'un işine en çok yarayanı (en fazla 1) */
+  _orionTakeFrom(picks) {
+    const s = this.state;
+    let best = null, gain = 0;
+    for (const t of picks) {
+      if (!s.discardPile.includes(t)) continue;
+      const g = this._orionWants(s.orionHand, t);
+      if (g > gain) { gain = g; best = t; }
+    }
+    if (!best) return null;
+    s.discardPile.splice(s.discardPile.indexOf(best), 1);
+    s.orionHand.push(best);
+    return best;
+  },
+  /* USTA'NIN TURU — oyuncu attıktan SONRA oynar (okeyde sıradaki oyuncu).
+     mode 'race': puanı s.orionScore'a, 1 taş atar. mode 'partner': puanı
+     oyuncuya (Task 7). Açılımlar s.prevOpen'a eklenir: oyuncu sonraki tur
+     işleyebilir (spec §2.3-3). */
+  _orionTurn(events, mode, picks) {
+    const s = this.state;
+    const took = this._orionTakeFrom(picks || []);
+    if (took) events.push(`🎩 Orion attığın ${COLOR_TR[took.color]} ${took.number} taşını aldı`);
+    // çekiş: oyuncunun bir sonraki çekişi önceliklidir (spec §5 deste)
+    const reserve = 5 + (s.permDraw || 0);
+    const n = Math.max(0, Math.min(ORION_DRAW[mode] || 1, s.deck.length - reserve));
+    if (n) s.orionHand.push(...s.deck.splice(0, n));
+    const b = this._orionBest(s.orionHand);
+    let gain = 0;
+    const opened = [];
+    for (const g of b.set) {
+      const c = this._orionCombo(g.tiles);
+      if (!c) continue;
+      const ids = new Set(c.tiles.map(t => t.id));
+      s.orionHand = s.orionHand.filter(t => !ids.has(t.id));
+      opened.push(c);
+    }
+    if (opened.length) {
+      const raw = opened.reduce((a, c) => a + c.tiles.reduce((x, t) => x + (c.values.get(t.id) ?? t.number), 0), 0);
+      gain = mode === 'race' ? this._orionRaceGain(opened, raw) : this._partnerScore(opened, raw);
+      s.prevOpen.push(...opened);
+    }
+    if (mode === 'race') {
+      if (s.orionDrop) { s.discardPile.push(s.orionDrop); s.orionDrop = null; }
+      const junk = this._orionJunk(s.orionHand);
+      if (junk) {
+        s.orionHand = s.orionHand.filter(t => t !== junk);
+        s.orionDrop = junk; s.orionDropFresh = true;
+        this._revealTiles([junk]);
+      }
+      s.orionScore += gain;
+      if (!s.orionHand.length) {
+        s.orionScore *= 2; s.orionHandDone = true;
+        events.push(`🎩 Orion elini bitirdi: "Okey bitti!" — puanı ×2 (${s.orionScore})`);
+        s.maxTurns = s.turn;                        // raund bu tur biter
+      }
+      s.target = Math.max(ORION_FLOOR, s.orionScore);
+      if (opened.length) events.push(`🎩 Orion ${opened.length} açılım yaptı: +${gain} (toplam ${s.orionScore})`);
+    } else if (gain) {
+      s.score += gain;
+      events.push(`🎩 Orion (eşin) ${opened.length} açılım yaptı: +${gain} puan sana`);
+    }
+    s.orionLast = { opened: opened.length, gain, took };
+  },
+  /* Finaldeki Orion'un kazancı: ham × kombinasyon çarpanı × tur çarpanı
+     + kaptığı çırağın katkısı (Task 4 — `_orionBeltGain`). */
+  _orionRaceGain(opened, raw) {
+    const s = this.state;
+    const tm = ORION_TURN_MULT[Math.min(s.turn, ORION_TURN_MULT.length) - 1];
+    const base = raw * CARPAN_TABLE.per[Math.min(opened.length, 7) - 1] * tm;
+    return Math.round(base + (this._orionBeltGain ? this._orionBeltGain(opened) : 0));
+  },
+  /* Atılacak taş: çıkınca Orion'un en iyi açılım puanını EN AZ düşüren
+     (eşitlikte düşük sayılı) — her aday için tek arama. */
+  _orionJunk(hand) {
+    const base = this._orionBest(hand, 3000).score;
+    let best = null, bestLoss = Infinity;
+    for (const t of hand) {
+      if (this.isOkeyTile(t) || t.jokerTile) continue;
+      const loss = base - this._orionBest(hand.filter(x => x !== t), 3000).score;
+      if (loss < bestLoss || (loss === bestLoss && best && t.number < best.number)) { best = t; bestLoss = loss; }
+    }
+    return best;
+  },
+  /* Final başında kapılacak joker: puan jokerleri içinden en yüksek nadirlik,
+     eşitlikte soldaki (Lady yıldızı adaylarıyla aynı "puan veren" ölçütü). */
+  _pickStolen() {
+    const s = this.state;
+    const rar = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
+    const cand = s.jokers.filter(j => j.key !== 'orion' && this._recsOf(j).some(r =>
+      typeof JOKER_DEFS[r.key]?.effect === 'function' || STAR_SCORE_KEYS.includes(r.key)));
+    if (!cand.length) return null;
+    return cand.reduce((a, j) => rar.indexOf(j.rarity) > rar.indexOf(a.rarity) ? j : a);
+  },
+  /* combos'u oyuncu açmış gibi iki kez hesapla: jokersiz / yalnız onlyId ile.
+     _calcOpeningRaw SAF; s.staged/islemeler/turnMode geçici değişir, geri alınır. */
+  _partnerCalc(combos, onlyId) {
+    const s = this.state;
+    const keep = [s.staged, s.islemeler, s.turnMode];
+    s.staged = combos; s.islemeler = []; s.turnMode = 'per';
+    try {
+      const run = (id) => () => { this._calcOnlyId = id; try { return this._calcOpeningRaw(); } finally { this._calcOnlyId = null; } };
+      const [none, withJ] = this._calcTwice(run(-1), run(onlyId == null ? -1 : onlyId));
+      return { none, withJ };
+    } finally { [s.staged, s.islemeler, s.turnMode] = keep; }
+  },
+  _orionBeltGain(opened) {
+    const s = this.state;
+    if (s.orionBeltId == null || !s.jokers.some(j => j.id === s.orionBeltId)) return 0;
+    const { none, withJ } = this._partnerCalc(opened, s.orionBeltId);
+    return Math.max(0, withJ.final - none.final);
+  },
+  /* ===== P90 · KEMER BAĞLA (spec §3.1; eski adı Çırak Yetiştir) — Orion'un
+     Kemeri: ★ ×1.5 → 2 raundda ★★ ×2 → 4 raundda ★★★ ×4, süresiz ===== */
+  _orionJokerOn() {
+    return !this.state.jokersDisabled && this.state.jokers.some(j => j.key === 'orion')
+      && !(this._raceOn && this._raceOn());
+  },
+  beltOptions() {
+    return this.state.jokers.filter(j => j.key !== 'orion' && j.beltStars !== 3);
+  },
+  beltNeedsPick() {
+    const s = this.state;
+    if (!this._orionJokerOn()) return false;
+    if (s.beltId != null && s.jokers.some(j => j.id === s.beltId)) return false;
+    return this.beltOptions().length > 0;
+  },
+  setBelt(id) {
+    const s = this.state;
+    if (!this._orionJokerOn()) return { ok: false, error: 'Orion jokerin yok.' };
+    const j = this.beltOptions().find(x => x.id === id);
+    if (!j) return { ok: false, error: 'Bu joker kemere bağlanamaz.' };
+    if (s.beltId === id) return { ok: true };
+    s.beltId = id;
+    j.beltStars = Math.max(j.beltStars || 0, 1);
+    j.beltRounds = 0;                       // yeni çıraklık sıfırdan (spec §3.1)
+    return { ok: true };
+  },
+  /* Raund sonu (yaşlanmadan ÖNCE): çırak ilerler, unvan duyurulur. */
+  _beltRoundEnd(notes) {
+    const s = this.state;
+    if (!this._orionJokerOn()) return;
+    const j = s.jokers.find(x => x.id === s.beltId);
+    if (!j) { s.beltId = null; return; }
+    j.beltRounds = (j.beltRounds || 0) + 1;
+    if (j.beltRounds >= BELT_FULL_AT && j.beltStars < 3) {
+      j.beltStars = 3; s.beltId = null;
+      notes.push(`🌟 ${j.name} ORION'UN KEMERİ'nde! Etkisi ×${BELT_K[3]}, süresi hiç bitmez`);
+    } else if (j.beltRounds >= BELT_TWO_AT && j.beltStars < 2) {
+      j.beltStars = 2;
+      notes.push(`⭐ ${j.name} kemerin 2. yıldızını yaktı (×${BELT_K[2]})`);
+    }
+  },
+  /* ===== P90 · ORION'UN ISTAKASI (spec §3.2) — eşli okey ===== */
+  _partnerOn() {
+    return this._orionJokerOn() && this.state.status === 'playing';
+  },
+  /* eş puanı = taş puanı + k × (kemer jokerinin bu açılıma katkısı) — spec örneği:
+     Medusa +3x kemer jokeri: 24 + 1.5 × 72 = 132 */
+  _partnerScore(opened, raw) {
+    const s = this.state;
+    const ap = s.jokers.find(j => j.id === s.beltId);
+    if (!ap) return raw;
+    const { none, withJ } = this._partnerCalc(opened, ap.id);
+    return Math.round(raw + this._rankK(ap) * Math.max(0, withJ.final - none.final));
+  },
+  takeOrionDrop() {
+    const s = this.state;
+    if (!this._raceOn()) return { ok: false, error: 'Masada Orion yok.' };
+    if (s.phase !== 'meld') return { ok: false, error: 'Orion\'un taşını tur başında alabilirsin.' };
+    if (!s.orionDrop || !s.orionDropFresh) return { ok: false, error: 'Alınacak taş yok.' };
+    /* "Çekişlerinden biri yerine" (spec §2.3-2): bu tur çektiğin ve hâlâ
+       elinde duran son taş desteye geri döner (finalde ıstaka hep dolu —
+       30 taş). Hepsini kullandıysan yer varsa sonraki çekiş 1 azalır. */
+    const back = [...(s.turnDrawnIds || [])].reverse()
+      .map(id => s.hand.find(t => t.id === id)).find(t => t && !t.ghost);
+    let returned = null;
+    if (back) {
+      s.hand = s.hand.filter(t => t !== back);
+      s.deck.unshift(back);
+      returned = back;
+    } else if (this.realHandCount() >= MAX_HAND) return { ok: false, error: 'Istakan dolu.' };
+    else s.orionDebt = 1;
+    const got = s.orionDrop;
+    s.hand.push(got);
+    s.orionDrop = null; s.orionDropFresh = false;
+    return { ok: true, tile: got, returned };
+  },
+  orionState() {
+    const s = this.state;
+    const mode = this._raceOn() ? 'race' : (this._partnerOn && this._partnerOn() ? 'partner' : null);
+    if (!mode) return null;
+    return { mode, handCount: (s.orionHand || []).length, score: s.orionScore || 0, drop: mode === 'race' && s.orionDropFresh ? s.orionDrop : null,
+      last: s.orionLast, target: mode === 'race' ? Math.max(ORION_FLOOR, s.orionScore || 0) : null };
   },
 
   _partitionCombos(tiles, allowMixed, prefer) {
@@ -7949,10 +8323,10 @@ const Game = {
        (0 puan, boss sıfırlaması) damgayı yakmaz, oyuncu tekrar basar. */
     if (r.damgaBonus > 0) s.damgaUsed = true;
     s.damgaArmed = false;
-    if (r.kelebekCoin) gainCoins(s, r.kelebekCoin);
+    if (r.kelebekCoin) gainCoins(s, Math.round(r.kelebekCoin * this._rankK(s.jokers.find(j => j.key === 'kelebek'))));   // P90 — kemer yıldızı
     s.prevMeld = { turn: s.turn, mode: r.curMode };
     if (this.hasActive('midas'))
-      s.midasCoins += MIDAS_COIN * (r.ctx.tiles.length + r.islemeCount);
+      s.midasCoins += Math.round(MIDAS_COIN * (r.ctx.tiles.length + r.islemeCount) * this._rankK(s.jokers.find(j => j.key === 'midas')));   // P90
     /* Vampir — P29 · Grup D. Son turda banka (bu turun emişi dahil)
        açılım puanına ödendi, bu yüzden sıfırlanır ve yeniden yazılmaz.
        Diğer turlarda emiş normal şekilde birikir. */
@@ -8187,6 +8561,12 @@ const Game = {
     s.staged = [];
     s.lastResult = result;
 
+    /* P90 — yarışta eli bitirmek: toplam ×2, raund bu tur biter (spec §2.3-4) */
+    if (this._raceOn() && this.realHandCount() === 0 && !s.playerFinished) {
+      s.score *= 2; s.playerFinished = true; s.maxTurns = s.turn;
+      result.bonuses.push(`ELİNİ BİTİRDİN! Raund toplamı ×2 (${s.score})`);
+    }
+    if (this._raceOn()) { s.phase = 'discard'; return { ok: true, ...result }; }
     if (!result.tamEl && s.score >= s.target && this._katlaEligible()) {
       /* P58 · Kumarhane — KATLA teklifi: raund henüz bitmez; oyuncu
          katlaStay() ya da katlaDouble() ile karar verir. */
@@ -8448,7 +8828,10 @@ const Game = {
     if (this.hasActive('copcu')) {
       for (const _t of picks) {
         s.copcuCount++;
-        if (s.copcuCount % 3 === 0) { gainCoins(s, COPCU_COIN); events.push(`Çöpçü: +${COPCU_COIN} coin`); }
+        if (s.copcuCount % 3 === 0) {
+          const n = Math.round(COPCU_COIN * this._rankK(s.jokers.find(j => j.key === 'copcu')));   // P90 — kemer yıldızı
+          gainCoins(s, n); events.push(`Çöpçü: +${n} coin`);
+        }
       }
     }
     /* P29 · Grup F — Kum Saati kaldırıldı, kristal birikimi de onunla
@@ -8526,8 +8909,12 @@ const Game = {
       }
     }
 
-    // puan hedefi discard bonuslarıyla aşılmış olabilir
-    if (s.score >= s.target) {
+    /* P90 — sıradaki oyuncu Orion (yarış ya da eş). Oyuncu elini bitirdiyse
+       (s.orionHandDone ya da playerFinished) Orion oynamaz — el kapanmıştır. */
+    if ((this._raceOn() || (this._partnerOn && this._partnerOn())) && !s.orionHandDone && !s.playerFinished)
+      this._orionTurn(events, this._raceOn() ? 'race' : 'partner', picks);
+    // puan hedefi discard bonuslarıyla aşılmış olabilir (P90: yarışta raund SONUNDA karar)
+    if (s.score >= s.target && !this._raceOn()) {
       s.wonOnTurn = s.turn;
       this._finishWin();
       return { ok: true, roundOver: true, events };
@@ -8745,6 +9132,7 @@ const Game = {
     /* P71 — LADY LUCK · Tamamlama: el 21'in altındaysa eksik kadar çek
        (normal çekişten azsa normal çekiş geçerli; ıstaka sınırı aşağıda) */
     if (this._ladyActive()) wantN = Math.max(wantN, LADY_REFILL_TO - this.realHandCount());
+    if (s.orionDebt) { wantN = Math.max(0, wantN - s.orionDebt); s.orionDebt = 0; }   // P90 — Orion'un attığını aldın
     const drawN = Math.max(0, Math.min(wantN, MAX_HAND - this.realHandCount()));
     /* TANRININ ELİ (P31 · Grup E) — otomatik çekiş YOK: hak `s.godPick`
        olarak bekler, oyuncu destesinden seçer (godPickTake). Tur yine
@@ -8782,6 +9170,7 @@ const Game = {
       this._karaKediBite(drawn, events);
     if (this.bossOn() && drawn.length) this._bossOnDraw(drawn, events); // Grup F
     s.hand.push(...drawn);
+    s.turnDrawnIds = drawn.map(t => t.id);   // P90 — Orion'un taşını alınca çekiş geri verilir
     /* HİDRA (P34) — bekleyen kafalar çekişten SONRA doğar ki çekiş hakkını
        yemesinler; ıstaka sınırı ve raund tavanı aşılmaz, sığmayan kafa yanar. */
     if (s.hidraPending) {
@@ -8806,7 +9195,7 @@ const Game = {
     // Grup D (2026-07-09): tur başı efektleri (Bungie Gum ödemesi, The
     // Cheating, Freedom Fighters…) skoru hedefin üzerine taşıyabilir —
     // hedef kontrolü bir sonraki açılıma ERTELENMEZ, hemen burada yapılır.
-    if (s.score >= s.target) {
+    if (s.score >= s.target && !this._raceOn()) {
       s.wonOnTurn = s.turn;
       this._finishWin();
       this._handAudit(events);                    // Grup A el defteri
@@ -8830,6 +9219,12 @@ const Game = {
     const s = this.state;
     // Sarmaşık + Avukat — en nadir jokeri koruma (GDD 9/10)
     const rarOrder = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
+    /* P90 — Orion'un kaptığı joker raund sonunda döner; süresi işlemez */
+    if (s.orionBeltId != null) {
+      const st = s.jokers.find(j => j.id === s.orionBeltId);
+      if (st) st.protected = true;
+      s.orionBeltId = null;
+    }
     /* PLAYTEST 22 · GRUP B — SARMAŞIK ARTIK DESTE JOKERLERİNİ DE SARAR.
        Eskiden aday havuzu yalnız `s.jokers`ti (Ana Slot). Oysa Zombie,
        Freedom Fighters, Ahtapot gibi DESTE jokerleri de aynı süre
@@ -8868,6 +9263,10 @@ const Game = {
       }
     }
     for (const j of s.jokers) {
+      /* P90 — usta olan joker HİÇ yaşlanmaz; Orion jokeri masadayken çırak da
+         yaşlanmaz (Orion jokerinin kendisi normal yaşlanır). */
+      if (j.beltStars === 3) { delete j.protected; continue; }
+      if (j.id === s.beltId && s.jokers.some(x => x.key === 'orion')) { delete j.protected; continue; }
       // Şeytan'ın Teklifi henüz tetiklenmediyse (cüzdan boştu) yaşlanmaz —
       // yoksa tek kullanımını hiç çalışmadan yitiriyordu.
       if (j.key === 'seytan' && !j.applied) continue;
@@ -8881,6 +9280,7 @@ const Game = {
     const expired = s.jokers.filter(j => j.usesLeft <= 0);
     s.lastExpired = expired.map(j => j.name);
     s.jokers = s.jokers.filter(j => j.usesLeft > 0);
+    if (!s.jokers.some(j => j.key === 'orion')) s.beltId = null;
 
     for (const j of s.deckJokers) {
       if (this.isRunLong(j)) { j.drawnThisRound = false; delete j.protected; continue; } // Grup B2
@@ -9155,6 +9555,7 @@ const Game = {
        dolunca V2'ye döner (bkz. _ageJokers). Kalıcı çarpan bırakmaz. */
     // GDD 7.2 — süre azalması ve süresi dolanların temizliği, store
     // üretilmeden ÖNCE (süresi biten joker store'da görünmez/satılamaz)
+    this._beltRoundEnd(extraNotes);   // P90 — kemer yıldızları (yaşlanmadan önce)
     this._ageJokers(extraNotes);
 
     /* ① + ④ (Grup I): taban tabloya göre, sonra stage ölçeğiyle çarpılır.
@@ -9185,7 +9586,7 @@ const Game = {
       if (sh) {
         const up = sh[s.borsa.up] || 0;
         if (up > 0) {
-          borsaCoins = up * BORSA_DIVIDEND;
+          borsaCoins = Math.round(up * BORSA_DIVIDEND * this._rankK(s.jokers.find(j => j.key === 'tradeJokeri')));   // P90
           extraNotes.push(`📈 Borsa temettüsü: ${up} × ${TYPE_TR[s.borsa.up]} hissesi `
             + `→ +${borsaCoins} coin`);
         }
@@ -9323,6 +9724,7 @@ const Game = {
     s.totalScore = (s.totalScore || 0) + s.score;
     if (this.isBossRound()) s.bossesBeaten = (s.bossesBeaten || 0) + 1;
     const extraNotes = [];
+    this._beltRoundEnd(extraNotes);   // P90 — kemer yıldızları (yaşlanmadan önce)
     this._ageJokers(extraNotes); // GDD 7.2 — store'dan önce süre düşümü
     const jokerCoins = s.midasCoins;   // P29 · Grup F: kristal kalktı
     const permCoin = s.permCoin || 0;
@@ -12503,7 +12905,7 @@ if (typeof module !== 'undefined') {
   module.exports = {
     Game, detectCombo, isCift, isPer, isSirali, getCarpan, computeScore,
     sortPer, sortCift, sortSirali, createDeck, resolveCombo,
-    COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, FINAL_BOSSES, FINAL_TARGET, BOSS_TIER,
+    COLORS, COLOR_TR, JOKER_DEFS, RARITY, BOSSES, FINAL_BOSSES, FINAL_TARGET, ORION_FLOOR, ORION_TURN_MULT, BELT_K, BOSS_TIER,
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,

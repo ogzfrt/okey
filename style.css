@@ -10476,6 +10476,42 @@ html[data-theme="boss"][data-boss-ui="ladyLuck"] {
   --st-edge: #5E1022; --st-edge-soft: rgba(94, 16, 34, .38); --st-bg: #FFF1DE;
   --st-head: #5E1022; --st-rule: rgba(94, 16, 34, .35); --st-glow: rgba(244, 200, 96, .25);
 }
+html[data-theme="boss"][data-boss-ui="orion"] {
+  --gm-dark: #0E1E26; --gm-light: #E8F4EC; --gm-panel: #5DB88C; --gm-bg: #0E1E26;
+  --gm-coin-ink: #0E1E26; --boss-glow: #FF5A50; --boss-glow-soft: rgba(255, 90, 80, .45);
+  --boss-bg: url('assets/game/boss/orion/bg.png');
+  --img-action-bar: url('assets/game/boss/orion/action-bar.svg');
+  --img-btn-info: url('assets/game/boss/orion/btn-info.svg');
+  --img-btn-open: url('assets/game/boss/orion/btn-open.svg');
+  --img-btn-pause: url('assets/game/boss/orion/btn-pause.svg');
+  --img-btn-small: url('assets/game/boss/orion/btn-small.svg');
+  --img-chip-round: url('assets/game/boss/orion/chip-round.svg');
+  --img-map-card: url('assets/game/boss/orion/map-card.svg');
+  --img-map-okeybox: url('assets/game/boss/orion/map-okeybox.svg');
+  --img-map-pill: url('assets/game/boss/orion/map-pill.svg');
+  --img-map-select: url('assets/game/boss/orion/map-select.svg');
+  --img-map-target: url('assets/game/boss/orion/map-target.svg');
+  --img-map-title: url('assets/game/boss/orion/map-title.svg');
+  --img-meld-row: url('assets/game/boss/orion/meld-row.svg');
+  --img-panel-coin: url('assets/game/boss/orion/panel-coin.svg');
+  --img-panel-jokers: url('assets/game/boss/orion/panel-jokers.svg');
+  --img-panel-okey: url('assets/game/boss/orion/panel-okey.svg');
+  --img-panel-score: url('assets/game/boss/orion/panel-score.svg');
+  --img-panel-small: url('assets/game/boss/orion/panel-small.svg');
+  --img-preview-box: url('assets/game/boss/orion/preview-box.svg');
+  --img-rack-cell: url('assets/game/boss/orion/rack-cell.svg');
+  --img-rack-cells: url('assets/game/boss/orion/rack-cells.svg');
+  --img-rack-outer1: url('assets/game/boss/orion/rack-outer1.svg');
+  --img-rack-outer2: url('assets/game/boss/orion/rack-outer2.svg');
+  --img-rack-row: url('assets/game/boss/orion/rack-row.svg');
+  --img-shoulder: url('assets/game/boss/orion/shoulder.svg');
+  --img-tray-3: url('assets/game/boss/orion/tray-3.svg');
+  --img-tray-4: url('assets/game/boss/orion/tray-4.svg');
+  --img-tile-back: url('assets/game/boss/orion/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/orion/rack-glow.png');
+  --st-edge: #0E1E26; --st-edge-soft: rgba(14, 30, 38, .38); --st-bg: #E8F4EC;
+  --st-head: #0E1E26; --st-rule: rgba(14, 30, 38, .35); --st-glow: rgba(255, 90, 80, .25);
+}
 /* @@BOSS-UI-END */
 
 /* P71 — FİNAL nadirlik (Lady Luck): kırmızı-altın */
@@ -10913,3 +10949,40 @@ html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .g
 #settingsOv .st-bar { color: var(--gm-light) !important; text-shadow: 0 2px 0 rgba(0, 0, 0, .55);
   background: linear-gradient(90deg, color-mix(in srgb, var(--gm-turn-on) 55%, var(--gm-dark)) var(--p), var(--gm-dark) var(--p)); }
 @media (max-width: 760px) { #settingsOv .set-two { grid-template-columns: 1fr; } }
+
+/* P90 — ORION: maskot şapkası (maskotla aynı kutu) · final/eş paneli ·
+   meld alanında Orion açılımı · kemer yıldızı rozeti · kemere takılan joker */
+.fm-item-hat { left: 1131px; top: 203px; width: 480px; height: 674px; }
+.gm-stage #orionPanel.gm-orion {
+  width: 350px; margin: 6px 0; padding: 10px 14px; box-sizing: border-box;
+  background: var(--gm-dark); border: 2px solid var(--gm-light); color: var(--gm-light);
+  font: 700 17px/1.3 var(--gm-font); letter-spacing: -1px; text-transform: uppercase;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.gm-stage #orionPanel.hidden { display: none; }
+.gm-stage #orionPanel .up-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 26px; }
+.gm-stage #orionPanel .up-head { color: #F2D863; }
+.gm-stage #orionPanel .up-tile { display: inline-block; min-width: 24px; padding: 0 4px; border-radius: 3px;
+  background: var(--gm-light); text-align: center; }
+.gm-stage #orionPanel .up-tile.c-red { color: #D83A34; } .gm-stage #orionPanel .up-tile.c-blue { color: #2E7BD8; }
+.gm-stage #orionPanel .up-tile.c-yellow { color: #C99A10; } .gm-stage #orionPanel .up-tile.c-black { color: #181716; }
+.gm-stage #orionPanel .up-take { padding: 3px 14px; min-height: 0; border-radius: 4px;
+  background: #F2D863; color: #181716; font: 700 16px/1.2 var(--gm-font); letter-spacing: -1px; }
+.gm-stage #orionPanel .up-take:hover { filter: brightness(1.08); }
+.gm-stage #orionPanel .up-row > span { white-space: nowrap; }
+.gm-stage #orionPanel .up-drop { display: inline-flex; align-items: center; gap: 6px; }
+.gm-stage #orionPanel .up-row:not(.up-head) { font-size: 15px; }
+.gm-stage #meldArea .combo.orion-combo { outline: 2px dashed #F2D863; outline-offset: 2px; }
+.joker-tile .jt-rank {
+  position: absolute; left: 2px; bottom: 2px; z-index: 3; padding: 1px 4px; border-radius: 3px;
+  background: #22384A; color: #F2D863; font: 700 11px/1.2 var(--gm-font); white-space: nowrap; pointer-events: none;
+}
+.joker-tile .jt-rank.full { background: #F2D863; color: #181716; }
+.joker-tile.orion-belted { opacity: .45; filter: grayscale(1); }
+.belt-ov .pk-card.on { outline: 3px solid #F2D863; }
+
+/* P90 — "İşleme" başlığı koyu sahnelerde okunmuyordu (siyah yazı, koyu gök):
+   boss temasında sahne yazı rengi (parlak sahnelerde koyu --boss-ink), kozmik
+   temada açık yazı. */
+html[data-theme="boss"] .gm-stage .gm-meld-h { color: var(--boss-ink, var(--gm-light)); text-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
