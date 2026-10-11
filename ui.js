@@ -2420,6 +2420,10 @@
                    D: ['D3', 'F#3', 'A3', 'C4'], Eb: ['Eb3', 'G3', 'Bb3', 'D4'], F: ['F2', 'A2', 'C3', 'Eb3'],
                    Bb: ['Bb2', 'D3', 'F3', 'A3'] };
     const JAZZ_R = ['G', 'G', 'C', 'C', 'A', 'D', 'G', 'G', 'Eb', 'Eb', 'C', 'F', 'Bb', 'A', 'D', 'G'];
+    /* P90 — Orion: E minör, Endülüs inişi Em · C · D · B (B majör = armonik minör gerilimi) */
+    const ORI = { E: ['E3', 'G3', 'B3'], C: ['C3', 'E3', 'G3'], D: ['D3', 'F#3', 'A3'], B: ['B2', 'D#3', 'F#3'] };
+    const ORI_HI = { E: ['E5', 'G5', 'B5'], C: ['C5', 'E5', 'G5'], D: ['D5', 'F#5', 'A5'], B: ['B4', 'D#5', 'F#5'] };
+    const ORI_R = ['E', 'E', 'C', 'D', 'E', 'E', 'C', 'B', 'E', 'E', 'C', 'D', 'E', 'E', 'C', 'B'];
     const BOSSA = { Db: ['Db3', 'F3', 'Ab3', 'C4'], Gb: ['Gb2', 'Bb2', 'Db3', 'F3'], Eb: ['Eb3', 'Gb3', 'Bb3', 'Db4'],
                     Ab: ['Ab2', 'C3', 'Eb3', 'Gb3'] };
     const AMIN_PH = { A: ['A4', 'C5', 'E5'], Bb: ['Bb4', 'D5', 'F5'], D: ['D4', 'F4', 'A4'], G: ['G4', 'Bb4', 'D5'] };  // A Frig (Kahin)
@@ -2694,6 +2698,35 @@
                            'G2 - - Bb2 - - D3 - - F#2 - -' },
         { i: 'ep', s: gen('. . . P - . . . . . P -', JAZZ_R, JAZZ) },
       ], drums: 'K..C.HH..C.H' },
+
+      /* P90 — ORION (Kozmik Run finali): KOZMİK WESTERN DÜELLOSU. Şapkalı yalnız
+         savaşçı seninle düello ediyor → spaghetti western + tokusatsu kahraman
+         rock'ı uzayda. E minör 132, 16'lık: theremin = Morricone ıslığı (uzay
+         sesi), tbrass = kahramanca cevap, dbass = dörtnala at (8'lik + iki 16'lık),
+         koro pad = uzay boşluğu, cam = yıldız pırıltısı, stab = güç akoru vuruşu.
+         Boss kuralı: ney / kanun / darbuka YOK; boss davul seti. */
+      orion: { bpm: 132, div: 4, dv: .4, gain: .9, parts: [
+        { i: 'theremin', s: 'E5 - - - - - - - B4 - - - E5 - G5 - | F#5 - - - - - - - . . . . . . . . | ' +
+                            'E5 - - - - - - - C5 - - - E5 - G5 - | A5 - - - - - - - F#5 - - - D5 - - - | ' +
+                            'E5 - - - - - - - B4 - - - E5 - G5 - | B5 - - - - - - - A5 - G5 - F#5 - - - | ' +
+                            'G5 - - - E5 - - - C5 - - - A4 - - - | B4 - - - - - - - D#5 - - - F#5 - - - | ' +
+                            '. . . . . . . . . . . . . . . . | . . . . . . . . . . . . . . . . | ' +
+                            '. . . . . . . . . . . . . . . . | . . . . . . . . . . . . . . . . | ' +
+                            '. . . . . . . . . . . . . . . . | . . . . . . . . E6 - - - - - - - | ' +
+                            '. . . . . . . . . . . . . . . . | . . . . . . . . . . . . . . . .' },
+        { i: 'tbrass', s: '. . . . . . . . . . . . . . . . | . . . . . . . . B3 - E4 - G4 - B4 - | ' +
+                          '. . . . . . . . . . . . . . . . | . . . . . . . . A3 - D4 - F#4 - A4 - | ' +
+                          '. . . . . . . . . . . . . . . . | . . . . . . . . B3 - E4 - G4 - B4 - | ' +
+                          '. . . . . . . . . . . . . . . . | . . . . . . . . . . . . . . . . | ' +
+                          'E4 - E4 G4 - - B4 - - - A4 - G4 - A4 - | B4 - - - - - - - . . . . E4 - G4 - | ' +
+                          'C5 - - - B4 - A4 - G4 - - - E4 - - - | D5 - - - - - C5 - B4 - - - A4 - - - | ' +
+                          'E4 - E4 G4 - - B4 - - - A4 - G4 - A4 - | B4 - - - - - D5 - E5 - - - . . . . | ' +
+                          'C5 - B4 - A4 - G4 - E4 - - - G4 - - - | F#4 - - - - - - - D#4 - - - B3 - - -' },
+        { i: 'dbass', s: gen('R . R R R . R R R . R R R . R R', ORI_R, ORI) },
+        { i: 'choir', s: gen('P - - - - - - - - - - - - - - -', ORI_R, ORI) },
+        { i: 'glass', s: gen('. . . . . . C . . . . . . . B .', ORI_R, ORI_HI) },
+        { i: 'stab', s: gen('F . . . . . . . . . . . F . . .', ORI_R, ORI) },
+      ], drums: 'K.HHS.HHK.HHS.OH' },
 
       /* ── beğenilen parçalar: karakter AYNI, yalnız menü benzerliği kalktı ── */
       /* Kara Kedi — sinsi pizzicato + yürüyen bas; fırça */
