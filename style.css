@@ -10992,3 +10992,7 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 #settingsOv .set-fw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 #settingsOv .set-fw-grid .set-chk { width: 100%; margin: 0; }
 @media (max-width: 760px) { #settingsOv .set-fw-grid { grid-template-columns: 1fr; } }
+
+/* P90e — kemer bu raund bağlandı: diğer kartlar pasif, üstte kilit notu */
+.belt-ov .belt-lock-note { margin: -6px 0 10px; padding: 6px 10px; border-radius: 4px; background: #22384A; color: #F2D863; font-weight: 800; letter-spacing: .04em; text-align: center; }
+.belt-ov .pk-card.belt-pick:disabled { opacity: .45; filter: grayscale(.8); cursor: not-allowed; }

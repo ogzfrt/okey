@@ -5087,6 +5087,7 @@ const Game = {
        aksi hâlde eski taşlar yeni desteyle aynı anda sayılıp raund başı
        bütünlük denetiminde "çoğalma" alarmı veriyordu (ölçüm botu yakaladı). */
     if (this._orionClear) this._orionClear();
+    s.roundSerial = (s.roundSerial || 0) + 1;   // P90e — kemer "raund başına 1 kez" sayacı (store bu raunda sayılır)
     // fresh bayrağı: raund başlarken temizlenir — bu raund boyunca aktif
     // olan her joker, raund sonundaki yaşlanmada (GDD 7.2) süre kaybeder
     for (const j of [...s.jokers, ...s.deckJokers]) j.fresh = false;
@@ -7549,12 +7550,23 @@ const Game = {
     if (s.beltId != null && s.jokers.some(j => j.id === s.beltId)) return false;
     return this.beltOptions().length > 0;
   },
+  /* P90e (kullanıcı 2026-10-12) — kemer RAUND BAŞINA 1 KEZ bağlanır/değiştirilir.
+     Aynı raundda art arda değiştirip bütün jokerlere ★ (×1.5) dağıtmak açığıydı
+     (bırakılan joker yıldızını korur). Kemerde geçerli joker YOKSA (★★★ olup
+     ayrıldı / satıldı) yeni seçim serbesttir — bu bir değişiklik sayılmaz. */
+  beltLocked() {
+    const s = this.state;
+    const has = s.beltId != null && s.jokers.some(j => j.id === s.beltId);
+    return has && s.beltPickedRound === (s.roundSerial || 0);
+  },
   setBelt(id) {
     const s = this.state;
     if (!this._orionJokerOn()) return { ok: false, error: 'Orion jokerin yok.' };
     const j = this.beltOptions().find(x => x.id === id);
     if (!j) return { ok: false, error: 'Bu joker kemere bağlanamaz.' };
     if (s.beltId === id) return { ok: true };
+    if (this.beltLocked()) return { ok: false, error: 'Kemeri bu raund zaten bağladın — sonraki raund değiştirebilirsin.' };
+    s.beltPickedRound = s.roundSerial || 0;
     s.beltId = id;
     j.beltStars = Math.max(j.beltStars || 0, 1);
     j.beltRounds = 0;                       // yeni çıraklık sıfırdan (spec §3.1)

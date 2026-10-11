@@ -1817,16 +1817,20 @@
     if (!opts.length) return;
     hideTip(); hideActBadge();
     const s = Game.state;
+    const locked = !!(Game.beltLocked && Game.beltLocked());   // P90e — raund başına 1 kez
     const ov = document.createElement('div');
-    ov.className = 'pk-ov tone-violet belt-ov';
+    ov.className = 'pk-ov tone-violet belt-ov' + (locked ? ' belt-locked' : '');
     ov.innerHTML = `<div class="pk-box"><div class="pk-title">🎩 ${t('beltTitle')}</div>`
-      + `<div class="pk-sub-title">${t('beltSub')}</div><div class="pk-body pk-choice"></div>`
+      + `<div class="pk-sub-title">${t('beltSub')}</div>`
+      + (locked ? `<div class="belt-lock-note">🔒 ${t('beltLockedNote')}</div>` : '')
+      + `<div class="pk-body pk-choice"></div>`
       + `<div class="pk-foot"><button class="btn ghost belt-close">${t('beltLater')}</button></div></div>`;
     const body = ov.querySelector('.pk-body');
     for (const j of opts) {
       const c = document.createElement('button');
       c.className = 'pk-card belt-pick' + (s.beltId === j.id ? ' on' : '');
       c.dataset.id = j.id;
+      if (locked && s.beltId !== j.id) c.disabled = true;
       const now = j.beltStars ? `${t('belt' + j.beltStars)} ×${BELT_K[j.beltStars]}` : t('beltNone');
       c.innerHTML = `<div class="pk-ico">${jokerIcon(j.key)}</div><div class="pk-name">${T.name(j)}</div>`
         + `<div class="pk-sub">${now}${s.beltId === j.id ? ' · ' + t('beltNow') : ''}</div>`
