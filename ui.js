@@ -6572,6 +6572,14 @@
       try { localStorage.setItem(FINALS_KEY, JSON.stringify(o)); } catch (e) {}
       return true;
     },
+    /* P90d — Ayarlar › Ekstra test kutusu: tek bir finali yeniden kilitle */
+    lock(k) {
+      const o = this._read();
+      if (!o[k]) return false;
+      delete o[k];
+      try { localStorage.setItem(FINALS_KEY, JSON.stringify(o)); } catch (e) {}
+      return true;
+    },
   };
 
   /* P86 (kullanıcı 2026-10-08) — FİNAL BOSS JOKERİ ayarı: açık kalıcı final jokerleri
@@ -6884,6 +6892,13 @@
       stats: statsPane(),
       extra:
         go('setHintsReset', t('hintsLabel'), t('hintsResetDesc')) +
+        /* P90d (kullanıcı 2026-10-12) — yenmekle uğraşmadan test: her final için
+           "yenildi" tik kutusu (kilit + maskot eşyası + run başı final jokeri) */
+        `<div class="set-card set-fw-card"><span class="go-txt"><span class="set-label">${t('finalWinHead')}</span>`
+        + `<small>${t('finalWinDesc')}</small></span><div class="set-fw-grid">`
+        + Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).map((fb) =>
+          chk(`set-finalwin fw-${fb.key}`, t('finalWinLabel', fb.name), Finals.has(fb.key), fb.icon || '🏆')).join('')
+        + `</div></div>` +
         go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn),
     };
     ov.innerHTML =
@@ -6923,6 +6938,16 @@
       const s = b.querySelector('.sr'); if (s) s.textContent = t(on ? 'musicOn' : 'musicOff'); };
 
     ov.querySelector('#setHintsReset').addEventListener('click', () => { Hints.reset(); toast(t('hintsResetDone'), true); });
+    ov.querySelectorAll('.set-finalwin').forEach((b) => b.addEventListener('click', () => {
+      const k = [...b.classList].find((c) => c.startsWith('fw-')).slice(3);
+      const fb = FINAL_BOSSES[k];
+      const on = !Finals.has(k);
+      if (on) Finals.unlock(k); else Finals.lock(k);
+      updateMascotItems();
+      toast(t(on ? 'finalWinOnToast' : 'finalWinOffToast', fb.name), true);
+      ov.remove();
+      showSettings();   // FİNAL JOKERİYLE BAŞLA kilidi, sıfırla satırı ve kutular tazelensin
+    }));
     const fr = ov.querySelector('#setFinalsReset');
     fr.addEventListener('click', () => {
       if (!fr.dataset.confirm) { fr.dataset.confirm = '1'; fr.classList.add('warn'); fr.textContent = '⚠ ' + t('finalsResetConfirm'); return; }

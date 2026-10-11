@@ -10986,3 +10986,9 @@ html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .g
    temada açık yazı. */
 html[data-theme="boss"] .gm-stage .gm-meld-h { color: var(--boss-ink, var(--gm-light)); text-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
 html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
+
+/* P90d — Ayarlar › Ekstra: final kilitleri test kutuları (kart içinde 2 sütun) */
+#settingsOv .set-fw-card { flex-direction: column; align-items: stretch; gap: 10px; }
+#settingsOv .set-fw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#settingsOv .set-fw-grid .set-chk { width: 100%; margin: 0; }
+@media (max-width: 760px) { #settingsOv .set-fw-grid { grid-template-columns: 1fr; } }
