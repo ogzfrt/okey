@@ -10986,7 +10986,7 @@ html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .g
    temada açık yazı. */
 html[data-theme="boss"] .gm-stage .gm-meld-h { color: var(--boss-ink, var(--gm-light)); text-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
 html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
-
+
 /* P90d — Ayarlar › Ekstra: final kilitleri test kutuları (kart içinde 2 sütun) */
 #settingsOv .set-fw-card { flex-direction: column; align-items: stretch; gap: 10px; }
 #settingsOv .set-fw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -11042,3 +11042,14 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .gm-stage #orionPanel .up-dropbox.empty { justify-content: space-between; }
 .gm-stage #orionPanel .up-head > span { white-space: nowrap; }
 .gm-stage #orionPanel .up-dhead { letter-spacing: -.8px; }
+
+/* P91 · Figma 383:1000 — Pandora varyantları (kutu açılınca slot + açılış sahnesi) */
+.jk-truva.pd-umut    { --jk-art: url('assets/game/joker/pandora-umut.svg'); }     /* 468:2 */
+.jk-truva.pd-salgin  { --jk-art: url('assets/game/joker/pandora-salgin.svg'); }   /* 468:58 */
+.jk-truva.pd-armagan { --jk-art: url('assets/game/joker/pandora-armagan.svg'); }  /* 468:133 */
+/* P91 · Figma RARE-JOKERLER 468:256 — ilk Rare çizimleri */
+.jk-fuzyon   { --jk-art: url('assets/game/joker/fuzyon.svg'); }    /* 468:226 */
+.jk-sarmasik { --jk-art: url('assets/game/joker/sarmasik.svg'); }  /* 468:216 */
+#pandoraOv .pd-art { width: 162px; height: 220px; margin: 0 auto; background: var(--jk-art) no-repeat center / 100% 100%; image-rendering: pixelated; }
+/* P91 — Füzyon kartının ipucunda içindeki jokerler ilk satırdan başlar */
+#jokerTip.tip-fz .tip-fused:first-of-type { margin-top: 6px; }

@@ -1376,10 +1376,17 @@
       ? `<div class="tip-uses">${t('tipBackup', j.waitLeft)}</div>`
       : (Game.isRunLong && Game.isRunLong(j) ? `<div class="tip-uses">${t('tipUsesRun')}</div>`
         : (j.usesLeft != null ? `<div class="tip-uses">${t('tipUses', j.usesLeft)}</div>` : ''));
-    // Füzyonla birleşmiş alt jokerler — her birinin adı+efekti listelenir
-    const fusedLines = (j.fused || []).map(f =>
-      `<div class="tip-fused"><div class="tip-head">⚗ ${T.name(f)}</div>` +
-      `<div class="tip-desc">${emphNums(T.desc(f), f.key)}</div></div>`).join('');
+    /* Füzyonla birleşmiş jokerler — her birinin adı+efekti listelenir.
+       P91 (kullanıcı kararı 2026-10-12): kart artık FÜZYON KARTI — başlık
+       "Füzyon", Füzyon'un kendi açıklaması YAZILMAZ; taşıyıcı joker dahil
+       içindeki HER joker kendi satırında (ad + açıklama). */
+    const fzCard = j.id != null && (j.fused || []).length > 0;
+    const fzRow = (f) => {
+      const c = liveCorp(f);
+      return `<div class="tip-fused"><div class="tip-head">⚗ ${c ? T.ev(c.name) : T.name(f)}</div>` +
+        `<div class="tip-desc">${emphNums(c ? t('corpTipDesc', T.ev(c.text), T.ev(c.rewardText), T.ev(c.penaltyText)) : T.desc(f), f.key)}</div></div>`;
+    };
+    const fusedLines = (fzCard ? [j, ...j.fused] : (j.fused || [])).map(fzRow).join('');
     /* P30 · Grup F — VASİYET'İN TAŞIDIĞI EFEKTLER. Füzyon satırlarıyla
        aynı dil; depo boşsa bunu da açıkça söyler. Yalnız gerçek kartta
        (id'si olan) çizilir — koleksiyon/store tanımında miras olmaz. */
@@ -1407,17 +1414,20 @@
        kalıyor ve kart nötr griye düşüyordu; artık çağıran `accent` ile
        yalnız RENGİ verir, satırın metni değişmez.
        Bkz. style.css "AÇIKLAMA KARTI (TOOLTIP)" bloğu. */
-    tip.className = 'tr-' + (j.rarity || j.accent || 'none');
+    tip.className = 'tr-' + (j.rarity || j.accent || 'none') + (fzCard ? ' tip-fz' : '');   // renk kartın nabzıyla aynı
     /* P57 (kullanıcı isteği) — şirkete dönüşmüş Corporates kartı YALNIZ o
        şirketi anlatır: başlık şirketin adı, açıklama görev + ödül + ceza. */
     const corpNow = liveCorp(j);
     const headTxt = corpNow ? T.ev(corpNow.name) : (j.key ? T.name(j) : j.name);
     const descTxt = corpNow ? t('corpTipDesc', T.ev(corpNow.text), T.ev(corpNow.rewardText), T.ev(corpNow.penaltyText))
       : (j.key ? T.desc(j) : T.ev(j.desc));
+    const fzDef = JOKER_DEFS.fuzyon;
     tip.innerHTML =
       `<div class="tip-in">` +
-      `<div class="tip-head">${headTxt}</div>` + rarityLine +
-      `<div class="tip-desc">${emphNums(descTxt, j.key)}</div>` +
+      (fzCard
+        ? `<div class="tip-head">⚗ ${T.name(fzDef)}</div>`
+        : `<div class="tip-head">${headTxt}</div>` + rarityLine +
+          `<div class="tip-desc">${emphNums(descTxt, j.key)}</div>`) +
       fusedLines + legacyLines + variantLines + usesLine + accumNow(j) +
       `</div>`;
     const inner = tip.firstElementChild;
@@ -2006,8 +2016,15 @@
        kullanıcı arkaya kendi banner'ını koyacak, altta renk dolgusu
        kalmamalı. Çizimi HENÜZ OLMAYAN boss jokerlerine dokunulmaz —
        yer tutucu uydurulmaz, eski kart görünümlerinde kalırlar. */
-    const hasArt = JOKER_ART.has(j.key);
-    if (hasArt) tile2.classList.add('has-art', 'jk-' + j.key);
+    /* P91 (kullanıcı kararı 2026-10-12) — FÜZYON KARTI: birleşmiş kart
+       taşıyıcı jokerin değil FÜZYON'un çizimiyle durur; içindekiler
+       ipucunda listelenir. Pandora kutusu açılınca varyant çizimine döner. */
+    const fzCard = !!(j.fused && j.fused.length);
+    const artKey = fzCard ? 'fuzyon' : j.key;
+    const hasArt = JOKER_ART.has(artKey);
+    if (hasArt) tile2.classList.add('has-art', 'jk-' + artKey);
+    if (fzCard) tile2.classList.add('fz-card');
+    if (!fzCard && j.key === 'truva' && j.pandora) tile2.classList.add('pd-' + j.pandora);
     // P49 · Grup A — uyanmış The Misunderstood Figma V2 çizimine geçer
     if (j.key === 'misunderstood' && j.awakened) tile2.classList.add('misu-v2');
     /* P54 · Grup F — Tüccar'ın iki çizimi (Figma 380:896 / 380:906): slotta
@@ -2022,7 +2039,7 @@
     tile2.innerHTML =
       (hasArt
         ? '<div class="jt-art"></div>'
-        : `<div class="jt-name">${(j.noSell ? '🔒 ' : '')}${(j.fused && j.fused.length ? '⚗ ' : '')}${T.name(j)}</div>`) +
+        : `<div class="jt-name">${(j.noSell ? '🔒 ' : '')}${fzCard ? '⚗ ' + T.name({ key: 'fuzyon', name: 'Füzyon' }) : T.name(j)}</div>`) +
       `<span class="jt-uses${opts.backup ? ' frozen' : (!runLong && j.usesLeft <= 1 ? ' danger' : '')}">` +
       (opts.backup ? `❄${j.waitLeft}` : (runLong ? '∞' : j.usesLeft)) + `</span>`;
     /* P71 — 💋/⭐ rozeti gerçek öğe (::after legendary parıltısıyla çakışırdı) */
@@ -3424,7 +3441,8 @@
       `<div class="pd-lid">📦</div>` +
       `<div class="pd-burst"></div>` +
       `<div class="pd-card">` +
-      `<div class="pd-icon">${info.icon}</div>` +
+      /* P91 — ikon yerine varyant kartının Figma çizimi (468:2/58/133) */
+      (info.variant ? `<div class="pd-art jk-truva pd-${info.variant}"></div>` : `<div class="pd-icon">${info.icon}</div>`) +
       `<div class="pd-name">${T.ev(info.name)}</div>` +
       `<div class="pd-desc">${T.ev(info.desc)}</div>` +
       `</div>` +
@@ -3575,11 +3593,16 @@
          — seçenek artık jokerin KENDİSİ: çizimi varsa çizimi, yoksa slottaki
          gibi büyük ikonu taş yüzünde; adı ve kalan süresi altında. Tam
          açıklama üstüne gelince tooltip'te. */
-      const fzArt = JOKER_ART.has(j.key);
-      b.innerHTML = `<div class="fz-card${fzArt ? ' fz-art jk-' + j.key : ''}">${fzArt ? '' : jokerIcon(j.key)}</div>`
-        + `<b>${T.name(j)}</b><span>${Game.isRunLong(j) ? t('tipUsesRun') : t('fzRounds', j.usesLeft)}`
+      /* P91 — Füzyonlu kart seçicide de FÜZYON KARTI olarak görünür
+         (çizim + "Füzyon"); ipucu içindeki jokerleri listeler. Seçilirse
+         yeni joker aynı kartın altına eklenir. */
+      const isFz = (j.fused || []).length > 0;
+      const artK = isFz ? 'fuzyon' : j.key;
+      const fzArt = JOKER_ART.has(artK);
+      b.innerHTML = `<div class="fz-card${fzArt ? ' fz-art jk-' + artK : ''}${!isFz && j.key === 'truva' && j.pandora ? ' pd-' + j.pandora : ''}">${fzArt ? '' : jokerIcon(artK)}</div>`
+        + `<b>${isFz ? '⚗ ' + T.name(JOKER_DEFS.fuzyon) : T.name(j)}</b><span>${Game.isRunLong(j) ? t('tipUsesRun') : t('fzRounds', j.usesLeft)}`
         + (inBackup ? ` · ${t('fzInBackup')}` : '') + `</span>`;
-      attachTip(b, { name: T.name(j), desc: T.desc(j), accent: j.rarity, rarityText: T.rarity(j.rarity), key: j.key }, {});
+      attachTip(b, isFz ? j : { name: T.name(j), desc: T.desc(j), accent: j.rarity, rarityText: T.rarity(j.rarity), key: j.key }, {});
       b.addEventListener('click', () => {
         if (!keepId) {
           keepId = j.id;
@@ -8392,7 +8415,9 @@
     'rusvet', 'midas',                        // P73 · Figma 444:41 Bahşiş + 444:84 Midas (Legendary 6/15)
     'ucuncuTeker',                            // P75 · Figma 450:2 → P89 464:219 "Tek Teker" (eski adı Üçüncü Teker)
     /* P89 · Figma LEGENDARY_JOKERLER 383:1000 — Legendary 15/15 */
-    'ankaKusu', 'atesTuccari', 'hidra', 'kaioken', 'truva', 'satrancSaati', 'sisyphus', 'vasiyet']);
+    'ankaKusu', 'atesTuccari', 'hidra', 'kaioken', 'truva', 'satrancSaati', 'sisyphus', 'vasiyet',
+    /* P91 · Figma RARE-JOKERLER 468:256 — ilk Rare çizimleri */
+    'fuzyon', 'sarmasik']);
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
@@ -9622,6 +9647,12 @@
     for (const k of JOKER_ART) {
       const d = document.createElement('div');
       d.className = 'jk-' + k;
+      pre.appendChild(d);
+    }
+    // P91 — Pandora varyant çizimleri (kutu açılınca anında görünsün)
+    for (const v of ['umut', 'salgin', 'armagan']) {
+      const d = document.createElement('div');
+      d.className = 'jk-truva pd-' + v;
       pre.appendChild(d);
     }
     document.body.appendChild(pre);

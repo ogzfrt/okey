@@ -11856,10 +11856,19 @@ const Game = {
     const pend = s.fuzyonPending;
     const fz = (pend && pend.id === fuzyonId) ? pend
       : pool.find(j => j.id === fuzyonId && j.key === 'fuzyon');
-    const keep = pool.find(j => j.id === keepId);
-    const melt = pool.find(j => j.id === meltId);
+    let keep = pool.find(j => j.id === keepId);
+    let melt = pool.find(j => j.id === meltId);
     if (!fz || !keep || !melt || keep === melt || keep === fz || melt === fz)
       return { ok: false, error: 'Birleştirme için Füzyon dışında iki farklı joker seç.' };
+    /* P91 (kullanıcı kararı 2026-10-12) — SEÇİM SIRASIZ: oyuncu iki jokere
+       tıklar, "kalacak/eriyecek" ayrımı yok; ikisi de FÜZYON KARTININ altında
+       durur (UI: j.fused dolu kart = Füzyon kartı). Motor yine bir kaydı
+       taşıyıcı seçer: zaten Füzyonlu bir kart varsa yeni joker ONUN altına
+       eklenir (iç içe Füzyon yok); yoksa ana slottaki kart taşıyıcı olur. */
+    if ((melt.fused || []).length && !(keep.fused || []).length) [keep, melt] = [melt, keep];
+    else if (!(keep.fused || []).length && s.backup.includes(keep) && !s.backup.includes(melt))
+      [keep, melt] = [melt, keep];
+    const wasFused = (keep.fused || []).length > 0;
     /* PLAYTEST 8 — GRUP C: süre artık TOPLANMIYOR, MAKSİMUMU alınıyor.
        Eski `+=` iki jokerin ömrünü üst üste bindiriyordu: iki taze Rare'i
        (5+5) birleştirmek 10 raundluk, run'ın yarısını kapsayan bir joker
@@ -11885,7 +11894,9 @@ const Game = {
       s.jokers.push(keep);
       this.activateJokerNow(keep, []);
     }
-    return { ok: true, note: `⚗ Füzyon: ${melt.name} eridi → ${keep.name} artık onun efektlerini de taşıyor (süre: max(${before}, ${melt.usesLeft}) = ${keep.usesLeft} raund)` };
+    return { ok: true, keepId: keep.id, note: wasFused
+      ? `⚗ Füzyon: ${melt.name} Füzyon kartına eklendi (süre: ${keep.usesLeft} raund)`
+      : `⚗ Füzyon: ${keep.name} + ${melt.name} birleşti — ikisi de Füzyon kartında çalışıyor (süre: ${keep.usesLeft} raund)` };
   },
 
   /* Ritim Jokeri (GDD 10) — açılım onayı öncesi mini oyun */
