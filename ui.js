@@ -1789,17 +1789,29 @@
     const u = s && s.status === 'playing' && Game.orionState ? Game.orionState() : null;
     box.classList.toggle('hidden', !u);
     if (!u) { box.innerHTML = ''; return; }
-    /* İki satır (sol sütun ıstaka sekmelerine kadar ~130px yer bırakıyor):
-       başlık + puan/hedef · elindeki taş + attığı taş + AL. Eşte tek satır. */
-    const tile = u.drop ? `<b class="up-tile c-${u.drop.color}">${u.drop.number}</b>` : '—';
+    /* P90f (kullanıcı: "attığı taşı alma seçeneği çok belli olmuyor") — başlık
+       satırı (puan / hedef + elindeki taş) + ayrı ATTIĞI TAŞ kutusu: taş ıstakadaki
+       taşın aynısı (comboTileEl), yanında belirgin ⬇ ELE AL düğmesi + bedeli.
+       Alınabilirken kutu parlar; atış aşamasında "tur başında alabilirsin" yazar.
+       Sol sütun ıstaka sekmelerine kadar ~130px yer bırakıyor (1280'de ölçüldü). */
     box.classList.toggle('partner', u.mode !== 'race');
-    box.innerHTML = u.mode === 'race'
-      ? `<div class="up-row up-head"><span>🎩 ${t('orionRival')}</span><span class="up-score">${u.score} / ${u.target}</span></div>`
-        + `<div class="up-row"><span class="up-drop">${t('orionDrop')} ${tile}`
-        + (u.drop && s.phase === 'meld' ? `<button class="btn up-take">${t('orionTake')}</button>` : '')
-        + `</span><span>${t('orionHidden')} ${u.handCount}</span></div>`
-      : `<div class="up-row up-head"><span>🎩 ${t('orionPartner')}</span><span>${t('orionHidden')} ${u.handCount}`
+    if (u.mode !== 'race') {
+      box.innerHTML = `<div class="up-row up-head"><span>🎩 ${t('orionPartner')}</span><span>${t('orionHidden')} ${u.handCount}`
         + (u.last && u.last.gain ? ` · +${u.last.gain}` : '') + `</span></div>`;
+      return;
+    }
+    const canTake = !!u.drop && s.phase === 'meld';
+    box.innerHTML = `<div class="up-row up-head"><span>🎩 ${t('orionRival')}</span><span class="up-score">${u.score} / ${u.target}</span></div>`
+      + `<div class="up-sub">${t('orionHandN', u.handCount)}</div>`
+      + (u.drop
+        ? `<div class="up-dropbox${canTake ? ' ready' : ''}"><b class="up-dhead">${t('orionDropHead')}</b>`
+          + `<div class="up-drow"><div class="up-dtile"></div><small class="up-dcost">${canTake ? t('orionTakeCost') : t('orionTakeLater')}</small>`
+          + (canTake ? `<button class="up-take">⬇ ${t('orionTake')}</button>` : '') + `</div></div>`
+        : `<div class="up-dropbox empty"><small>${t('orionNoDrop')}</small></div>`);
+    if (u.drop) {
+      const d = u.drop;
+      box.querySelector('.up-dtile').appendChild(comboTileEl(d, { type: 'per', tiles: [d], values: new Map([[d.id, d.number]]) }));
+    }
     const b = box.querySelector('.up-take');
     if (b) b.addEventListener('click', () => {
       const r = Game.takeOrionDrop();

@@ -10996,3 +10996,38 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 /* P90e — kemer bu raund bağlandı: diğer kartlar pasif, üstte kilit notu */
 .belt-ov .belt-lock-note { margin: -6px 0 10px; padding: 6px 10px; border-radius: 4px; background: #22384A; color: #F2D863; font-weight: 800; letter-spacing: .04em; text-align: center; }
 .belt-ov .pk-card.belt-pick:disabled { opacity: .45; filter: grayscale(.8); cursor: not-allowed; }
+
+/* P90f — Orion paneli: ATTIĞI TAŞ kutusu (gerçek taş + belirgin ELE AL) */
+.gm-stage #orionPanel .up-sub { font-size: 13px; opacity: .8; margin-top: -4px; text-transform: none; letter-spacing: 0; }
+.gm-stage #orionPanel .up-dropbox { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 4px; padding: 6px 8px; border: 2px dashed rgba(242, 216, 99, .45); border-radius: 6px; background: rgba(0, 0, 0, .22); }
+.gm-stage #orionPanel .up-dropbox.ready { border-style: solid; border-color: #F2D863; box-shadow: 0 0 0 2px rgba(242, 216, 99, .25), 0 0 14px rgba(242, 216, 99, .35); }
+.gm-stage #orionPanel .up-dropbox.empty { justify-content: center; }
+.gm-stage #orionPanel .up-dropbox small { font-size: 12px; letter-spacing: 0; text-transform: none; opacity: .85; }
+.gm-stage #orionPanel .up-dl { display: flex; align-items: center; gap: 8px; }
+.gm-stage #orionPanel .up-dl small { max-width: 74px; line-height: 1.15; text-transform: uppercase; font-weight: 800; opacity: 1; color: #F2D863; }
+.gm-stage #orionPanel .up-dtile .tile { transform: none; margin: 0; }
+.gm-stage #orionPanel .up-dr { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.gm-stage #orionPanel .up-take { padding: 6px 14px; border: 0; border-radius: 5px; cursor: pointer;
+  background: #F2D863; color: #181716; font: 800 17px/1.1 var(--gm-font); letter-spacing: -.5px; box-shadow: 0 3px 0 #9A7E1C; }
+.gm-stage #orionPanel .up-take:hover { filter: brightness(1.07); transform: translateY(-1px); }
+.gm-stage #orionPanel .up-take:active { transform: translateY(2px); box-shadow: 0 1px 0 #9A7E1C; }
+@media (prefers-reduced-motion: no-preference) {
+  .gm-stage #orionPanel .up-dropbox.ready .up-take { animation: upPulse 1.6s ease-in-out infinite; }
+  @keyframes upPulse { 0%, 100% { box-shadow: 0 3px 0 #9A7E1C; } 50% { box-shadow: 0 3px 0 #9A7E1C, 0 0 12px rgba(242, 216, 99, .8); } }
+}
+
+/* P90f rötuş — tek satır: [taş ½ ölçek] [başlık + bedel] [ELE AL]; ıstaka sekmesine taşmaz */
+.gm-stage #orionPanel .up-dropbox { padding: 5px 8px; gap: 8px; }
+.gm-stage #orionPanel .up-dtile { position: relative; flex: 0 0 35px; width: 35px; height: 48px; }
+.gm-stage #orionPanel .up-dtile .tile { position: absolute; left: 0; top: 0; transform: scale(.5); transform-origin: top left; }
+.gm-stage #orionPanel .up-dm { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gm-stage #orionPanel .up-dm b { font-size: 13px; line-height: 1.1; color: #F2D863; white-space: nowrap; }
+.gm-stage #orionPanel .up-dm small { font-size: 11px; line-height: 1.2; white-space: normal; }
+.gm-stage #orionPanel .up-take { flex: 0 0 auto; white-space: nowrap; padding: 7px 12px; font-size: 16px; }
+
+/* P90f rötuş 2 — başlık kutunun üstünde tam genişlik (1280'de düğmenin altına giriyordu) */
+.gm-stage #orionPanel .up-dropbox:not(.empty) { flex-direction: column; align-items: stretch; gap: 3px; }
+.gm-stage #orionPanel .up-dhead { font-size: 13px; line-height: 1.1; color: #F2D863; white-space: nowrap; }
+.gm-stage #orionPanel .up-drow { display: flex; align-items: center; gap: 8px; }
+.gm-stage #orionPanel .up-dcost { flex: 1 1 auto; min-width: 0; font-size: 12px; line-height: 1.2; }

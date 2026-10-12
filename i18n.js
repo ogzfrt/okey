@@ -331,8 +331,10 @@
       finalWinOnToast: (n) => `${n} yenilmiş sayıldı — kilit açık`,
       finalWinOffToast: (n) => `${n} yeniden kilitlendi`,
       /* P90 · Orion */
-      orionRival: 'ORION', orionScore: 'PUANI', orionTarget: 'HEDEF', orionHidden: 'ELİNDE', orionDrop: 'ATTIĞI', orionTake: 'AL',
+      orionRival: 'ORION', orionScore: 'PUANI', orionTarget: 'HEDEF', orionHidden: 'ELİNDE', orionDrop: 'ATTIĞI', orionTake: 'ELE AL',
       orionPartner: 'ORION (EŞİN)', orionLastGain: 'SON AÇILIMI',
+      orionHandN: (n) => `Elinde ${n} gizli taş`, orionDropHead: 'ORION’UN ATTIĞI TAŞ', orionTakeCost: 'Bedeli: 1 çekiş',
+      orionTakeLater: 'Tur başında alabilirsin', orionNoDrop: 'Orion henüz taş atmadı',
       belt1: '★', belt2: '★★', belt3: '★★★', beltNone: 'kemersiz', beltNow: 'kemerde', abBelt: 'Kemer',
       beltTitle: 'KEMERİ KİME BAĞLAYACAKSIN?',
       beltSub: 'Kemerdeki joker süre harcamaz: ★ ×1.5 · 2 raundda ★★ ×2 · 4 raundda ★★★ ORION\'UN KEMERİ (×4, süresiz). Raund başına 1 kez bağlanır/değiştirilir; değiştirirsen yeni joker sıfırdan başlar.',
@@ -1295,8 +1297,10 @@
       finalWinOnToast: (n) => `${n} counted as beaten — unlocked`,
       finalWinOffToast: (n) => `${n} locked again`,
       /* P90 · Orion */
-      orionRival: 'ORION', orionScore: 'SCORE', orionTarget: 'TARGET', orionHidden: 'IN HAND', orionDrop: 'DISCARD', orionTake: 'TAKE',
+      orionRival: 'ORION', orionScore: 'SCORE', orionTarget: 'TARGET', orionHidden: 'IN HAND', orionDrop: 'DISCARD', orionTake: 'TAKE IT',
       orionPartner: 'ORION (PARTNER)', orionLastGain: 'LAST MELD',
+      orionHandN: (n) => `${n} hidden tiles in hand`, orionDropHead: 'ORION’S DISCARD', orionTakeCost: 'Costs 1 draw',
+      orionTakeLater: 'You can take it at turn start', orionNoDrop: 'Orion has not discarded yet',
       belt1: '★', belt2: '★★', belt3: '★★★', beltNone: 'not belted', beltNow: 'on the belt', abBelt: 'Belt',
       beltTitle: 'WHO GETS THE BELT?',
       beltSub: 'A belted joker never ages: ★ ×1.5 · ★★ ×2 after 2 rounds · ★★★ ORION\'S BELT (×4, permanent) after 4. Set or switch once per round; switching restarts from zero.',
