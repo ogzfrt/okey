@@ -11031,3 +11031,14 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .gm-stage #orionPanel .up-dhead { font-size: 13px; line-height: 1.1; color: #F2D863; white-space: nowrap; }
 .gm-stage #orionPanel .up-drow { display: flex; align-items: center; gap: 8px; }
 .gm-stage #orionPanel .up-dcost { flex: 1 1 auto; min-width: 0; font-size: 12px; line-height: 1.2; }
+
+/* P90g — çakışma düzeltmesi: Trainer çipi tuvalde "i" düğmesinin sağında; Orion el sayısı başlıkta */
+#gameScreen .gm-stage > .trainer-chip { position: absolute; left: 250px; top: 58px; z-index: 5; }
+.gm-stage #orionPanel .up-hand { font-size: 13px; color: var(--gm-light); opacity: .75; letter-spacing: 0; text-transform: none; margin-left: 4px; }
+
+/* P90g rötuş — el sayısı ATTIĞI TAŞ satırının sağında (başlık 1280'de taşıyordu) */
+.gm-stage #orionPanel .up-dheadrow { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.gm-stage #orionPanel .up-dheadrow .up-hand, .gm-stage #orionPanel .up-dropbox.empty .up-hand { font-size: 12px; margin-left: 0; white-space: nowrap; }
+.gm-stage #orionPanel .up-dropbox.empty { justify-content: space-between; }
+.gm-stage #orionPanel .up-head > span { white-space: nowrap; }
+.gm-stage #orionPanel .up-dhead { letter-spacing: -.8px; }

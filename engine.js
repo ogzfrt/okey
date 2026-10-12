@@ -868,7 +868,7 @@ const FINAL_BOSSES = {
      kemerli maskeli savaşçı — çizim bitince eklenecek). `target` = taban;
      asıl hedef raund sonunda max(taban, Orion'un puanı). */
   orion: { key: 'orion', name: 'Orion', final: true, reward: 'orion', mascotItem: 'item-orion', icon: '🎩', target: ORION_FLOOR,
-    desc: 'Kendi eliyle seninle yarışır; raund sonunda onu ve tabanı geçmelisin. En güçlü jokerini kemerine takar.' },
+    desc: 'Seninle yarışır: raund sonunda onu ve tabanı geç. En güçlü jokerini kemerine takar.' },   // P90g: sol sütuna sığsın diye kısa
 };
 
 /* ==========================================================================

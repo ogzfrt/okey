@@ -237,7 +237,10 @@
     /* Raund atlama düğmesi oyun ekranında DEĞİL, HARİTADA durur
        (kullanıcı kararı 2026-08-26): raundun içindeyken atlamak istenmiyor,
        atlama kararı raunda girmeden önce veriliyor. Bkz. renderMap(). */
-    document.querySelector('#gameScreen .gm-left')?.appendChild(mk());
+    /* P90g — sol sütun final raundunda (boss kutusu + Orion paneli) ıstaka
+       sekmesine kadar doluyor; çip sütun akışında en alta düşüp ıstakanın
+       arkasında kalıyordu → oyun tuvalinde "i" düğmesinin sağına sabit. */
+    (document.querySelector('#gameScreen .gm-stage') || document.querySelector('#gameScreen .gm-left'))?.appendChild(mk());
     // Store sahnesi: sol sütunun akışına (haritadaki gibi başlığın altına)
     document.getElementById('storeSide')?.appendChild(mk());
     // Upgrade sahnesi başlığın üstüne
@@ -1801,13 +1804,14 @@
       return;
     }
     const canTake = !!u.drop && s.phase === 'meld';
+    /* P90g — el sayısı başlıkta küçük not (ayrı satır sol sütunu ıstaka sekmesine taşırıyordu) */
+    const hand = `<small class="up-hand" title="${t('orionHidden')}">${t('orionHandN', u.handCount)}</small>`;
     box.innerHTML = `<div class="up-row up-head"><span>🎩 ${t('orionRival')}</span><span class="up-score">${u.score} / ${u.target}</span></div>`
-      + `<div class="up-sub">${t('orionHandN', u.handCount)}</div>`
       + (u.drop
-        ? `<div class="up-dropbox${canTake ? ' ready' : ''}"><b class="up-dhead">${t('orionDropHead')}</b>`
+        ? `<div class="up-dropbox${canTake ? ' ready' : ''}"><div class="up-dheadrow"><b class="up-dhead">${t('orionDropHead')}</b>${hand}</div>`
           + `<div class="up-drow"><div class="up-dtile"></div><small class="up-dcost">${canTake ? t('orionTakeCost') : t('orionTakeLater')}</small>`
           + (canTake ? `<button class="up-take">⬇ ${t('orionTake')}</button>` : '') + `</div></div>`
-        : `<div class="up-dropbox empty"><small>${t('orionNoDrop')}</small></div>`);
+        : `<div class="up-dropbox empty"><small>${t('orionNoDrop')}</small>${hand}</div>`);
     if (u.drop) {
       const d = u.drop;
       box.querySelector('.up-dtile').appendChild(comboTileEl(d, { type: 'per', tiles: [d], values: new Map([[d.id, d.number]]) }));

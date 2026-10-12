@@ -333,7 +333,7 @@
       /* P90 · Orion */
       orionRival: 'ORION', orionScore: 'PUANI', orionTarget: 'HEDEF', orionHidden: 'ELİNDE', orionDrop: 'ATTIĞI', orionTake: 'ELE AL',
       orionPartner: 'ORION (EŞİN)', orionLastGain: 'SON AÇILIMI',
-      orionHandN: (n) => `Elinde ${n} gizli taş`, orionDropHead: 'ORION’UN ATTIĞI TAŞ', orionTakeCost: 'Bedeli: 1 çekiş',
+      orionHandN: (n) => `${n} taş`, orionDropHead: 'ORION’UN ATTIĞI TAŞ', orionTakeCost: 'Bedeli: 1 çekiş',
       orionTakeLater: 'Tur başında alabilirsin', orionNoDrop: 'Orion henüz taş atmadı',
       belt1: '★', belt2: '★★', belt3: '★★★', beltNone: 'kemersiz', beltNow: 'kemerde', abBelt: 'Kemer',
       beltTitle: 'KEMERİ KİME BAĞLAYACAKSIN?',
@@ -1299,7 +1299,7 @@
       /* P90 · Orion */
       orionRival: 'ORION', orionScore: 'SCORE', orionTarget: 'TARGET', orionHidden: 'IN HAND', orionDrop: 'DISCARD', orionTake: 'TAKE IT',
       orionPartner: 'ORION (PARTNER)', orionLastGain: 'LAST MELD',
-      orionHandN: (n) => `${n} hidden tiles in hand`, orionDropHead: 'ORION’S DISCARD', orionTakeCost: 'Costs 1 draw',
+      orionHandN: (n) => `${n} tiles`, orionDropHead: 'ORION’S DISCARD', orionTakeCost: 'Costs 1 draw',
       orionTakeLater: 'You can take it at turn start', orionNoDrop: 'Orion has not discarded yet',
       belt1: '★', belt2: '★★', belt3: '★★★', beltNone: 'not belted', beltNow: 'on the belt', abBelt: 'Belt',
       beltTitle: 'WHO GETS THE BELT?',
@@ -1978,6 +1978,7 @@
   /* Boss kısıtlama açıklamaları (BOSSES[].desc EN) */
   const BOSS_EN = {
     ladyLuck: 'Each turn she charms one joker: its points flip NEGATIVE and its other effects go silent. She also steals your highest tile.',
+    orion: 'Races you: beat him and the floor by round end. Straps your strongest joker to his belt.',
     godzilla: 'The round lasts 3 turns, there is no turn 4. In exchange the target is 10% lower.',
     karaKedi: 'Every 13 from the deck reaches you as a 1. Starting hand included.',
     kirby: 'At every turn start 3 of your tiles lose 1 value.',
