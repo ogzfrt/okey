@@ -4774,6 +4774,7 @@
     if (TUT.active) TUT.update(); // öğretici: ipucu/spot durumunu tazele
     checkPandora();               // Grup F: açılmamış kutu varsa sahnesini göster
     maybeAutoFinish();            // Grup C: kayıp kesinse tıklama bekleme
+    setTimeout(maybeManualHint, 0);   // P93 — yeni elle kullanılan joker ipucu (çizim bitince kartı bulsun)
   }
 
   /* Grup C — hedefe ulaşmanın hiçbir yolu kalmadıysa raundu oyuncu adına
@@ -5621,30 +5622,26 @@
     get tips() {
       if (this._tips) return this._tips;
       const s = () => Game.state;
+      /* P92 (kullanıcı onayı 2026-10-13) — MÜHÜR ANLATIR. 23 ipucu 18'e indi,
+         her balon bir-iki cümle. `gate` olan adım EYLEMDİR: İLERİ yok, oyuncu
+         söyleneni yapınca kendiliğinden geçer; `gate` yoksa BİLGİ (İLERİ). */
       this._tips = [
-        { id: 'welcome', screen: 'map',
+        { id: 'welcome', screen: 'map', pos: 'left',
           when: () => s().stage === 1 && s().roundInStage === 1,
           spot: () => [document.querySelector('.mc-play')],
           gate: () => curScreen() === 'game' },
         { id: 'goal', screen: 'game',
           when: () => s().roundInStage === 1 && s().turn === 1,
           spot: () => [$('scorePanel')] },
-        { id: 'rack', screen: 'game', spot: () => [el.rack] },
-        { id: 'sortRank', screen: 'game', spot: () => [el.btnSortRank],
-          gate: () => TUT.tmp.has('sort-rank') },
-        { id: 'sortSuit', screen: 'game', spot: () => [el.btnSortSuit],
-          gate: () => TUT.tmp.has('sort-suit') },
+        { id: 'rack', screen: 'game', when: () => s().roundInStage === 1, spot: () => [el.rack] },
+        { id: 'combos', screen: 'game', when: () => s().roundInStage === 1,
+          spot: () => [el.btnSortRank, el.btnSortSuit] },
         { id: 'selectPer', screen: 'game',
-          when: () => s().hand.filter(x => x.number === 7 && !x.jokerTile).length >= 3,
-          spot: () => [el.rack],
-          gate: () => {
-            const sel = [...selection].map(id => s().hand.find(x => x.id === id)).filter(Boolean);
-            return sel.filter(x => x.number === 7).length >= 3 || s().staged.length > 0;
-          } },
-        { id: 'openBtn', screen: 'game',
-          spot: () => [el.btnAddCombo],
+          when: () => s().roundInStage === 1 && s().hand.filter(x => x.number === 7 && !x.jokerTile).length >= 3,
+          spot: () => [el.rack, el.btnAddCombo],
           gate: () => s().staged.length > 0 || s().openedThisTurn },
         { id: 'confirmBtn', screen: 'game',
+          when: () => s().staged.length > 0,
           spot: () => [el.btnConfirm],
           gate: () => s().openedThisTurn || s().phase === 'discard' },
         { id: 'score', screen: 'game',
@@ -5658,7 +5655,7 @@
           when: () => s().roundInStage === 1 && s().turn === 2 && s().prevOpen.length > 0 &&
             s().hand.some(x => x.color === 'yellow' && x.number === 7 && !x.jokerTile) &&
             Game.canIsleme(0),
-          spot: () => [el.meldArea, el.rack],   // Grup D: işleme alanı sağ üstte
+          spot: () => [el.meldArea, el.rack],
           gate: () => s().islemeler.length >= 1 ||
             (s().prevOpen[0] && s().prevOpen[0].tiles.length >= 4) || !s().prevOpen.length },
         { id: 'islemeConfirm', screen: 'game',
@@ -5672,11 +5669,11 @@
           when: () => s().roundInStage === 1 },
         { id: 'islekHit', screen: 'game',
           when: () => TUT.flags.islekHit },
-        { id: 'store1', store: true,
+        { id: 'store1', store: true, pos: 'left',
           when: () => s().roundInStage === 1,
           spot: () => [el.storeItems.querySelector('.store-item')],
           gate: () => s().jokers.length > 0 },
-        { id: 'store2', store: true,
+        { id: 'store2', store: true, pos: 'left',
           when: () => s().roundInStage === 1 && s().jokers.length > 0,
           spot: () => [el.btnStoreContinue],
           gate: () => !storeOpen() },
@@ -5690,12 +5687,6 @@
         { id: 'bossBanner', screen: 'game',
           when: () => s().roundInStage === 3 && s().status === 'playing',
           spot: () => [el.bossBanner] },
-        { id: 'upgrade', up: true,
-          spot: () => [el.upOptions],
-          gate: () => !s().upgradeOffer },
-        { id: 'bossStore', store: true,
-          when: () => s().roundInStage === 3 && s().status === 'won',
-          spot: () => [el.btnStoreContinue] },
       ];
       return this._tips;
     },
@@ -5771,7 +5762,7 @@
     byId(id) { return this.tips.find(x => x.id === id); },
 
     update() {
-      if (!this.active || !this.panel) return;
+      if (!this.active || !this.panel || this.saying) return;
       const scr = curScreen();
       const inStore = storeOpen();
       const inUp = upgradeOpen();
@@ -5802,25 +5793,31 @@
       this._hideBalloon();
     },
 
-    /* --- balon + spot DOM'u --- */
+    /* --- balon + spot DOM'u ---
+       P92 — MÜHÜR PANELİ (Gambonanza düzeni, kullanıcı onayı 2026-10-13):
+       üstte konuşma balonu, ortada ana menüdeki maskot (aynı mascot.svg,
+       yeniden çizim yok) + arkasında parıltı, altta İLERİ. Panel 1920×1080
+       tuval ölçüsünde çizilir ve `--gm-scale` ile küçülür; yeri her karede
+       anlatılan yerle ÇAKIŞMAYAN tarafa (sağ / sol) konur. */
     _dom() {
       if (this.panel) return;
       this.spotEl = document.createElement('div');
       this.spotEl.id = 'tutSpot';
       this.spotEl.style.opacity = '0';
       document.body.appendChild(this.spotEl);
+      this.dimEl = document.createElement('div');
+      this.dimEl.id = 'tutDim';
+      this.dimEl.className = 'hidden';
+      document.body.appendChild(this.dimEl);
       this.panel = document.createElement('div');
       this.panel.id = 'tutPanel';
-      this.panel.classList.add('coach');
+      this.panel.classList.add('mascot');
       this.panel.innerHTML =
-        `<div class="tp-body"></div>` +
-        `<div class="tp-btns">` +
-        `<button class="tp-quit"></button>` +
-        `<button class="btn primary tp-next"></button>` +
-        `</div>`;
+        `<div class="tm-bub"><div class="tp-body"></div></div>` +
+        `<div class="tm-msc"><i></i></div>` +   /* parıltı kapta, salınım içte (glow maskotun önüne geçmesin) */
+        `<div class="tm-btns"><button class="tm-btn tp-next"></button><span class="tm-extra"></span></div>`;
       document.body.appendChild(this.panel);
       this.panel.classList.add('hidden');
-      this.panel.querySelector('.tp-quit').addEventListener('click', () => this.end('menu'));
       this.panel.querySelector('.tp-next').addEventListener('click', () => {
         if (this.cur) { this.seen.add(this.cur); this.cur = null; SFX.tick(); this.update(); }
       });
@@ -5828,11 +5825,47 @@
 
     _renderBalloon(tp) {
       this.panel.classList.remove('hidden');
-      this.panel.querySelector('.tp-body').innerHTML = T.tut(tp.id);
+      const body = T.tut(tp.id);
+      if (this._lastBody !== body) { this._lastBody = body; this._spotKey = null; }
+      this.panel.querySelector('.tp-body').innerHTML = body;
       this.panel.querySelector('.tp-next').classList.toggle('hidden', !!tp.gate);
+      this.panel.classList.toggle('tm-action', !!tp.gate);
+      /* P92 — harita / store'da orta alan kartlarla dolu: Mühür sol sütuna
+         (istatistik paneli) dar panelle oturur */
+      if (this._pos !== (tp.pos || '')) { this._pos = tp.pos || ''; this._spotKey = null; }
+      this.panel.classList.toggle('tm-narrow', this._pos === 'left');
       this.panel.querySelector('.tp-next').textContent = t('tutOk');
-      this.panel.querySelector('.tp-quit').textContent = t('tutSkip');
+      this.panel.querySelector('.tm-extra').innerHTML = '';
       this._curSpot = tp.spot;
+    },
+
+    /* Bitiş / kayıp: Mühür ekranın ortasında konuşur, altında düğmeler */
+    say(html, buttons) {
+      this.saying = true;
+      this.cur = null;
+      this._curSpot = null;
+      this.panel.classList.remove('hidden', 'tm-action', 'tm-narrow');
+      this._pos = '';
+      this.panel.querySelector('.tp-body').innerHTML = html;
+      this.panel.querySelector('.tp-next').classList.add('hidden');
+      const ex = this.panel.querySelector('.tm-extra');
+      ex.innerHTML = '';
+      for (const b of buttons) {
+        const x = document.createElement('button');
+        x.className = 'tm-btn' + (b.ghost ? ' ghost' : '');
+        x.textContent = b.label;
+        x.addEventListener('click', () => { SFX.tick(); b.fn(); });
+        ex.appendChild(x);
+      }
+      this.dimEl.classList.remove('hidden');
+      this._spotKey = null;
+    },
+
+    unsay() {
+      this.saying = false;
+      if (this.dimEl) this.dimEl.classList.add('hidden');
+      if (this.panel) this.panel.querySelector('.tm-extra').innerHTML = '';
+      this._spotKey = null;
     },
 
     _hideBalloon() {
@@ -5873,32 +5906,49 @@
       sp.style.top = (y1 - pad) + 'px';
       sp.style.width = (x2 - x1 + pad * 2) + 'px';
       sp.style.height = (y2 - y1 + pad * 2) + 'px';
-      this._placePanel({ top: y1, bottom: y2 });
+      this._placePanel({ left: x1, top: y1, right: x2, bottom: y2 });
     },
 
     _track() {
       cancelAnimationFrame(this._raf);
       const loop = () => {
         if (!this.active) return;
-        this._spot(this._curSpot ? this._curSpot().filter(Boolean) : []);
+        if (this.saying) { if (this._spotKey !== 'say') { this._spotKey = 'say'; this.spotEl.style.opacity = '0'; this._placePanel(null); } }
+        else this._spot(this._curSpot ? this._curSpot().filter(Boolean) : []);
         this._raf = requestAnimationFrame(loop);
       };
       this._raf = requestAnimationFrame(loop);
     },
 
+    /* P92 — panel 1920×1080 tuval birimiyle sağ (1090,70) ya da sol
+       (430,70) sütuna konur; anlatılan yerle EN AZ çakışan taraf seçilir.
+       "Söyleme" (bitiş / kayıp) ekranın ortasında. */
     _placePanel(rect) {
       const p = this.panel;
       if (!p || p.classList.contains('hidden')) return;
-      if (!rect) {
-        p.style.top = '50%';
-        p.style.bottom = 'auto';
-        p.style.transform = 'translate(-50%, -50%)';
-        return;
+      const k = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gm-scale')) || 1;
+      const ox = (window.innerWidth - GAME_W * k) / 2, oy = (window.innerHeight - GAME_H * k) / 2;
+      p.style.transform = `scale(${k})`;
+      const w = p.offsetWidth * k, h = p.offsetHeight * k;
+      let x, y;
+      if (this.saying) {
+        x = (window.innerWidth - w) / 2;
+        y = (window.innerHeight - h) / 2;
+      } else if (this._pos === 'left') {
+        x = ox + 20 * k;
+        y = oy + 140 * k;   // ⏸ / i düğmelerinin altı (çıkış ⏸ menüsünde, örtülmemeli)
+      } else {
+        const cands = [[1090, 50], [430, 50]].map(([cx, cy]) => [ox + cx * k, oy + cy * k]);
+        const over = ([cx, cy]) => {
+          if (!rect) return 0;
+          const ix = Math.max(0, Math.min(cx + w, rect.right + 10) - Math.max(cx, rect.left - 10));
+          const iy = Math.max(0, Math.min(cy + h, rect.bottom + 10) - Math.max(cy, rect.top - 10));
+          return ix * iy;
+        };
+        [x, y] = cands.reduce((best, c) => (over(c) < over(best) ? c : best));
       }
-      const mid = (rect.top + rect.bottom) / 2;
-      if (mid > window.innerHeight / 2) { p.style.top = '24px'; p.style.bottom = 'auto'; }
-      else { p.style.top = 'auto'; p.style.bottom = '24px'; }
-      p.style.transform = 'translateX(-50%)';
+      p.style.left = Math.round(x) + 'px';
+      p.style.top = Math.round(y) + 'px';
     },
 
     /* raund kaybedilirse: baştan (öğreticide run bitmez) */
@@ -5913,24 +5963,24 @@
       flushRoundStart();
     },
 
-    /* boss geçildi + store kapandı → tamamlama */
+    /* boss geçildi + ödül çarkları → Mühür son kez konuşur (P92) */
     finish() {
-      const ov = document.createElement('div');
-      ov.id = 'tutResume';
-      ov.innerHTML =
-        `<div class="tp-box"><h3>${t('tutFinishTitle')}</h3>` +
-        `<p>${t('tutFinishBody')}</p>` +
-        `<div class="tr-row">` +
-        `<button class="btn primary" id="tfPlay">${t('tutFinishPlay')}</button>` +
-        `<button class="btn ghost" id="tfMenu">${t('tutFinishMenu')}</button>` +
-        `</div></div>`;
-      document.body.appendChild(ov);
-      ov.querySelector('#tfPlay').addEventListener('click', () => { ov.remove(); this.end('play'); });
-      ov.querySelector('#tfMenu').addEventListener('click', () => { ov.remove(); this.end('menu'); });
+      this.say(T.tut('finish'), [
+        { label: t('tutFinishPlay'), fn: () => { this.unsay(); this.end('play'); } },
+        { label: t('tutFinishMenu'), ghost: true, fn: () => { this.unsay(); this.end('menu'); } },
+      ]);
+    },
+
+    /* raund kaybedildi → Mühür teselli eder, raund baştan (P92) */
+    lost() {
+      this.say(T.tut('lost'), [
+        { label: t('tutLostBtn'), fn: () => { this.unsay(); this.retryRound(); this.update(); } },
+      ]);
     },
 
     end(mode) {
       if (!this.active) return;
+      this.unsay();
       this.active = false;
       cancelAnimationFrame(this._raf);
       this._hideBalloon();
@@ -6014,25 +6064,74 @@
      ipuçları SESSİZCE "görüldü" işaretlenip hiç gösterilmedi. Artık kendi
      penceresi var: paket/bahis seçimiyle aynı pk-ov kalıbı, "Anladım" ile
      kapanır, aynı anda gelen ipuçları sıraya girer. */
+  /* P93 (Madde 6, kullanıcı isteği 2026-10-13) — İPUCU PENCERESİNDE MÜHÜR:
+     ana menüdeki maskot (mascot.svg, değiştirilmeden) kutunun YANINDA durur,
+     ipucunu o söyler — öğreticideki balonla aynı dil (krem balon, Okey Pixel,
+     tema düğmesi). `opts.spot` verilirse (manuel joker ipucu) ekran kararır,
+     o öğe öğreticideki neon piksel çerçeveyle parlar ve kutu üstünü örtmez. */
   const hintQueue = [];
-  function showHintCard(key) {
-    if (document.getElementById('hintOv')) { if (!hintQueue.includes(key)) hintQueue.push(key); return; }
+  function showHintCard(key, opts = {}) {
+    if (document.getElementById('hintOv')) { if (!hintQueue.some(q => q.key === key)) hintQueue.push({ key, opts }); return; }
     const ov = document.createElement('div');
     ov.id = 'hintOv';
-    ov.className = 'pk-ov tone-gold hint-ov';
+    ov.className = 'pk-ov hint-ov mh-hint' + (opts.spot ? ' mh-spot' : '');
     ov.dataset.hint = key;
     ov.innerHTML =
-      `<div class="pk-box">` +
-      `<div class="pk-title">💡 ${t('hintTitle')}</div>` +
-      `<div class="hint-body">${t('hint_' + key)}</div>` +
-      `<div class="pk-foot"><button class="btn primary" id="hintOk">${t('hintOk')}</button></div></div>`;
+      `<div class="mh-wrap"><div class="mh-msc"><i></i></div>` +
+      `<div class="mh-col"><div class="mh-bub"><div class="mh-tag">💡 ${t('hintTitle')}</div>` +
+      `<div class="hint-body">${opts.html || t('hint_' + key)}</div></div>` +
+      `<button class="tm-btn mh-ok" id="hintOk">${t('hintOk')}</button></div></div>`;
+    let spot = null;
+    if (opts.spot) {
+      TUT._dom();
+      spot = TUT.spotEl;
+      const r = opts.spot.getBoundingClientRect();
+      const pad = 8;
+      spot.classList.add('mh-spotting');
+      Object.assign(spot.style, { opacity: '1', left: (r.left - pad) + 'px', top: (r.top - pad) + 'px',
+        width: (r.width + pad * 2) + 'px', height: (r.height + pad * 2) + 'px' });
+    }
     const close = () => {
       ov.remove();
+      if (spot) { spot.style.opacity = '0'; spot.classList.remove('mh-spotting'); }
       const next = hintQueue.shift();
-      if (next) setTimeout(() => showHintCard(next), 120);
+      if (next) setTimeout(() => showHintCard(next.key, next.opts), 120);
+      else if (curScreen() === 'game') setTimeout(maybeManualHint, 150);
     };
-    ov.querySelector('#hintOk').addEventListener('click', close);
+    ov.querySelector('#hintOk').addEventListener('click', () => { SFX.tick(); close(); });
     document.body.appendChild(ov);
+  }
+
+  /* ============================================================
+     P93 · MADDE 3 (kullanıcı kararı 2026-10-13) — ELLE KULLANILAN JOKER İPUCU.
+     Bu jokerlerden biri ana slottayken (Füzyon kartının içinde de olabilir)
+     raund oyun ekranında oynanırken, o joker için ipucu ilk kez çıkar:
+     oyuncunun İLK manuel jokeri tam anlatımı alır (karta gel + sol tık),
+     sonrakiler kısa "bu da elle kullanılır" ipucunu. Ömür boyu bir kez
+     (Hints deposu, Ayarlar › Ekstra › İpuçları ile sıfırlanır); Trainer'da,
+     öğreticide, harita/store'da ve başka bir pencere açıkken çıkmaz.
+     Yeni bir elle kullanılan joker eklenince yalnız MANUAL_JOKERS'a yazılır.
+     ============================================================ */
+  const MANUAL_JOKERS = ['ayna', 'satrancSaati', 'rusvet', 'terazi', 'paratoner', 'fuzyon', 'orion'];
+  const HINT_BLOCKERS = '#hintOv, .pk-ov, .ep-ov, .belt-ov, #fuzyonMenu, #fuzyonPick, #pandoraOv, #useChooser, '
+    + '#ritimOv, #kumarOv, #terziPick, #okeySlotPick, #tutResume, #dolunayFx';
+  function maybeManualHint() {
+    const s = Game.state;
+    if (!Hints.enabled || Game.trainerMode || Game.tutorialMode || TUT.active) return;
+    if (!s || s.status !== 'playing' || curScreen() !== 'game' || storeOpen() || upgradeOpen()) return;
+    if (!el.overlay.classList.contains('hidden') || document.querySelector(HINT_BLOCKERS)) return;
+    for (const j of s.jokers) {
+      for (const r of [j, ...(j.fused || [])]) {
+        if (!MANUAL_JOKERS.includes(r.key) || Hints.seen('manual_' + r.key)) continue;
+        const card = document.querySelector(`#gameScreen .joker-tile[data-jid="${j.id}"]`);
+        if (!card) return;
+        const first = !Hints.seen('manual');
+        Hints.mark('manual');
+        Hints.show('manual_' + r.key, {
+          html: first ? t('hint_manualFirst', T.name(r)) : t('hint_manualNext', T.name(r)), spot: card });
+        return;
+      }
+    }
   }
   const Hints = {
     /* Otomasyon tarayıcısında (playwright: navigator.webdriver) kapalı — yoksa
@@ -6047,14 +6146,19 @@
       return this._cache;
     },
     seen(key) { return this._read().has(key); },
-    /* Bir ipucunu bir kez göster. `key` i18n'de `hint_<key>` olarak durur. */
-    show(key) {
-      if (!this.enabled || Game.trainerMode || TUT.active) return false;
+    /* P93 — göstermeden "görüldü" işaretle (manuel joker: ilk anlatım yapıldı) */
+    mark(key) {
       const set = this._read();
-      if (set.has(key)) return false;
       set.add(key);
       try { localStorage.setItem(HINTS_KEY, JSON.stringify([...set])); } catch (e) {}
-      showHintCard(key);
+    },
+    /* Bir ipucunu bir kez göster. `key` i18n'de `hint_<key>` olarak durur
+       (P93: `opts.html` hazır metin, `opts.spot` parlatılacak öğe). */
+    show(key, opts) {
+      if (!this.enabled || Game.trainerMode || TUT.active) return false;
+      if (this._read().has(key)) return false;
+      this.mark(key);
+      showHintCard(key, opts);
       return true;
     },
     /* Ayarlardan "ipuçlarını sıfırla" için (ileride bağlanabilir). */
@@ -6438,6 +6542,7 @@
      P67'den beri yalnız Ayarlar penceresinde. */
   el.btnMapPause.addEventListener('click', (e) => {
     e.stopPropagation();
+    el.btnMapGoMenu.textContent = pauseGoLabel();
     el.mapMenuPop.classList.toggle('hidden');
     fitMapPauseMenu();
   });
@@ -6446,6 +6551,7 @@
   });
   el.btnMapGoMenu.addEventListener('click', () => {
     el.mapMenuPop.classList.add('hidden');
+    if (TUT.active) { TUT.end('menu'); return; }
     Game.trainerMode = false;
     showScreen('menu');
   });
@@ -6459,6 +6565,7 @@
     const pop = $('storeMenuPop');
     $('btnStorePause').addEventListener('click', (e) => {
       e.stopPropagation();
+      $('btnStoreGoMenu').textContent = pauseGoLabel();
       pop.classList.toggle('hidden');
       pop.querySelectorAll('.btn').forEach(b => fitText(b, PAUSE_BASE, PAUSE_MIN, true));
     });
@@ -6466,6 +6573,7 @@
     $('btnStoreGoMenu').addEventListener('click', () => {
       pop.classList.add('hidden');
       el.storeOverlay.classList.add('hidden');
+      if (TUT.active) { TUT.end('menu'); return; }
       Game.trainerMode = false;
       showScreen('menu');
     });
@@ -6493,8 +6601,13 @@
     el.menuPop.querySelectorAll('.btn').forEach(b => fitText(b, PAUSE_BASE, PAUSE_MIN, true));
   }
 
+  /* P92 (kullanıcı kararı 2026-10-13) — öğreticiden çıkış Mühür'ün yanında
+     değil ⏸ menüsünde: öğretici sürerken üç menünün (oyun / harita / store)
+     "Ana Menüye Dön" düğmesi "Öğreticiyi Bitir" olur. */
+  const pauseGoLabel = () => t(TUT.active ? 'tutSkip' : 'pauseMainMenu');
   el.btnMenu.addEventListener('click', (e) => {
     e.stopPropagation();
+    el.btnGoMenu.textContent = pauseGoLabel();
     el.menuPop.classList.toggle('hidden');
     fitPauseMenu();
   });
@@ -7187,14 +7300,7 @@
     if (Game.trainerMode && s.bossTest) { showBossTestEnd(won); return; }
 
     // Öğreticide kayıp = raundu tekrar dene (run bitmez)
-    if (TUT.active && !won) {
-      el.modalTitle.textContent = t('tutLostTitle');
-      el.modalTitle.className = 'lose';
-      el.modalBody.innerHTML = t('tutLostBody');
-      el.modalBtn.textContent = t('tutLostBtn');
-      el.overlay.classList.remove('hidden');
-      return;
-    }
+    if (TUT.active && !won) { TUT.lost(); return; }   // P92 — Mühür teselli eder
 
     el.modalTitle.textContent = won
       ? (s.lastResult && s.lastResult.tamEl ? t('tamElWin')
@@ -7997,6 +8103,29 @@
     `<div class="ep-row${wide ? ' ep-wide' : ''}"><span class="ep-lbl">${label}</span>`
     + `<span class="ep-val ${cls}">${value}</span></div>`;
 
+  /* P94 · MADDE 4 (kullanıcı isteği 2026-10-13, Balatro örneği) — OYUN SONU
+     PANELİNDE MÜHÜR: ana menüdeki maskot panelin sağında durur, altında
+     sonuca göre rastgele tek cümlelik bir söz (TR/EN havuzu `epQuipLose`/
+     `epQuipWin`). Maskot menüdekiyle birebir: kazanılmış final eşyaları
+     (Lady Luck kalpleri, Orion şapkası) menüdeki <img>'lerin kopyasıyla
+     aynı yerde. Dar ekranda (<1240 px) panelin altına iner. */
+  function epMuhur(kind) {
+    const pool = t(kind === 'win' ? 'epQuipWin' : 'epQuipLose') || [];
+    const quip = pool.length ? pool[Math.floor(Math.random() * pool.length)] : '';
+    const wrap = document.createElement('div');
+    wrap.className = 'ep-muhur';
+    wrap.innerHTML = `<div class="ep-msc"><div class="ep-msc-in"><i class="ep-msc-body"></i></div></div>`
+      + `<div class="ep-quip">${quip}</div>`;
+    const inner = wrap.querySelector('.ep-msc-in');
+    document.querySelectorAll('.fm-mascot-item.on').forEach((im) => {
+      const c = im.cloneNode(true);
+      c.classList.remove('fm-mascot-item', 'on');
+      c.classList.add('ep-msc-item');
+      inner.appendChild(c);
+    });
+    return wrap;
+  }
+
   function endPanel(kind, title, leftHtml, rightHtml, footHtml) {
     for (const id of ['runCompleteOv', 'gameOverOv']) document.getElementById(id)?.remove();
     const ov = document.createElement('div');
@@ -8005,6 +8134,25 @@
     ov.innerHTML = `<div class="ep-box"><h2 class="ep-title">${title}</h2>`
       + `<div class="ep-body"><div class="ep-left">${leftHtml}</div><div class="ep-right">${rightHtml}</div></div>`
       + (footHtml ? `<div class="ep-foot">${footHtml}</div>` : '') + `</div>`;
+    updateMascotItems();
+    ov.classList.add('has-muhur');
+    ov.appendChild(epMuhur(kind));   // panelle yan yana, grup olarak ortalı (dar ekranda alta iner)
+    /* P94d — Gambonanza sahnesi: kayıpta yenen boss arkada, zaferde konfeti.
+       (Run sonu joker şeridi denendi, kullanıcı istemedi — P64 kararıyla aynı.) */
+    const s = Game.state;
+    const scene = document.createElement('div');
+    scene.className = 'ep-scene';
+    const boss = kind === 'lose' && Game.isBossRound && Game.isBossRound() && s.boss;
+    if (boss && JOKER_ART.has(s.boss.key)) scene.innerHTML = `<div class="ep-boss-bg jk-${s.boss.key}"></div>`;
+    if (kind === 'win') {
+      const cols = ['#FFD45A', '#FF6B6B', '#5BE38C', '#6BB8FF', '#E58CFF', '#FBECC4'];
+      let h = '<div class="ep-confetti">';
+      for (let i = 0; i < 46; i++)
+        h += `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${cols[i % cols.length]};`
+          + `animation-duration:${(3 + Math.random() * 4).toFixed(2)}s;animation-delay:-${(Math.random() * 6).toFixed(2)}s"></i>`;
+      scene.innerHTML = h + '</div>';
+    }
+    ov.prepend(scene);
     document.body.appendChild(ov);
     return ov;
   }
@@ -8374,6 +8522,8 @@
     if (el.btnUpContinue.disabled) return;
     Game.closeUpgradeOffer();
     el.upgradeOverlay.classList.add('hidden');
+    /* P92 — öğreticide boss ödülünden sonra store yok: Mühür bitirir */
+    if (TUT.active && Game.state.roundInStage === 3) { TUT.finish(); return; }
     openStore();
   });
 
@@ -9662,7 +9812,7 @@
   else showScreen('menu');
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
-  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker,
+  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     // Playtest 17 — Grup A/F doğrulaması için
     notify, showCoinFlip, pickFuzyon, flushRoundStart,

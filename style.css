@@ -11053,3 +11053,300 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 #pandoraOv .pd-art { width: 162px; height: 220px; margin: 0 auto; background: var(--jk-art) no-repeat center / 100% 100%; image-rendering: pixelated; }
 /* P91 — Füzyon kartının ipucunda içindeki jokerler ilk satırdan başlar */
 #jokerTip.tip-fz .tip-fused:first-of-type { margin-top: 6px; }
+
+/* ============================================================
+   P92 — MÜHÜR: öğreticiyi ana menüdeki maskot anlatır (Gambonanza düzeni,
+   kullanıcı onayı 2026-10-13). Panel 1920×1080 tuval biriminde, JS
+   `scale(--gm-scale)` ile küçültür ve sol/sağ sütuna koyar.
+   ============================================================ */
+#tutPanel.mascot {
+  position: fixed;
+  left: 0; top: 0; bottom: auto;
+  transform-origin: 0 0;
+  width: 540px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--gm-font, 'Okey Pixel'), monospace;
+  pointer-events: none;
+}
+#tutPanel.mascot.hidden { display: none; }
+#tutPanel.mascot .tm-bub {
+  align-self: stretch;
+  background: #FBECC4;
+  color: #2A2440;
+  border: 4px solid #2A2440;
+  border-radius: 14px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45);
+  padding: 18px 22px;
+  pointer-events: auto;
+}
+#tutPanel.mascot .tp-body { font-size: 22px; line-height: 1.45; color: #2A2440; }
+#tutPanel.mascot .tp-body b { color: #7A3FB0; }
+#tutPanel.mascot .tut-ex { margin: 10px 0; gap: 8px; }
+#tutPanel.mascot .tut-ex > div { display: flex; align-items: center; gap: 4px; font-size: 19px; }
+#tutPanel.mascot .tut-ex .tt {
+  width: 30px; height: 40px; border-radius: 5px; margin-right: 0;
+  font-size: 18px; font-weight: 700;
+  background: #FFFCEF; box-shadow: 0 0 0 2px #CAC2A1, 0 2px 0 2px rgba(0, 0, 0, .25);
+}
+#tutPanel.mascot .tut-ex .tt:last-of-type { margin-right: 10px; }
+#tutPanel.mascot .tm-msc {
+  position: relative;
+  width: 164px;
+  height: 230px;
+  background: url('assets/menu3/mascot.svg') no-repeat center / contain;
+  animation: fmBob 4.2s ease-in-out infinite;
+}
+#tutPanel.mascot .tm-msc::before {
+  content: '';
+  position: absolute;
+  inset: -34px;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(255, 240, 190, .55), rgba(255, 240, 190, 0));
+}
+#tutPanel.mascot .tm-btns { display: flex; align-items: center; gap: 14px; pointer-events: auto; }
+#tutPanel.mascot .tm-extra { display: contents; }
+#tutPanel.mascot .tm-btn {
+  font-family: inherit;
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: #2A2440;
+  background: #FBECC4;
+  border: 4px solid #2A2440;
+  border-radius: 12px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45);
+  padding: 8px 28px;
+  cursor: pointer;
+}
+#tutPanel.mascot .tm-btn:hover { background: #FFF5D8; }
+#tutPanel.mascot .tm-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0, 0, 0, .45); }
+#tutPanel.mascot .tm-btn.ghost { background: #3A3358; color: #FBECC4; }
+#tutPanel.mascot .tm-btn.hidden { display: none; }
+#tutPanel.mascot .tp-quit {
+  pointer-events: auto;
+  background: none; border: 0; cursor: pointer;
+  font-family: inherit; font-size: 15px;
+  color: rgba(251, 236, 196, .7);
+  text-decoration: underline;
+}
+#tutPanel.mascot .tp-quit:hover { color: #FBECC4; }
+#tutPanel.mascot .tp-quit.hidden { display: none; }
+#tutDim { position: fixed; inset: 0; z-index: 245; background: rgba(8, 6, 20, .62); }
+#tutDim.hidden { display: none; }
+@media (prefers-reduced-motion: reduce) { #tutPanel.mascot .tm-msc { animation: none; } }
+
+/* P92 rötuş — parıltı maskotun ÖNÜNDE kalıyordu (salınım transform'u .tm-msc'yi ayrı yığın yaptı): maskot iç öğede */
+#tutPanel.mascot .tm-msc { background: none; animation: none; }
+#tutPanel.mascot .tm-msc > i { position: absolute; inset: 0; background: url('assets/menu3/mascot.svg') no-repeat center / contain; animation: fmBob 4.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { #tutPanel.mascot .tm-msc > i { animation: none; } }
+#tutPanel.mascot .tut-ex > div { display: grid; grid-template-columns: 128px 1fr; align-items: center; gap: 12px; font-size: 19px; line-height: 1.25; }
+#tutPanel.mascot .tut-ex .tts { display: flex; gap: 4px; }
+#tutPanel.mascot .tut-ex .tt { width: auto; min-width: 30px; padding: 0 3px; box-sizing: border-box; margin: 0; }
+#tutPanel.mascot .tut-ex .tt:last-of-type { margin-right: 0; }
+#tutSpot { box-shadow: 0 0 0 9999px rgba(8, 6, 20, .62), 0 0 24px rgba(245, 166, 35, .35) inset; }
+
+/* P92 rötuş 2 — grup örnekleri tek satır, maskot 200 px: panel Sırala barının üstünde biter */
+#tutPanel.mascot .tut-ex > div { font-size: 17px; }
+#tutPanel.mascot .tm-msc { width: 143px; height: 200px; }
+
+/* P92 rötuş 3 — harita / store: sol sütunda dar Mühür; bitiş düğmeleri tek satır */
+#tutPanel.mascot.tm-narrow { width: 390px; }
+#tutPanel.mascot.tm-narrow .tp-body { font-size: 20px; }
+#tutPanel.mascot .tm-btn { white-space: nowrap; }
+#tutPanel.mascot .tm-extra .tm-btn { font-size: 22px; padding: 8px 22px; }
+
+/* P92 rötuş 4 — Öğreticiyi bitir bağlantısı alttaki yazıların üstünde okunur kalsın */
+#tutPanel.mascot .tp-quit { background: rgba(8, 6, 20, .8); padding: 4px 10px; border-radius: 8px; }
+
+/* P92 rötuş 5 — balon tıklamayı yutmasın (altındaki düğmeler kullanılabilir kalsın); yalnız İLERİ / seçim düğmeleri tıklanır */
+#tutPanel.mascot .tm-bub { pointer-events: none; }
+
+/* P92 rötuş 6 (kullanıcı isteği) — ANLATILAN YERİN ÇERÇEVESİ OYUNUN UI DİLİNDE:
+   yuvarlak turuncu çizgi yerine piksel çerçeve — temanın vurgu tonu
+   (--gm-turn-on: kozmikte neon, boss'ta boss ışığı) 4 px, köşeleri basamaklı,
+   dışında koyu (--gm-dark) kontur; harita SEÇ okuyla aynı steps() nabzı.
+   Karartma ::before'da (kare delik), çerçeve ::after'da (karartmanın üstünde). */
+#tutSpot { border: 0; border-radius: 0; box-shadow: none; }
+#tutSpot::before {
+  content: ''; position: absolute; inset: 0;
+  box-shadow: 0 0 0 9999px rgba(8, 6, 20, .62);
+}
+#tutSpot::after {
+  content: ''; position: absolute; inset: 0;
+  box-shadow:
+    0 -4px 0 0 var(--gm-turn-on), 0 4px 0 0 var(--gm-turn-on),
+    -4px 0 0 0 var(--gm-turn-on), 4px 0 0 0 var(--gm-turn-on),
+    0 -8px 0 0 var(--gm-dark), 0 8px 0 0 var(--gm-dark),
+    -8px 0 0 0 var(--gm-dark), 8px 0 0 0 var(--gm-dark),
+    -4px -4px 0 0 var(--gm-dark), 4px -4px 0 0 var(--gm-dark),
+    -4px 4px 0 0 var(--gm-dark), 4px 4px 0 0 var(--gm-dark);
+  animation: tutSpotPulse 1.1s steps(2, end) infinite;
+}
+@keyframes tutSpotPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { #tutSpot::after { animation: none; } }
+
+/* ============================================================
+   P93 — İPUCU PENCERESİNDE MÜHÜR (Madde 6) + manuel joker ipucu (Madde 3).
+   Kutu öğreticideki konuşma balonunun aynısı; Mühür SOLDA, ayakta.
+   1920×1080 tuval biriminde çizilir, --gm-scale ile küçülür.
+   ============================================================ */
+.pk-ov.hint-ov.mh-hint { background: rgba(8, 6, 20, .62); backdrop-filter: none; }
+.pk-ov.hint-ov.mh-hint.mh-spot { background: none; }
+.mh-hint .mh-wrap {
+  display: flex; align-items: flex-end; gap: 18px;
+  transform: scale(var(--gm-scale, 1));
+  font-family: var(--gm-font, 'Okey Pixel'), monospace;
+}
+.mh-hint .mh-msc { position: relative; width: 171px; height: 240px; flex: none; }
+.mh-hint .mh-msc::before {
+  content: ''; position: absolute; inset: -36px; z-index: -1;
+  background: radial-gradient(closest-side, rgba(255, 240, 190, .55), rgba(255, 240, 190, 0));
+}
+.mh-hint .mh-msc > i {
+  position: absolute; inset: 0;
+  background: url('assets/menu3/mascot.svg') no-repeat center / contain;
+  animation: fmBob 4.2s ease-in-out infinite;
+}
+.mh-hint .mh-col { display: flex; flex-direction: column; align-items: flex-end; gap: 14px; width: 560px; margin-bottom: 30px; }
+.mh-hint .mh-bub {
+  align-self: stretch; position: relative;
+  background: #FBECC4; color: #2A2440;
+  border: 4px solid #2A2440; border-radius: 14px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45);
+  padding: 30px 24px 20px;
+}
+/* balonun kuyruğu Mühür'e döner */
+.mh-hint .mh-bub::before {
+  content: ''; position: absolute; left: -16px; bottom: 34px;
+  border: 12px solid transparent; border-right: 16px solid #2A2440; border-left: 0;
+}
+.mh-hint .mh-bub::after {
+  content: ''; position: absolute; left: -9px; bottom: 37px;
+  border: 9px solid transparent; border-right: 12px solid #FBECC4; border-left: 0;
+}
+.mh-hint .mh-tag {
+  position: absolute; top: -18px; left: 18px;
+  background: var(--gm-turn-on, #FEA727); color: #2A2440;
+  border: 3px solid #2A2440; border-radius: 8px;
+  font-size: 18px; letter-spacing: 2px; padding: 2px 12px;
+}
+.pk-ov.hint-ov.mh-hint .hint-body {
+  font-family: inherit; font-weight: 400;
+  font-size: 21px; line-height: 1.45; color: #2A2440;
+  margin: 0; text-align: left; white-space: pre-line;
+}
+.pk-ov.hint-ov.mh-hint .hint-body b { color: #7A3FB0; font-weight: 700; }
+.mh-hint .mh-ok {
+  font-family: inherit; font-size: 24px; letter-spacing: 2px; color: #2A2440;
+  background: #FBECC4; border: 4px solid #2A2440; border-radius: 12px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .45); padding: 8px 28px; cursor: pointer; white-space: nowrap;
+}
+.mh-hint .mh-ok:hover { background: #FFF5D8; }
+.mh-hint .mh-ok:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0, 0, 0, .45); }
+/* manuel joker ipucu: öğreticinin neon çerçevesi ipucu katmanının üstünde */
+#tutSpot.mh-spotting { z-index: 1599; transition: none; }
+@media (prefers-reduced-motion: reduce) { .mh-hint .mh-msc > i { animation: none; } }
+
+/* ============================================================
+   P94 — OYUN SONU PANELİNDE MÜHÜR (Madde 4, Balatro örneği): panelin
+   sağında ayakta, altında sözü. Maskot 480×674 menü kutusunun 0.4 ölçeği;
+   kazanılmış final eşyaları menüdeki konumlarıyla aynı kutuda.
+   ============================================================ */
+.ep-ov .ep-box { position: relative; }
+.ep-muhur {
+  position: absolute; left: calc(100% + 34px); top: 50%; transform: translateY(-50%);
+  width: 250px; display: flex; flex-direction: column; align-items: center; gap: 16px;
+  pointer-events: none;
+}
+.ep-msc { position: relative; width: 192px; height: 270px; }
+.ep-msc::before {
+  content: ''; position: absolute; inset: -40px; z-index: -1;
+  background: radial-gradient(closest-side, rgba(255, 240, 190, .5), rgba(255, 240, 190, 0));
+}
+.ep-msc-in {
+  position: absolute; left: 0; top: 0; width: 480px; height: 674px;
+  transform: scale(.4); transform-origin: 0 0;
+  animation: fmBob 4.2s ease-in-out infinite;
+}
+.ep-msc-body { position: absolute; inset: 0; background: url('assets/menu3/mascot.svg') no-repeat center / contain; }
+.ep-msc-in .ep-msc-item { position: absolute; }
+.ep-msc-in .ep-msc-item.fm-item-hearts { left: 398px; top: 44px; width: 209px; height: 200px; }
+.ep-msc-in .ep-msc-item.fm-item-hat { left: 0; top: 0; width: 480px; height: 674px; }
+.ep-quip {
+  position: relative; box-sizing: border-box; width: 100%;
+  background: #FBECC4; color: #2A2440;
+  border: 4px solid #2A2440; border-radius: 12px; box-shadow: 0 6px 0 rgba(0, 0, 0, .45);
+  padding: 12px 14px; font-size: 18px; line-height: 1.4; text-align: center;
+}
+/* kuyruk yukarı, Mühür'e */
+.ep-quip::before { content: ''; position: absolute; left: 50%; top: -16px; margin-left: -12px;
+  border: 12px solid transparent; border-bottom: 14px solid #2A2440; border-top: 0; }
+.ep-quip::after { content: ''; position: absolute; left: 50%; top: -9px; margin-left: -9px;
+  border: 9px solid transparent; border-bottom: 11px solid #FBECC4; border-top: 0; }
+@media (max-width: 1239px) {
+  .ep-muhur { position: static; transform: none; margin: 18px auto 0; flex-direction: row; width: auto; max-width: 520px; }
+  .ep-msc { width: 120px; height: 169px; flex: none; }
+  .ep-msc-in { transform: scale(.25); }
+  .ep-quip::before, .ep-quip::after { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .ep-msc-in { animation: none; } }
+
+/* P94 rötuş — salınım (transform) ölçeği eziyordu: salınım dış kutuda, ölçek içte */
+.ep-msc-in { animation: none; }
+.ep-msc { animation: fmBob 4.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .ep-msc { animation: none; } }
+
+
+/* P94c — Mühür panelin İÇİNDE değil YANINDA (flex kardeşi): panel + Mühür
+   grup olarak ortalanır, 1280 genişlikte de sığar; balon genişledi, uzun
+   sözcük taşmaz. 1200 px altında Mühür panelin altına iner. */
+.ep-ov.has-muhur { justify-content: center; }
+.ep-ov.has-muhur > .ep-box { margin: auto 0; flex: 0 1 820px; }
+.ep-ov > .ep-muhur { position: static; transform: none; align-self: center; margin-left: 34px; width: 290px; flex: none; }
+.ep-quip { font-size: 17px; overflow-wrap: anywhere; }
+@media (max-width: 1199px) {
+  .ep-ov.has-muhur { flex-wrap: wrap; align-content: flex-start; }
+  .ep-ov > .ep-muhur { margin: 18px auto 0; width: 100%; max-width: 520px; flex-direction: row; }
+  .ep-ov > .ep-muhur .ep-msc { width: 120px; height: 169px; flex: none; }
+  .ep-ov > .ep-muhur .ep-msc-in { transform: scale(.25); }
+  .ep-ov > .ep-muhur .ep-quip::before, .ep-ov > .ep-muhur .ep-quip::after { display: none; }
+}
+
+/* ============================================================
+   P94d — OYUN SONU SAHNESİ (kullanıcı 2026-10-13: düz kırmızı/yeşil
+   "pek ilgimi çekmedi" → Gambonanza örneği). Panel temanın renginde kalır;
+   ayrım SAHNEYLE yapılır:
+     · kayıp: seni yenen boss'un çizimi panelin arkasında dev ve soluk,
+       arka plan koyu bordoya kayar, başlık kırmızı tonda
+     · zafer: piksel konfeti yağar, arkada altın ışık, başlık altın
+   (Joker şeridi denendi, kullanıcı istemedi.)
+   ============================================================ */
+.ep-ov.ep-lose { background: radial-gradient(ellipse at 50% 40%, rgba(70, 10, 18, .78), rgba(10, 4, 8, .9)); }
+.ep-ov.ep-win { background: radial-gradient(ellipse at 50% 35%, rgba(120, 90, 20, .55), rgba(8, 10, 20, .88)); }
+.ep-ov.ep-lose .ep-title { color: #FF6B6B; }
+.ep-ov.ep-win .ep-title { color: #FFD45A; }
+.ep-scene { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: -1; }
+.ep-ov { isolation: isolate; }
+.ep-boss-bg {
+  position: absolute; left: 50%; top: 50%; width: 560px; height: 760px;
+  transform: translate(-50%, -50%) rotate(-4deg);
+  background: var(--jk-art) no-repeat center / 100% 100%;
+  image-rendering: pixelated; opacity: .28; filter: saturate(.7);
+}
+.ep-confetti i {
+  position: absolute; top: -20px; width: 10px; height: 10px;
+  animation: epFall linear infinite;
+}
+@keyframes epFall {
+  0% { transform: translateY(-20px) rotate(0deg); }
+  100% { transform: translateY(110vh) rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) { .ep-confetti { display: none; } }

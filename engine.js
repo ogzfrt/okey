@@ -17,7 +17,7 @@ const TYPE_TR = { per: 'Per', sirali: 'Sıralı', cift: 'Çift' };
 
 /* GDD 4.2 v3 (2026-07-09 sıfırdan denge):
    Tablo artık açık bir formülden türetilir ve tek ödül ekseni budur —
-   "çok kombinasyon açma" davranışını YALNIZ bu tablo ödüllendirir
+   "çok grup açma" davranışını YALNIZ bu tablo ödüllendirir
    (sabit puan bonusu yok; MULTI_RAW_BONUS kalıcı olarak kaldırıldı).
    Formül: per[n]  = 2.0 × 1.15^(n-1)  (her basamak +%15)
            cift[n] = 2.2 × 1.115^(n-1) (taban önde, büyüme yavaş —
@@ -30,7 +30,7 @@ const CARPAN_TABLE = {
 
 /* Toplam stage sayısı — run bu kadar stage sonunda tamamlanır.
    Geçmiş: 8 → 6 (2026-07-09) → 8 (Playtest 7, Grup I). Kullanıcı gerekçesi:
-   oyun özellikle güçlü joker kombinasyonlarıyla çok kolay bitiyordu; run
+   oyun özellikle güçlü joker gruplarıyla çok kolay bitiyordu; run
    uzadı ve son stage'ler (6-8) gerçek meydan okuma bandına çekildi. */
 const TOTAL_STAGES = 8;
 
@@ -263,15 +263,15 @@ const SIDE_OFFERS = 3;
    koşulun kazanılan raundlardaki sıklığı p → oran ≈ 1.1/p − 1 (tam sayıya),
    yani ortalama elde beklenen getiri hafif artı; eli okuyup doğru teklifi
    seçen oyuncu daha fazla kazanır.
-     4'lü Per %20.8 → 4:1 · 5'li Sıralı %10.4 → 9:1 · 5+ kombinasyon (bot
+     4'lü Per %20.8 → 4:1 · 5'li Sıralı %10.4 → 9:1 · 5+ grup (bot
      biriktirir: %81 — insan için çok daha zor) → 2:1 · hedef ×1.5 %25.9 → 3:1
      · okeysiz %43.6 → 2:1 · 1. turda bitiş %21.7 → 4:1 · Çift %30.7 → 3:1
-   İlk sürümde "3+ kombinasyon" (%100) ve "en geç 2. tur" (%57) bedava
+   İlk sürümde "3+ grup" (%100) ve "en geç 2. tur" (%57) bedava
    paraydı → eşikler 5+ ve 1. tur oldu. */
 const SIDE_BETS = {
   per4:    { key: 'per4',    name: "4'lü Per açarım",                  odds: 4 },
   sirali5: { key: 'sirali5', name: "5'li Sıralı açarım",               odds: 9 },
-  combo5:  { key: 'combo5',  name: 'Tek açılımda 5+ kombinasyon açarım', odds: 2 },
+  combo5:  { key: 'combo5',  name: 'Tek açılımda 5+ grup açarım', odds: 2 },
   big:     { key: 'big',     name: 'Hedefin 1.5 katını yaparım',         odds: 3 },
   noOkey:  { key: 'noOkey',  name: 'Okeyi hiç kullanmadan kazanırım',    odds: 2 },
   fast:    { key: 'fast',    name: 'Raundu 1. turda bitiririm',          odds: 4 },
@@ -617,7 +617,7 @@ const STAGE_TARGETS = [
   /* P56 · v14 (2026-09-30, kullanıcı isteği: "hem zorlasın hem kazanılabilir
      olsun") — ÖLÇÜM ARACI DEĞİŞTİ, EĞRİ ONA GÖRE KALİBRE EDİLDİ.
      Önceki botlar her tur eldekini HEMEN açıyordu; oysa çarpan aynı anda
-     açılan kombinasyon SAYISIYLA büyür (Per 2.0x → 4.6x) ve iyi oyuncu
+     açılan grup SAYISIYLA büyür (Per 2.0x → 4.6x) ve iyi oyuncu
      biriktirip tek büyük açılım yapar. Yeni `tools/expert_audit.js` (uzman:
      biriktir-patlat + okey-farkında arama + Çift modu + akıllı atış) v13'te
      boss geçişini S1 %68 · S2 %58 · S3 %52 · S4 %46 · S5 %56 · S6 %47 ·
@@ -648,7 +648,7 @@ const STAGE_TARGETS = [
 const TARGET_GROWTH = 1.16;   // P53 v13: eğrinin son adımıyla aynı (Sonsuz Mod bunu kullanır)
 
 /* Çoklu kombinasyon ham puan bonusu (MULTI_RAW_BONUS) playtest 3'te
-   KALDIRILDI (kullanıcı kararı): GDD 4.2 çarpan tablosu çok kombinasyonu
+   KALDIRILDI (kullanıcı kararı): GDD 4.2 çarpan tablosu çok grubu
    zaten ödüllendiriyordu, sabit bonus aynı davranışı ikinci kez besliyordu. */
 
 /* v3 double-dip denetimi: 7 Çift zaten çift tablosunun tepe basamağını,
@@ -663,7 +663,7 @@ const BONUS_7_CIFT = 1.5;   // P51 · Grup B: 2.0 → 1.5
    klasik Okey'in "7 çift" eli). El artık 21-30 taş olduğu için 8+ Çift
    mümkün; sınır KALKTI. Tablonun devamı: 7. kademeden sonra her ek Çift
    +CIFT_EXTRA_STEP (tablonun son adımı 3.8 → 4.2 ile aynı eğim) — 8 Çift
-   4.6x, 9 Çift 5.0x … Ek, kombinasyon SAYISINA (Usta Eli/Altın Oran'ın
+   4.6x, 9 Çift 5.0x … Ek, grup SAYISINA (Usta Eli/Altın Oran'ın
    kaydırdığı basamağa değil) bağlıdır; o kartlar tablonun içinde kalır,
    böylece Usta Eli ile çiftlerin çarpanı katlanarak patlamaz.
    7 ÇİFT REKORU artık "7 ve üstü" açılımda verilir. */
@@ -830,28 +830,28 @@ const BOSSES = [
      Gerekçe: eski hâli Sir.by'ın aşınma mantığının ikizi gibi okunuyordu. */
   { key: 'cellat', name: 'Cellat', desc: 'Her tur başında rastgele 2 taşın idam edilir.' },
   { key: 'misunderstood', name: 'The Misunderstood', desc: 'Hedef puan %25 daha yüksek.' },
-  { key: 'kelebek', name: 'Kelebek Etkisi', desc: 'Her tur bir açılım türü yasak. Yasağı çiğnersen o açılımın puanı %30 kesilir.' },
+  { key: 'kelebek', name: 'Kelebek Etkisi', desc: `Her tur bir grup türü yasaktır. Yasak türü açarsan o grubun puanı %30 düşer.` },
   { key: 'ahtapot', name: 'Ahtapot', desc: 'Kazandığın her puanın %15’i emilir.' },
   /* Grup I (2026-07-09): banner jokerin NORMAL açıklamasını gösteriyordu —
      GDD 13.4 Boss Koşulu ayrı ve daha serttir: sınır her tur ARTAR,
      aşılırsa hedef %15 oynar (jokerde %10). */
-  { key: 'fatality', name: 'Fatality', desc: 'Her tur skor sınırı yükselir. Aşarsan hedef %15 değişir.' },
+  { key: 'fatality', name: 'Fatality', desc: `Skor sınırı her tur yükselir. Bir turda sınırı aşarsan hedef %15 düşer.` },
 
   /* ===== Playtest 6 / Grup F: GDD Bölüm 10'daki 20 Epic'in kalan 12'si.
      Metinler GDD'nin "⚔ Boss Koşulu" bölümlerinden alındı; uyarlama
      gerekçeleri her efektin yanında koddaki yorumlarda. ===== */
   { key: 'zombie', name: 'Zombie', desc: 'Her tur çektiğin 1 taş enfekte gelir (0 puan). Elindeki 1 taş daha etkisizleşir.' },
   { key: 'freedom', name: 'Freedom Fighters', desc: '5 taş işaretlenir. İşaretli taş eline gelirse açılımda kullan, yoksa Game Over.' },
-  { key: 'uzayli', name: 'Alien', desc: 'Her tur 3 taşın gizlice uzaylıya dönüşür, hangileri belli olmaz. Uzaylı içeren kombinasyon çöker: 0 puan, taşlar geri gelir.' },
-  { key: 'ucKagitci', name: 'Üç Kağıtçı', desc: 'Çektiğin taşlar ters gelir; yüzlerini açınca ya da bir sonraki tur görürsün.' },   // P54 · Grup A (eski The Cheating)
+  { key: 'uzayli', name: 'Alien', desc: `Her tur 3 taşın gizlice uzaylıya dönüşür. Uzaylı taş içeren grup çöker: 0 puan, taşlar eline döner.` },
+  { key: 'ucKagitci', name: 'Üç Kağıtçı', desc: `Çektiğin taşlar ters gelir; onları açınca ya da sonraki tur görürsün.` },   // P54 · Grup A (eski The Cheating)
   { key: 'dervish', name: 'GLITCH', desc: 'Her tur çektiğin 3 taş glitch’li gelir, ikisi bozuktur. Bozuk taşı açarsan o açılımın puanı %25 düşer.' },
-  { key: 'terziIgne', name: 'Terzi\'nin İğnesi', desc: 'Her tur başında 2 taş dikilir: ne atılır ne açılımda kullanılır. Tur bitince serbest kalır.' },
+  { key: 'terziIgne', name: 'Terzi\'nin İğnesi', desc: `Her tur başında 2 taşın dikilir: o tur atamaz ve açamazsın. Tur bitince serbest kalır.` },
   { key: 'avukat', name: 'Avukat', desc: 'Her tur bir jokerin susturulur, o tur çalışmaz. Joker yok olmaz.' },
-  { key: 'ritim', name: 'Ritim', desc: 'Her açılımdan önce ritim sekansı çıkar. Tutturamazsan o açılım puan vermez.' },
-  { key: 'kahin', name: 'Kahin', desc: 'Her tur zorunlu bir kehanet gelir. Uymazsan o turun puanı sıfırlanır. Hepsine uyarsan +500 puan.' },
+  { key: 'ritim', name: 'Ritim', desc: `Her açılımdan önce ritim oyunu çıkar; tutturamazsan o açılım puan vermez.` },
+  { key: 'kahin', name: 'Kahin', desc: `Her tur uyman gereken bir kehanet gelir; uymazsan o turun puanı sıfırlanır. Hepsine uyarsan +500 puan.` },
   { key: 'tuccar', name: 'Tüccar', desc: 'Teklifler çok daha ağır ve reddedemezsin: ya bedeli ödersin ya cezayı.' },
   { key: 'corporates', name: 'The Corporates', desc: 'Raund boyu tek bir ağır şirket görevi. Tamamlayamazsan Game Over.' },
-  { key: 'aynaKral', name: 'Ayna Kral', desc: 'Her açılımın puanı birikir ve bir sonraki açılımdan düşülür.' },
+  { key: 'aynaKral', name: 'Ayna Kral', desc: `Her açılımın puanı borç olarak birikir ve sonraki açılımından düşülür.` },
 ];
 
 /* P71 · KUMARHANE FİNALİ (spec 2026-10-05) — modun SABİT final boss'u.
@@ -863,7 +863,7 @@ const BOSSES = [
    Final hedefi (FINAL_TARGET) RUN_MODES'un üstünde tanımlıdır. */
 const FINAL_BOSSES = {
   ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', final: true, reward: 'ladyLuck', mascotItem: 'item-lady-luck', icon: '💋',
-    desc: 'Her tur bir jokerini büyüler: puanı TERS döner, diğer etkisi susar. Istakandaki en yüksek taşı da çalar.' },
+    desc: `Her tur bir jokerini büyüler: puanı eksiye döner, diğer etkileri susar. Istakandaki en yüksek taşı da çalar.` },
   /* P90 — Temel Run finali ORION (Gökyüzünün Avcısı; şapkalı, pardösülü,
      kemerli maskeli savaşçı — çizim bitince eklenecek). `target` = taban;
      asıl hedef raund sonunda max(taban, Orion'un puanı). */
@@ -910,7 +910,7 @@ const FINAL_BOSSES = {
        ancak dolu bir joker kadrosuyla göğüslenebilir:
          corporates  görev tamamlanmazsa doğrudan Game Over
          freedom     işaretli taşı kullanmazsan Game Over, boss puan vermez
-         uzayli      GİZLİ taşlar kombinasyonu çökertir (bilgi saklar)
+         uzayli      GİZLİ taşlar grubu çökertir (bilgi saklar)
          aynaKral    her açılımın puanı bir sonrakinden düşülür
          ritim       her açılım bir refleks testine bağlı
    ========================================================================== */
@@ -1090,13 +1090,13 @@ const TERAZI_GAIN = 1.5;   // (eski sabit kazanç — kayıt uyumu için duruyor
 /* ============================================================
    PLAYTEST 20 · GRUP D — TRADE JOKERİ "BORSA"YA ÇEVRİLDİ.
    Eski hâli ("bu raund Sıralı +1.5x, sonraki raund -0.5x") borsa temasını
-   hiç taşımıyordu: tek bir kombinasyon türüne kilitliydi, oyuncu hiçbir
+   hiç taşımıyordu: tek bir grup türüne kilitliydi, oyuncu hiçbir
    şey OKUMUYOR ve hiçbir şeye göre plan YAPMIYORDU — iki raundda bir
    dönüşen sabit bir sayıydı.
-   Yeni hâli gerçek bir PİYASA: her raund üç kombinasyon türünden biri
+   Yeni hâli gerçek bir PİYASA: her raund üç grup türünden biri
    YÜKSELİŞE, biri DÜŞÜŞE geçer, biri yatay kalır. Oyuncu elini piyasaya
    göre kurar (yükselen türü kovala, düşen türden kaçın) ve raund sonunda
-   yükselen türden açtığı her kombinasyon TEMETTÜ öder.
+   yükselen türden açtığı her grup TEMETTÜ öder.
    Sayılar eski jokerin güç bandını korur: yükseliş +1.5x (eskiyle aynı),
    düşüş -0.5x (eskiyle aynı) — değişen tek şey neyin yükselip düştüğünün
    her raund yeniden çekilmesi ve ekranda YAZMASI.
@@ -1112,14 +1112,14 @@ const TERAZI_GAIN = 1.5;   // (eski sabit kazanç — kayıt uyumu için duruyor
    (~150 puan) üretiyordu — bu turda güçlendirilen Zincir (+8.0x),
    Yankee (+8.0x) ve Katalizör (+10x) yanında yarı yarıya geride.
    Ayrıca kartın HİÇBİR KARARI yoktu: piyasa çekiliyor, oyuncu uyuyordu.
-   YENİ HÂLİ gerçek bir portföydür. Açılan her kombinasyon türüne göre
+   YENİ HÂLİ gerçek bir portföydür. Açılan her grup türüne göre
    bir HİSSE olur ve jokerin üstünde birikir; bir açılımda o türden kaç
    hissen varsa hisse başına BORSA_SHARE_MULT çarpan alırsın. Piyasa ise
    artık açılımı değil PORTFÖYÜ vurur: raund sonunda yükselen türdeki
    hisseler temettü öder, düşen türdeki hisselerin yarısı yanar.
    Doğan karar: TEK türe yüklenmek (büyük çarpan, düşerse ağır kayıp) mi,
    üç türe dağılmak (güvenli, yavaş) mı.
-   ÇARPAN AÇILIMDA BULUNAN HER TÜR İÇİN BİR KEZ işler (kombinasyon sayısı
+   ÇARPAN AÇILIMDA BULUNAN HER TÜR İÇİN BİR KEZ işler (grup sayısı
    ile çarpılmaz): 10 hisseyle 3 Sıralı açmak +12x üretirdi, bu bandı
    kırardı. Eski BORSA_UP/BORSA_DOWN açılım çarpanları KALDIRILDI —
    piyasanın tek işi artık portföyü ödüllendirmek ve budamaktır. */
@@ -1317,7 +1317,7 @@ const PANDORA_SALGIN_TILES = 2;     // her tur dertlenen taş sayısı
 const PANDORA_SALGIN_MULT = 2.0;     // dertli taş açılımda (P30 · Grup H: 1.2 → 2.5)
 const PANDORA_SALGIN_BURN = 30;     // dertli taş elde beklerse tur başına (P30 · Grup H: 20 → 30)
 const PANDORA_ARMAGAN_TILES = 3;    // raund başında 13'e çıkan taş sayısı
-const PANDORA_ARMAGAN_BONUS = 0.30; // armağan taşlı kombinasyonun puan artışı (P30 · Grup H: %25 → %30)
+const PANDORA_ARMAGAN_BONUS = 0.30; // armağan taşlı grubun puan artışı (P30 · Grup H: %25 → %30)
 
 /* DR. FRANKENSTEIN — TEK MASA, İKİ AMELİYAT (kullanıcı kararı 2026-09-03).
    Playtest 10 · Grup B'de üç varyasyon trainer-only olarak denendi; kullanıcı
@@ -1543,7 +1543,7 @@ const CONSUMABLES = {
      İNDEKSİNİ kaydırıyordu (getCarpan → CARPAN_TABLE[idx+1]). Tablo adımları
      yalnız 0.3–0.6 aralığında olduğu için 16 coinlik bir LEGENDARY gerçekte
      ~+0.3x veriyordu; üstelik indeks 7'de tavana vurduğu için çok
-     kombinasyonlu turlarda etkisi TAM SIFIRDI. Oyuncunun ekranda gördüğü
+     gruplu turlarda etkisi TAM SIFIRDI. Oyuncunun ekranda gördüğü
      "Kalıcı Çarpan" ise hiç değişmiyordu (o `permMult`).
      DÜZELTME (kullanıcı kararı): artık gerçek bir TAM SAYI eklemesi yapılır —
      kalıcı çarpana +1.0x (7.3 → 8.3). Ondalık kısma dokunulmaz.
@@ -1662,7 +1662,7 @@ const KD_TASI_MAX  = 300;   // tek taşın ulaşabileceği tavan (9. kullanımda
 const GUMUS_TASI_COIN = 3;     // kullanılan her Gümüş Taş → raund sonu coin (P51: 5 → 3)
 const BAKIR_TASI_MULT = 0.5;
 const ZUMRUT_TASI_MULT = 1.5;
-const AYNA_TASI_TIMES = 3;     // kombinasyonun en yüksek taşı toplam kaç kez sayılır
+const AYNA_TASI_TIMES = 3;     // grubun en yüksek taşı toplam kaç kez sayılır
 
 /* GRUP G (kullanıcı kararı 2026-09-07) — ÖZEL TAŞ NADİRLİĞİ.
    Özel taşlar bugüne kadar store rafından TEK TEK satılıyordu; artık
@@ -1687,7 +1687,7 @@ const SPECIAL_TILES = {
   gumus: { key: 'gumus', name: 'Gümüş Taş', icon: '🥈', price: 8, rarity: 'common', maxCopies: SPECIAL_MAX_COPIES,
     desc: `Destene kalıcı girer. Açılımda kullanınca raund sonunda +${GUMUS_TASI_COIN} coin.` },
   yankiTasi: { key: 'yankiTasi', name: 'Su Taşı', icon: '💧', price: 10, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
-    desc: 'Destene kalıcı girer. Girdiği kombinasyonda rengi umursanmaz; sayısı aynen geçerlidir.' },
+    desc: `Destene kalıcı girer. Girdiği grupta rengi önemsiz sayılır, yalnız sayısı geçerlidir.` },
 
   /* ===== PLAYTEST 8 — GRUP E: havuz 3 → 10 =====
      Tasarım kuralı: özel taş bir JOKER DEĞİLDİR (Kıyamet/jokersDisabled
@@ -1716,22 +1716,22 @@ const SPECIAL_TILES = {
      Öteki Dünya slottayken açılımda +AY.tileMult. */
   ayTasi: { key: 'ayTasi', name: 'Ay Taşı', icon: '🌙', price: 0, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
     noStore: true,
-    desc: 'Öteki Dünya ile doğar, kalıcıdır. 🌕 Dolunay turunda OKEY; Öteki Dünya slottayken açılımda +1.5x.' },
+    desc: `Öteki Dünya’dan doğar ve kalıcıdır. Dolunay turunda okey olur; Öteki Dünya slottayken açılımda +1.5x verir.` },
   karaDelikTasi: { key: 'karaDelikTasi', name: 'Kara Delik Taşı', icon: '🕳', price: 9, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
-    desc: `Destene kalıcı girer. Açılımda +${KD_TASI_BASE} puan — her kullanımda kalıcı +${KD_TASI_STEP} yoğunlaşır (en çok +${KD_TASI_MAX}). Atarsan işlek işlemez.` },
+    desc: `Destene kalıcı girer. Açılımda +${KD_TASI_BASE} puan verir, her kullanımda +${KD_TASI_STEP} artar (en çok +${KD_TASI_MAX}) ve atarken işlek cezası yemez.` },
   aynaTasi: { key: 'aynaTasi', name: 'Ayna Taşı', icon: '🪞', price: 13, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
-    desc: `Destene kalıcı girer. Girdiği kombinasyonun en yüksek taşı ${AYNA_TASI_TIMES} kat puan sayılır.` },
+    desc: `Destene kalıcı girer. Girdiği grubun en yüksek taşı ${AYNA_TASI_TIMES} kat puan sayılır.` },
   /* PLAYTEST 24 · GRUP H (kullanıcı seçimi 2026-09-06) — "KUZEY YILDIZI".
      Eski hâli açılımda +2 RASTGELE taş çektiriyordu; el zaten MAX_HAND'de
      tavanlı olduğu için çoğu raundda hiç hissedilmiyor ve kart bir KARAR
      üretmiyordu. Yeni hâli aynı eksende (kaynak) kalır ama iki rastgele
      taş yerine BİR SEÇİLMİŞ taş verir: yıldız yol gösterir. */
   yildizTasi: { key: 'yildizTasi', name: 'Yıldız Taşı', icon: '⭐', price: 12, rarity: 'epic', maxCopies: SPECIAL_MAX_COPIES,
-    desc: `Destene kalıcı girer. Açılımda kullanınca desteden ${YILDIZ_SHOW} taş açılır, birini seçip elini alırsın.` },
+    desc: `Destene kalıcı girer. Açılımda kullanınca desteden ${YILDIZ_SHOW} taş açılır; birini seçip eline alırsın.` },
   zamanTasi: { key: 'zamanTasi', name: 'Zaman Taşı', icon: '⏳', price: 10, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
     desc: 'Destene kalıcı girer. Açılımda kullanırsan bu raund jokerlerin yaşlanmaz.' },
   ates: { key: 'ates', name: 'Ateş Taşı', icon: '🔥', price: 11, rarity: 'epic', maxCopies: SPECIAL_MAX_COPIES,
-    desc: 'Destene kalıcı girer. Açılımda +120 puan. Elinde beklerse her tur -15 puan yakar.' },
+    desc: 'Destene kalıcı girer. Açılımda +120 puan verir; elinde beklerse her tur -15 puan yakar.' },
 };
 
 /* ---------- Gizli Paketler (booster pack) ----------
@@ -1990,14 +1990,14 @@ const JOKER_DEFS = {
      2026-09-12): Çöpçü Rare'den Common'a indi, Şanslı Yedili Common'dan
      Rare'e çıktı. Çöpçü artık aşağıdaki COMMON bloğunda. */
   copcu: { key: 'copcu', name: 'Çöpçü', rarity: 'common',
-    desc: `Attığın her 3 taş: +${COPCU_COIN} coin.` },
+    desc: `Her 3 taş attığında +${COPCU_COIN} coin.` },
   /* GRUP E (Playtest 7) — "Tekrar Çek" (raundda 1 kez atılan son taşı geri
      al) yerini İşlemeci aldı. Eskisi işlevsizdi: bilerek attığın taşı geri
      almak nadiren işe yarıyordu. Yeni tasarım, oyunun en az kullanılan
      mekaniğini (işleme, GDD 3.7) destekleyen TEK joker — Common havuzunda
      bu eksene dokunan başka kart yok. Orta zorlukta koşul → 1.8x bandı. */
   islemeci: { key: 'islemeci', name: 'İşlemeci', rarity: 'common',
-    desc: 'O turda işleme yaptıysan +2.0x.',
+    desc: `O tur bir gruba taş işlediysen +2.0x.`,
     effect: (c) => c.islemeTiles > 0 ? { mult: 2.0, flat: 0 } : null },
 
   anarsist: { key: 'anarsist', name: 'Anarşist', rarity: 'common',
@@ -2017,9 +2017,9 @@ const JOKER_DEFS = {
      Taşı" (özel taş) ve "Ayna Kırığı" (mythic joker) ayrı kartlardır ve
      bu ad artık yalnız onlara ait. */
   ayna: { key: 'ayna', name: 'Damga', rarity: 'rare', uses: 4,
-    desc: 'Raundda 1 kez: açılımdan önce damgala — o açılımın puanı 2 katına çıkar.' },
+    desc: `Raundda bir kez, açılımdan önce kartı damgala: o açılımın puanı 2 katına çıkar.` },
   kumarbaz: { key: 'kumarbaz', name: 'Kumarbaz', rarity: 'rare', uses: 3,
-    desc: 'Her tur yazı tura: çarpanın ya 2 katına çıkar ya yarıya iner. Para çok nadiren DİK DURUR — o tur çarpan ×35.' },
+    desc: `Her tur yazı tura: çarpanın ya 2 katına çıkar ya yarıya iner. Para çok nadiren dik durursa o tur ×35.` },
   /* PLAYTEST 29 · GRUP A — Çöpçü ile takas: Common → RARE (kullanıcı
      kararı 2026-09-12). Efekt sayısı DEĞİŞMEDİ; yalnız nadirlik (ve ona
      bağlı fiyat/süre/renk) güncellendi. v3 double-dip denetimi: aynı
@@ -2039,10 +2039,10 @@ const JOKER_DEFS = {
      (Bungie Gum / Dedikodu Masası ailesi): açılımın EN YÜKSEK taşının bir
      HAYALETİ üretilir ve sonraki turun başında ıstakaya gelir. Hayalet
      GHOST_LIFE tur yaşar, atılamaz ve el sınırına sayılmaz — yani "hangi
-     kombinasyonu hayaleti besleyecek şekilde kurayım" kararı doğar.
+     grubu hayaleti besleyecek şekilde kurayım" kararı doğar.
      P52 · GRUP E (kullanıcı kararı 2026-09-17): kart Rare rafında ÖLÜ kalıyordu.
      İki kök neden vardı: (a) EN DÜŞÜK taş seçiliyordu — açılımın en değersiz
-     taşının kopyası genelde 1-4 arası bir taştı ve yeni bir kombinasyon
+     taşının kopyası genelde 1-4 arası bir taştı ve yeni bir grup
      kurmaya yetmiyordu; (b) tek tur ömür, hayaleti "o turda tam oturmazsa
      çöp" yapıyordu. Artık EN YÜKSEK taşın kopyası gelir ve 2 tur yaşar:
      hayalet artık bir sonraki turun açılımına saklanabilecek gerçek bir
@@ -2061,19 +2061,16 @@ const JOKER_DEFS = {
      Zımpara/`zimpara` emsali). "Su Taşı"nın anahtarı da `yankiTasi`
      olarak kalır — o ayrı bir karttır ve adı zaten Yankı değildir. */
   yanki: { key: 'yanki', name: 'Hayalet', rarity: 'rare', uses: 3,
-    desc: 'Açtığın kombinasyonun EN YÜKSEK taşının hayaleti sonraki tur ıstakana gelir. '
-      + '2 tur yaşar, atılamaz, el sayısına girmez.' },
+    desc: `Açtığın grubun en yüksek taşının hayaleti sonraki tur ıstakana gelir. 2 tur kalır; atılamaz ve el sınırına sayılmaz.` },
   /* PLAYTEST 29 · GRUP C — ZİNCİR KIRILMIYOR, GERİ SARIYOR (kullanıcı
      kararı 2026-09-12). Kademeler yükseldi (+1.5/+0.75, tavan 4.0 →
      +2.0/+1.0, tavan 8.0) ve "zincir kırılınca sıfırlanır" kuralının
      yerini turluk -1.0x geri sarma aldı. Birikim artık açılım formülünden
      TÜRETİLMEZ, jokerin üstünde tutulur — bkz. ZINCIR_* sabitleri. */
   zincir: { key: 'zincir', name: 'Zincir', rarity: 'rare', uses: 4,
-    desc: 'Üst üste açtıkça çarpan büyür: 2. turda +2.0x, sonra her turda +1.0x. '
-      + 'Tavan: +5.0x. Açılım yapmazsan birikimden -1.0x düşer.' },
+    desc: `Her tur açılım yaptıkça büyür: 2. tur +2.0x, sonra her tur +1.0x (en fazla +5.0x). Açılım yapmadığın her tur -1.0x.` },
   vampir: { key: 'vampir', name: 'Vampir', rarity: 'rare', uses: 4,
-    desc: 'Açtığın her kombinasyonun en yüksek taşını emer. '
-      + 'Raundun SON turundaki açılımına emdiklerinin 4 katı puan eklenir.' },
+    desc: `Açtığın her grubun en yüksek taşını emer. Raundun son turundaki açılımın, emdiklerinin 4 katı puan kazanır.` },
   bitki: { key: 'bitki', name: 'Bitki', rarity: 'rare', uses: 3,
     /* P29 · Grup E: 80 → 150 (kullanıcı kararı 2026-09-12). Koşul ve
        kademe aynı kaldı, yalnız tur başına ödül büyüdü. */
@@ -2084,8 +2081,7 @@ const JOKER_DEFS = {
   /* P54 · Grup D (kullanıcı kararı 2026-09-29) — ad "Paratoner" → "ŞİMŞEK AVCISI".
      EFEKT ve ANAHTAR değişmedi (kayıt uyumu, bkz. kart adı ↔ anahtar kuralı). */
   paratoner: { key: 'paratoner', name: 'Şimşek Avcısı', rarity: 'rare', uses: 3,
-    desc: 'Her tur elinden bir taşı yem seç. O tur işlek tutarsa ceza yerine '
-      + 'yemin değerinin 10 katı puan alırsın — ama yem taşı yanar.' },
+    desc: `Her tur elinden bir taşı yem seçebilirsin. O tur işlek tutarsa ceza yerine yemin 10 katı puan alırsın, ama yem yanar.` },
   /* PLAYTEST 29 · GRUP G — İki Yüzlü ile takas: Rare → COMMON (kullanıcı
      kararı 2026-09-12). Efekt DEĞİŞMEDİ; yalnız nadirlik ve ona bağlı
      fiyat/süre/renk güncellendi. Kart artık COMMON bloğunda. */
@@ -2094,16 +2090,13 @@ const JOKER_DEFS = {
   tradeJokeri: { key: 'tradeJokeri', name: 'Borsa', rarity: 'rare', uses: 3,
     /* P52: metin kısaltıldı (anlam aynı) — kart havuzunun ORTALAMA açıklama
        uzunluğu 75 karakter sınırındaydı, bkz. tests/browser_p7.js. */
-    desc: 'Açtığın her kombinasyon o türden hisse olur (en çok 10). Açılımda o türden '
-      + 'her hisse +0.4x. Raund sonunda yükselen türde her hisse +2 coin, düşen türde '
-      + 'hisselerin yarısı yanar.' },
+    desc: `Açtığın her grup bir hisse olur (en çok 10); açılımda o türün her hissesi +0.4x. Raund sonunda yükselen tür hisse başına +2 coin öder, düşen türün yarısı yanar.` },
   hipnotizor: { key: 'hipnotizor', name: 'Hipnotizör', rarity: 'rare', uses: 4,
     desc: 'Her raund bir sayı seçilir: o sayıdaki taşlar açılımda çift değer sayılır.' },
   /* Grup J v4: 0.05 → 0.08 (buff turu). P29 · Grup I: 0.08 → 0.2, raund
      sonu sıfırlama kalktı, tavan +10x (bkz. KATALIZOR_* sabitleri). */
   katalizor: { key: 'katalizor', name: 'Katalizör', rarity: 'rare', uses: 4,
-    desc: 'Tur sonunda elinde kalan her taş +0.2x biriktirir. '
-      + 'Birikim raundlar boyunca kalıcıdır, tavan +5x.' },
+    desc: `Tur sonunda elinde kalan her taş için +0.2x biriktirir (en fazla +5x). Biriken çarpan kalıcıdır.` },
   /* PLAYTEST 11 · GRUP C (kullanıcı kararı) — TERAZİ YENİDEN TASARLANDI.
      Eski hâli ("küçük/büyük taş sayısı dengeliyse +1.8x") pasif bir
      kontrol listesiydi: oyuncu bir şey SEÇMİYOR, yalnız elinin şansına
@@ -2113,17 +2106,13 @@ const JOKER_DEFS = {
      Feda edilen taş yok olur; yani her tur "hangi taşı gözden
      çıkarabilirim" kararı doğar. */
   terazi: { key: 'terazi', name: 'Terazi', rarity: 'rare', uses: 3,
-    desc: 'Taş atarken tur başına 1 taş feda edebilirsin. '
-      + '8-13 feda et: hedef, taşın değerinin 15 katı kadar düşer. '
-      + '1-7 feda et: raundun kalanına +0.8x. '
-      + 'O turda işlek cezası yersen feda bonusun iptal olur.' },
+    desc: `Her tur bir taş feda edebilirsin: 8-13 ise hedef taşın 15 katı düşer, 1-7 ise raund boyunca +0.8x. O tur işlek yersen bonus gider.` },
   sarmasik: { key: 'sarmasik', name: 'Sarmaşık', rarity: 'rare', uses: 3,
-    desc: 'Her raund sonunda en nadir jokerinin süresi azalmaz — deste jokerleri dahil.' },
+    desc: `Her raund sonunda en nadir jokerinin süresi azalmaz (deste jokerleri dahil).` },
   /* PLAYTEST 26 · GRUP I — Çift açmak birikimi SILMEZ, yarıya indirir.
      Bkz. YANKEE_RESET_KEEP. */
   yankee: { key: 'yankee', name: 'Yankee', rarity: 'rare', uses: 4,
-    desc: 'Tur sonunda elinde en az 1 çift beklersen +1.0x biriktirir (tavan +5.0x). '
-      + 'Çift açınca birikim yarıya iner.' },
+    desc: `Tur sonunda elinde en az 1 Çift tutarsan +1.0x biriktirir (en fazla +5.0x). Çift açınca biriken yarıya iner.` },
   /* GRUP F (Playtest 7) — Dedikodu yeniden tasarlandı (kullanıcı kararı).
      Eski hâli ("sonraki store'dan 1 ürün sızdırılır") pasifti: hangi ürünün
      sızdığını seçemediğin için çoğu raund hiçbir şey hissettirmiyordu.
@@ -2141,8 +2130,7 @@ const JOKER_DEFS = {
     /* P29 · Grup L (2. tur): açıklamadaki örnek cümle ("— farklı renkten
        bir Sıralı'nın arasına girebilir…") kaldırıldı; kural zaten ilk
        cümlede tam olarak duruyor ve tooltip kutusu taşıyordu. */
-    desc: 'Seçtiği renkteki taşlar renksiz sayılır: her kombinasyonda, '
-      + 'her konumda kullanılabilir.' },
+    desc: `Seçtiği renkteki taşlar renksiz sayılır: her grupta, her yerde kullanılabilir.` },
   /* PLAYTEST 9 · GRUP Q — DAVRANIŞ KESİNLEŞTİ (kullanıcının 3. talebi).
      GDD 9'daki yorum "açılan taşlar SABİTLENİR, ayrı bir alanda durur ve
      her tur pasif puan üretir" idi; iki kez bu şekilde uygulandı ve iki kez
@@ -2153,9 +2141,9 @@ const JOKER_DEFS = {
      Risk tarafı (GDD'deki %25 kopma) korundu ama aynı eyleme bağlandı:
      her açılımda %25 ihtimalle sakız kopar ve taşlar geri dönmez. */
   bungieGum: { key: 'bungieGum', name: 'Bungie Gum', rarity: 'rare', uses: 4,
-    desc: 'Açtığın taşlar sakıza yapışır: açılım bu tur masada durur, sonraki tur başında ıstakana döner. Her açılımda %25 kopma riski.' },
+    desc: `Açtığın taşlar puan verdikten sonra sakıza yapışır ve sonraki tur başında ıstakana döner. Her açılımda sakızın kopma ihtimali %25.` },
   fuzyon: { key: 'fuzyon', name: 'Füzyon', rarity: 'rare', uses: 3,
-    desc: 'İki jokerini birleştirir: biri erir, efekti ve süresi diğerine geçer.' },
+    desc: `İki jokerini tek kartta birleştirir: ikisinin efekti birlikte çalışır, süre uzun olanınki olur.` },
 
   /* ===== LEGENDARY (8) ===== */
   /* PLAYTEST 11 · GRUP D (kullanıcı kararı) — SISYPHUS'UN KOŞULU DEĞİŞTİ.
@@ -2171,7 +2159,7 @@ const JOKER_DEFS = {
        raund 4 turlu olduğu için +15.0x'e ancak son turda ulaşılabiliyordu.
        Artık jokere özel `sisyphusStreak` okunur; yalnız açılımsız geçen turda
        sıfırlanır. `consecMeldTurns` raund içi kalır (Seri Açıcı onu okur). */
-    desc: 'Üst üste açtıkça kaya yükselir: 2. tur +2.0x, 3. tur +4.0x, 4. tur +8.0x. Kaya raundlar arasında kalır ama her yeni raundda bir kademe düşer; bir tur açmazsan en dibe düşer.',
+    desc: `Her tur açılım yaptıkça kaya yükselir: 2. tur +2.0x, 3. tur +4.0x, 4. tur +8.0x. Bir tur açmazsan kaya en dibe düşer; yeni raundda bir kademe geriler.`,
     effect: (c) => {
       const i = Math.min(c.sisyphusStreak || 0, SISYPHUS_STEPS.length) - 1;
       return i >= 0 ? { mult: SISYPHUS_STEPS[i], flat: 0 } : null;
@@ -2201,7 +2189,7 @@ const JOKER_DEFS = {
     desc: 'Açılımların +1.5x, son raundunda +3.5x. Süresi dolunca 1 raundluk rastgele bir Mythic olur.' },
   medusa: { key: 'medusa', name: 'Medusa', rarity: 'legendary', uses: 2,
     /* P30 · Grup E: +1.2x → +3.0x ve +80 puan (MEDUSA_MULT / MEDUSA_FLAT). */
-    desc: 'Her tur bir taşın taşlaşır: rengi serbest olur, işlek ona işlemez, açılımda +2.0x ve +80 puan verir.' },
+    desc: `Her tur bir taşın taşa döner. Bu taş her renkle grup kurar, işlek cezası yemez ve açılımda +2.0x, +80 puan verir.` },
   /* PLAYTEST 30 · GRUP F (kullanıcı kararı 2026-09-13) — ROBIN HOOD → VASİYET.
      Robin Hood tamamen kaldırıldı. Vasiyet süresi dolup KIRILAN her
      jokerin efektini devralır: kırılan kaydın bir kopyası `j.legacy`
@@ -2211,7 +2199,7 @@ const JOKER_DEFS = {
      gelince en eskisi düşer. Vasiyet kırılınca mirası da onunla gider.
      Ayrıntılı kurallar: bkz. _ageJokers içindeki VASİYET bloğu. */
   vasiyet: { key: 'vasiyet', name: 'Vasiyet', rarity: 'legendary', uses: 3,
-    desc: 'Süresi dolup kırılan her jokerin efekti bu karta miras kalır (en fazla 2, yenisi en eskisini düşürür). Vasiyet kırılınca taşıdığı her şey birlikte gider.' },
+    desc: `Süresi biten jokerlerin efekti bu karta geçer (en fazla 2, yeni gelen en eskiyi düşürür). Vasiyet bitince hepsi onunla gider.` },
   /* PLAYTEST 30 · GRUP G (kullanıcı kararı 2026-09-13) — NEWTON → İPOTEK.
      Newton tamamen kaldırıldı. İpotek oyuncunun ELLE tetiklediği bir
      karttır (kartın üstündeki düğme, bkz. useIpotek): o raund +2 tur,
@@ -2221,7 +2209,7 @@ const JOKER_DEFS = {
      SATRANÇ SAATİ (yeni anahtar; `ipotek` kayıtlardan restore() ile düşer).
      Karar her tur: en iyi açılımı aramak mı, hızlı çarpanı almak mı? */
   satrancSaati: { key: 'satrancSaati', name: 'Satranç Saati', rarity: 'legendary', uses: 3,
-    desc: 'Her tur 30 saniyelik saat işler; açılımı onayladığında kalan her 5 sn +0.5x (en çok +3.0x). Raundda bir kez saati durdurabilirsin.' },
+    desc: `Her tur 30 saniyelik saat işler: onaylarken kalan her 5 sn +0.5x (en çok +3.0x). Raundda bir kez saati durdurabilirsin.` },
   /* PLAYTEST 11 · GRUP F (kullanıcı kararı) — TRUVA ATI → PANDORA.
      Eski "Pandora" (her raund iyi/kötü kutu) TAMAMEN KALDIRILDI; ismi ve
      teması bu karta geçti. Store'da gizemli bir KUTU olarak satılır ve
@@ -2243,7 +2231,7 @@ const JOKER_DEFS = {
   /* P54 · Grup C (kullanıcı kararı 2026-09-29) — ad "Ateş Tüccarı" → "SİMSAR".
      EFEKT ve ANAHTAR (`atesTuccari`) değişmedi. */
   atesTuccari: { key: 'atesTuccari', name: 'Simsar', rarity: 'legendary', uses: 3,
-    desc: 'Her store’da 1 ürüne pazarlık: %60 ihtimalle %40 indirim, tutmazsa ürün kaçar. Tutarsa ateşi çal: %50 bedava (sonraki raund işlek +%10), tutmazsa ürün kaçar.' },
+    desc: `Her store’da bir ürüne pazarlık: %60 ihtimalle %40 indirim, olmazsa ürün kaçar. Tutarsa bir kez daha dene: %50 bedava (sonraki raund işlek +%10), olmazsa ürün kaçar.` },
   /* PLAYTEST 34 (kullanıcı onayı 2026-09-13) — LEGENDARY 13 → 15, iki YENİ kart.
      RÜŞVET — coini RAUND İÇİNDE harcamanın yolu. Taş atma aşamasında seçili
      taşlar desteye (rastgele yere) döner, desteden aynı sayıda taş gelir.
@@ -2314,7 +2302,7 @@ const JOKER_DEFS = {
      çıktı; "The World" adı yeni tasarlanan Mythic'e (Öteki Dünya) yer açtı. */
   theWorld: { key: 'theWorld', name: 'Crimson King', rarity: 'mythic', uses: 2, runLong: true,
     /* P31 · Grup A: başa sarmaya ek +3.0x KALICI; bedeli run boyu hedef +%10 (permTargetUp). */
-    desc: 'Boss raundunda ölürsen raund baştan başlar ve +1.5x kalıcı çarpan kazanırsın. Bedeli: run boyunca hedefler %10 artar. Run boyunca 1 kez.' },
+    desc: `Boss raundunu kaybedersen raund baştan başlar ve kalıcı +1.5x kazanırsın (run boyunca 1 kez). Bedeli: run boyunca hedefler %10 artar.` },
   seytan: { key: 'seytan', name: 'Şeytan\'ın Teklifi', rarity: 'mythic', uses: 1,
     desc: 'Raundun ilk turunda tüm coinlerine el koyar. Coin başına +20 puan ve +0.10x çarpan verir.' },   // SEYTAN_SCORE / SEYTAN_MULT
   /* PLAYTEST 31 · GRUP C (kullanıcı onayı 2026-09-13) — PINKY FINGER OF THE
@@ -2358,7 +2346,7 @@ const JOKER_DEFS = {
      kullanıldığı açılım ×3 puan verir. Elmayı AÇTIĞIN an cennetten
      kovulursun: raundun kalanında tur başı 2 taş eksik çekiş, işlek +%20. */
   yasakElma: { key: 'yasakElma', name: 'Adem ile Havva', rarity: 'mythic', uses: 1,
-    desc: 'Raund başında eline bir Elma gelir: okey gibi her taşın yerine geçer, kullanıldığı açılım ×1.5 puan verir. Elmayı açınca kovulursun: kalan turlarda 2 taş eksik çekersin, işlek +%20.' },
+    desc: `Raund başında eline bir Elma gelir: her taşın yerine geçer, açılımına ×1.5 verir. Elmayı açarsan kalan turlarda 2 taş eksik çekersin, işlek riski +%20.` },
   /* PLAYTEST 31 · GRUP J (kullanıcı onayı 2026-09-13) — KAĞIT JOKERİ → KAĞIT
      (EN "Paper"). Eski efekt (en düşük 3 taş 13 olur) kaldırıldı, yeni
      anahtar. Her raund başında elindeki en düşük 2 asıl deste taşı KALICI
@@ -2369,9 +2357,9 @@ const JOKER_DEFS = {
      ıstaka: kartına tıklayınca iki el yer değiştirir (tur başına bir kez).
      P59: AY TAKVİMİ olarak yeniden kuruldu — bkz. AY_WELL_SIZE üstündeki blok. */
   otekiDunya: { key: 'otekiDunya', name: 'Öteki Dünya', rarity: 'mythic', uses: 1,
-    desc: 'Attığın taş Ay Kuyusu’na düşer, kalıcı 🌙 Ay Taşı olur. Kuyu dolunca DOLUNAY: taşlar eline akar, o tur OKEY; Ay Taşı +1.5x.' },
+    desc: `Attığın taş Ay Kuyusu’na düşer ve açılımda +1.5x veren kalıcı 🌙 Ay Taşı olur. Kuyu dolunca Dolunay: taşlar o tur eline okey olarak gelir.` },
   kagit: { key: 'kagit', name: 'Kağıt', rarity: 'mythic', uses: 1,
-    desc: 'Her raund başında elindeki en düşük taş KALICI olarak okeye dönüşür (Okey Mührü gibi: her stage o stage’in okeyi olur).' },
+    desc: `Her raund başında elindeki en düşük taş kalıcı olarak okeye dönüşür (Okey Mührü gibi, her stage o stage’in okeyi olur).` },
 
   /* ===== P61 · KUMARHANE JOKERLERİ (kullanıcı kararı 2026-10-04) =====
      `casino: true` → YALNIZ Kumarhane Run'da çıkar (store, paket, bahis
@@ -2388,21 +2376,21 @@ const JOKER_DEFS = {
   krupiye: { key: 'krupiye', name: 'Krupiye', rarity: 'legendary', casino: true,
     desc: 'Tutan bahsin ödülü ×2 (Katla ile ×4); Güvenli tutunca da +0.35x kalıcı.' },
   sansliZar: { key: 'sansliZar', name: 'Şanslı Zar', rarity: 'rare', casino: true,
-    desc: 'Raundu kaybedeceğin anda zar atılır: 5-6 gelirse raund sıyrılarak kazanılır (bahis ödülü yok). Her iki durumda kart kırılır.' },
+    desc: `Raundu kaybedeceğin anda zar atılır: 5-6 gelirse raundu kıl payı kazanırsın (bahis ödülü yok). Her iki durumda kart kırılır.` },
   kartSayici: { key: 'kartSayici', name: 'Kart Sayıcı', rarity: 'common', casino: true,
     desc: 'Bahis penceresinde elinden 6 taş açık görünür.' },
   fisUstasi: { key: 'fisUstasi', name: 'Fiş Ustası', rarity: 'common', casino: true,
     desc: '🟢 Güvenli bahis tutunca kalıcı +0.2x.' },
   rulet: { key: 'rulet', name: 'Rulet', rarity: 'rare', casino: true,
-    desc: 'Raund başı 🔴/⚫ seç: açılımdaki o renk taş başına +0.3x, hiç yoksa −1x.' },
+    desc: `Her raund başında 🔴 ya da ⚫ seç: açılımındaki o renkten her taş +0.3x, hiç yoksa −1x.` },
   hileliZar: { key: 'hileliZar', name: 'Hileli Zar', rarity: 'rare', casino: true,
-    desc: 'Yüksek mi Alçak mı: eşitlik senin, doğru tahmin +0.08x kalıcı, stage başı 1 geri alma.' },
+    desc: `Yüksek mi Alçak mı oyununda eşitlik senin sayılır, her doğru tahmin kalıcı +0.08x verir. Her stage’de 1 kez geri alabilirsin.` },
   martingale: { key: 'martingale', name: 'Martingale', rarity: 'rare', casino: true,
-    desc: 'Kaybedilen yan bahis sonrakinin ödemesini ×2’ler (≤×8); tutunca +0.2x×kat kalıcı.' },
+    desc: `Kaybettiğin yan bahis, sonrakinin ödemesini 2 katına çıkarır (en çok ×8). Tutunca kat başına kalıcı +0.2x.` },
 
   /* ===== BOSS (EPIC) — Slot Jokerleri (4) + Deste Jokerleri (4, GDD 10):
      deste jokerleri desteye karışır, eline gelince aktifleşir,
-     kombinasyona giremez, discard edilirse -100 puan (GDD 7.6) ===== */
+     gruba giremez, discard edilirse -100 puan (GDD 7.6) ===== */
   /* Playtest 6 (2026-08-07): GDD "her yenilen taş başına +0.3x" diyor;
      kodda 0.5 vardı → 2 taş/tur 1.0x üretiyordu (birikim raundlar arası
      taşındığı için 3. turda +3x'e ulaşıyordu). GDD formülüne dönüldü. */
@@ -2418,11 +2406,11 @@ const JOKER_DEFS = {
      AÇILIMDA ortaya çıkar. Taşlar artık görünür şekilde işaretlenir
      (t.glitch) ki oyuncu "bunlardan biri" bilgisini alsın. */
   dervish: { key: 'dervish', name: 'GLITCH', rarity: 'epic', uses: 3, mech: 'deck', icon: '🌀',
-    desc: 'Eldeyken her tur 2 taşını glitchler. Birinde gizli +100 puan var, açılımda ortaya çıkar.' },
+    desc: `Eldeyken her tur 2 taşını bozar (glitch). Birinde gizli +100 puan var; açılımda ortaya çıkar.` },
   misunderstood: { key: 'misunderstood', name: 'The Misunderstood', rarity: 'epic', uses: 3, mech: 'deck', icon: '🎭',
-    desc: 'Eline gelince hedef %15 artar, açılımların +2.0x olur. Kaybedecekken feda olup puanı tamamlar ve uyanır; süresi dolunca da uyanır.' },
+    desc: `Elindeyken hedef %15 artar, açılımların +2.0x alır. Kaybedeceksen kendini feda edip eksik puanı tamamlar ve uyanır; süresi bitince de uyanır.` },
   zombie: { key: 'zombie', name: 'Zombie', rarity: 'epic', uses: 3, mech: 'deck', icon: '🧟',
-    desc: 'Eldeyken enfeksiyon her tur yan taşa atlar. Enfekte taşı açarsan: +2.0x, +50 puan. Taş gider, zincir kırılır.' },
+    desc: `Eldeyken enfeksiyon her tur yandaki taşa geçer. Enfekte taşı açarsan +2.0x ve +50 puan; taş gider, zincir kırılır.` },
   uzayli: { key: 'uzayli', name: 'Alien', rarity: 'epic', uses: 3, mech: 'deck', icon: '👽',
     desc: 'Eldeyken her tur 3 taşını kopyalar. Kopya açılımda +100 puan, raund sonunda kaybolur.' },
   /* PLAYTEST 17 · GRUP E/21 — KOLLAR ARTIK ÇARPAN VERİR (kullanıcı onayı
@@ -2460,12 +2448,12 @@ const JOKER_DEFS = {
   kahin: { key: 'kahin', name: 'Kahin', rarity: 'epic', uses: 3,
     desc: 'Her raund bir kehanet hedefi verir. Tutturursan raund sonunda ödül alırsın.' },
   tuccar: { key: 'tuccar', name: 'Tüccar', rarity: 'epic', uses: 4,
-    desc: 'Her raund iki takas teklifi getirir: birini seç ya da reddet. Üst üste 2 ret ve gider.' },
+    desc: `Her raund iki takas teklifi getirir: birini seç ya da reddet. Üst üste 2 kez reddedersen gider.` },
   fatality: { key: 'fatality', name: 'Fatality', rarity: 'epic', uses: 3,
     desc: 'Her tur bir skor sınırı koyar. Sınırı aşarsan hedef %10 düşer.' },
   /* P35 · Grup K — ad "Ritim Jokeri" → "Ritim" (EN "Rhythm"), kademeler RITIM_BONUS. */
   ritim: { key: 'ritim', name: 'Ritim', rarity: 'epic', uses: 3,
-    desc: 'Onaydan önce ritim çubuğu çıkar: doğru anda durdur → +1.0x / +2.0x / +4.0x. Kaçırırsan joker yok olur.' },
+    desc: `Açılımı onaylamadan önce ritim çubuğu çıkar: doğru anda durdurursan +1.0x / +2.0x / +4.0x. Kaçırırsan joker yok olur.` },
   corporates: { key: 'corporates', name: 'The Corporates', rarity: 'epic', uses: 4,
     desc: 'Her raund bir şirket görevi verir: başarırsan ödül, başaramazsan ceza.' },
   godzilla: { key: 'godzilla', name: 'Godzilla', rarity: 'epic', uses: 3,
@@ -2473,7 +2461,7 @@ const JOKER_DEFS = {
   kelebek: { key: 'kelebek', name: 'Kelebek Etkisi', rarity: 'epic', uses: 3,
     desc: `Önceki turdan farklı tür açarsan sürpriz ödül: +${KELEBEK_MULT.toFixed(1)}x, +${KELEBEK_FLAT} puan ya da +${KELEBEK_COIN} coin.` },
   aynaKral: { key: 'aynaKral', name: 'Ayna Kral', rarity: 'epic', uses: 2,
-    desc: 'Açılımların puanı yansımada birikir. Açılımsız turda alırsın: 2 açılım ×1.5, 3+ açılım ×2.' },
+    desc: `Açılımlarının puanı aynada birikir. Açılım yapmadığın turda hepsini alırsın: 2 açılım biriktiyse ×1.5, 3 ve üstü ×2.` },
   karaKedi: { key: 'karaKedi', name: 'Kara Kedi', rarity: 'epic', uses: 2,
     desc: 'En düşük taşı çekersen kalıcı 13 olur; açılımda +80 puan.' },
   /* P71 — FİNAL nadirlik: yalnız Kumarhane finalinde Lady Luck'ı yenince
@@ -2621,7 +2609,7 @@ const TUCCAR_BOSS_OFFERS = [
 
 /* The Corporates BOSS Koşulu (GDD 13.4): tek şirket, RAUND BOYU geçerli ve
    ağır görev; başarısızlık doğrudan Game Over.
-   P81 (kullanıcı 2026-10-07: Kaioken için pas geçip son turda 3+ kombinasyon
+   P81 (kullanıcı 2026-10-07: Kaioken için pas geçip son turda 3+ grup
    açtı, hedefi geçti ama Game Over oldu — "HER turunda" kuralı görünmüyordu
    ve pas geçmeye dayanan jokerlerle oynanmıyordu) → KURAL YUMUŞADI: görevler
    "her tur" değil "raund boyunca"; bir tur pas geçip sonra patlatmak mümkün.
@@ -2632,11 +2620,11 @@ const TUCCAR_BOSS_OFFERS = [
      ilk deneme: Abyssal "bir turda 3 + toplam 6" → %99-100 (bot ilk turda zaten 5 açıyor: görev boşaldı)
      SEÇİLEN: aşağıdaki eşikler (tablo GDD 22.1b-55). */
 const CORP_BOSS_CIFT = 3;          // Kurogane: raund boyunca YALNIZ Çift, en az 3 Çift
-const CORP_BOSS_TURN3 = 3;         // Abyssal: açılım yaptığın HER turda en az 3 kombinasyon (pas serbest)
+const CORP_BOSS_TURN3 = 3;         // Abyssal: açılım yaptığın HER turda en az 3 grup (pas serbest)
 const CORP_BOSS_PASS = 1;          // Verdatek: en fazla 1 tur pas
 const CORPS_BOSS = {
   kizil: { text: `Raund boyunca YALNIZCA Çift aç — en az ${CORP_BOSS_CIFT} Çift` },
-  derin: { text: `Açılım yaptığın her turda en az ${CORP_BOSS_TURN3} kombinasyon aç — pas geçebilirsin` },
+  derin: { text: `Açılım yaptığın her turda en az ${CORP_BOSS_TURN3} grup aç — pas geçebilirsin` },
   altin: { text: 'Raundu en geç 2. turda geç' },
   yesil: { text: `En fazla ${CORP_BOSS_PASS} tur pas geç — diğer her turda açılım yap` },
 };
@@ -2646,7 +2634,7 @@ const CORPS_BOSS = {
    esintisi). Anahtarlar (kizil/derin/altin/yesil) kayıt uyumu için AYNI. */
 const CORPS = [
   { key: 'kizil', name: '🔴 Kurogane', text: 'Bir turda YALNIZCA Çift aç', rewardText: `+${CORP_KIZIL_MULT.toFixed(1)}x kalıcı`, penaltyText: '-100 puan' },
-  { key: 'derin', name: '🔵 Abyssal', text: 'Bir turda en az 3 kombinasyon aç', rewardText: `+${CORP_DERIN_COIN} coin`, penaltyText: '-50 puan' },
+  { key: 'derin', name: '🔵 Abyssal', text: 'Bir turda en az 3 grup aç', rewardText: `+${CORP_DERIN_COIN} coin`, penaltyText: '-50 puan' },
   { key: 'altin', name: '🟡 Heliox', text: 'Raundu 1. veya 2. turda geç', rewardText: `+${CORP_ALTIN_MULT.toFixed(1)}x kalıcı +${CORP_ALTIN_COIN} coin`, penaltyText: 'raund coini yarıya' },
   { key: 'yesil', name: '🟢 Verdatek', text: 'Her turda el aç, hiç geçme', rewardText: `+${CORP_YESIL_MULT.toFixed(1)}x kalıcı`, penaltyText: '-50 puan' },
 ];
@@ -2702,7 +2690,7 @@ const BAL_KUPU_INSTANT = 6;    // kırılınca anında gelen coin (P51: 10 → 6
 const BAL_KUPU_PERM = 2;       // her raund sonuna eklenen kalıcı coin (P51: 3 → 2)
 
 /* GRUP H (Playtest 7) — Uzaylı BOSS "Sinsi Bulaşma": her tur başında elde
-   kaç taş gizlice uzaylıya dönüşür. Gizli uzaylı içeren kombinasyon onay
+   kaç taş gizlice uzaylıya dönüşür. Gizli uzaylı içeren grup onay
    anında çöker (0 puan, taşlar ele döner). */
 const ALIEN_HIDDEN_PER_TURN = 3;
 
@@ -2812,7 +2800,7 @@ const VAMPIR_MULT = 4;
    değerinin 10 katı PUAN yazılır — ama yem taşı yanar.
    Yemin ELDE olması (atılanlar arasında değil) bilinçlidir: atılan taşlar
    arasından seçilseydi en yükseği seçmek her zaman doğru olur, karar diye
-   bir şey kalmazdı. Elde duran taş ise bir sonraki turun kombinasyonuna
+   bir şey kalmazdı. Elde duran taş ise bir sonraki turun grubuna
    aday olduğu için "13'ü yeme koyayım mı" gerçek bir bedel taşır.
    AYNA KIRIĞI (Mythic) ile çakışmaz: o raund boyunca işleği tersine
    çevirir ve ATILAN taşın 20 katını verir; ikisi birdeyse Mythic öne
@@ -2842,7 +2830,7 @@ const UP_VAL = {
   kasaPer: 2,           // raund sonu kalıcı coin
   tilsim: 0.10,         // işlek riski düşüşü
   altinDamar: 0.10,     // ham puan artışı (P51: 0.15 → 0.10)
-  bileme: 1.2,          // çok kombinasyonlu turda çarpan (P51: 2.0 → 1.2)
+  bileme: 1.2,          // çok gruplu turda çarpan (P51: 2.0 → 1.2)
   uzunSoluk: 1,         // raund başına ekstra tur
   kayipSandik: 8,       // sandıkla gelen coin (P51: 15 → 8)
 };
@@ -2879,7 +2867,7 @@ const UPGRADE_DEFS = {
     desc: `Her açılımın ham puanı kalıcı %${UP_PCT(UP_VAL.altinDamar)} artar.` },
   bileme: { key: 'bileme', icon: '🔩', name: 'Bileme Taşı', cat: 'mult',
     stats: [`+${UP_VAL.bileme.toFixed(1)}x`],
-    desc: `Bir turda 2+ kombinasyon açtığın her turda +${UP_VAL.bileme.toFixed(1)}x.` },
+    desc: `2 ya da daha fazla grup açtığın her turda +${UP_VAL.bileme.toFixed(1)}x.` },
   /* --- YENİ — el / slot kapasitesi --- */
   uzunSoluk: { key: 'uzunSoluk', icon: '⏱', name: 'Uzun Soluk', cat: 'cap',
     stats: [`⏱ +${UP_VAL.uzunSoluk} tur`],
@@ -2899,15 +2887,15 @@ const UPGRADE_DEFS = {
     stats: ['🔮 yaşlanmaz'],
     desc: 'En nadir jokerinin süresi hiç azalmaz.' },
   /* PLAYTEST 9 · GRUP E — YENİDEN TASARLANDI (kullanıcı seçimi "Çift Basamak").
-     Eski hâli `carpanStep +1` idi: tek kombinasyonda +0.3x demekti, yani aynı
+     Eski hâli `carpanStep +1` idi: tek grupta +0.3x demekti, yani aynı
      ekranda duran Kalıcı Çarpan'dan (+0.5x) HER KOŞULDA zayıftı → hiç rasyonel
      seçim olmuyordu. Yeni hâli aynı ekseni korur ama OYNAYIŞLA ÖLÇEKLENİR:
-     kombinasyon sayısı tabloda iki katı sayılır (1→2.3x, 2→3.1x, 3→4.0x,
-     4→4.6x). Tek kombinasyonda hâlâ mütevazı (+0.3x), çok kombinasyonlu
+     grup sayısı tabloda iki katı sayılır (1→2.3x, 2→3.1x, 3→4.0x,
+     4→4.6x). Tek grupta hâlâ mütevazı (+0.3x), çok gruplu
      turlarda +1.5x'e kadar çıkar. Bir kez alınabilir (kümülatif değil). */
   usta:    { key: 'usta',    icon: '🀄', name: 'Usta Eli', cat: 'mult',
     stats: ['🀄 ×2 basamak'],
-    desc: 'Kombinasyon sayın çarpan tablosunda iki katı sayılır.' },
+    desc: `Bir turda açtığın grup sayısı çarpan tablosunda iki kat sayılır.` },
 };
 
 /* "ASIL DESTE" TAŞI MI?  (her yüzden en çok 2 kopya kuralı yalnız bunlara
@@ -3031,7 +3019,7 @@ const colorIdx = (c) => COLORS.indexOf(c);
 /* PLAYTEST 9 · GRUP O — MEDUSA'NIN TAŞLAŞTIRDIĞI TAŞLAR RENK OLARAK WILD.
    GDD 11: Medusa bir taşı "taşa çevirir" — taşın SAYISI kalır ama artık
    bir rengi yoktur (gri taş). Kodda `stoned` yalnız işlek muafiyeti +
-   çarpan olarak işleniyordu, kombinasyon kuralları taşın ESKİ rengini
+   çarpan olarak işleniyordu, grup kuralları taşın ESKİ rengini
    okumaya devam ediyordu — yani taşlaşan taş hâlâ renk kısıtlıydı (bug).
    Artık üç kuralın da renk denetiminde taşlaşmış taşlar ATLANIR; sayı
    denetimi (per'de aynı sayı, sıralıda ardışıklık, çiftte eşitlik) aynen
@@ -3041,7 +3029,7 @@ const colorIdx = (c) => COLORS.indexOf(c);
    İki kaynağı var ve ikisi de aynı kapıdan geçer:
      · taşlaşmış taş (Grup O) — renksizleşir;
      · SU TAŞI (kullanıcı kararı 2026-09-06) — "su şeklini alır": girdiği
-       kombinasyonda rengi umursanmaz, SAYISI aynen geçerlidir.
+       grupta rengi umursanmaz, SAYISI aynen geçerlidir.
    Kural yalnız RENK DENETİMİNİ kaldırır; taş hâlâ gerçek bir renge sahiptir
    ve renk sayan jokerler (Renk Ustası, Renkli Dünya, Tek Renk Ruhu) onu
    kendi renginde görür — taşlaşmış taşta da bugün böyledir. */
@@ -3239,7 +3227,7 @@ function resolveCombo(tiles, isOkeyFn, freePerColors, opts) {
 }
 
 /* Kombinasyon içi GÖRSEL sıralama (Grup E, Playtest 6)
-   Sorun: kombinasyonun taşları oyuncunun SEÇİM SIRASINDA duruyordu; okey
+   Sorun: grubun taşları oyuncunun SEÇİM SIRASINDA duruyordu; okey
    (ya da herhangi bir wild) rastgele bir yerde görünüyor, "hangi taşın
    yerine geçti" anlaşılmıyordu (örn. 5-6-7'de 6 yerine okey kullanıldığında
    okey en sonda duruyordu).
@@ -3393,7 +3381,7 @@ const Game = {
       permTurns: 0,         // Uzun Soluk yükseltmesi: raund başına kalıcı +1 tur
       /* GRUP I (P20) — yeni stage sonu güçlendirmelerinin kalıcı alanları */
       permRawBonus: 0,      // Altın Damar: ham puana kalıcı yüzde
-      permComboBonus: 0,    // Bileme Taşı: 2+ kombinasyonlu turlarda çarpan
+      permComboBonus: 0,    // Bileme Taşı: 2+ gruplu turlarda çarpan
       sellFull: false,      // Sigorta Poliçesi: satış = alış fiyatı
       secondChance: 0,      // İkinci Şans: kalan kullanım (0 veya 1)
       /* GRUP E (P22) — İkinci Şans RUN BOYUNCA BİR KEZ TEKLİF EDİLİR.
@@ -3420,7 +3408,7 @@ const Game = {
       sisyphusStreak: 0,    // P48 — Sisyphus kayası: üst üste açılımlı tur, RAUNDLAR ARASI taşınır
       sisyphusTurnKey: null, // P48 — aynı tur iki kez sayılmasın (tur sonu + raund kazanma)
       altinOranCount: 0,    // Grup B (P18) — Altın Oran kaç kez kullanıldı (tavan ALTIN_ORAN_MAX)
-      carpanScale: 0,       // Grup E — Usta Eli (kombinasyon sayısı 2 kat sayılır)
+      carpanScale: 0,       // Grup E — Usta Eli (grup sayısı 2 kat sayılır)
       consumSlotBonus: 0,   // Grup D (P8) — Heybe: tüketilebilir envanteri büyütür
       permTargetCut: 0,     // Grup D (P8) — Derin Nefes (altinCanak): hedef puanlar kalıcı düşer
       /* FERMAN (P28 · Grup F) — `fermanUsed` RUN boyunca sayar (tavan
@@ -3494,7 +3482,7 @@ const Game = {
       statDiscarded: 0,     // atılan taş
       statBought: 0,        // store'dan alınan joker / değnek / paket
       statRerolls: 0,       // store yenilemesi
-      statTypes: { per: 0, sirali: 0, cift: 0 },   // açılan kombinasyon türleri
+      statTypes: { per: 0, sirali: 0, cift: 0 },   // açılan grup türleri
       status: 'playing',
     };
     this.state.okey = this._rollOkey();
@@ -3667,7 +3655,7 @@ const Game = {
   },
 
   /* Trainer: stage okeyini elle sabitle / serbest bırak (Grup K).
-     color+number verilirse o kombinasyon her stage'de geçerli olur;
+     color+number verilirse o grup her stage'de geçerli olur;
      null gönderilirse rastgele belirlemeye geri dönülür. */
   setTrainerOkey(color, number) {
     if (!this.trainerMode) return { ok: false, error: 'Yalnız Trainer modunda.' };
@@ -4743,7 +4731,7 @@ const Game = {
   },
 
   /* DESTE BÜTÜNLÜK DENETİMİ (Playtest 6, Grup A7)
-     Normal Okey destesinde her (renk+sayı) kombinasyonundan EN FAZLA 2 adet
+     Normal Okey destesinde her (renk+sayı) grubundan EN FAZLA 2 adet
      bulunur. Playtest'te aynı elde 3 adet Mavi 13 görüldü. Kök neden:
      kalıcı deste değişiklikleri (Kopyacı tüketilebiliri → tileMods 'add',
      Okey Mührü → 'okeyClone', Frankenstein → reviveTiles) desteye ETİKETSİZ
@@ -4777,7 +4765,7 @@ const Game = {
 
   /* PLAYTEST 16 · GRUP E — DESTE/EL BÜTÜNLÜK DENETİMİ.
      Eski sürüm YALNIZ deste + el + atılanları sayıyordu; masadaki açık
-     kombinasyonlar (opened / prevOpen / staged / islemeler) kapsam
+     gruplar (opened / prevOpen / staged / islemeler) kapsam
      dışıydı. Bungie Gum'ın ürettiği fazla taşlar tam orada saklanıyordu,
      bu yüzden denetim "ok" diyordu. Artık taşın bulunabileceği HER yer
      taranır ve üç ayrı bozulma türü yakalanır:
@@ -5108,7 +5096,7 @@ const Game = {
        KÖK NEDEN (kullanıcının ekran görüntüsündeki "çoğalma: blue-7×3,
        red-7×3, … (12 değer)" alarmı): `createDeck` her raund başında
        106 taşlık YEPYENİ bir deste üretiyordu, ama önceki raundun
-       ATILAN yığını ve açık kombinasyonları (discardPile / opened /
+       ATILAN yığını ve açık grupları (discardPile / opened /
        prevOpen / staged / islemeler) bu satırların ÇOK ALTINDA, yani
        bütünlük nöbetçisi çalıştıktan SONRA temizleniyordu.
        Nöbetçi TÜM bölgeleri taradığı için her eski taş yeni destedeki
@@ -5237,7 +5225,7 @@ const Game = {
     s.phase = 'meld';
     s.staged = [];
     s.opened = [];       // bu tur onaylananlar
-    s.prevOpen = [];     // önceki turdan işlenebilir kombinasyonlar (GDD 3.7)
+    s.prevOpen = [];     // önceki turdan işlenebilir gruplar (GDD 3.7)
     s.islemeler = [];    // bu tur bekleyen işlemeler [{comboIndex, tiles, addSum}]
     s.turnMode = null;
     s.status = 'playing';
@@ -5403,7 +5391,7 @@ const Game = {
         t.color = s.okey.color; t.number = s.okey.number;
         t.isOkeyReal = true; t.pinkyOkey = true; t.origin = t.origin || 'pinky'; n++;
       }
-      s.roundStartNotes.push(`🩷 Pinky Warrior: küçükler ordusu — 1 ve 2'ler bu raund OKEY (${n} taş)`);
+      s.roundStartNotes.push(`🩷 Pinky Warrior: küçükler ordusu — 1 ve 2'ler bu raund okey (${n} taş)`);
     }
     /* ÖTEKİ DÜNYA (P54 · Grup B) — ikinci el desteden kurulur. */
     if (this.hasActive('otekiDunya')) this._setupOteki(s.roundStartNotes);
@@ -5414,7 +5402,7 @@ const Game = {
       if (this.realHandCount() < MAX_HAND) {
         s.hand.push({ id: nextTileId(s), color: s.okey.color, number: s.okey.number,
           isOkeyReal: true, copied: true, apple: true, origin: 'yasakElma' });
-        s.roundStartNotes.push('🍎 Adem ile Havva: eline Yasak Elma geldi — her taşın yerine geçer, açılımı ×1.5. Açtığın an kovulursun.');
+        s.roundStartNotes.push(`🍎 Adem ile Havva: eline Yasak Elma geldi — okey gibi her taşın yerine geçer, açılımına ×${APPLE_MULT}. Açarsan cezası başlar.`);
       } else {
         s.roundStartNotes.push('🍎 Adem ile Havva: ıstaka dolu — elma bu raund düşmedi');
       }
@@ -5514,7 +5502,7 @@ const Game = {
     const pandoraJ = this.slotRecs().find(j => j.key === 'truva' && !j.revealed);
     if (pandoraJ) this._revealPandora(pandoraJ, s.roundStartNotes);
     /* Pandora · ARMAĞAN — her raund başında 3 taş 13'e çıkar ve altın
-       işaretlenir; açılımda o kombinasyonun puanını %25 artırır. */
+       işaretlenir; açılımda o grubun puanını %25 artırır. */
     const armJ = this.slotRecs().find(j => j.key === 'truva' && j.pandora === 'armagan');
     if (armJ) {
       const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !this.isOkeyTile(t)
@@ -5528,7 +5516,7 @@ const Game = {
         n++;
       }
       if (n) s.roundStartNotes.push(`🎁 Pandora (Armağan): ${n} taşın değeri 13 oldu `
-        + `— açılımda kullandığın kombinasyonun puanı %${Math.round(PANDORA_ARMAGAN_BONUS * 100)} artar`);
+        + `— açılımda kullandığın grubun puanı %${Math.round(PANDORA_ARMAGAN_BONUS * 100)} artar`);
     }
     /* Trade Jokeri — GRUP D (P20): PİYASA AÇILIŞI.
        Her raund yeniden çekilir: bir tür yükselişte, bir tür düşüşte,
@@ -5608,7 +5596,7 @@ const Game = {
     if (nosJ) {
       nosJ.prophecyRound = nosRoundKey;
       nosJ.prophecy = true;
-      s.roundStartNotes.push(`Nostradamus kehaneti: bu raundu ilk 2 turda geç → +${NOSTRA_MULT.toFixed(1)}x KALICI çarpan`);
+      s.roundStartNotes.push(`Nostradamus kehaneti: bu raundu ilk 2 turda geç → +${NOSTRA_MULT.toFixed(1)}x kalıcı çarpan`);
     }
     /* KAĞIT (P31 · Grup J) — en düşük 2 asıl deste taşı KALICI okeye döner.
        Okey Mührü ile aynı defter: `tileMods` remove (taşın eski kimliği
@@ -5773,7 +5761,7 @@ const Game = {
         fresh.push(t);
       }
       if (fresh.length)
-        events.push(`👹 Freedom Fighters işaretledi: ${fresh.map(t => COLOR_TR[t.color] + ' ' + t.number).join(', ')} — bu taşları AÇILIMDA KULLANMALISIN`);
+        events.push(`👹 Freedom Fighters işaretledi: ${fresh.map(t => COLOR_TR[t.color] + ' ' + t.number).join(', ')} — bu taşları açılımda kullanmalısın`);
     }
 
     /* ZOMBIE — "Her tur çekilen 3 taştan 1'i enfekte (boş) gelir; her tur
@@ -5796,9 +5784,9 @@ const Game = {
        özdeş taş = bedava Çift açılımı çıkıyordu — koşul oyuncunun LEHİNE
        çalışıyordu. Yeni kural taşları değil AÇILIMI hedefler: her tur
        başında elindeki 3 taş gizlice uzaylıya dönüşür (görünmezler) ve
-       gizli uzaylı içeren HER kombinasyon onay anında ÇÖKER — 0 puan verir,
+       gizli uzaylı içeren HER grup onay anında ÇÖKER — 0 puan verir,
        taşları ele geri döner. Hangi taşın uzaylı olduğunu bilmediğin için
-       büyük kombinasyonlar gerçek bir kumar hâline gelir.
+       büyük gruplar gerçek bir kumar hâline gelir.
        (Çöküş mantığı confirmMelds içindeki _bossAlienCollapse'ta.) */
     if (key === 'uzayli') {
       for (const t of s.hand) delete t.hiddenAlien;
@@ -5850,7 +5838,7 @@ const Game = {
       if (s.jokers.length) {
         const j = s.jokers[Math.floor(this.rng() * s.jokers.length)];
         s.bossCharmId = j.id;
-        events.push(`💋 Lady Luck ${j.name} jokerini büyüledi — bu tur puanı TERS döner, diğer etkisi susar`);
+        events.push(`💋 Lady Luck ${j.name} jokerini büyüledi — bu tur puanı eksiye döner, diğer etkileri susar`);
       }
       const cand = plain();
       if (cand.length) {
@@ -5877,14 +5865,14 @@ const Game = {
          açılımını bilerek şekillendirmeyi gerektirir. */
       const goals = [
         { key: 'cift2',  text: 'Bu tur en az 2 Çift aç' },
-        { key: 'combo2', text: 'Bu tur en az 2 kombinasyon aç' },
+        { key: 'combo2', text: 'Bu tur en az 2 grup aç' },
         { key: 'perFull', text: 'Bu tur 4 taşlı bir Per aç' },
         { key: 'siraliLong', text: 'Bu tur en az 4 taşlı bir Sıralı aç' },
         { key: 'tiles7', text: 'Bu tur en az 7 taş kullan' },
         { key: 'noOkey', text: 'Bu tur okey KULLANMADAN aç' },
       ];
       s.bossOracle = { ...goals[Math.floor(this.rng() * goals.length)], met: false };
-      events.push(`👹 Kahin ZORUNLU kehanet: "${s.bossOracle.text}" — uymazsan bu turun puanı SIFIR`);
+      events.push(`👹 Kahin kehaneti: "${s.bossOracle.text}" — uymazsan bu turun puanı sıfırlanır`);
     }
 
     /* AYNA KRAL — "Yansıma tersine çalışır: biriken puan kazanımdan düşülür."
@@ -5947,7 +5935,7 @@ const Game = {
         for (let i = 0; i < GLITCH_BOSS_CURSED && bad.length; i++)
           bad.splice(Math.floor(this.rng() * bad.length), 1)[0].glitchCurse = true;
         const nBad = marked.filter(t => t.glitchCurse).length;
-        events.push(`👹 GLITCH: ${marked.length} taş glitch'li geldi — ${nBad} tanesi BOZUK, açılımda kullanırsan puanı düşürür`);
+        events.push(`👹 GLITCH: ${marked.length} taş glitch'li geldi — ${nBad} tanesi bozuk; açarsan puanın düşer`);
       }
     }
 
@@ -6217,7 +6205,7 @@ const Game = {
       if (held) {
         const burn = PANDORA_SALGIN_BURN * held;
         s.score = Math.max(0, s.score - burn);
-        events.push(`🦠 Pandora (Salgın): elde bekleyen ${held} dertli taş ${burn} puan yaktı`);
+        events.push(`🦠 Pandora (Salgın): elde tuttuğun ${held} hasta taş ${burn} puan yaktı`);
       }
       const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !t.plague
         && !this.isOkeyTile(t));
@@ -6226,8 +6214,8 @@ const Game = {
         cand.splice(Math.floor(this.rng() * cand.length), 1)[0].plague = true;
         n++;
       }
-      if (n) events.push(`🦠 Pandora (Salgın): ${n} taşın dertlendi `
-        + `(açılımda +${PANDORA_SALGIN_MULT.toFixed(1)}x, elde beklerse tur başına -${PANDORA_SALGIN_BURN} puan)`);
+      if (n) events.push(`🦠 Pandora (Salgın): ${n} taşın hastalandı. `
+        + `Açarsan +${PANDORA_SALGIN_MULT.toFixed(1)}x; elde tutarsan her tur -${PANDORA_SALGIN_BURN} puan.`);
     }
     // Medusa — 1 taş taşlaşır (GDD 11)
     if (this.hasActive('medusa')) {
@@ -6236,7 +6224,7 @@ const Game = {
       if (cand.length) {
         const t = cand[Math.floor(this.rng() * cand.length)];
         t.stoned = true;
-        events.push(`Medusa: ${COLOR_TR[t.color]} ${t.number} taşlaştı (işlekten korunur, açılımda +${MEDUSA_MULT.toFixed(1)}x ve +${MEDUSA_FLAT} puan)`);
+        events.push(`Medusa: ${COLOR_TR[t.color]} ${t.number} taşa döndü (işlek cezası yemez, açılımda +${MEDUSA_MULT.toFixed(1)}x ve +${MEDUSA_FLAT} puan)`);
       }
     }
     /* ZOMBIE — PLAYTEST 10 · GRUP A (bug + yeniden tasarım).
@@ -6429,7 +6417,7 @@ const Game = {
 
   /* ============================================================
      TAŞIN AÇILIMDAKİ ETKİN DEĞERİ — TEK KAYNAK
-     Okey, kombinasyonda YERİNE GEÇTİĞİ taşın değerini taşır; fiziksel
+     Okey, grupta YERİNE GEÇTİĞİ taşın değerini taşır; fiziksel
      sayısını DEĞİL. Bu çözüm `resolveCombo`nun ürettiği `values` Map'inde
      durur ve ham puan (comboSum) uzun zamandır oradan okuyordu.
      PLAYTEST 10 · GRUP D (bug): joker efektleri ise `t.number`'ı doğrudan
@@ -6733,8 +6721,8 @@ const Game = {
       /* Pandora (Grup F) — açılan varyanta göre açılım etkisi.
          Umut  : açılımdaki her taş sabit puan
          Salgın: açılımda kullanılan her DERTLİ taş çarpan verir
-         Armağan: armağan taşı içeren kombinasyonun puanı artar (aşağıda,
-                  kombinasyon döngüsünde) */
+         Armağan: armağan taşı içeren grubun puanı artar (aşağıda,
+                  grup döngüsünde) */
       const pdj = this.slotRecs().find(j => j.key === 'truva' && j.revealed);
       if (pdj && pdj.pandora === 'umut' && ctx.tiles.length) {
         flat += PANDORA_UMUT_FLAT * ctx.tiles.length;
@@ -6751,7 +6739,7 @@ const Game = {
       }
       /* BORSA — PORTFÖY ÇARPANI (P29 · Grup H).
          Açılımda BULUNAN her tür için bir kez, o türdeki hisse sayısı
-         kadar. Kombinasyon sayısıyla çarpılmaz (bkz. BORSA_* notu). */
+         kadar. Grup sayısıyla çarpılmaz (bkz. BORSA_* notu). */
       const tdj = this.slotRecs().find(j => j.key === 'tradeJokeri');
       if (tdj) {
         const sh = tdj.borsaShares || BORSA_EMPTY();
@@ -6850,8 +6838,8 @@ const Game = {
       /* Terzi'nin İğnesi — dikili taş açılımda (IGNE_MULT, tek kaynak)
          PLAYTEST 19 · GRUP D — İKİ EKSİK KAPATILDI:
          (1) İŞLEMEDE HİÇ ÇALIŞMIYORDU. Burada yalnız `ctx.tiles` (yani bu
-             turda YENİ açılan kombinasyonlar) taranıyordu; oyuncu dikili
-             taşı AÇIK bir kombinasyona iliştirdiğinde (işleme, GDD 3.7)
+             turda YENİ açılan gruplar) taranıyordu; oyuncu dikili
+             taşı AÇIK bir gruba iliştirdiğinde (işleme, GDD 3.7)
              taş `s.islemeler`e gidiyor ve ctx.tiles'a hiç girmiyordu →
              +0.6x sessizce düşüyordu. Artık her iki yol da sayılır.
          (2) JOKER KARTI ATEŞLENMİYORDU. `triggered`e sabit 'igne' dizgisi
@@ -6977,15 +6965,15 @@ const Game = {
     for (const c of ctx.combos) {
       /* Su Taşı'nın ESKİ efekti (kombinasyon puanı +%20) 2026-09-06'da
          kaldırıldı; taş artık puan değil RENK SERBESTLİĞİ verir ve etkisi
-         skorlamada değil kombinasyon denetiminde durur (bkz. isColorWild). */
+         skorlamada değil grup denetiminde durur (bkz. isColorWild). */
       /* Pandora · ARMAĞAN (Grup F) — armağan taşı içeren kombinasyonun puanı
-         kombinasyon başına artar. */
+         grup başına artar. */
       if (c.tiles.some(t => t.gift)
           && this.slotRecs().some(j => j.key === 'truva' && j.pandora === 'armagan')) {
         const b = Math.ceil(this.comboSum(c) * PANDORA_ARMAGAN_BONUS);
         flat += b;
         triggered.push({ id: 'pandoraGift', name: 'Pandora (Armağan)',
-          text: `kombinasyon +%${Math.round(PANDORA_ARMAGAN_BONUS * 100)} (+${b})` });
+          text: `grup +%${Math.round(PANDORA_ARMAGAN_BONUS * 100)} (+${b})` });
       }
       /* Ayna Taşı — kombinasyonun en yüksek taşı toplam AYNA_TASI_TIMES kez
          sayılır (P42: 2 → 3): taş zaten bir kez sayıldığı için ek puan
@@ -7012,7 +7000,7 @@ const Game = {
     if ((s.permComboBonus || 0) > 0 && ctx.count >= 2) {
       mult += s.permComboBonus;
       triggered.push({ id: 'up-bileme', name: 'Bileme Taşı',
-        text: `+${s.permComboBonus.toFixed(1)}x (${ctx.count} kombinasyon)` });
+        text: `+${s.permComboBonus.toFixed(1)}x (${ctx.count} grup)` });
     }
 
     /* Kelebek Etkisi — önceki turdan FARKLI tür açınca sürpriz ödül.
@@ -7094,9 +7082,9 @@ const Game = {
     }
 
     /* GRUP I (P20) — ALTIN DAMAR: ham puana kalıcı yüzde.
-       Çarpandan AYRI bir eksendir: çarpan tablosu kombinasyon sayısına
+       Çarpandan AYRI bir eksendir: çarpan tablosu grup sayısına
        bağlıdır, bu ise taşların toplam değerine. Böylece "az ama büyük
-       kombinasyon" oynayan build'ler de ölçeklenebilir bir ödül bulur. */
+       grup" oynayan build'ler de ölçeklenebilir bir ödül bulur. */
     if ((s.permRawBonus || 0) > 0) {
       const before = baseScore;
       baseScore = Math.ceil(baseScore * (1 + s.permRawBonus));
@@ -7181,12 +7169,12 @@ const Game = {
   /* PLAYTEST 16 · GRUP F — SEÇİMİ TAŞA ÇEVİRMENİN TEK GÜVENLİ YOLU.
      `ids.map(id => hand.find(t => t.id === id))` iki farklı seçim için
      AYNI nesneyi döndürebiliyordu (elde çakışan id varsa). Sonuç, örneğin
-     [Kırmızı 10, Kırmızı 11, Kırmızı 11] gibi imkânsız bir kombinasyondu
+     [Kırmızı 10, Kırmızı 11, Kırmızı 11] gibi imkânsız bir gruptu
      ve motor bunu "Per, Sıralı veya Çift kurallarına uymuyor" diye
      reddediyordu — oyuncu ise ekranda 10-11-12 görüyordu.
      Artık her id AYRI bir nesneye bağlanır: aynı id'den iki taş varsa
      ikisi de doğru şekilde eşleşir, gerçekten eşleşmeyen seçim ise
-     yanıltıcı kombinasyon hatası yerine kendi hatasını verir. */
+     yanıltıcı grup hatası yerine kendi hatasını verir. */
   _tilesByIds(ids) {
     const s = this.state;
     const taken = new Set();
@@ -7210,20 +7198,20 @@ const Game = {
     if (tiles.length !== ids.length) return { ok: false, error: 'Seçim geçersiz.' };
     if (tiles.length === 0) return { ok: false, error: 'Önce elinden taş seç.' };
     if (tiles.some(t => t.jokerTile))
-      return { ok: false, error: 'Deste jokeri kombinasyona giremez — elde etkisini gösterir, istersen discard edilir (-100).' };
+      return { ok: false, error: 'Deste jokeri gruba giremez — elde etkisini gösterir, istersen discard edilir (-100).' };
     // Terzi'nin İğnesi BOSS Koşulu (Grup F): dikili taş bu tur açılıma giremez
     if (tiles.some(t => t.bossSewn))
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur açılımda kullanılamaz (tur bitince serbest kalır).' };
 
     /* P55 · Grup A (bug) — TERS TAŞ DENEMEDE AÇILIYORDU. Eskiden yüz burada,
-       kombinasyon DENETLENMEDEN önce açılıyordu: geçersiz bir deneme
-       ("Geçersiz kombinasyon") bile taşı kalıcı olarak ifşa ediyordu. Denetim
+       grup DENETLENMEDEN önce açılıyordu: geçersiz bir deneme
+       ("Geçersiz grup") bile taşı kalıcı olarak ifşa ediyordu. Denetim
        zaten gerçek renk+sayıyla yapılır (resolveCombo); yüz yalnız sahneleme
        BAŞARILI olunca açılır (aşağıda, `_revealTiles`). */
     const freeColors = this._freePerColors();
     // Grup A: okey, ıstakada bırakıldığı hücreye göre değer alır
     const res = resolveCombo(tiles, (t) => this.isOkeyTile(t), freeColors, this._posOpts());
-    if (!res) return { ok: false, error: 'Geçersiz kombinasyon — Per, Sıralı veya Çift kurallarına uymuyor.' };
+    if (!res) return { ok: false, error: 'Geçersiz grup — Per, Sıralı veya Çift kurallarına uymuyor.' };
     const type = res.type;
 
     const mode = type === 'cift' ? 'cift' : 'per';
@@ -7269,7 +7257,7 @@ const Game = {
     const s = this.state;
     const asOne = this.stageCombo(ids); // önce bütün olarak dene (okey çözümü dahil)
     if (asOne.ok) return { ok: true, count: 1 };
-    if (!asOne.error || !asOne.error.startsWith('Geçersiz kombinasyon')) return asOne;
+    if (!asOne.error || !asOne.error.startsWith('Geçersiz grup')) return asOne;
 
     const tiles = this._tilesByIds(ids).tiles || [];   // Grup F: cakisan id guvenli
     if (tiles.length !== ids.length) return { ok: false, error: 'Seçim geçersiz.' };
@@ -7309,7 +7297,7 @@ const Game = {
      _partitionCombos ilk bulduğu geçerli bölmeyi alıyordu → 4-5-6 Sıralı +
      dört 7'li Per. Oyuncunun gözündeki 4'lü Sıralı masaya 3'lü iniyor,
      kehanet "tutmadı" deyip açılımı sıfırlıyordu. Aynısı "4 taşlı Per"
-     (4'lü Per 3'lüye bölünüyordu) ve "2 Çift / 2 kombinasyon" için de
+     (4'lü Per 3'lüye bölünüyordu) ve "2 Çift / 2 grup" için de
      geçerliydi. Artık bölücü, eşit derecede geçerli bölmeler arasından
      KEHANETİ TUTANI seçer; hiçbiri tutmuyorsa eskisi gibi ilkini alır. */
   _oraclePrefer() {
@@ -7760,12 +7748,12 @@ const Game = {
     const s = this.state;
     if (s.phase !== 'meld') return { ok: false, error: 'Şu an açılım aşamasında değilsin.' };
     const combo = s.prevOpen[comboIndex];
-    if (!combo) return { ok: false, error: 'İşlenecek kombinasyon bulunamadı.' };
+    if (!combo) return { ok: false, error: 'İşlenecek grup bulunamadı.' };
     if (combo.type === 'cift') return { ok: false, error: 'Çift genişletilemez — işleme Per/Sıralı içindir.' };
     /* Bungie Gum (Playtest 10): taşları sakızla ele geri çekilen açılım
        KAPANMIŞ sayılır — masada açık durmadığı için işlenemez. */
     if (combo.gumClosed)
-      return { ok: false, error: '🍬 Bu açılımın taşları sakızla elinize döndü — kombinasyon kapandı, işleme yapılamaz.' };
+      return { ok: false, error: '🍬 Bu açılımın taşları sakızla elinize döndü — grup kapandı, işleme yapılamaz.' };
     const tiles = this._tilesByIds(ids).tiles || [];   // Grup F: cakisan id guvenli
     if (!tiles.length || tiles.length !== ids.length) return { ok: false, error: 'Önce elinden taş seç.' };
     if (tiles.some(t => t.jokerTile))
@@ -7778,14 +7766,14 @@ const Game = {
     const merged = [...combo.tiles, ...already, ...tiles];
     const limit = combo.type === 'per' ? 4 : 13; // Sıralı sınırsız (madde 23, doğal maks 13)
     if (merged.length > limit)
-      return { ok: false, error: `Bu kombinasyon en fazla ${limit} taşa çıkabilir.` };
+      return { ok: false, error: `Bu grup en fazla ${limit} taşa çıkabilir.` };
     const res = resolveCombo(merged, (t) => this.isOkeyTile(t), this._freePerColors(),
       { forceStart: opts?.forceStart });
     if (!res || res.type !== combo.type)
-      return { ok: false, error: 'Eklenen taşlar kombinasyonu geçerli tutmuyor (GDD 3.7.6).' };
+      return { ok: false, error: 'Eklenen taşlar grubu geçerli tutmuyor (GDD 3.7.6).' };
 
     /* Grup A — işlemede de okeyin değerini oyuncu belirler. Istaka konumu
-       burada anlam taşımadığından (kombinasyon tepside duruyor) birden fazla
+       burada anlam taşımadığından (grup tepside duruyor) birden fazla
        geçerli diziliş varsa UI'a seçenek döndürülür. */
     if (opts?.forceStart == null && res.usedOkey && (res.altStarts?.length || 0) > 1
         && tiles.some(t => this.isOkeyTile(t))) {
@@ -8059,8 +8047,8 @@ const Game = {
 
   /* ============================================================
      GRUP I (Playtest 6) — OKEY'İ İŞLEMEDE GERİ ALMA
-     Açık duran bir kombinasyondaki okey, yerine geçtiği GERÇEK taş eline
-     geldiğinde o taşla değiştirilebilir: gerçek taş kombinasyondaki yerini
+     Açık duran bir gruptaki okey, yerine geçtiği GERÇEK taş eline
+     geldiğinde o taşla değiştirilebilir: gerçek taş gruptaki yerini
      alır, okey serbest kalıp ele döner ve yeniden kullanılabilir.
      (Klasik 101'deki "okeyi alma" hamlesi.)
      ============================================================ */
@@ -8090,7 +8078,7 @@ const Game = {
   },
 
   /* PLAYTEST 9 · GRUP C — okeyin GÖRÜNEN yüzü.
-     UI, kombinasyondaki okeyi yerine geçtiği taşın sayı+rengiyle çizer.
+     UI, gruptaki okeyi yerine geçtiği taşın sayı+rengiyle çizer.
      Dönüş: { number, color|null }. color null ise renk belirsizdir
      (per: okey "eksik 4. renk" gibi davranır, tek bir rengi temsil etmez —
      bu yüzden per'de okey geri alma da yoktur, bkz. Grup D). */
@@ -8146,12 +8134,12 @@ const Game = {
       return { ok: false, error: 'Okey değişimi yalnız açılım aşamasında yapılabilir.' };
     const list = where === 'opened' ? s.opened : s.prevOpen;
     const combo = list?.[comboIndex];
-    if (!combo) return { ok: false, error: 'Kombinasyon bulunamadı.' };
+    if (!combo) return { ok: false, error: 'Grup bulunamadı.' };
     // Grup D: per'de okeyin temsil ettiği renk belirsiz — geri alma yok
     if (combo.type === 'per')
       return { ok: false, error: 'Per\'de okey geri alınamaz — belirli bir rengin değil, eksik bir rengin yerine geçiyor.' };
     const oi = combo.tiles.findIndex(t => t.id === okeyId && this.isOkeyTile(t));
-    if (oi === -1) return { ok: false, error: 'Bu kombinasyonda alınabilir bir okey yok.' };
+    if (oi === -1) return { ok: false, error: 'Bu grupta alınabilir bir okey yok.' };
     const okey = combo.tiles[oi];
     const need = this._okeyStandsFor(combo, okey);
     if (!need) return { ok: false, error: 'Okeyin yerine geçtiği taş çözülemedi.' };
@@ -8180,13 +8168,13 @@ const Game = {
       s.hand = s.hand.filter(t => t !== okey);
       s.hand.push(real);
       if (combo.values) { combo.values.delete(real.id); combo.values.set(okey.id, need.number); }
-      return { ok: false, error: 'Bu değişim kombinasyonu bozuyor.' };
+      return { ok: false, error: 'Bu değişim grubu bozuyor.' };
     }
     combo.values = chk.values;
     combo.usedOkey = chk.usedOkey;
     combo.tiles = orderComboTiles(combo.type, combo.tiles, chk.values, (t) => this.isOkeyTile(t));
     return { ok: true,
-      note: `🃏 Okey alındı: ${COLOR_TR[real.color]} ${real.number} kombinasyona girdi, okey eline döndü` };
+      note: `🃏 Okey alındı: ${COLOR_TR[real.color]} ${real.number} gruba girdi, okey eline döndü` };
   },
 
   undoIsleme(index) {
@@ -8216,7 +8204,7 @@ const Game = {
 
   /* GRUP H — Uzaylı BOSS "Sinsi Bulaşma": gizli uzaylı içeren kombinasyonlar
      onay anında ÇÖKER. Puan hesabı YAPILMADAN önce çalışır ki çöken
-     kombinasyon hiçbir jokeri, sayacı ya da çarpanı tetiklemesin; taşlar
+     grup hiçbir jokeri, sayacı ya da çarpanı tetiklemesin; taşlar
      ele geri döner (uzaylı işareti düşer, tur sonunda yenileri seçilir). */
   _bossAlienCollapse(events) {
     const s = this.state;
@@ -8239,7 +8227,7 @@ const Game = {
       collapsed++; tiles += c.tiles.length;
     }
     if (collapsed) {
-      events.push(`👽 Sinsi Bulaşma: ${collapsed} kombinasyon çöktü — gizli uzaylı vardı, ${tiles} taş eline döndü (0 puan)`);
+      events.push(`👽 Sinsi Bulaşma: ${collapsed} grup çöktü — gizli uzaylı vardı, ${tiles} taş eline döndü (0 puan)`);
       // tür kilidi çöken kombinasyonlara göre yeniden hesaplanır
       if (!s.staged.length && !s.islemeler.length) s.turnMode = null;
       else if (s.staged.every(c => c.type === 'cift')) s.turnMode = 'cift';
@@ -8289,7 +8277,7 @@ const Game = {
           : g.key === 'noOkey' ? !c.usedOkey : true;
         g.met = met;
         if (!met) {
-          bossEv.push(`👹 Kahin: "${g.text}" tutmadı — bu açılımın puanı SIFIRLANDI`);
+          bossEv.push(`👹 Kahin: "${g.text}" tutmadı — bu açılımın puanı sıfırlandı`);
           r.final = 0;
           s.bossOracleMissed = true; // raund sonu +500 bonusu artık imkânsız
         } else {
@@ -8439,7 +8427,7 @@ const Game = {
        turda kendini çoğaltan bonuslar oluşurdu. Gerçek okey de geri
        dönmez (joker çoğaltılmaz).
        KAPANMA KURALI: taşları geri çekilen açılım artık masada AÇIK
-       DURMUYOR sayılır → gelecek tur o kombinasyona İŞLEME yapılamaz
+       DURMUYOR sayılır → gelecek tur o gruba İŞLEME yapılamaz
        (`gumClosed`). Oyuncu taşları yeni bir açılımda sıfırdan kullanır. */
     if (!s.jokersDisabled && this.hasActive('bungieGum') && r.raw > 0) {
       /* P29 · Grup B: hayalet taş sakıza yapışmaz — yoksa bir
@@ -8468,7 +8456,7 @@ const Game = {
           const c = s.prevOpen[e.comboIndex];
           if (c) c.gumClosed = true;
         }
-        events.push(`🍬 Bungie Gum: ${used.length} taş sakıza yapıştı — SONRAKİ TUR başında ıstakana dönecek`);
+        events.push(`🍬 Bungie Gum: ${used.length} taş sakıza yapıştı — sonraki tur başında ıstakana dönecek`);
       }
     }
     /* HAYALET (eski Yankı) — HAYALET TAŞ (PLAYTEST 29 · GRUP B).
@@ -8511,7 +8499,7 @@ const Game = {
     if (!s.appleEaten && [...r.ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)].some(t => t.apple)) {
       s.appleEaten = true;
       s.islekRateBonus = round2((s.islekRateBonus || 0) + APPLE_ISLEK);
-      events.push(`🍎 Elmayı ısırdın — cennetten kovuldun: kalan turlarda ${APPLE_DRAW_CUT} taş eksik çekiş, işlek +%${Math.round(APPLE_ISLEK * 100)}`);
+      events.push(`🍎 Elmayı ısırdın — kovuldun: kalan turlarda ${APPLE_DRAW_CUT} taş eksik çekersin, işlek riski +%${Math.round(APPLE_ISLEK * 100)}`);
     }
     /* Gökyüzü Ejderhası (P31 · Grup F) — ıstakadan rastgele 1 taş KALICI
        silinir: Ustura ile aynı defter (tileMods remove + özel/mıknatıs
@@ -8524,7 +8512,7 @@ const Game = {
         this._dropSpecialRecord(t);
         this._dropMagnet(t);
         const burned = this._takeTile(t, 'ejderha');
-        events.push(`Ejderha ${COLOR_TR[burned.color]} ${burned.number} taşını ıstakandan KALICI olarak sildi`);
+        events.push(`Ejderha ${COLOR_TR[burned.color]} ${burned.number} taşını ıstakandan kalıcı olarak sildi`);
       }
     }
 
@@ -8662,10 +8650,10 @@ const Game = {
 
     // graveyard: önceki turun açıkları gider, bu turunkiler işlenebilir olur (GDD 3.7)
     /* P50b (2026-09-15) — SAHTE "EL DENETİMİ" ALARMI. Masadan kalkan
-       kombinasyonların taşları oyundan çıkar (hiçbir kaba taşınmaz). Açılan
+       grupların taşları oyundan çıkar (hiçbir kaba taşınmaz). Açılan
        taşlar sorun değil: bir önceki tur sonunda zaten elde değildiler. Ama
        BU TUR işlenen taş, tur başındaki el fotoğrafında VARDI ve aynı tur
-       kombinasyonuyla birlikte masadan kalkıyordu → _handAudit onu hiçbir
+       grubuyla birlikte masadan kalkıyordu → _handAudit onu hiçbir
        bölgede ve defterde bulamayıp "sahipsiz kayboldu" diyordu (sim botu:
        raundların ~%40'ı). Böyle taşlar burada deftere "işleme" diye yazılır;
        tanı panelinin tur izi de "→?" yerine "→işleme" gösterir. */
@@ -8692,7 +8680,7 @@ const Game = {
        sayılır (pas geçmek kaçış yolu değil). */
     if (this.bossOn() && s.boss.key === 'kahin' && s.bossOracle && !s.bossOracle.met) {
       if (!s.openedThisTurn) {
-        events.push(`👹 Kahin: bu tur hiç açılım yapmadın — "${s.bossOracle.text}" kehaneti TUTMADI`);
+        events.push(`👹 Kahin: bu tur hiç açılım yapmadın — "${s.bossOracle.text}" kehaneti tutmadı`);
         s.bossOracleMissed = true;
       }
       /* Ceza pekiştirmesi: ihlal edilen turun BÜTÜN kazancı gider — açılım
@@ -8743,7 +8731,7 @@ const Game = {
         s.score = Math.max(0, s.score - 100);
         const dj = s.deckJokers.find(j => j.key === t.jokerTile);
         if (dj) dj.activeRound = false; // elden çıktı — etkisi durur
-        events.push(`◈ ${t.jname} discard edildi: -100 puan (GDD 7.6)`);
+        events.push(`◈ ${t.jname} atıldı: -100 puan`);
       } else if (this.isOkeyTile(t)) {
         /* HİDRA (P34) — ceza yok; doğum yeni turun başında (aşağıdaki
            HİDRA bloğu). Kıyamet Trompeti jokerleri susturduysa ceza işler. */
@@ -8752,16 +8740,16 @@ const Game = {
           events.push('🐉 Hidra: okey cezasız atıldı — sonraki tur iki kafa çıkacak');
         } else {
           s.score = Math.max(0, s.score - 100);
-          events.push('OKEY taşı atıldı: -100 puan (GDD 7.6)');
+          events.push('Okey atıldı: -100 puan');
         }
       } else if (t.stoned) {
         // Medusa — taşlaşmış taş işlekten etkilenmez (GDD 11)
-        events.push(`Taşlaşmış ${COLOR_TR[t.color]} ${t.number} atıldı — işlek işlemez`);
+        events.push(`Taşa dönmüş ${COLOR_TR[t.color]} ${t.number} atıldı — işlek cezası yok`);
       } else if (t.special === 'karaDelikTasi') {
         /* Grup E / Grup F (P22) — atılması güvenlidir (işlek zarı hiç
            atılmaz). Muafiyet yeni temayla da örtüşür: kara deliğe düşen
            taş iz bırakmaz, kimse onun atıldığını göremez. */
-        events.push(`🕳 Kara Delik Taşı atıldı — işlek işlemez`);
+        events.push(`🕳 Kara Delik Taşı atıldı — işlek cezası yok`);
       }
     }
     /* İŞLEK (GDD 2.7 + Playtest 10 · Grup B).
@@ -8783,7 +8771,7 @@ const Game = {
       if (!s.openedThisTurn && s.skipStreak >= 1) {
         const skipPen = Math.min(0.30, 0.10 * s.skipStreak);
         rate += skipPen;
-        events.push(`Açılımsız geçiş: işlek riski +%${Math.round(skipPen * 100)}`);
+        events.push(`Açılım yapmadan geçtin: işlek riski +%${Math.round(skipPen * 100)}`);
       }
       rate = Math.max(0, rate - (s.permIslekReduce || 0)); // Nazar Boncuğu + Muska
       if (this.rngIslek() < rate) {
@@ -8988,7 +8976,7 @@ const Game = {
           s.umutRunUsed = true;
           const need = s.target - s.score;
           s.score += need;
-          events.push(`🕊 Pandora (Umut): eksik puanın TAMAMI (+${need}) tamamlandı`);
+          events.push(`🕊 Pandora (Umut): eksik puanın tamamı (+${need}) tamamlandı`);
           if (s.score >= s.target) {
             s.wonOnTurn = s.turn;
             this._finishWin();
@@ -9033,7 +9021,7 @@ const Game = {
           s.score = s.target;
           s.wonOnTurn = s.turn;
           events.push('🎭 The Misunderstood kendini feda etti — eksik puan tamamlandı!');
-          events.push(`🎭 The Misunderstood UYANDI: ${MISU_V2_ROUNDS} raund boyunca açılımların +${MISU_V2_MULT.toFixed(1)}x alır`);
+          events.push(`🎭 The Misunderstood uyandı: ${MISU_V2_ROUNDS} raund boyunca açılımların +${MISU_V2_MULT.toFixed(1)}x alır`);
           this._finishWin();
           if (s.coinReport) s.coinReport.savedBy = 'The Misunderstood';
         } else if (this._sansliZar(events)) {
@@ -9108,7 +9096,7 @@ const Game = {
        Çekişten ÖNCE dönerler ki drawN el sınırını onları da sayarak hesaplasın
        (yoksa taşlar sessizce MAX_HAND'e takılıp kaybolurdu). */
     /* PLAYTEST 16 · GRUP E — TAŞ KİMLİĞİ KORUNARAK DÖNÜŞ.
-       Kuyruktaki nesnenin KENDİSİ ele döner: önce masadaki kombinasyondan
+       Kuyruktaki nesnenin KENDİSİ ele döner: önce masadaki gruptan
        kimlik (===) ile çıkarılır, sonra ele konur. Böylece hiçbir taş
        çoğalmaz (eskisi masada kalıp ele kopyası gidiyordu) ve hiçbir taş
        kaybolmaz (ele sığmayan taş masada bırakılır, silinmez).
@@ -9119,7 +9107,7 @@ const Game = {
       const back = s.bungiePending.slice(0, room);
       const stuck = s.bungiePending.slice(room);
       /* Taşı bulunduğu her masa kutusundan kimlikle sil; boşalan
-         kombinasyon tamamen kalkar (zaten `gumClosed`, işlenemez). */
+         grup tamamen kalkar (zaten `gumClosed`, işlenemez). */
       const pull = new Set(back);
       const strip = (list) => {
         if (!list) return;
@@ -9306,7 +9294,7 @@ const Game = {
        Eski +2.0x kalıcı veda hediyesi kaldırıldı. */
     if (s.deckJokers.some(j => j.key === 'misunderstood' && !j.awakened && j.usesLeft <= 0)) {
       this._awakenMisunderstood();
-      notes.push(`🎭 The Misunderstood süresi doldu ve UYANDI: ${MISU_V2_ROUNDS} raund boyunca açılımların +${MISU_V2_MULT.toFixed(1)}x alır`);
+      notes.push(`🎭 The Misunderstood süresi doldu ve uyandı: ${MISU_V2_ROUNDS} raund boyunca açılımların +${MISU_V2_MULT.toFixed(1)}x alır`);
     }
     const deadDeck = s.deckJokers.filter(j => j.usesLeft <= 0);
     if (deadDeck.length) s.lastExpired.push(...deadDeck.map(j => j.name));
@@ -9375,7 +9363,7 @@ const Game = {
              tek geçerli mazeret ONAYLANMIŞ bir açılımda kullanılmış olmaktır
              (ffUsedInMeld yalnız confirmMelds'te set edilir).
          (2) Ters yönde adaletsizlik: işaretli taş SON turda eline geldiğinde
-             (ölçüm: raundların %8.7'si) onu bir kombinasyona sokmak çoğu zaman
+             (ölçüm: raundların %8.7'si) onu bir gruba sokmak çoğu zaman
              imkânsızdı ve oyuncu hatasız Game Over yiyordu. Son turda
              işaretlenen taşlar zorunluluk dışında. */
       const everywhere = [
@@ -9415,12 +9403,12 @@ const Game = {
       c.ciftTotal = (c.ciftTotal || 0) + ctx.ciftCount;
       c.bestTurn = Math.max(c.bestTurn || 0, s.turnComboCount || 0);
       if (c.key === 'kizil' && ctx.count > ctx.ciftCount)
-        return this._corpFailNow(events, 'Çift olmayan bir kombinasyon açtın');
+        return this._corpFailNow(events, 'Çift olmayan bir grup açtın');
       return;
     }
     /* tur sonu */
     if (c.key === 'derin' && !passed && (s.turnComboCount || 0) < CORP_BOSS_TURN3)
-      return this._corpFailNow(events, `bu turda ${s.turnComboCount || 0}/${CORP_BOSS_TURN3} kombinasyon açtın`);
+      return this._corpFailNow(events, `bu turda ${s.turnComboCount || 0}/${CORP_BOSS_TURN3} grup açtın`);
     if (c.key === 'yesil' && passed) {
       c.passes = (c.passes || 0) + 1;
       if (c.passes > CORP_BOSS_PASS)
@@ -9552,7 +9540,7 @@ const Game = {
     if (!s.jokersDisabled && this.slotRecs().some(j => j.key === 'nostradamus' && j.prophecy)
         && s.wonOnTurn <= 2) {
       s.permMult = round2(s.permMult + NOSTRA_MULT);
-      extraNotes.push(`🔮 Nostradamus kehaneti GERÇEKLEŞTİ: +${NOSTRA_MULT.toFixed(1)}x KALICI çarpan!`);
+      extraNotes.push(`🔮 Nostradamus kehaneti gerçekleşti: +${NOSTRA_MULT.toFixed(1)}x kalıcı çarpan!`);
     }
     /* P49 · Grup A — Uyanış kazanılan her raund sonunda büyür. Dönüştüğü
        raund (`fresh`) ve süresinin son raundu sayılmaz: +4 → +5 → +6. */
@@ -9586,7 +9574,7 @@ const Game = {
        uçurumu kalktı; 4+ tur artık merdivenin son basamağını öder. */
     const penalty = (boss ? NOMELD_PEN_BOSS : NOMELD_PEN_NORMAL)[Math.min(s.noMeldTurns, 4)];
     /* GRUP D (P20) — Trade Jokeri TEMETTÜSÜ: yükselen türden açılan her
-       kombinasyon için coin. Joker coinleriyle aynı torbaya girer. */
+       grup için coin. Joker coinleriyle aynı torbaya girer. */
     /* BORSA — RAUND SONU (P29 · Grup H). Piyasa artık açılımı değil
        PORTFÖYÜ vurur: yükselen türdeki hisseler temettü öder, düşen
        türdeki hisselerin yarısı yanar (yukarı yuvarlama YOK — kayıp
@@ -9850,14 +9838,14 @@ const Game = {
       notes.push(`💎 Altın Damar: her açılımın ham puanı kalıcı +%${Math.round(s.permRawBonus * 100)}`);
     } else if (key === 'bileme') {
       s.permComboBonus = UP_VAL.bileme;
-      notes.push(`🔩 Bileme Taşı: bir turda 2+ kombinasyon açtığında +${UP_VAL.bileme.toFixed(1)}x`);
+      notes.push(`🔩 Bileme Taşı: bir turda 2+ grup açtığında +${UP_VAL.bileme.toFixed(1)}x`);
     } else if (key === 'uzunSoluk') {
       s.permTurns = (s.permTurns || 0) + UP_VAL.uzunSoluk;
       if (s.status === 'playing') s.maxTurns = 4 + s.permTurns;
       notes.push(`⏱ Uzun Soluk: her raund artık ${4 + s.permTurns} tur`);
     } else if (key === 'sigorta') {
       s.sellFull = true;
-      notes.push('🛡 Sigorta Poliçesi: bundan sonra jokerler TAM alış fiyatına satılır');
+      notes.push(`🛡 Sigorta Poliçesi: bundan sonra jokerler alış fiyatının %${Math.round(SIGORTA_RATE * 100)}'ine satılır`);
     } else if (key === 'ikinciSans') {
       s.secondChance = 1;
       s.secondChanceTaken = true;   // Grup E (P22): bir daha teklif edilmez
@@ -9919,7 +9907,7 @@ const Game = {
       notes.push(`🧿 Nazar Boncuğu: işlek riski kalıcı -%${Math.round(s.permIslekReduce * 100)}`);
     } else if (key === 'usta') {
       s.carpanScale = 1;
-      notes.push('🀄 Usta Eli: kombinasyon sayın artık çarpan tablosunda İKİ KATI sayılıyor');
+      notes.push('🀄 Usta Eli: grup sayın artık çarpan tablosunda iki kat sayılıyor');
     }
     return notes;
   },
@@ -11137,11 +11125,11 @@ const Game = {
 
   PANDORA_INFO: {
     umut: { name: 'Pandora — Umut', icon: '🕊',
-      desc: 'Kutunun dibinde kalan: açılımdaki her taş +50 puan. Ayrıca raundu kaybedecek olursan eksik puanının TAMAMINI tamamlar — run boyunca yalnız 1 kez.' },
+      desc: `Kutunun dibinde umut kaldı: açılımdaki her taş +${PANDORA_UMUT_FLAT} puan. Raundu kaybedeceksen eksik puanının tamamını tamamlar (run boyunca 1 kez).` },
     salgin: { name: 'Pandora — Salgın', icon: '🦠',
-      desc: 'Kutudan çıkan dertler: her tur 2 taşın dertlenir. Dertli taş açılımda +2.5x verir ama elde beklerse tur başına -30 puan yakar.' },
+      desc: `Kutudan dertler çıktı: her tur ${PANDORA_SALGIN_TILES} taşın hastalanır. Hasta taş açılımda +${PANDORA_SALGIN_MULT.toFixed(1)}x verir; elde tutarsan her tur -${PANDORA_SALGIN_BURN} puan yakar.` },
     armagan: { name: 'Pandora — Armağan', icon: '🎁',
-      desc: 'Kutu boşalır: her raund başında 3 taşının değeri 13 olur ve altın işaretlenir. İşaretli taşı kullandığın kombinasyonun puanı %30 artar.' },
+      desc: `Kutu boşaldı: her raund başında ${PANDORA_ARMAGAN_TILES} taşının değeri 13 olur ve altınla işaretlenir. İşaretli taşın girdiği grubun puanı %${Math.round(PANDORA_ARMAGAN_BONUS * 100)} artar.` },
   },
 
   _revealPandora(j, notes) {
@@ -11367,7 +11355,7 @@ const Game = {
       t.special = 'ayTasi';
       t.sid = rec.sid;
       if (mgRec) { mgRec.sid = rec.sid; mgRec.color = t.color; mgRec.number = t.number; }
-      events.push(`🌙 ${face} Ay Kuyusu'na düştü ve KALICI Ay Taşı oldu`);
+      events.push(`🌙 ${face} Ay Kuyusu'na düştü ve kalıcı Ay Taşı oldu`);
     } else {
       if (t.special !== 'ayTasi') t.moonTemp = true;
       events.push(`🌙 ${face} Ay Kuyusu'na düştü`);
@@ -11413,7 +11401,7 @@ const Game = {
     }
     s.moonFullTurn = s.turn;
     s.dolunayCount = (s.dolunayCount || 0) + 1;
-    events.push(`🌕 DOLUNAY! Ay Kuyusu'ndaki ${n} Ay Taşı ıstakana aktı — bu tur elindeki bütün Ay Taşları OKEY`);
+    events.push(`🌕 DOLUNAY! Ay Kuyusu'ndaki ${n} Ay Taşı ıstakana aktı — bu tur elindeki bütün Ay Taşları okey`);
   },
 
   /* Kuyunun durumu tek satır: "🌓 Ay Kuyusu 2/4" ya da dolduysa Dolunay haberi */
@@ -12076,7 +12064,7 @@ const Game = {
   _setupOteki(notes) {
     const s = this.state;
     if (!Array.isArray(s.otekiHand)) s.otekiHand = [];
-    notes.push(`🌙 Öteki Dünya: Ay Kuyusu açıldı — her tur ${AY.drop} taş düşer, attığın taş Ay Taşı olur; kuyu dolunca DOLUNAY`);
+    notes.push(`🌙 Öteki Dünya: Ay Kuyusu açıldı — her tur ${AY.drop} taş düşer, attığın taş Ay Taşı olur; kuyu dolunca Dolunay`);
   },
 
   /* Satış kilidi (Grup B) — Lanetli Kaptan bir kez kurtardıysa artık
@@ -12393,7 +12381,7 @@ const Game = {
     s.hand.push(pick);
     for (const t of rest) s.deck.splice(Math.floor(this.rng() * (s.deck.length + 1)), 0, t);
     s.yildizPick = null;
-    events.push(`⭐ Kuzey Yıldızı: ${COLOR_TR[pick.color]} ${pick.number} elini aldı`);
+    events.push(`⭐ Kuzey Yıldızı: ${COLOR_TR[pick.color]} ${pick.number} eline geldi`);
     const next = this._yildizDeal(events);
     return { ok: true, took: pick.id, events, more: !!next };
   },
