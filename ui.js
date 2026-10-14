@@ -1341,15 +1341,11 @@
     add('kirby', (r) => (num(r.kirbyMult) ? x(r.kirbyMult) : null));
     add('ahtapot', (r) => (num(r.arms) ? t('tipNowArms', r.arms) : null));
     add('misunderstood', (r) => (r.awakened && num(r.awakenMult) ? x(r.awakenMult) : null));
-    add('tradeJokeri', (r) => {
-      const sh = r.borsaShares || {};
-      const n = num(sh.per) + num(sh.sirali) + num(sh.cift);
-      return n ? t('tipNowShares', n) : null;
-    });
+    add('tradeJokeri', (r) => (num(r.bogaMult) ? x(r.bogaMult) : null));   // P100 — Boğa piyasası
+    add('rusvet', (r) => (num(r.jarCoins) ? t('jarBadge', num(r.jarCoins)) : null));   // P100 — Bahşiş Kavanozu
     if (recs.some((r) => r.key === 'sisyphus')) {
-      const n = num(s.sisyphusStreak);
-      const steps = window.SISYPHUS_STEPS || [2, 4, 8];
-      if (n > 0) out.push(x(steps[Math.min(n, steps.length) - 1]));
+      const v = num(s.sisyphusRock);   // P100 — kaya yüksekliği (çarpan)
+      if (v > 0) out.push(x(v));
     }
     if (recs.some((r) => r.key === 'terazi') && num(s.teraziRoundMult)) out.push(x(s.teraziRoundMult));
     if (recs.some((r) => r.key === 'vampir') && num(s.vampirBank)) out.push(t('tipNowDrain', num(s.vampirBank)));
@@ -1712,6 +1708,16 @@
     if (curScreen() === 'map') { hideActBadge(); renderMap(); }   // P58: haritadan satış
   }
 
+  /* P100 — Bahşiş Kavanozu: sol tık kavanozu kırar (Damga kalıbı, geri alınabilir). */
+  function useJar() {
+    const res = Game.toggleJar();
+    if (!res.ok) { toast(T.ev(res.error)); return; }
+    const st = Game.jarState();
+    toast(res.armed ? t('jarArmed', st ? st.coins : 0) : t('jarUnarmed'), res.armed);
+    if (res.armed) SFX.crack();
+    render();
+  }
+
   function useDamga() {
     const res = Game.toggleDamga();
     if (!res.ok) { toast(res.error); return; }
@@ -1762,7 +1768,8 @@
       const dm = has('ayna') && Game.damgaState && Game.damgaState();
       if (dm && dm.id === j.id && !dm.used) add('ayna', t(dm.armed ? 'abUndo' : 'abUse'), useDamga);
       if (has('satrancSaati') && Game.clockState && Game.clockState().canUse) add('satrancSaati', t('abUse'), useClockCard);
-      if (has('rusvet') && Game.canRusvet && Game.canRusvet()) add('rusvet', t('abUse'), doRusvet);
+      const jr = has('rusvet') && Game.jarState && Game.jarState();   // P100 — kavanozu kır / geri koy
+      if (jr && jr.id === j.id && (jr.canUse || jr.armed)) add('rusvet', t(jr.armed ? 'abUndo' : 'abUse'), useJar);
       if (has('terazi') && Game.canTeraziSacrifice && Game.canTeraziSacrifice()) add('terazi', t('abUse'), doTerazi);
       if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
         add('paratoner', t(s.paratonerBait != null ? 'abUndo' : 'abUse'), doParatoner);
@@ -2076,13 +2083,25 @@
        yüksekliğini görmeli (Godzilla şarj rozetiyle aynı kalıp). Sayı = üst üste
        açılımlı tur; sıradaki açılım o basamağın çarpanını alır. */
     if (!opts.backup && (j.key === 'sisyphus' || (j.fused || []).some(f => f.key === 'sisyphus'))) {
-      const n = Game.state.sisyphusStreak || 0;
-      const steps = SISYPHUS_STEPS;   // engine.js üst düzey sabiti (klasik betikler ortak kapsamda)
+      const v = Game.state.sisyphusRock || 0;   // P100 — rozet kayanın yüksekliğini (çarpan) yazar
       const b = document.createElement('span');
-      b.className = 'jt-charge' + (n > 0 ? ' on' : '');
-      b.textContent = `🪨${n}`;
-      b.title = n > 0 ? t('sisyphusBadge', n, steps[Math.min(n, steps.length) - 1].toFixed(1)) : t('sisyphusBadgeZero');
+      b.className = 'jt-charge' + (v > 0 ? ' on' : '');
+      b.textContent = `🪨${v}`;
+      b.title = v > 0 ? t('sisyphusBadge', v.toFixed(1)) : t('sisyphusBadgeZero');
       tile2.appendChild(b);
+    }
+    /* P100 — BAHŞİŞ KAVANOZU: kavanozdaki coin kartta (Sisyphus rozeti kalıbı);
+       kırma basılıyken rozet yanar. */
+    if (!opts.backup) {
+      const jr = [j, ...(j.fused || [])].find(r => r.key === 'rusvet');
+      if (jr) {
+        const n = jr.jarCoins || 0;
+        const b = document.createElement('span');
+        b.className = 'jt-charge' + (Game.state.jarArmed ? ' on' : '');
+        b.textContent = `🫙${n}`;
+        b.title = t('jarBadge', n);
+        tile2.appendChild(b);
+      }
     }
     /* PLAYTEST 30 · GRUP F — VASİYET'İN MİRAS DEPOSU KARTTA CANLI DURUR.
        Rozet kaç efekt taşıdığını gösterir (📜1/2); efektlerin adı ve
@@ -4051,6 +4070,8 @@
   }, 1000);
 
   function render() {
+    if (Game.state && Game.state.ghostOffer && !document.getElementById('ghostOv'))
+      setTimeout(showGhostOffer, 0);   // P100 — kayıttan dönülünce bekleyen Hayalet tur teklifi
     applyRunTheme();   // P78 — boss raundu arayüzü (raund ekran değişmeden başlayıp bitebilir)
     if (curScreen() === 'map') setTimeout(() => { if (curScreen() === 'map') renderMap(); }, 0);   // P80 — haritadaki envanter tazelensin
     const s = Game.state;
@@ -4452,29 +4473,8 @@
        BOSS varyantı sınırı zaten boss banner'ında yazıyor
        (`bossFatalityExtra`), o yüzden burada YALNIZ joker varyantı çizilir;
        ikisi aynı anda açıksa sınır iki kez yazılmaz. */
-    /* PLAYTEST 20 · GRUP D — TRADE JOKERİ PİYASA GÖSTERGESİ.
-       Yalnız joker Ana Slot'tayken ve piyasa açıkken görünür. */
-    {
-      const b = s.borsa;
-      const tdj = !s.jokersDisabled
-        && Game.slotRecs().find(j => j.key === 'tradeJokeri');
-      const show = !!b && !!tdj && s.status === 'playing';
-      el.borsaChip.classList.toggle('hidden', !show);
-      if (show) {
-        /* PLAYTEST 29 · GRUP H — çipte artık PORTFÖY de yazar. Piyasa
-           yönü (📈/📉) hangi hissenin temettü ödeyeceğini ve hangisinin
-           yanacağını söyler; üçlü sayaç elindeki hisseleri gösterir. */
-        const sh = tdj.borsaShares || { per: 0, sirali: 0, cift: 0 };
-        el.borsaChip.innerHTML =
-          `<span class="bs-up">${t('borsaUp', T.typeName(b.up))}</span>` +
-          `<span class="bs-down">${t('borsaDown', T.typeName(b.down))}</span>` +
-          `<span class="bs-sh">${t('borsaShares', sh.per, sh.sirali, sh.cift)}</span>`;
-        attachTip(el.borsaChip, { name: t('borsaTipName'),
-          rarityText: t('borsaTipTag'),
-          desc: t('borsaTip', T.typeName(b.up), T.typeName(b.down),
-            sh.per, sh.sirali, sh.cift) }, {});
-      }
-    }
+    /* P100 — eski Borsa piyasa çipi kalktı (Boğa piyasası durumu kart ipucunda yazar). */
+    el.borsaChip.classList.add('hidden');
 
     /* PLAYTEST 20 · GRUP B/1 — sınır artık ÜST ŞERİTTEKİ çipte.
        Joker ve BOSS varyantı aynı çipi kullanır (eskiden boss varyantı
@@ -4714,18 +4714,8 @@
       el.btnParatoner.disabled = !set && !paratonerSel;
       el.btnParatoner.title = (set || paratonerSel) ? '' : t('paratonerNeedOne');
     }
-    /* P34 — "Rüşvet". Taş atma aşamasında görünür; seçili taş sayısı kadar
-       coin yazar. Coin yetmiyorsa pasif kalır ve nedeni ipucunda yazar. */
-    {
-      const canR = Game.canRusvet && Game.canRusvet();
-      const n = selection.size;
-      const cost = n * (Game.rusvetCost ? Game.rusvetCost() : 2);
-      const afford = !!Game.state && Game.state.coins >= cost;
-      el.btnRusvet.classList.toggle('hidden', !canR);
-      el.btnRusvet.textContent = n ? t('rusvetBtnN', cost) : t('rusvetBtn');
-      el.btnRusvet.disabled = !n || !afford;
-      el.btnRusvet.title = !n ? t('rusvetNeedOne') : (afford ? '' : t('rusvetNoCoin', cost));
-    }
+    /* P100 — eski "Rüşvet" taş değiştirme düğmesi kalktı (Bahşiş Kavanozu artık kart tıkıyla kırılır). */
+    el.btnRusvet.classList.add('hidden');
     /* Butonlar - Figma 210:3746: barda TEK birincil buton vardır.
        (2026-08-23 duzeltmesi: "Ac" ve "Onayla" yan yana iki buton olarak
        duruyordu; tasarimda boyle bir ikili YOK.) Kural:
@@ -4933,6 +4923,38 @@
     if (o.perm) parts.push(t('brPerm', Number(o.perm).toFixed(o.perm % 0.5 ? 2 : 1)));
     if (o.picks) parts.push(t('brPick_' + (o.pick || 'any')));
     return t('brPrefix') + parts.join(' + ') + '.';
+  }
+
+  /* P100 — HAYALET TUR TEKLİFİ (kullanıcı kararı 2026-10-14). Katla penceresinin
+     kalıbı: iki kart, biri oyna biri vazgeç. Karar verilmeden raund ilerlemez. */
+  function showGhostOffer() {
+    const s = Game.state;
+    if (!s || !s.ghostOffer || document.getElementById('ghostOv')) return;
+    const ov = document.createElement('div');
+    ov.id = 'ghostOv';
+    ov.className = 'pk-ov tone-violet';
+    ov.innerHTML =
+      `<div class="pk-box">` +
+      `<div class="pk-title">👻 ${t('ghostTitle')}</div>` +
+      `<div class="pk-sub-title">${t('ghostBody', s.score, s.target)}</div>` +
+      `<div class="pk-body pk-choice">` +
+      `<button class="pk-card bet-card" data-k="play"><div class="pk-name">${t('ghostPlay')}</div>` +
+      `<div class="pk-desc">${t('ghostPlayDesc')}</div></button>` +
+      `<button class="pk-card bet-card bet-olumcul" data-k="pass"><div class="pk-name">${t('ghostPass')}</div>` +
+      `<div class="pk-desc">${t('ghostPassDesc')}</div></button>` +
+      `</div></div>`;
+    const choose = (play) => {
+      ov.remove();
+      const r = Game.ghostTurnChoice(play);
+      if (!r.ok) { toast(T.ev(r.error)); render(); return; }
+      if (r.events && r.events.length) notify(r.events);
+      selection.clear();
+      render();
+      if (r.roundOver) setTimeout(showRoundEnd, 300);
+    };
+    ov.querySelector('[data-k="play"]').addEventListener('click', () => choose(true));
+    ov.querySelector('[data-k="pass"]').addEventListener('click', () => choose(false));
+    document.body.appendChild(ov);
   }
 
   function showKatlaOffer() {
@@ -5481,6 +5503,7 @@
       render();
       setTimeout(() => newTileIds.clear(), 600);
       if (res.worldRestart) return; // raund baştan — oyun ekranında kal
+      if (res.ghostOffer) { setTimeout(showGhostOffer, 380); return; }   // P100 — Hayalet tur
       if (res.roundOver) setTimeout(showRoundEnd, 400);
       // P31 · Grup E — Tanrının Eli: önce desteden seçim, sonra yazı-tura
       else if (Game.state.godPick) showGodPick(maybeCoinFlip);
@@ -5513,17 +5536,6 @@
     render();
   }
 
-  /* P34 — "Rüşvet": seçili taşları desteye yollar, yerine yenilerini çeker. */
-  function doRusvet() {
-    if (!selection.size) { toast(t('rusvetNeedOne')); return; }
-    const r = Game.useRusvet([...selection]);
-    if (!r.ok) { toast(r.error); render(); return; }
-    for (const id of r.gone) selection.delete(id);
-    toast(r.note, true);
-    SFX.coin();
-    render();
-  }
-
   function doTerazi() {
     if (teraziSel == null) { toast(t('teraziNeedOne')); return; }
     const id = teraziSel;
@@ -5536,7 +5548,6 @@
   }
 
   el.btnParatoner.addEventListener('click', doParatoner);
-  el.btnRusvet.addEventListener('click', doRusvet);
   el.btnTerazi.addEventListener('click', doTerazi);
 
   el.discardSlot.addEventListener('click', () => showPilePopup('discard'));
@@ -8780,8 +8791,12 @@
     return c;
   }
   const COL_CATS = [
-    { key: 'jokers', ico: '🃏', big: true, filters: ['all', 'common', 'rare', 'legendary', 'mythic'],
-      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => !d.casino && d.rarity !== 'epic' && d.rarity !== 'final')), card: (d) => colJokerCard(d) },
+    /* P100 (kullanıcı isteği 2026-10-14) — kumarhane jokerleri Jokerler bölümünün İÇİNDE;
+       üstteki "Kumarhane" çipi yalnız onları süzer (ayrı bölüm kalktı). */
+    { key: 'jokers', ico: '🃏', big: true, filters: ['all', 'common', 'rare', 'legendary', 'mythic', 'casino'],
+      filterLabel: (f) => (f === 'casino' ? t('colF_casino') : f === 'all' ? t('colAll') : T.rarity(f)),
+      filterFn: (d, f) => (f === 'casino' ? !!d.casino : d.rarity === f),
+      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.rarity !== 'epic' && d.rarity !== 'final')), card: (d) => colJokerCard(d) },
     /* P71b (kullanıcı: "final boss jokerleri ayrı bölüm olmasın") — Boss Jokerleri
        artık iki nadirliği birlikte taşır: Hepsi / Boss / Final Boss çipleri, diğer
        joker bölümleriyle aynı filtre mantığı (d.rarity === filtre). Final boss
@@ -8791,7 +8806,6 @@
       items: () => [...Object.values(JOKER_DEFS).filter(d => d.rarity === 'final'),
         ...Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic')],
       card: (d) => (d.rarity === 'final' ? colFinalCard(d) : colJokerCard(d)) },
-    { key: 'casino', ico: '🎰', items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.casino)), card: (d) => colJokerCard(d) },
     { key: 'consum', ico: '🪄', items: () => byRarity(Object.values(CONSUMABLES)), card: (d) => colConsumCard(d) },
     { key: 'special', ico: '💠', items: () => Object.values(SPECIAL_TILES), card: (d) => colSpecialCard(d) },
     { key: 'upgrade', ico: '⭐', items: () => Object.values(UPGRADE_DEFS), card: (d) => colUpgradeTile(d) },
@@ -8864,7 +8878,7 @@
       return;
     }
     let items = cat.items();
-    if (cat.filters && colFilter !== 'all') items = items.filter(d => d.rarity === colFilter);
+    if (cat.filters && colFilter !== 'all') items = items.filter(d => (cat.filterFn ? cat.filterFn(d, colFilter) : d.rarity === colFilter));
     const pages = Math.max(1, Math.ceil(items.length / COL_PAGE));
     colPage = Math.min(Math.max(0, colPage), pages - 1);
     const grid = document.createElement('div');
