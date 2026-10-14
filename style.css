@@ -2649,12 +2649,11 @@ body::before { border-color: var(--swoosh); }
 
    Varlıklar assets/menu3/ (Figma node export'ları):
      bg.png       — galaksi arka plan, frame dolgusu   (1672×941)
-     banner.svg   — krem plaka          (node 95:439,  675×220)
      mascot.svg   — MASKOT, gerçek katman (node 248:1667, 480×674)
-     btn.svg      — buton kabuğu        (node 91:169…, 368×84)
-     btn-play.svg — büyük buton kabuğu  (node 91:91,   368×120)
-     stud.svg     — buton düğmesi       (node 95:571…, 45×45)
-     stud-play.svg— büyük düğme         (node 95:564,  61×61)
+   P99 (kullanıcı 2026-10-14): krem plaka + buton kabukları + "stud"
+   düğmeleri (banner/btn/btn-play/stud/stud-play.svg) KALKTI — plaka ve
+   düğmeler artık oyunun kendi UI dilinde (tema renkleri, aşağıda).
+   Kompozisyon (konum/ölçü) Figma 74:3'teki gibi KALDI.
 
    v2'den farklar: butonlar artık raster değil GERÇEK vektör + metin
    katmanı (o yüzden kabuklar SVG asset, yazı gerçek i18n metni);
@@ -2795,61 +2794,44 @@ body.menu-open #app {
   .fm-mascot, .fm-mascot-item { animation: none; }
 }
 
-/* ---------- Pano: plaka + başlık (node 95:439 / 94:2397 / 94:2398) ----------
-   Plaka 675×220 @ (125,92). Başlık ve alt başlık artık GÖRSEL değil GERÇEK
-   METİN (Figma'da da öyle) — tipografi tasarımdan birebir.
-   Başlık kilidi (OKEY + ROGUELIKE) plakaya flex ile TAM ORTALANIR: yatayda
-   da dikeyde de mutlak ofset YOK, dolayısıyla plaka yeniden export edilse
-   veya yazı boyu değişse bile ortalama bozulmaz. Figma'da da bu kilit
-   plakanın ortasındadır (ölçüm: kilit merkezi 204, plaka merkezi 202). */
+/* ---------- Pano: logo plakası (konum Figma 95:439, görünüm P99) ----------
+   Plaka 675×220 @ (125,92) — yeri ve ölçüsü eski menüyle aynı. P99 (kullanıcı
+   2026-10-14): krem SVG plaka yerine UI dilimizin PLAKASI — tema koyu zemin,
+   açık kenar, içe gömme gölge; içinde oyunun adı (ui.js GAME_CONFIG, şimdilik
+   LUSORIA, alt başlık YOK). Logo çizimi gelince bu plakanın yerine geçer.
+   Başlık plakaya flex ile TAM ORTALANIR (mutlak ofset yok). */
 .fm-banner {
   position: absolute;
   left: 125px;
   top: 92px;
   width: 675px;
   height: 220px;
-  background: url('assets/menu3/banner.svg') center / 100% 100% no-repeat;
-  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, .45));
+  background: var(--gm-dark);
+  border: 8px solid var(--gm-light);
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 8px rgba(0, 0, 0, .2), 0 14px 0 rgba(0, 0, 0, .4);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  /* 12px'lik çerçeve iki yanda simetrik; yine de köşe pahları yazının
-     kenara dayanmasını engellesin diye iç boşluk. */
-  padding: 0 26px;
+  padding: 0 20px;
   box-sizing: border-box;
 }
 .fm-title {
-  font-family: 'Pixel Operator SC', 'Pixelify Sans', monospace;
-  font-weight: 700;
-  font-size: 154px;
-  line-height: .78;               /* satır kutusu değil GLİF ortalansın */
-  color: #254122;
-  letter-spacing: 0;
-  white-space: nowrap;
-}
-.fm-subtitle {
-  font-family: 'Pixel Operator SC', 'Pixelify Sans', monospace;
-  font-weight: 700;
-  font-size: 48px;
-  line-height: .9;
-  color: #84784F;
-  letter-spacing: 19.2px;
-  /* letter-spacing son harften SONRA da boşluk bırakır → blok sola kayar;
-     bir harf boşluğu kadar sağa iterek optik ortalama düzeltilir. */
-  text-indent: 19.2px;
+  font: 700 84px/1 var(--gm-font);
+  color: var(--gm-light);
+  letter-spacing: 4px;
+  text-indent: 4px;               /* son harfin ardındaki boşluğu dengele */
+  text-shadow: 0 8px 0 rgba(0, 0, 0, .35);
   white-space: nowrap;
 }
 
-/* ---------- Butonlar (node 94:2399 + studlar 95:564 / 95:571…) ----------
-   Kabuklar tasarımın kendi SVG'leri; ölçü/konum Figma koordinatı:
-     x 152, w 368 · play y360 h120 · diğerleri h84 @ 508/607/706/805/904
-   Metin: Pixel Operator SC, küçük harf (küçük-kapitel), #254122;
-     play  96px, sol boşluk 55px (Figma metin x=207)
-     diğer 56px, sol boşluk 36px (Figma metin x=188)
-   Stud sağda dikeyde tam ortalı (Figma'da da öyle: 45'lik stud butonun
-   üstünden +20px, 84'lük butonda merkez merkeze oturuyor). */
+/* ---------- Butonlar (konum Figma 94:2399, görünüm P99) ----------
+   Konum/ölçü eski menüyle aynı: x 152, w 368 · Oyna! y360 h120 · diğerleri
+   h84 @ 508/607/706/805/904. P99 (kullanıcı 2026-10-14): krem kabuk + sağdaki
+   "stud" kalktı → UI dilimizin düğmesi (açık tema zemin, koyu yazı, kenar,
+   sert gölge), yazı ortalı. Oyna! temanın vurgu tonunda; Çıkış ikincil
+   (çerçeveli). fitMenuLabels() taşan etiketi kademeli küçültür. */
 .fm-buttons {
   position: absolute;
   left: 0;
@@ -2864,60 +2846,43 @@ body.menu-open #app {
   width: 368px;
   height: 84px;
   margin: 0;
-  padding: 0 75px 0 36px;         /* sağ boşluk = stud alanı (368−293) */
+  padding: 0 16px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  text-align: left;
-  font-family: 'Pixel Operator SC', 'Pixelify Sans', monospace;
-  font-weight: 400;
-  font-size: 56px;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: lowercase;      /* SC fontta küçük harf = küçük-kapitel */
-  color: #254122;
-  background: url('assets/menu3/btn.svg') center / 100% 100% no-repeat;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+  justify-content: center;
+  text-align: center;
+  font: 700 26px/1 var(--gm-font);
+  letter-spacing: -1px;
+  color: var(--gm-dark);
+  background: var(--gm-light);
+  border: 6px solid var(--gm-edge);
+  border-radius: 12px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, .45);
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;               /* fitMenuLabels() taşmayı buradan ölçer */
   text-shadow: none;
   pointer-events: auto;
-  transition: transform .1s ease, filter .1s ease;
+  transition: transform .1s ease, filter .1s ease, box-shadow .1s ease;
 }
-/* Buton düğmesi — tasarımın kendi halka SVG'si (6 kademeli krem gradyan) */
-.fm-btn::after {
-  content: '';
-  position: absolute;
-  right: 30px;                    /* Figma: stud sağ kenarı 490, buton 520 */
-  top: 50%;
-  width: 45px;
-  height: 45px;
-  margin-top: -22.5px;
-  background: url('assets/menu3/stud.svg') center / 100% 100% no-repeat;
-  pointer-events: none;
-}
-.fm-btn:hover { transform: translateY(-3px); filter: brightness(1.05); }
-.fm-btn:active { transform: translateY(2px); filter: brightness(.95); }
-.fm-btn:focus-visible { outline: 3px solid #F0D488; outline-offset: 4px; }
+.fm-btn:hover { transform: translateY(-3px); filter: brightness(1.06); }
+.fm-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 rgba(0, 0, 0, .45); }
+.fm-btn:focus-visible { outline: 4px solid var(--gm-turn-on); outline-offset: 4px; }
 
-/* PLAY — büyük kabuk (368×120), Bold 96px, büyük stud (61px) */
+/* OYNA! — büyük düğme, temanın vurgu tonu */
 .fm-btn.fm-play {
   height: 120px;
-  font-size: 96px;
-  font-weight: 700;
-  padding: 0 83px 0 55px;
-  background-image: url('assets/menu3/btn-play.svg');
+  font-size: 58px;
+  background: var(--gm-turn-on);
+  border-color: var(--gm-turn-on);
 }
-.fm-btn.fm-play::after {
-  right: 22px;                    /* Figma: stud sağ kenarı 498, buton 520 */
-  width: 61px;
-  height: 61px;
-  margin-top: -30.5px;
-  background-image: url('assets/menu3/stud-play.svg');
+/* ÇIKIŞ — ikincil düğme (çerçeveli, zeminsiz) */
+#btnQuit {
+  background: transparent;
+  color: var(--gm-light);
+  border: 5px solid var(--gm-light);
+  box-shadow: none;
 }
 
 /* Dikey konumlar = Figma frame koordinatı (birebir) */

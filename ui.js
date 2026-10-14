@@ -60,12 +60,15 @@
      katmanı (94:2397 / 94:2398), o yüzden isim yine buradan sürülüyor:
      tek satır değiştirmek yeterli, Figma'dan yeniden export gerekmez. */
   const GAME_CONFIG = {
-    title: 'OKEY',
-    subtitle: 'ROGUELIKE',
+    /* P99 (kullanıcı 2026-10-14): "OKEY Roguelike" taslak addı → LUSORIA
+       (şimdilik; ileride değişebilir). Alt başlık yok (boş = çizilmez). */
+    title: 'LUSORIA',
+    subtitle: '',
   };
 
   /* Logo — Figma "OKEY-101 / yeni test" (node 74:3, 2026-08-10 sürümü):
-     krem plaka (banner.svg, node 95:439) + içinde başlık kilidi.
+     plaka (node 95:439 konumu; P99'dan beri tema plakası, style.css
+     .fm-banner — krem banner.svg kalktı) + içinde başlık.
      Kilit CSS flex ile plakaya YATAY ve DİKEY tam ortalanır (mutlak ofset
      yok) → plaka yeniden export edilse veya isim değişse bile ortalama
      bozulmaz.
@@ -75,7 +78,7 @@
   function renderLogo() {
     el.menuLogo.innerHTML =
       `<div class="fm-title">${pxAccents(GAME_CONFIG.title)}</div>` +
-      `<div class="fm-subtitle">${pxAccents(GAME_CONFIG.subtitle)}</div>`;
+      (GAME_CONFIG.subtitle ? `<div class="fm-subtitle">${pxAccents(GAME_CONFIG.subtitle)}</div>` : '');
   }
 
   /* PLAYTEST 20 · GRUP B/2 — AKSAN HACK'İ KALDIRILDI.
