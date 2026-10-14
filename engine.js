@@ -2623,7 +2623,7 @@ const CORP_BOSS_CIFT = 3;          // Kurogane: raund boyunca YALNIZ Çift, en a
 const CORP_BOSS_TURN3 = 3;         // Abyssal: açılım yaptığın HER turda en az 3 grup (pas serbest)
 const CORP_BOSS_PASS = 1;          // Verdatek: en fazla 1 tur pas
 const CORPS_BOSS = {
-  kizil: { text: `Raund boyunca YALNIZCA Çift aç — en az ${CORP_BOSS_CIFT} Çift` },
+  kizil: { text: `Raund boyunca yalnız Çift aç — en az ${CORP_BOSS_CIFT} Çift` },
   derin: { text: `Açılım yaptığın her turda en az ${CORP_BOSS_TURN3} grup aç — pas geçebilirsin` },
   altin: { text: 'Raundu en geç 2. turda geç' },
   yesil: { text: `En fazla ${CORP_BOSS_PASS} tur pas geç — diğer her turda açılım yap` },
@@ -2633,7 +2633,7 @@ const CORPS_BOSS = {
    P49 · Grup D: tek kelimelik mega-şirket adları (Cyberpunk / Armored Core
    esintisi). Anahtarlar (kizil/derin/altin/yesil) kayıt uyumu için AYNI. */
 const CORPS = [
-  { key: 'kizil', name: '🔴 Kurogane', text: 'Bir turda YALNIZCA Çift aç', rewardText: `+${CORP_KIZIL_MULT.toFixed(1)}x kalıcı`, penaltyText: '-100 puan' },
+  { key: 'kizil', name: '🔴 Kurogane', text: 'Bir turda yalnız Çift aç', rewardText: `+${CORP_KIZIL_MULT.toFixed(1)}x kalıcı`, penaltyText: '-100 puan' },
   { key: 'derin', name: '🔵 Abyssal', text: 'Bir turda en az 3 grup aç', rewardText: `+${CORP_DERIN_COIN} coin`, penaltyText: '-50 puan' },
   { key: 'altin', name: '🟡 Heliox', text: 'Raundu 1. veya 2. turda geç', rewardText: `+${CORP_ALTIN_MULT.toFixed(1)}x kalıcı +${CORP_ALTIN_COIN} coin`, penaltyText: 'raund coini yarıya' },
   { key: 'yesil', name: '🟢 Verdatek', text: 'Her turda el aç, hiç geçme', rewardText: `+${CORP_YESIL_MULT.toFixed(1)}x kalıcı`, penaltyText: '-50 puan' },
@@ -11119,7 +11119,8 @@ const Game = {
   },
 
   corpsInfo() {
-    return CORPS.map(c => ({ icon: '', name: c.name,
+    return CORPS.map(c => ({ icon: '', key: c.key, name: c.name,
+      text: c.text, rewardText: c.rewardText, penaltyText: c.penaltyText,
       desc: `Görev: ${c.text}. Başarırsan ${c.rewardText}, başaramazsan ${c.penaltyText}.` }));
   },
 

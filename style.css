@@ -11350,3 +11350,26 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
   100% { transform: translateY(110vh) rotate(360deg); }
 }
 @media (prefers-reduced-motion: reduce) { .ep-confetti { display: none; } }
+
+/* P98 — KOLEKSİYONDA VARYANTLAR (kullanıcı onayı 2026-10-14): varyantı olan
+   kartın SAĞ ALTINDA ◆ rozeti (sayı = varyant sayısı), karta tıklayınca
+   #varOv penceresi (pk-ov kalıbı) her varyantı çizimi + adı + etkisiyle gösterir. */
+.col-jk-card.has-var, .col-tile.has-var { cursor: pointer; }
+.col-tile.has-var { position: relative; }
+.col-var-badge {
+  position: absolute; right: -6px; bottom: -6px; z-index: 2;
+  padding: 2px 7px; border-radius: 7px;
+  background: var(--gm-dark, #2A2440); color: var(--gm-turn-on, #FFD45A);
+  border: 2px solid var(--gm-turn-on, #FFD45A);
+  font: 12px/16px var(--gm-font);
+  box-shadow: 0 2px 0 rgba(0,0,0,.35);
+  pointer-events: none;
+}
+.tip-var-hint {
+  margin-top: 8px; padding-top: 6px;
+  border-top: 1px dashed currentColor;
+  font: 11px var(--gm-font); color: #FFD45A;
+}
+.var-ov .var-card { width: 190px; min-height: 0; cursor: default; }
+.var-ov .var-card:hover { transform: none; box-shadow: none; }
+.var-ov .var-card .col-jk-art { margin-bottom: 4px; }

@@ -465,6 +465,20 @@
       kahinChip: (x) => `Kehanet: ${x}`,
       corpChip: (n, x, r) => `${n} görevi: ${x} → ${r}`,
       corpTipDesc: (x, r, p) => `Görev: ${x}. Başarırsan ${r}; başaramazsan ${p}.`,
+      /* P98 — koleksiyonda varyant penceresi */
+      varTitle: 'Varyantlar', varTitle1: 'Varyant', varClose: 'Kapat',
+      varTip: (n) => (n > 1 ? '◆ Tıkla: varyantları gör' : '◆ Tıkla: varyantı gör'),
+      varSub_truva: 'Pandora · kutudan çıkabilecek 3 kart',
+      varSub_corporates: 'The Corporates · raundun şirketi belli olunca kart dönüşür',
+      varSub_misunderstood: 'The Misunderstood · feda edince ya da süresi bitince uyanır',
+      varSub_tuccar: 'Tüccar · yalnız görünüm değişir',
+      varSub_otekiDunya: 'Öteki Dünya · yalnız görünüm değişir',
+      varName_misu: 'Uyanış',
+      varDesc_misu: () => `Uyandı: hedef artmaz, açılımların +${MISU_V2_MULT.toFixed(1)}x alır. Kazandığın her raund +${MISU_V2_GROW.toFixed(1)}x büyür; ${MISU_V2_ROUNDS} raund sürer.`,
+      varName_tuccar: 'Teklif',
+      varDesc_tuccar: 'Takas teklifi açıkken kart bu hâle geçer. Etkisi değişmez.',
+      varName_oteki: 'Dolunay',
+      varDesc_oteki: 'Ay Kuyusu dolup Dolunay gelince kart bu hâle geçer. Etkisi değişmez.',
       kahinCoin: 'coin',
       kahinPts: 'puan',
       consumLeftUse: 'Sol tık: kullan',
@@ -1401,6 +1415,20 @@
       kahinChip: (x) => `Prophecy: ${x}`,
       corpChip: (n, x, r) => `${n} task: ${x} → ${r}`,
       corpTipDesc: (x, r, p) => `Task: ${x}. Succeed: ${r}; fail: ${p}.`,
+      /* P98 — variant window in the collection */
+      varTitle: 'Variants', varTitle1: 'Variant', varClose: 'Close',
+      varTip: (n) => (n > 1 ? '◆ Click: see the variants' : '◆ Click: see the variant'),
+      varSub_truva: 'Pandora · the 3 cards the box can turn into',
+      varSub_corporates: 'The Corporates · turns into the company of the round',
+      varSub_misunderstood: 'The Misunderstood · awakens when sacrificed or when it runs out',
+      varSub_tuccar: 'Merchant · only the look changes',
+      varSub_otekiDunya: 'Other World · only the look changes',
+      varName_misu: 'Awakening',
+      varDesc_misu: () => `Awakened: the target no longer rises, your melds get +${MISU_V2_MULT.toFixed(1)}x. Grows +${MISU_V2_GROW.toFixed(1)}x each round you win; lasts ${MISU_V2_ROUNDS} rounds.`,
+      varName_tuccar: 'Offer',
+      varDesc_tuccar: 'The card looks like this while a trade offer is open. Its effect stays the same.',
+      varName_oteki: 'Full Moon',
+      varDesc_oteki: 'The card looks like this when the Moon Well fills and the Full Moon comes. Its effect stays the same.',
       kahinCoin: 'coins',
       kahinPts: 'pts',
       consumLeftUse: 'Left-click: use',
@@ -2064,10 +2092,10 @@
   };
 
   const CORP_EN = {
-    kizil: { name: '🔴 Kurogane', text: 'Open ONLY Pairs in one turn', reward: '+1.0x permanent', penalty: '-100 pts' },
-    derin: { name: '🔵 Abyssal', text: 'Open at least 3 groups in one turn', reward: '+25 coins', penalty: '-50 pts' },
-    altin: { name: '🟡 Heliox', text: 'Clear the round on turn 1 or 2', reward: '+2.0x permanent +5 coins', penalty: 'round coins halved' },
-    yesil: { name: '🟢 Verdatek', text: 'Meld every turn, never pass', reward: '+1.0x permanent', penalty: '-50 pts' },
+    kizil: { name: '🔴 Kurogane', text: 'Open only Pairs in one turn' },
+    derin: { name: '🔵 Abyssal', text: 'Open at least 3 groups in one turn' },
+    altin: { name: '🟡 Heliox', text: 'Clear the round on turn 1 or 2' },
+    yesil: { name: '🟢 Verdatek', text: 'Meld every turn, never pass' },
   };
 
   /* ---------- Motor olay mesajı kalıpları (TR → EN) ----------
@@ -2138,7 +2166,9 @@
     [/^👹 Abyssal görevi bu turda ihlal edildi \(en az 3 grup gerekiyordu\)$/, '👹 Abyssal task broken this turn (at least 3 groups were required)'],
     [/^👹 Verdatek görevi bu turda ihlal edildi \(pas geçtin\)$/, '👹 Verdatek task broken this turn (you passed)'],
     /* P81 — The Corporates boss görevleri "raund boyunca" */
-    [/^Raund boyunca YALNIZCA Çift aç — en az (\d+) Çift$/, 'Open ONLY Pairs all round — at least $1 Pairs'],
+    [/^Raund boyunca yalnız Çift aç — en az (\d+) Çift$/, 'Open only Pairs all round — at least $1 Pairs'],
+    [/^(Bir turda yalnız Çift aç|Bir turda en az 3 grup aç|Raundu 1\. veya 2\. turda geç|Her turda el aç, hiç geçme)$/, (m) => trCorpText(m[1])],
+    [/^(\+[\d.]+x kalıcı(?: \+\d+ coin)?|-\d+ puan|raund coini yarıya)$/, (m) => trCorpRP(m[1])],
     [/^Açılım yaptığın her turda en az (\d+) grup aç — pas geçebilirsin$/, 'Open at least $1 groups in every turn you meld — passing is allowed'],
     [/^Raundu en geç 2\. turda geç$/, 'Clear the round by turn 2 at the latest'],
     [/^En fazla (\d+) tur pas geç — diğer her turda açılım yap$/, 'Pass at most $1 turn — meld in every other turn'],
@@ -2573,7 +2603,7 @@
   function corpTrName(k) { return CORP_TR_NAMES[k]; }
   function trCorpText(t) {
     const map = {
-      'Bir turda YALNIZCA Çift aç': CORP_EN.kizil.text,
+      'Bir turda yalnız Çift aç': CORP_EN.kizil.text,
       'Bir turda en az 3 grup aç': CORP_EN.derin.text,
       'Raundu 1. veya 2. turda geç': CORP_EN.altin.text,
       'Her turda el aç, hiç geçme': CORP_EN.yesil.text,
@@ -2581,11 +2611,8 @@
     return map[t] || t;
   }
   function trCorpRP(t) {
-    const map = {
-      '+1.0x kalıcı': '+1.0x permanent', '-100 puan': '-100 pts', '+25 coin': '+25 coins', '-50 puan': '-50 pts',
-      '+2.0x kalıcı +5 coin': '+2.0x permanent +5 coins', 'raund coini yarıya': 'round coins halved',
-    };
-    return map[t] || t;
+    return t.replace(/^\+([\d.]+)x kalıcı/, '+$1x permanent').replace(/\+(\d+) coin$/, '+$1 coins')
+      .replace(/^-(\d+) puan$/, '-$1 pts').replace(/^raund coini yarıya$/, 'round coins halved');
   }
   function trRareNote(t) {
     let r = t.replace(/^(.+?) Ana Slot'a eklendi$/, '$1 added to Main Slot')

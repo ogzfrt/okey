@@ -1398,12 +1398,9 @@
           `<div class="tip-fused tip-legacy"><div class="tip-head">📜 ${t('tipLegacyItem', i + 1, vcap)} ${T.name(r)}</div>` +
           `<div class="tip-desc">${emphNums(T.desc(r), r.key)}</div></div>`).join('')
         : `<div class="tip-fused tip-legacy"><div class="tip-head">📜 ${t('tipLegacyEmpty')}</div></div>`);
-    /* P30 · Grup I — KOLEKSİYONDA PANDORA'NIN ÜÇ OLASI VARYANTI. Füzyon'un
-       "içerdiği efektler" satırlarının aynısı: oyuncu kutunun neye
-       dönüşebileceğini satın almadan inceleyebilsin. */
-    const variantLines = (j.variants || []).map(v =>
-      `<div class="tip-fused"><div class="tip-head">${v.icon} ${T.ev(v.name)}</div>` +
-      `<div class="tip-desc">${emphNums(T.ev(v.desc), 'truva')}</div></div>`).join('');
+    /* P98 — varyantlar koleksiyonda kendi penceresinde (showVariants);
+       ipucu yalnız tıklanabildiğini söyler. */
+    const variantLines = j.varHint ? `<div class="tip-var-hint">${t('varTip', j.varHint)}</div>` : '';
     /* PİKSEL-ART AÇIKLAMA KARTI (kullanıcı isteği 2026-09-07).
        Yapı: nadirlik renginde ŞERİT + büyük başlık → küçük harfli kategori
        satırı → açıklama → süre / füzyon / eylemler. Çerçevenin ve şeridin
@@ -1428,7 +1425,7 @@
         ? `<div class="tip-head">⚗ ${T.name(fzDef)}</div>`
         : `<div class="tip-head">${headTxt}</div>` + rarityLine +
           `<div class="tip-desc">${emphNums(descTxt, j.key)}</div>`) +
-      fusedLines + legacyLines + variantLines + usesLine + accumNow(j) +
+      fusedLines + legacyLines + usesLine + accumNow(j) + variantLines +
       `</div>`;
     const inner = tip.firstElementChild;
     // Eylem butonları (Grup G2): store açıkken slot jokerlerine Sat / →Ana / Birleştir
@@ -8621,14 +8618,66 @@
         (def.icon ? `<div class="col-icon">${def.icon}</div>` : '') +
         `<div class="jt-name">${T.name({ key: def.key, name: def.name })}</div>`;
     }
+    /* P98 — varyantı olan kart: sağ altta ◆ rozeti, tıklayınca varyant penceresi.
+       (P30/P35'te Pandora ve Corporates varyantları ipucunda yazı satırıydı;
+       artık çizimleriyle pencerede, ipucunda yalnız "Tıkla" satırı.) */
+    const nVar = JOKER_VARIANTS[def.key] ? JOKER_VARIANTS[def.key].list().length : 0;
+    if (nVar) {
+      tile2.classList.add('has-var');
+      tile2.insertAdjacentHTML('beforeend', `<span class="col-var-badge">◆ ${nVar}</span>`);
+      tile2.addEventListener('click', () => showVariants(def));
+    }
     attachTip(tile2, { key: def.key, name: def.name, desc: def.desc,
-      rarity: def.rarity, usesLeft: def.uses ?? RARITY[def.rarity].uses,
-      /* P30 · Grup I — Pandora'nın kutusundan çıkabilecek üç kart */
-      variants: def.key === 'truva' && Game.PANDORA_INFO
-        ? Object.values(Game.PANDORA_INFO)
-        /* P35 · Grup L — The Corporates'in dört şirket görevi, aynı biçim */
-        : def.key === 'corporates' && Game.corpsInfo ? Game.corpsInfo() : undefined }, {});
+      rarity: def.rarity, usesLeft: def.uses ?? RARITY[def.rarity].uses, varHint: nVar }, {});
     return tile2;
+  }
+
+  /* P98 — KOLEKSİYONDA VARYANTLAR (kullanıcı onayı 2026-10-14). Pencere her
+     varyantı büyük çizim + ad + etkiyle gösterir; kartın normal hâli YOK
+     (kullanıcı kararı). Tüccar / Öteki Dünya'da yalnız çizim değişir → etki
+     yerine "ne zaman görünür". Yeni varyant = buraya bir satır (+ i18n). */
+  const JOKER_VARIANTS = {
+    truva: { icon: '🎁', list: () => Object.entries(Game.PANDORA_INFO || {}).map(([k, v]) => ({
+      art: 'jk-truva pd-' + k, name: T.ev(v.name).split(' — ').pop(), desc: T.ev(v.desc) })) },
+    corporates: { icon: '🏢', list: () => (Game.corpsInfo ? Game.corpsInfo() : []).map((c) => ({
+      art: 'jk-corporates corp-' + c.key, name: T.ev(c.name).replace(/^\S+\s/, ''),
+      desc: t('corpTipDesc', T.ev(c.text), T.ev(c.rewardText), T.ev(c.penaltyText)) })) },
+    misunderstood: { icon: '🎭', list: () => [{ art: 'jk-misunderstood misu-v2', name: t('varName_misu'), desc: t('varDesc_misu') }] },
+    tuccar: { icon: '💼', list: () => [{ art: 'jk-tuccar tuccar-v2', name: t('varName_tuccar'), desc: t('varDesc_tuccar') }] },
+    otekiDunya: { icon: '🌙', list: () => [{ art: 'jk-otekiDunya oteki-flip', name: t('varName_oteki'), desc: t('varDesc_oteki') }] },
+  };
+  function showVariants(def) {
+    const V = JOKER_VARIANTS[def.key];
+    const list = V ? V.list() : [];
+    if (!list.length) return;
+    hideTip();
+    document.getElementById('varOv')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'varOv';
+    ov.className = 'pk-ov tone-gold var-ov';
+    ov.innerHTML =
+      `<div class="pk-box">` +
+      `<div class="pk-title">${V.icon} ${t(list.length > 1 ? 'varTitle' : 'varTitle1')}</div>` +
+      `<div class="pk-sub-title">${t('varSub_' + def.key)}</div>` +
+      `<div class="pk-body pk-choice"></div>` +
+      `<div class="pk-foot"><button class="btn ghost var-close">${t('varClose')}</button></div></div>`;
+    const body = ov.querySelector('.pk-body');
+    list.forEach((v, i) => {
+      const c = document.createElement('div');
+      c.className = `pk-card r-${def.rarity} var-card`;
+      c.style.animationDelay = `${i * 0.11}s`;
+      c.innerHTML = `<div class="col-jk-art ${v.art}"></div>`
+        + `<div class="pk-name">${v.name}</div><div class="pk-desc">${v.desc}</div>`;
+      body.appendChild(c);
+    });
+    // Esc yalnız bu pencereyi kapatır (arkadaki koleksiyon açık kalır)
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); } };
+    const close = () => { ov.remove(); document.removeEventListener('keydown', onKey, true); };
+    ov.querySelector('.var-close').addEventListener('click', close);
+    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(ov);
+    SFX.tick();
   }
   function colConsumCard(def) {
     const tile2 = document.createElement('div');
