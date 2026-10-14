@@ -6707,7 +6707,7 @@ const Game = {
         mult += MEDUSA_MULT;
         flat += MEDUSA_FLAT;
         triggered.push({ id: mdj.id, name: mdj.name,
-          text: `+${MEDUSA_MULT.toFixed(1)}x +${MEDUSA_FLAT} puan (taşlaşmış taş)` });
+          text: `+${MEDUSA_MULT.toFixed(1)}x +${MEDUSA_FLAT} puan (heykel taş)` });
       }
       // Anka Kuşu — Yükselen Alev (P33 · Grup A): son raundunda alev büyür
       const ankj = this.slotRecs().find(j => j.key === 'ankaKusu');
@@ -8744,7 +8744,7 @@ const Game = {
         }
       } else if (t.stoned) {
         // Medusa — taşlaşmış taş işlekten etkilenmez (GDD 11)
-        events.push(`Taşa dönmüş ${COLOR_TR[t.color]} ${t.number} atıldı — işlek cezası yok`);
+        events.push(`Heykel ${COLOR_TR[t.color]} ${t.number} atıldı — işlek cezası yok`);
       } else if (t.special === 'karaDelikTasi') {
         /* Grup E / Grup F (P22) — atılması güvenlidir (işlek zarı hiç
            atılmaz). Muafiyet yeni temayla da örtüşür: kara deliğe düşen
