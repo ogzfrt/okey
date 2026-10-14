@@ -11015,6 +11015,9 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 /* P91 · Figma RARE-JOKERLER 468:256 — ilk Rare çizimleri */
 .jk-fuzyon   { --jk-art: url('assets/game/joker/fuzyon.svg'); }    /* 468:226 */
 .jk-sarmasik { --jk-art: url('assets/game/joker/sarmasik.svg'); }  /* 468:216 */
+.jk-vampir   { --jk-art: url('assets/game/joker/vampir.svg'); }    /* 469:2 · P100 */
+.jk-paratoner { --jk-art: url('assets/game/joker/simsek-avcisi.svg'); }  /* 475:2 Şimşek Avcısı · P100 */
+.jk-sansliYedili { --jk-art: url('assets/game/joker/sansli-yedili.svg'); }  /* 476:25 · P100 */
 #pandoraOv .pd-art { width: 162px; height: 220px; margin: 0 auto; background: var(--jk-art) no-repeat center / 100% 100%; image-rendering: pixelated; }
 /* P91 — Füzyon kartının ipucunda içindeki jokerler ilk satırdan başlar */
 #jokerTip.tip-fz .tip-fused:first-of-type { margin-top: 6px; }

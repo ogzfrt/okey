@@ -8567,7 +8567,8 @@
     /* P89 · Figma LEGENDARY_JOKERLER 383:1000 — Legendary 15/15 */
     'ankaKusu', 'atesTuccari', 'hidra', 'kaioken', 'truva', 'satrancSaati', 'sisyphus', 'vasiyet',
     /* P91 · Figma RARE-JOKERLER 468:256 — ilk Rare çizimleri */
-    'fuzyon', 'sarmasik']);
+    'fuzyon', 'sarmasik',
+    'vampir', 'paratoner', 'sansliYedili']);   // P100 · Figma 469:2 / 475:2 (Şimşek Avcısı) / 476:25
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
