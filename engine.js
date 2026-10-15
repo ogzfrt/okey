@@ -7771,6 +7771,24 @@ const Game = {
   },
 
   /* İşleme (GDD 3.7): önceki turun açık kombinasyonuna elden taş ekle */
+  /* P103 (kullanıcı raporu: "sarı 7'yi işledim ama doğru yerine koymadı") — KÖK NEDEN:
+     işlenen taşlar grubun SONUNA itiliyordu (8 9 10 + 7 → "8 9 10 7"). Sıralı / Per
+     işlemeden sonra gruba göre yeniden dizilir: önizleme (UI) ve onay (confirmMelds)
+     bu yardımcıyı kullanır. Dönüş: { tiles (dizili), added (işlenen id kümesi), values }. */
+  islemeLayout(comboIndex) {
+    const s = this.state;
+    const c = s.prevOpen[comboIndex];
+    if (!c) return null;
+    const list = s.islemeler.filter(e => e.comboIndex === comboIndex);
+    if (!list.length) return { tiles: [...c.tiles], added: new Set(), values: c.values };
+    const vals = new Map(c.values || []);
+    for (const e of list) for (const [k, v] of (e.values || [])) vals.set(k, v);
+    const added = new Set(list.flatMap(e => e.tiles.map(t => t.id)));
+    const all = [...c.tiles, ...list.flatMap(e => e.tiles)];
+    const tiles = (c.type === 'sirali' || c.type === 'per') ? orderComboTiles(c.type, all, vals, (t) => this.isOkeyTile(t)) : all;
+    return { tiles, added, values: vals };
+  },
+
   addIsleme(comboIndex, ids, opts) {
     const s = this.state;
     if (s.phase !== 'meld') return { ok: false, error: 'Şu an açılım aşamasında değilsin.' };
@@ -8583,9 +8601,10 @@ const Game = {
     }
 
     // işlenen taşları önceki açık kombinasyonlara görsel olarak ekle
-    for (const e of s.islemeler) {
-      const c = s.prevOpen[e.comboIndex];
-      if (c) c.tiles.push(...e.tiles);
+    for (const idx of new Set(s.islemeler.map(e => e.comboIndex))) {
+      const c = s.prevOpen[idx];
+      const lay = c && this.islemeLayout(idx);
+      if (lay) { c.tiles = lay.tiles; if (lay.values) c.values = lay.values; }   // P103: işlenen taş doğru yerine
     }
     s.islemeler = [];
     s.opened = s.staged;

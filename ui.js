@@ -1722,7 +1722,9 @@
       if (this._o) return this._o;
       try { this._o = JSON.parse(localStorage.getItem(DISC_KEY)) || {}; } catch (e) { this._o = {}; }
       for (const c of DISC_CATS) if (!Array.isArray(this._o[c])) this._o[c] = [];
-      for (const k of ownedEver) if (!this._o.joker.includes(k)) { this._o.joker.push(k); this._dirty = true; }
+      if (!this._o.src || typeof this._o.src !== 'object') this._o.src = {};
+      /* kaynak etiketi (teşhis): g = eski "sahip olunan jokerler" kaydı, r = normal run, t = trainer */
+      for (const k of ownedEver) if (!this._o.joker.includes(k)) { this._o.joker.push(k); this._o.src['joker:' + k] = 'g'; this._dirty = true; }
       this.flush();
       return this._o;
     },
@@ -1747,6 +1749,18 @@
       const o = this._read();
       if (o[cat].includes(key)) return;
       o[cat].push(key); this._dirty = true;
+      o.src[cat + ':' + key] = Game.trainerMode ? 't' : 'r';
+    },
+    /* Ayarlar › Ekstra: keşif kaydının dökümü ve sıfırlanması */
+    stats() {
+      const o = this._read(); const r = { g: 0, r: 0, t: 0, n: 0 };
+      for (const k of o.joker) { const sc = o.src['joker:' + k] || 'g'; r[sc] = (r[sc] || 0) + 1; r.n++; }
+      return r;
+    },
+    reset() {
+      this._o = { src: {} }; for (const c of DISC_CATS) this._o[c] = [];
+      try { localStorage.setItem(DISC_KEY, JSON.stringify(this._o)); localStorage.removeItem('okeyOwnedEver'); } catch (e) {}
+      ownedEver = new Set();
     },
     flush() {
       if (!this._dirty) return;
@@ -1938,8 +1952,12 @@
     const locked = !!(Game.beltLocked && Game.beltLocked());   // P90e — raund başına 1 kez
     const ov = document.createElement('div');
     ov.className = 'pk-ov tone-violet belt-ov' + (locked ? ' belt-locked' : '');
+    /* P103 (kullanıcı: "çok uzun") — kural paragrafı yerine yıldız merdiveni + iki kısa satır */
+    const ladder = `<div class="bt-ladder"><span class="bt-st"><b>★</b> ×${BELT_K[1]}</span><i>${t('beltAfter', 2)}</i>`
+      + `<span class="bt-st"><b>★★</b> ×${BELT_K[2]}</span><i>${t('beltAfter', 4)}</i>`
+      + `<span class="bt-st bt-top"><b>★★★</b> ×${BELT_K[3]}</span></div>`;
     ov.innerHTML = `<div class="pk-box"><div class="pk-title">🎩 ${t('beltTitle')}</div>`
-      + `<div class="pk-sub-title">${t('beltSub')}</div>`
+      + `<div class="pk-sub-title">${ladder}<div class="bt-rule">${t('beltRule1')}</div><div class="bt-rule">${t('beltRule2')}</div></div>`
       + (locked ? `<div class="belt-lock-note">🔒 ${t('beltLockedNote')}</div>` : '')
       + `<div class="pk-body pk-choice"></div>`
       + `<div class="pk-foot"><button class="btn ghost belt-close">${t('beltLater')}</button></div></div>`;
@@ -1950,9 +1968,13 @@
       c.dataset.id = j.id;
       if (locked && s.beltId !== j.id) c.disabled = true;
       const now = j.beltStars ? `${t('belt' + j.beltStars)} ×${BELT_K[j.beltStars]}` : t('beltNone');
-      c.innerHTML = `<div class="pk-ico">${jokerIcon(j.key)}</div><div class="pk-name">${T.name(j)}</div>`
-        + `<div class="pk-sub">${now}${s.beltId === j.id ? ' · ' + t('beltNow') : ''}</div>`
-        + `<div class="pk-desc">${T.desc(j)}</div>`;
+      /* P103 (kullanıcı): kartlar jokerin ÇİZİMİYLE (çizimi yoksa adıyla) görünür, açıklama
+         üstüne gelince ipucunda — koleksiyon / store kartlarıyla aynı dil */
+      c.innerHTML = (JOKER_ART.has(j.key)
+        ? `<div class="col-jk-art jk-${j.key}"></div>`
+        : `<div class="bp-name">${T.name(j)}</div>`)
+        + `<div class="pk-sub bp-sub">${now}${s.beltId === j.id ? ' · ' + t('beltNow') : ''}</div>`;
+      attachTip(c, j, {});
       c.addEventListener('click', () => {
         const r = Game.setBelt(j.id);
         if (!r.ok) { toast(r.error); return; }
@@ -3292,18 +3314,30 @@
     const s = Game.state;
     const old = document.getElementById('okeyBanner');
     if (old) old.remove();
+    /* P103 (kullanıcı isteği 2026-10-15) — STAGE / OKEY İLANI: ana menüdeki Mühür
+       (oyun sonu panelindeki gibi, kazanılmış final eşyalarıyla) + konuşma balonu;
+       okey taşı soldaki OKEY kutusundakinin aynısı, kendiliğinden kapanana kadar
+       azalan çubuk. Kimlik (#okeyBanner) aynı: testler ve kapatma kancaları değişmedi. */
     const ov = document.createElement('div');
     ov.id = 'okeyBanner';
+    ov.className = 'pk-ov hint-ov mh-hint mh-okey';
     ov.innerHTML =
-      `<div class="ob-box">` +
-      `<img src="maskot.png" alt="maskot">` +
-      `<div class="ob-txt">` +
-      `<div class="ob-title">${Game.isFinalStage() ? t('stageFinal') : t('obTitle', s.stage, chCount())}</div>` +
-      `<div class="ob-sub">${t('obSub')}</div>` +
-      `<div class="okey-tile-mini ${s.okey.color}">${s.okey.number}</div>` +
-      `<div class="ob-name">${okeyLabel()}</div>` +
-      `<div class="ob-skip">${t('obSkip')}</div>` +
-      `</div></div>`;
+      `<div class="mh-wrap"><div class="ep-msc"><div class="ep-msc-in"><i class="ep-msc-body"></i></div></div>` +
+      `<div class="mh-col"><div class="mh-bub">` +
+      `<div class="mh-tag">${Game.isFinalStage() ? t('stageFinal') : t('obTitle', s.stage, chCount())}</div>` +
+      `<div class="hint-body">${t('obSub')}</div>` +
+      `<div class="ob-okey"><div class="ob-tile"></div><div class="ob-name">${okeyLabel()}</div></div>` +
+      `<div class="ob-bar"><i></i></div></div>` +
+      `<div class="ob-skip">${t('obSkip')}</div></div></div>`;
+    ov.querySelector('.ob-tile').appendChild(tileEl({ id: -1, color: s.okey.color, number: s.okey.number, isOkeyReal: true }, false));
+    updateMascotItems();
+    const inner = ov.querySelector('.ep-msc-in');
+    document.querySelectorAll('.fm-mascot-item.on').forEach((im) => {
+      const c = im.cloneNode(true);
+      c.classList.remove('fm-mascot-item', 'on');
+      c.classList.add('ep-msc-item');
+      inner.appendChild(c);
+    });
     ov.addEventListener('click', () => ov.remove());
     setTimeout(() => ov.remove(), 2800);
     document.body.appendChild(ov);
@@ -4455,16 +4489,14 @@
       box.className = 'combo isleme-target' + (c.gumClosed ? ' gum-closed' : '') + (c.owner === 'orion' ? ' orion-combo' : '');   // P90
       const tilesDiv = document.createElement('div');
       tilesDiv.className = 'combo-tiles';
-      c.tiles.forEach(t2 => tilesDiv.appendChild(comboTileEl(t2, c)));
-      s.islemeler.forEach((e2) => {
-        if (e2.comboIndex !== i) return;
-        // işleme taşları: okeyin yerini çözmek için BİRLEŞİK kombinasyon gerekir
-        const merged = { type: c.type, values: e2.values, tiles: [...c.tiles, ...e2.tiles] };
-        e2.tiles.forEach(t2 => {
-          const td = comboTileEl(t2, merged);
-          td.classList.add('isleme-tile');
-          tilesDiv.appendChild(td);
-        });
+      /* P103 — işlenen taş grubun SONUNA değil dizideki yerine girer (8 9 10 + 7 → 7 8 9 10);
+         okeyin yerini çözmek için BİRLEŞİK kombinasyon (değerleriyle) gerekir */
+      const lay = Game.islemeLayout(i);
+      const mergedC = { type: c.type, values: lay.values, tiles: lay.tiles };
+      lay.tiles.forEach(t2 => {
+        const td = comboTileEl(t2, lay.added.size ? mergedC : c);
+        if (lay.added.has(t2.id)) td.classList.add('isleme-tile');
+        tilesDiv.appendChild(td);
       });
       const tag = document.createElement('div');
       tag.className = 'combo-tag';
@@ -4801,7 +4833,8 @@
     {
       const canP = Game.canParatonerBait && Game.canParatonerBait();
       const set = canP && Game.state.paratonerBait != null;
-      el.btnParatoner.classList.toggle('hidden', !canP);
+      /* P103 (kullanıcı): ek "Yem Seç" düğmesi kalktı — yem jokere SOL TIKLA seçilir (jokerActs → doParatoner); düğme DOM'da gizli durur */
+      el.btnParatoner.classList.add('hidden');
       el.btnParatoner.textContent = set ? t('paratonerClear') : t('paratonerBtn');
       el.btnParatoner.disabled = !set && !paratonerSel;
       el.btnParatoner.title = (set || paratonerSel) ? '' : t('paratonerNeedOne');
@@ -7205,6 +7238,7 @@
         go('setHintsReset', t('hintsLabel'), t('hintsResetDesc')) +
         /* P101 — kilitli/keşfedilmemiş görünümü test (gerçek kayıt silinmez) */
         cyc('colrev', t('colRevealLabel'), DISC_MODES.map((k) => ({ v: k, text: t('colRev_' + k), cls: 'set-colrev', attr: 'data-colrev' })), Disc.mode()) +
+        go('setDiscReset', t('discResetLabel'), t('discResetDesc', Disc.stats())) +
         /* P90d (kullanıcı 2026-10-12) — yenmekle uğraşmadan test: her final için
            "yenildi" tik kutusu (kilit + maskot eşyası + run başı final jokeri) */
         `<div class="set-card set-fw-card"><span class="go-txt"><span class="set-label">${t('finalWinHead')}</span>`
@@ -7260,6 +7294,14 @@
       ov.remove();
       showSettings();   // FİNAL JOKERİYLE BAŞLA kilidi, sıfırla satırı ve kutular tazelensin
     }));
+    const dr = ov.querySelector('#setDiscReset');
+    dr.addEventListener('click', () => {
+      if (!dr.dataset.confirm) { dr.dataset.confirm = '1'; dr.classList.add('warn'); dr.textContent = '⚠ ' + t('discResetConfirm'); return; }
+      Disc.reset();
+      toast(t('discResetDone'), true);
+      ov.remove();
+      showSettings('extra');
+    });
     const fr = ov.querySelector('#setFinalsReset');
     fr.addEventListener('click', () => {
       if (!fr.dataset.confirm) { fr.dataset.confirm = '1'; fr.classList.add('warn'); fr.textContent = '⚠ ' + t('finalsResetConfirm'); return; }

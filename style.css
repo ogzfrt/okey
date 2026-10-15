@@ -11560,3 +11560,57 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 }
 @keyframes tutSpotGlow { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
 @media (prefers-reduced-motion: reduce) { #tutSpot::after { animation: none; } }
+
+/* P103 (kullanıcı onayı 2026-10-15) — STAGE / OKEY İLANI: Mühür + konuşma balonu (ipucu kartlarıyla aynı kalıp);
+   KEMER PENCERESİ: yıldız merdiveni + iki kısa kural satırı, dar pencere. */
+#okeyBanner.mh-okey { cursor: pointer; }
+.mh-okey .mh-col { width: 460px; margin-bottom: 30px; align-items: stretch; }
+.mh-okey .mh-bub { padding: 34px 28px 22px; }
+.mh-okey .hint-body { text-align: center; }
+.mh-okey .ob-okey { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 16px 0 14px; }
+.mh-okey .ob-tile { padding: 12px; background: #fff; border: 4px solid #2A2440; border-radius: 12px; box-shadow: 0 5px 0 rgba(0, 0, 0, .35), inset 0 3px 0 rgba(0, 0, 0, .08); }
+.mh-okey .ob-tile .tile { margin: 0; cursor: default; transform: none; }
+#okeyBanner.mh-okey .ob-name { font-size: 36px; font-weight: 400; letter-spacing: 1px; color: #2A2440; margin: 0; }
+.mh-okey .ob-bar { height: 10px; border: 3px solid #2A2440; border-radius: 6px; background: rgba(42, 36, 64, .12); overflow: hidden; }
+.mh-okey .ob-bar i { display: block; height: 100%; background: var(--gm-turn-on, #FEA727); transform-origin: left; animation: obBar 2.8s linear forwards; }
+@keyframes obBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+#okeyBanner.mh-okey .ob-skip { align-self: center; margin: 0; font-weight: 400; font-size: 17px; letter-spacing: 2px; color: var(--gm-light); background: var(--gm-dark); border: 3px solid var(--gm-edge, var(--gm-light)); border-radius: 8px; padding: 5px 16px; box-shadow: 0 4px 0 rgba(0, 0, 0, .4); }
+@media (prefers-reduced-motion: reduce) { .mh-okey .ob-bar i { animation: none; } }
+
+.belt-ov .pk-box { width: min(760px, 94vw); box-sizing: border-box; }
+.belt-ov .pk-sub-title { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.belt-ov .bt-ladder { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: nowrap; white-space: nowrap; margin-bottom: 4px; }
+.belt-ov .bt-ladder i { font-style: normal; font-size: 13px; opacity: .75; }
+.belt-ov .bt-st { background: var(--gm-light); color: var(--gm-dark); border: 3px solid var(--gm-edge, var(--gm-light)); border-radius: 8px; padding: 4px 10px; font: 700 17px/1 var(--gm-font); box-shadow: 0 3px 0 rgba(0, 0, 0, .4); }
+.belt-ov .bt-st b { color: #C99A10; letter-spacing: -1px; margin-right: 4px; }
+.belt-ov .bt-st.bt-top { background: #F2D863; border-color: var(--gm-dark); }
+.belt-ov .bt-st.bt-top b { color: var(--gm-dark); }
+.belt-ov .bt-rule { font: 700 13px/1.35 var(--gm-font); opacity: .9; }
+.belt-ov .pk-body.pk-choice { flex-wrap: wrap; justify-content: center; }
+/* P103 — YENİLE / DEVAM düğmeleri: Okey Pixel işaretleri (İ noktası, alt satır) kenara değmesin → daha alçak yazı + iç pay */
+#storeStage .st-btn { height: 84px; padding: 8px 16px; gap: 8px; }
+#storeStage .st-btn b { font-size: 30px; line-height: 1.1; }
+#storeStage .st-btn small { font-size: 14px; line-height: 1.1; }
+
+/* P103 — DEĞNEK / BACKUP omuzu: yuvalar sekme satırı ile ıstakanın üst kenarı arasında ORTALI (üst/alt pay eşit; alta yapışıyordu) */
+.gm-stage .gm-sh-body { top: 43px; }
+
+/* P103 — STAGE / RAUND kutuları sütunun tam genişliğini kaplar: soldan sağa 350px (167 + 16 + 167), üstteki ve alttaki kutularla aynı kenar çizgileri */
+.gm-stage .gm-statrow, #storeStage #storeSide .gm-statrow { width: 350px; justify-content: space-between; }
+.gm-stage .gm-statrow > .gm-stat { flex: 0 0 167px; width: 167px; }
+.gm-stage .gm-left #permMult.perm-mult { width: 167px; }
+
+/* P103 — HESAP ÇUBUĞU koyu panelde okunur (kullanıcı: "tema renginden dolayı rahat okunmuyor"): sonuç ve işaretler açık tonda, çarpan/ham puan parlak */
+.gm-stage #previewBar.gm-preview .pv-final { color: var(--gm-light); text-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.gm-stage #previewBar.gm-preview .pv-final.damga { color: #FFD45A; }
+.gm-stage #previewBar.gm-preview .pv-op, .gm-stage #previewBar.gm-preview .pv-plus { color: var(--gm-light); opacity: .9; }
+.gm-stage #previewBar.gm-preview .pv-raw { color: #63B4FF; }
+.gm-stage #previewBar.gm-preview .pv-mult { color: #FF7A6B; }
+.gm-stage .gm-preview .pv-breakdown { color: var(--gm-light); }
+
+/* P103 — KEMER PENCERESİ kartları: joker çizimi + altta kemer durumu; açıklama ipucunda (ipucu pencerenin ÜSTÜNDE) */
+#jokerTip { z-index: 2000; }
+.belt-ov .pk-card.belt-pick { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 10px 8px; width: auto; min-width: 0; }
+.belt-ov .belt-pick .col-jk-art { flex: none; }
+.belt-ov .belt-pick .bp-name { width: 110px; min-height: 150px; display: flex; align-items: center; justify-content: center; text-align: center; font: 700 16px/1.2 var(--gm-font); color: var(--gm-dark); }
+.belt-ov .belt-pick .bp-sub { font: 700 14px/1 var(--gm-font); }
