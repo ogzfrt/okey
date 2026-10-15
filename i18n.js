@@ -895,11 +895,11 @@
       consumBought: (n) => `${n} envantere eklendi`,
       consumExtra: ' Kullanılınca yok olur.',   /* Grup M: taşıma limiti cümlesi kaldırıldı — sayaç başlıkta */
       specialExtra: (o) => ` Rastgele sayı+renk atanır. (destede: ${o}/2)`,
-      haggleBtn: '🤝 Pazarlık (%60 şans)',
+      haggleBtn: '🤝 Pazarlık (%60 şans)', haggleCard: 'PAZARLIK %60',
       haggleWin: (n, p) => `Pazarlık tuttu! ${n} → ${p} coin`,
       haggleLose: (n) => `Pazarlık battı — ${n} store'dan kaçtı`,
       /* P30 · Grup K — Ateş Tüccarı'nın 2. adımı */
-      stealBtn: '🔥 Ateşi Çal (%50 bedava)',
+      stealBtn: '🔥 Ateşi Çal (%50 bedava)', stealCard: 'ATEŞİ ÇAL %50',
       stealWin: (n) => `Ateş çalındı: ${n} bedava! Sonraki raund işlek +%10`,
       stealLose: (n) => `Ateş söndü — ${n} store'dan kaçtı`,
       deckJokersTitle: '◈ DESTE JOKERLERİ',
@@ -1840,10 +1840,10 @@
       consumBought: (n) => `${n} added to inventory`,
       consumExtra: ' Consumed on use.',   /* Group M: carry-limit line removed — counter is in the header */
       specialExtra: (o) => ` Random number+color assigned. (in deck: ${o}/2)`,
-      haggleBtn: '🤝 Haggle (60% chance)',
+      haggleBtn: '🤝 Haggle (60% chance)', haggleCard: 'HAGGLE 60%',
       haggleWin: (n, p) => `Haggle succeeded! ${n} → ${p} coins`,
       haggleLose: (n) => `Haggle failed — ${n} fled the store`,
-      stealBtn: '🔥 Steal Fire (50% free)',
+      stealBtn: '🔥 Steal Fire (50% free)', stealCard: 'STEAL 50%',
       stealWin: (n) => `Fire stolen: ${n} for free! Next round trap +10%`,
       stealLose: (n) => `The fire went out — ${n} fled the store`,
       deckJokersTitle: '◈ DECK JOKERS',

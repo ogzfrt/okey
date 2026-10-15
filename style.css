@@ -11717,3 +11717,25 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .gm-stage #ayWell.gm-well.aw-side .aw-row { margin-top: 3px; }
 .gm-stage #ayWell.gm-well.aw-side .aw-slots { --tw: 32px; gap: 8px; justify-content: center; }
 .gm-stage #ayWell.gm-well.aw-side .aw-status { font-size: 10px; margin-top: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* P107 (kullanıcı: "aktifliği değnek assetinin şekli olsun", "daha belirgin") — taş seçen değnek:
+   kare outline yerine çizimin KENARINI saran yeşil çizgi (alfa kenarına drop-shadow) + ışıma,
+   değnek 6px yukarı kalkar. Statik (animasyonsuz) — P84 filtre kuralı. */
+.consum-card.art-only.picking { outline: none; }
+.consum-card.art-only.picking .c-icon.cs-art {
+  filter: drop-shadow(4px 0 0 #2ecc71) drop-shadow(-4px 0 0 #2ecc71) drop-shadow(0 4px 0 #2ecc71) drop-shadow(0 -4px 0 #2ecc71) drop-shadow(0 0 10px rgba(46, 204, 113, .9));
+  transform: translateY(-6px);
+}
+
+/* P107 — Simsar pazarlık / ateşi çal düğmesi kartın İÇİNDE, Satın Al'ın altında (kartın üstünde
+   iki satıra taşıp kilidi ve YENİ rozetini örtüyordu). Simsar aktifken raftaki bütün joker kartlarının
+   çizimi biraz küçülür, kart boyu değişmez; kartlar üstten hizalı. */
+#storeStage .store-item .s-extra {
+  position: static; width: 100%; margin: 0; padding: 8px 4px; white-space: nowrap;
+  font: 700 13px/1 var(--gm-font); border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .4); cursor: pointer;
+}
+#storeStage .store-item .s-extra + .s-extra { left: auto; }
+#storeStage .store-item .s-extra:hover { filter: brightness(1.15); }
+#storeStage .store-item .s-extra:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+#storeStage .sr-grid:has(.s-extra) { align-items: start; }
+#storeStage .sr-grid:has(.s-extra) .store-item.st-jk .s-ico { width: 118px; height: 160px; }

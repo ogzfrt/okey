@@ -8160,7 +8160,8 @@
         card.appendChild(lockBtn(item.locked, () => { Game.toggleLock(i); renderStore(); }));
         const btn = document.createElement('button');
         btn.className = 'btn primary s-buy';
-        btn.innerHTML = `${anarOld(item)}${t('stBuy', item.price)}${item.haggled ? ' 🤝' : ''}`;
+        /* P107 — 🤝 düğmenin dışına taşıyordu; indirim üstü çizili eski fiyatla zaten görünüyor */
+        btn.innerHTML = `${anarOld(item)}${t('stBuy', item.price)}`;
         btn.title = t('buyBtn', item.price, 'coin');
         const isDeckJ = JOKER_DEFS[item.key]?.mech === 'deck';
         /* PLAYTEST 26 · MADDE C (bug) — DOLU RAF ARTIK DÜĞMEYİ ÖLDÜRMÜYOR.
@@ -8187,7 +8188,10 @@
         if (Game.hasActive('atesTuccari') && !s.store.haggleUsed) {
           const hb = document.createElement('button');
           hb.className = 'o-sell s-extra';
-          hb.textContent = t('haggleBtn');
+          /* P107 (kullanıcı: "pazarlık düğmesi düzgün değil, YENİ rozetini kapatıyor") — düğme kartın
+             İÇİNDE, Satın Al'ın altında; kısa etiket, uzun açıklama ipucunda. */
+          hb.textContent = t('haggleCard');
+          hb.title = t('haggleBtn');
           hb.addEventListener('click', () => {
             const r = Game.haggleItem(i);
             if (!r.ok) { toast(T.ev(r.error)); return; }
@@ -8199,7 +8203,8 @@
         if (Game.hasActive('atesTuccari') && item.haggled && !item.fireTried) {
           const fb = document.createElement('button');
           fb.className = 'o-sell s-extra';
-          fb.textContent = t('stealBtn');
+          fb.textContent = t('stealCard');
+          fb.title = t('stealBtn');
           fb.addEventListener('click', () => {
             const r = Game.stealFire(i);
             if (!r.ok) { toast(T.ev(r.error)); return; }
