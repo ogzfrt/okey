@@ -2600,6 +2600,13 @@
     const AYNA = 'D4 - F4 A4 D5 - - - | C#5 - E5 - A4 - - - | Bb4 - A4 G4 F4 - E4 - | D4 - - - A3 - - - | ' +
                  'D4 - Bb3 G3 D3 - - - | E3 - C3 - G3 - - - | F3 - G3 A3 Bb3 - C4 - | D4 - - - G4 - - -';
 
+    /* P104 — KOZMİK RUN MÜZİĞİ: D Lidyen (Dmaj9 · Gmaj7#11 · Bm7 · A). Akor tabloları: COS = pad / sub için 4 sesli,
+       COS_H = cam arpeji / çan için üst oktav. */
+    const COS = { D: ['D3', 'F#3', 'A3', 'E4'], G: ['G2', 'B2', 'D3', 'F#3'], B: ['B2', 'D3', 'F#3', 'A3'], A: ['A2', 'C#3', 'E3', 'G#3'] };
+    const COS_H = { D: ['A4', 'D5', 'F#5'], G: ['B4', 'D5', 'F#5'], B: ['F#4', 'B4', 'D5'], A: ['E4', 'A4', 'C#5'] };
+    const COS_R = ['D', 'D', 'G', 'G', 'B', 'B', 'A', 'A', 'D', 'D', 'G', 'G', 'B', 'A', 'G', 'A'];
+    const COS_S = ['D', 'G', 'B', 'A', 'D', 'G', 'B', 'A'];
+
     const TRACKS = {
       /* P67e (kullanıcı: "Müzik 3'ü beğendim, diğer ikisini kaldır, bunun gibi
          sıkmayan varyasyonlar") — üç tema da aynı aileden: orta tempo, önde
@@ -2678,6 +2685,28 @@
         { i: 'ep', s: gen('P . . P . . P . . P . . P . . .', ['Db', 'Gb', 'Eb', 'Ab'], BOSSA) },
         { i: 'upright', s: gen('R . . F . . . . R . . F . . . .', ['Db', 'Gb', 'Eb', 'Ab'], BOSSA) },
       ], drums: 'K..H..H.B..H..H.' },
+      /* P104 — KOZMİK RUN'IN KENDİ MÜZİĞİ (kullanıcı: "kozmik run'ın tema müziği hâlâ eklenmemiş"): uzay yolculuğu —
+         D Lidyen, yavaş (84 bpm) süzülen theremin melodisi, cam arpej, koro pad'i, çan pırıltıları, sub bas, çok hafif
+         kalp atışı. Kozmik run'da harita + normal raund; store `kozmikStore`; boss raundu yine boss'un kendi parçası. */
+      kozmik: { bpm: 84, div: 4, dv: .55, gain: .52, parts: [
+        { i: 'theremin', s: x2('A4 - - - F#5 - - - | E5 - D5 - - - . . | B4 - - - D5 - C#5 - | D5 - - - - - . . | ' +
+                               'D5 - - - F#5 - E5 - | D5 - B4 - - - . . | C#5 - E5 - A5 - - - | E5 - - - - - . . | ' +
+                               'F#5 - - - A5 - G#5 - | F#5 - E5 - D5 - . . | B5 - A5 - G5 - F#5 - | D5 - - - - - . . | ' +
+                               'F#5 - - - E5 - D5 - | C#5 - - - E5 - A5 - | B5 - - - A5 - F#5 - | E5 - - - - - . .') },
+        { i: 'glass', s: gen('A . B . C . B . A . B . C . B .', COS_R, COS_H) },
+        { i: 'choir', s: gen('P - - - - - - - - - - - - - - -', COS_R, COS) },
+        { i: 'bell', s: gen('. . . . . . . . . . C . . . . .', COS_R, COS_H) },
+        { i: 'sub', s: gen('R - - - - - - - R - - - - - - -', COS_R, COS) },
+      ], drums: 'K.......x...K...' },
+      kozmikStore: { bpm: 72, div: 4, dv: .45, gain: .58, parts: [
+        { i: 'glass', s: 'A4 - - - - - - - F#5 - - - E5 - - - | D5 - - - - - - - . . . . B4 - C#5 - | ' +
+                         'D5 - - - F#5 - - - A5 - - - G#5 - - - | F#5 - - - E5 - - - . . . . . . . . | ' +
+                         'A4 - - - - - - - F#5 - - - E5 - - - | B4 - - - D5 - - - . . . . F#5 - E5 - | ' +
+                         'D5 - - - E5 - - - F#5 - - - A5 - - - | E5 - - - - - - - - - - - . . . .' },
+        { i: 'pad', s: gen('P - - - - - - - - - - - - - - -', COS_S, COS) },
+        { i: 'theremin', s: gen('. . . . . . . . . . . . . . . .', COS_S, COS_H) },
+        { i: 'sub', s: gen('R - - - - - - - - - - - - - - -', COS_S, COS) },
+      ], drums: 'K...............' },
       /* Boss · genel — müziği olmayan (yeni) bir boss için yedek. P71c: eskiden
          D Hicaz + ney'di (menünün tıpkısı) → G minör yaylı ostinato + bakır, kick/trampet */
       bossGenel: { bpm: 104, div: 4, dv: .7, gain: .55, parts: [
@@ -3113,10 +3142,12 @@
       if (preview && document.getElementById('settingsOv')) return preview;
       preview = null;
       /* P72c — Kumarhane run'ı (menü dışı) kendi tema + store müziğini çalar */
-      let kumar = false;
+      let kumar = false, kozmik = false;
       try { kumar = curScreen() !== 'menu' && !!Game.state && !!Game.kumarhaneOn && Game.kumarhaneOn(); } catch (e) { /* yok */ }
-      const theme = kumar ? 'kumarhane' : 'tema' + set;
-      if (storeOpen() || upgradeOpen()) return kumar ? 'kumarhaneStore' : 'store' + set;
+      /* P104 — Kozmik run (Temel) kendi müziğini çalar; menü her zaman seçili tema */
+      try { kozmik = !kumar && baseRunActive(); } catch (e) { /* yok */ }
+      const theme = kumar ? 'kumarhane' : kozmik ? 'kozmik' : 'tema' + set;
+      if (storeOpen() || upgradeOpen()) return kumar ? 'kumarhaneStore' : kozmik ? 'kozmikStore' : 'store' + set;
       if (curScreen() === 'game') {
         try {
           if (!Game.state || !Game.isBossRound()) return theme;
@@ -7721,24 +7752,29 @@
   function pickSwapTarget(index, item) {
     const rows = Game.swapBuyOptions(index);
     document.getElementById('buySwap')?.remove();
+    /* P104 (kullanıcı: "takas menüsü anlaşılmıyor") — eski liste satırları açık zeminde açık yazıydı
+       (okunmuyordu). Artık diğer seçim pencereleriyle aynı pk-ov kalıbı: ÜSTTE alınacak joker + ödenecek
+       tutarın kuralı, ORTADA verilebilecek jokerler çizimli kartlar (hangi slotta, ne kadar iade, ne kadar
+       ÖDERSİN), kilitli kart gerekçesiyle sönük. Kimlikler (#buySwap, .sw-row, swBack, swCancel) aynı. */
     const ov = document.createElement('div');
     ov.id = 'buySwap';
+    ov.className = 'pk-ov tone-violet';
     ov.innerHTML =
-      `<div class="tp-box"><h3>${t('swapPickTitle', T.name(item))}</h3>` +
-      `<p>${t('swapPickBody', item.price, COIN)}</p>` +
-      `<div class="sw-list">` +
+      `<div class="pk-box"><div class="pk-title">${t('swapAsk')}</div>` +
+      `<div class="pk-sub-title"><div class="sw-want">${t('swapWant', T.name(item), item.price, COIN)}</div>` +
+      `<div class="sw-rule">${t('swapRule')}</div></div>` +
+      `<div class="pk-body pk-choice sw-list">` +
       rows.map(o =>
-        `<button class="sw-row r-${o.rarity}${o.ok ? '' : ' locked'}" data-jid="${o.jokerId}" ${o.ok ? '' : 'disabled'}>` +
-        `<span class="sw-ico">${jokerIcon(o.key)}</span>` +
-        `<span class="sw-name">${T.name(o)}` +
-        `<small>${T.rarity(o.rarity)} · ${t(o.where === 'backup' ? 'destBackup' : 'destMain')}</small></span>` +
-        `<span class="sw-cost">${o.ok ? t('swapNet', o.net, COIN, o.refund)
-          : `<em>${T.ev(o.error)}</em>`}</span></button>`).join('') +
+        `<button class="pk-card sw-row r-${o.rarity}${o.ok ? '' : ' locked'}" data-jid="${o.jokerId}" ${o.ok ? '' : 'disabled'}>` +
+        (JOKER_ART.has(o.key) ? `<div class="col-jk-art jk-${o.key}"></div>` : `<div class="sw-art-name">${T.name(o)}</div>`) +
+        `<div class="sw-where">${t(o.where === 'backup' ? 'destBackup' : 'destMain')}</div>` +
+        (o.ok ? `<div class="sw-pay">${t('swapPay', o.net, COIN)}</div><div class="sw-ref">${t('swapRefund', o.refund, COIN)}</div>`
+          : `<div class="sw-why">${T.ev(o.error)}</div>`) +
+        `</button>`).join('') +
       `</div>` +
-      `<div class="tr-row" style="margin-top:12px">` +
-      `<button class="btn ghost" id="swBack">${t('swapBackBtn')}</button>` +
-      `<button class="btn ghost" id="swCancel">${t('cancel')}</button>` +
-      `</div></div>`;
+      `<div class="pk-foot"><button class="btn ghost" id="swBack">${t('swapBackBtn')}</button>` +
+      `<button class="btn ghost" id="swCancel">${t('cancel')}</button></div></div>`;
+    rows.forEach((o, i) => { const c = ov.querySelectorAll('.sw-row')[i]; if (c) attachTip(c, { key: o.key, name: o.name, desc: JOKER_DEFS[o.key] ? JOKER_DEFS[o.key].desc : '', rarity: o.rarity }, {}); });
     document.body.appendChild(ov);
     ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
     ov.querySelector('#swCancel').addEventListener('click', () => ov.remove());
@@ -8954,6 +8990,8 @@
     for (const n of [1, 2, 3]) out.push({ key: 'store' + n, rarity: 'store', name: 'Store · ' + t('musicSet' + n), desc: t('mus_store' + n) });
     out.push({ key: 'kumarhane', rarity: 'tema', name: t('musKumarhane'), desc: t('mus_kumarhane') });            // P72c
     out.push({ key: 'kumarhaneStore', rarity: 'store', name: 'Store · ' + t('musKumarhane'), desc: t('mus_kumarhaneStore') });
+    out.push({ key: 'kozmik', rarity: 'tema', name: t('musKozmik'), desc: t('mus_kozmik') });            // P104
+    out.push({ key: 'kozmikStore', rarity: 'store', name: 'Store · ' + t('musKozmik'), desc: t('mus_kozmikStore') });
     for (const b of BOSSES) if (Music.TRACKS['b_' + b.key]) {
       out.push({ key: 'b_' + b.key, rarity: 'boss', boss: b.key, name: T.bossName(b.key, b.name), desc: t('mus_b_' + b.key) });
     }
