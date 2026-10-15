@@ -2023,13 +2023,15 @@
      Ölçüm (TR/EN × 20 boss × Ferman): en kötü durum EN Terzi İğne + Ferman. */
   function fitLeftColumn() {
     const col = document.querySelector('#gameScreen .gm-left');
-    const tab = document.querySelector('#gameScreen .gm-sh-left .gm-sh-tab');
+    /* P106b (kullanıcı: "hala çakışma var") — ölçü sekmenin GÖRÜNEN çerçevesi (.gm-shoulder),
+       içindeki yazı kutusu değil; arada en az 12px boşluk kalır (kutu gölgesi dahil). */
+    const tab = document.querySelector('#gameScreen .gm-sh-left');
     if (!col || !tab || col.offsetParent === null) return;
     col.classList.remove('fit1', 'fit2', 'fit3');
     const over = () => {
       const kids = [...col.children].filter((e) => !e.classList.contains('hidden') && e.offsetHeight > 0);
       if (!kids.length) return false;
-      return Math.max(...kids.map((e) => e.getBoundingClientRect().bottom)) > tab.getBoundingClientRect().top - 4;
+      return Math.max(...kids.map((e) => e.getBoundingClientRect().bottom)) > tab.getBoundingClientRect().top - 12;
     };
     for (const c of ['fit1', 'fit2', 'fit3']) { if (!over()) break; col.classList.add(c); }
   }
@@ -2052,6 +2054,7 @@
     box.classList.toggle('aw-full', o.full && !o.dolunay);
     box.classList.toggle('aw-dolunay', !!o.dolunay);
     const status = o.dolunay ? t('wellDolunay') : o.full ? t('wellFull') : t('wellLeft', o.left);
+    box.title = side ? status : '';   // P106b — dar kalıpta durum tek satır, tamamı ipucunda
     box.innerHTML =
       `<div class="aw-head"><span class="aw-title">${t('wellTitle')}</span>`
       + `<span class="aw-count">${o.count}/${o.max}</span></div>`

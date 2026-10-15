@@ -11700,12 +11700,17 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .gm-stage .gm-left.fit1 #bossBanner.gm-boss-cond { padding: 8px 12px; }
 .gm-stage .gm-left.fit2 #bossBanner.gm-boss-cond .bb-desc { font-size: 16px; line-height: 1.28; }
 .gm-stage .gm-left.fit3 #bossBanner.gm-boss-cond .bb-desc { font-size: 14px; line-height: 1.25; }
+.gm-stage .gm-left.fit3 { gap: 8px; }
+.gm-stage .gm-left.fit3 #bossBanner.gm-boss-cond { padding: 6px 10px; gap: 3px; }
+.gm-stage .gm-left.fit3 #bossBanner.gm-boss-cond .bb-desc { line-height: 1.2; }
 .gm-stage .gm-left.fit3 .gm-well .aw-slots { --tw: 34px; }
 .gm-stage .gm-left.fit3 .gm-well .aw-moon { font-size: 28px; }
 
 /* P106 — finalde (Orion yarışı) kuyu sağ sütunda, joker panelinin altında: dar kalıp, ay simgesi yok */
-.gm-stage #ayWell.gm-well.aw-side { position: absolute; left: 1638px; top: 561px; width: 211px; padding: 6px 8px 8px; z-index: 2; }
+/* P106b — backup sekmesinin görünen çerçevesi (top 686, sağ kenar 1685) altta: kuyu 674'te biter */
+.gm-stage #ayWell.gm-well.aw-side { position: absolute; left: 1638px; top: 557px; width: 211px; padding: 5px 8px 6px; z-index: 2; }
 .gm-stage #ayWell.gm-well.aw-side .aw-head { font-size: 14px; }
 .gm-stage #ayWell.gm-well.aw-side .aw-moon { display: none; }
-.gm-stage #ayWell.gm-well.aw-side .aw-slots { --tw: 34px; gap: 8px; justify-content: center; }
-.gm-stage #ayWell.gm-well.aw-side .aw-status { font-size: 11px; text-align: center; white-space: normal; }
+.gm-stage #ayWell.gm-well.aw-side .aw-row { margin-top: 3px; }
+.gm-stage #ayWell.gm-well.aw-side .aw-slots { --tw: 32px; gap: 8px; justify-content: center; }
+.gm-stage #ayWell.gm-well.aw-side .aw-status { font-size: 10px; margin-top: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
