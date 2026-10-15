@@ -335,7 +335,9 @@
       finalWinOffToast: (n) => `${n} yeniden kilitlendi`,
       /* P90 · Orion */
       orionRival: 'ORION', orionScore: 'PUANI', orionTarget: 'HEDEF', orionHidden: 'ELİNDE', orionDrop: 'ATTIĞI', orionTake: 'ELE AL',
-      orionPartner: 'ORION (EŞİN)', orionLastGain: 'SON AÇILIMI',
+      orionPartner: 'ORION (EŞİN)', orionLastGain: 'SON AÇILIMI', orionMateLbl: 'EŞİN ORION', orionMateVal: (n) => `${n} TAŞ`,
+      orionMateTip: 'Eşin Orion\'un elindeki taş sayısı; açtığı her grup puanına eklenir.',
+      tipBelt: (st, k, on) => `Orion kemeri: ${st} ×${k}` + (on ? ' · şu an kemerde' : ''),
       orionHandN: (n) => `${n} taş`, orionDropHead: 'ORION’UN ATTIĞI TAŞ', orionTakeCost: 'Bedeli: 1 çekiş',
       orionTakeLater: 'Tur başında alabilirsin', orionNoDrop: 'Orion henüz taş atmadı',
       belt1: '★', belt2: '★★', belt3: '★★★', beltNone: 'kemersiz', beltNow: 'kemerde', abBelt: 'Kemer',
@@ -505,6 +507,16 @@
       ghostPass: 'Vazgeç',
       ghostPassDesc: 'Raund kaybedilir.',
       colF_casino: 'Kumarhane',
+      /* P101 — keşfedilmemiş koleksiyon kartları + test seçicisi */
+      undiscTitle: 'Keşfedilmedi', lockedTitle: 'Kilitli',
+      undiscDesc_joker: 'Ne yaptığını öğrenmek için bir run\'da bu jokeri satın al ya da eline geçir',
+      undiscDesc_boss: 'Ne yaptığını öğrenmek için bu boss\'u yen ve jokerini al',
+      undiscDesc_consum: 'Ne yaptığını öğrenmek için bir run\'da bu değneği satın al ya da eline geçir',
+      undiscDesc_special: 'Ne yaptığını öğrenmek için bir run\'da bu özel taşı destene kat',
+      undiscDesc_upgrade: 'Ne yaptığını öğrenmek için bir run\'da bu yükseltmeyi kazan',
+      colRevealLabel: 'KOLEKSİYON GÖRÜNÜMÜ (TEST)',
+      colRev_normal: 'Gerçek ilerleme', colRev_all: 'Hepsi keşfedilmiş', colRev_none: 'Hepsi keşfedilmemiş',
+      colRevToast: (n) => `Koleksiyon: ${n}`,
       sisyphusBadgeZero: 'Kaya en dipte — üst üste açılım yaptıkça yükselir (raundlar arası kalır, her raund bir kademe düşer)',
       /* PLAYTEST 28 · GRUP B — Damga (eski Ayna) */
       damgaOff: '🔖 DAMGALA',
@@ -851,6 +863,11 @@
       buyWhereBackup: (b) => `Backup (${b}/2 · süre donar)`,
       /* PLAYTEST 26 · MADDE C — raftan takasla al */
       buySwapBtn: (net, coin) => `🔄 Takas Yap — ${net} ${coin}`,
+      /* P101 — satın alma yeri penceresi (pk-ov kartları) */
+      bdMainName: 'ANA SLOT', bdMainDesc: 'Hemen çalışmaya başlar.',
+      bdBackupName: 'BACKUP', bdBackupDesc: 'Süresi donar; sonra ana slota alırsın.',
+      bdSwapName: '🔄 TAKAS', bdSwapDesc: 'Bir jokerini sat, yerine bunu al.',
+      bdFull: 'DOLU',
       swapPickTitle: (n) => `${n} — hangi jokerinle takas?`,
       swapPickBody: (p, coin) => `Seçtiğin kart satılır, yerine bu kart geçer. `
         + `Liste fiyatı ${p} ${coin}; ödeyeceğin, satış değeri düşülmüş NET tutardır.`,
@@ -1326,7 +1343,9 @@
       finalWinOffToast: (n) => `${n} locked again`,
       /* P90 · Orion */
       orionRival: 'ORION', orionScore: 'SCORE', orionTarget: 'TARGET', orionHidden: 'IN HAND', orionDrop: 'DISCARD', orionTake: 'TAKE IT',
-      orionPartner: 'ORION (PARTNER)', orionLastGain: 'LAST MELD',
+      orionPartner: 'ORION (PARTNER)', orionLastGain: 'LAST MELD', orionMateLbl: 'ALLY ORION', orionMateVal: (n) => `${n} TILES`,
+      orionMateTip: 'Tiles in your ally Orion\'s hand; every group he opens adds to your score.',
+      tipBelt: (st, k, on) => `Orion's belt: ${st} ×${k}` + (on ? ' · on the belt now' : ''),
       orionHandN: (n) => `${n} tiles`, orionDropHead: 'ORION’S DISCARD', orionTakeCost: 'Costs 1 draw',
       orionTakeLater: 'You can take it at turn start', orionNoDrop: 'Orion has not discarded yet',
       belt1: '★', belt2: '★★', belt3: '★★★', beltNone: 'not belted', beltNow: 'on the belt', abBelt: 'Belt',
@@ -1463,6 +1482,16 @@
       ghostPass: 'Give up',
       ghostPassDesc: 'The round is lost.',
       colF_casino: 'Casino',
+      /* P101 — undiscovered collection cards + test picker */
+      undiscTitle: 'Not Discovered', lockedTitle: 'Locked',
+      undiscDesc_joker: 'Buy or obtain this joker in a run to learn what it does',
+      undiscDesc_boss: 'Beat this boss and take its joker to learn what it does',
+      undiscDesc_consum: 'Buy or obtain this wand in a run to learn what it does',
+      undiscDesc_special: 'Add this special tile to your deck in a run to learn what it does',
+      undiscDesc_upgrade: 'Earn this upgrade in a run to learn what it does',
+      colRevealLabel: 'COLLECTION VIEW (TEST)',
+      colRev_normal: 'Real progress', colRev_all: 'All discovered', colRev_none: 'All undiscovered',
+      colRevToast: (n) => `Collection: ${n}`,
       sisyphusBadgeZero: 'Boulder at the bottom — climbs with consecutive melds (carries over rounds, drops one step each round)',
       damgaOff: '🔖 STAMP',
       damgaOn: '🔖 STAMPED',
@@ -1762,6 +1791,11 @@
       buyWhereMain: (a, cap) => `Main Slot (${a}/${cap || 5})`,
       buyWhereBackup: (b) => `Backup (${b}/2 · timer frozen)`,
       buySwapBtn: (net, coin) => `🔄 Swap — ${net} ${coin}`,
+      /* P101 — buy destination window (pk-ov cards) */
+      bdMainName: 'MAIN SLOT', bdMainDesc: 'Starts working right away.',
+      bdBackupName: 'BACKUP', bdBackupDesc: 'Timer frozen; move it to a main slot later.',
+      bdSwapName: '🔄 SWAP', bdSwapDesc: 'Sell one of your jokers to take this one.',
+      bdFull: 'FULL',
       swapPickTitle: (n) => `${n} — swap for which joker?`,
       swapPickBody: (p, coin) => `The joker you pick is sold and this card takes its place. `
         + `List price ${p} ${coin}; you pay the NET amount after the sale value.`,

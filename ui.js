@@ -1400,6 +1400,10 @@
     /* P98 — varyantlar koleksiyonda kendi penceresinde (showVariants);
        ipucu yalnız tıklanabildiğini söyler. */
     const variantLines = j.varHint ? `<div class="tip-var-hint">${t('varTip', j.varHint)}</div>` : '';
+    /* P101 — Orion kemeri: yıldız + çarpan ipucunda (kartta yalnız köşe yıldızı) */
+    const beltOn = j.id != null && Game.state && Game.state.beltId === j.id;
+    const beltLine = (j.id != null && (j.beltStars || beltOn))
+      ? `<div class="tip-uses tip-belt">${t('tipBelt', j.beltStars ? t('belt' + j.beltStars) : '', j.beltStars ? BELT_K[j.beltStars] : 0, beltOn)}</div>` : '';
     /* PİKSEL-ART AÇIKLAMA KARTI (kullanıcı isteği 2026-09-07).
        Yapı: nadirlik renginde ŞERİT + büyük başlık → küçük harfli kategori
        satırı → açıklama → süre / füzyon / eylemler. Çerçevenin ve şeridin
@@ -1424,7 +1428,7 @@
         ? `<div class="tip-head">⚗ ${T.name(fzDef)}</div>`
         : `<div class="tip-head">${headTxt}</div>` + rarityLine +
           `<div class="tip-desc">${emphNums(descTxt, j.key)}</div>`) +
-      fusedLines + legacyLines + usesLine + accumNow(j) + variantLines +
+      fusedLines + legacyLines + usesLine + beltLine + accumNow(j) + variantLines +
       `</div>`;
     const inner = tip.firstElementChild;
     // Eylem butonları (Grup G2): store açıkken slot jokerlerine Sat / →Ana / Birleştir
@@ -1694,6 +1698,76 @@
     }
   }
 
+  /* P101 — KOLEKSİYONDA KEŞİF (kullanıcı isteği 2026-10-14, Balatro'nun
+     "Not Discovered" kartı ilham). Bir kalem ELİNE GEÇİNCE keşfedilir
+     (store, paket, ödül, trainer — hepsi): render her çizimde eldeki
+     jokerleri / değnekleri / özel taşları tarar, yükseltme uygulandığı an
+     işaretlenir. ownedEver'dan farkı: trainer da açar (kullanıcı test
+     edebilsin diye). Eski oyuncunun "sahip olduğu jokerler" geçmişi ilk
+     okumada keşfedilmiş sayılır. Final boss jokerleri kendi kilidini
+     (Finals) kullanır. Ayarlar › Ekstra › Koleksiyon görünümü testi:
+     normal (gerçek kayıt) · hepsi keşfedilmiş · hepsi keşfedilmemiş. */
+  const DISC_KEY = 'okeyDiscovered', DISC_MODE_KEY = 'okeyColReveal';
+  const DISC_CATS = ['joker', 'consum', 'special', 'upgrade'];
+  const DISC_MODES = ['normal', 'all', 'none'];
+  const Disc = {
+    _o: null, _dirty: false,
+    _read() {
+      if (this._o) return this._o;
+      try { this._o = JSON.parse(localStorage.getItem(DISC_KEY)) || {}; } catch (e) { this._o = {}; }
+      for (const c of DISC_CATS) if (!Array.isArray(this._o[c])) this._o[c] = [];
+      for (const k of ownedEver) if (!this._o.joker.includes(k)) { this._o.joker.push(k); this._dirty = true; }
+      this.flush();
+      return this._o;
+    },
+    mode() { try { const v = localStorage.getItem(DISC_MODE_KEY); return DISC_MODES.includes(v) ? v : 'normal'; } catch (e) { return 'normal'; } },
+    setMode(v) { try { localStorage.setItem(DISC_MODE_KEY, DISC_MODES.includes(v) ? v : 'normal'); } catch (e) {} },
+    has(cat, key) {
+      const m = this.mode();
+      if (m === 'all') return true;
+      if (m === 'none') return false;
+      return this._read()[cat].includes(key);
+    },
+    /* koleksiyon kartı için: final boss jokeri kendi kilidiyle */
+    known(cat, d) {
+      if (cat === 'joker' && d.rarity === 'final') {
+        const m = this.mode();
+        return m === 'all' ? true : m === 'none' ? false : Finals.has(d.key);
+      }
+      return this.has(cat, d.key);
+    },
+    add(cat, key) {
+      if (!key) return;
+      const o = this._read();
+      if (o[cat].includes(key)) return;
+      o[cat].push(key); this._dirty = true;
+    },
+    flush() {
+      if (!this._dirty) return;
+      this._dirty = false;
+      try { localStorage.setItem(DISC_KEY, JSON.stringify(this._o)); } catch (e) {}
+    },
+    sync() {
+      const s = Game.state;
+      if (!s) return;
+      for (const j of [...(s.jokers || []), ...(s.backup || []), ...(s.deckJokers || [])]) {
+        this.add('joker', j.key);
+        for (const f of (j.fused || [])) this.add('joker', f.key);
+      }
+      for (const k of (s.consumables || [])) this.add('consum', typeof k === 'string' ? k : k && k.key);
+      for (const sp of (s.specialTiles || [])) this.add('special', sp && sp.kind);
+      for (const tl of (s.hand || [])) if (tl && tl.special) this.add('special', tl.special);
+      this.flush();
+    },
+    count(cat, defs) { return defs.filter((d) => this.known(cat, d)).length; },
+  };
+  /* yükseltmeler state'te liste olarak durmaz → uygulandığı an işaretlenir */
+  if (Game._applyUpgrade && !Game._applyUpgrade.__disc) {
+    const _apUp = Game._applyUpgrade;
+    Game._applyUpgrade = function (key) { Disc.add('upgrade', key); Disc.flush(); return _apUp.apply(this, arguments); };
+    Game._applyUpgrade.__disc = true;
+  }
+
   /* ---------- Joker "taşı" — kompakt, rarity kimlikli ---------- */
 
   /* P41 — joker eylemleri. Sat: store açıkken, satış kilidi yoksa.
@@ -1816,14 +1890,19 @@
        Sol sütun ıstaka sekmelerine kadar ~130px yer bırakıyor (1280'de ölçüldü). */
     box.classList.toggle('partner', u.mode !== 'race');
     if (u.mode !== 'race') {
-      box.innerHTML = `<div class="up-row up-head"><span>🎩 ${t('orionPartner')}</span><span>${t('orionHidden')} ${u.handCount}`
-        + (u.last && u.last.gain ? ` · +${u.last.gain}` : '') + `</span></div>`;
+      /* P101 (kullanıcı raporu: "ORION (EŞİN) ELİNDE 21" satırı taşıyor, 🎩
+         piksel fontta bozuk kare) — eş paneli soldaki STAGE / RAUND kutularının
+         kalıbında: iki küçük panel, üstte etiket, altta değer. Emoji yok. */
+      /* 2. tur (kullanıcı): iki kutu sıkışıktı, "son açılımı" anlaşılmadı →
+         TEK geniş kutu (Raund Puan kalıbı): solda etiket, sağda açık plakada sayı. */
+      box.innerHTML = `<div class="up-mate" title="${t('orionMateTip')}"><span class="up-mate-lbl">${t('orionMateLbl')}</span>`
+        + `<span class="up-mate-val">${t('orionMateVal', u.handCount)}</span></div>`;
       return;
     }
     const canTake = !!u.drop && s.phase === 'meld';
     /* P90g — el sayısı başlıkta küçük not (ayrı satır sol sütunu ıstaka sekmesine taşırıyordu) */
     const hand = `<small class="up-hand" title="${t('orionHidden')}">${t('orionHandN', u.handCount)}</small>`;
-    box.innerHTML = `<div class="up-row up-head"><span>🎩 ${t('orionRival')}</span><span class="up-score">${u.score} / ${u.target}</span></div>`
+    box.innerHTML = `<div class="up-row up-head"><span>${t('orionRival')}</span><span class="up-score">${u.score} / ${u.target}</span></div>`
       + (u.drop
         ? `<div class="up-dropbox${canTake ? ' ready' : ''}"><div class="up-dheadrow"><b class="up-dhead">${t('orionDropHead')}</b>${hand}</div>`
           + `<div class="up-drow"><div class="up-dtile"></div><small class="up-dcost">${canTake ? t('orionTakeCost') : t('orionTakeLater')}</small>`
@@ -2161,10 +2240,16 @@
        gösterir; İpotek'in borç hâli tooltip'in ipotekLine satırında yazar. */
     // P45: backup kartındaki "Ana Slota Al" düğmesi kalktı — sol tık (jokerActs → moveBackupToMain)
     /* P90 — Orion'un Kemeri: ★ ×1.5 · ★★ ×2 · ★★★ ×4 (kemerdeki joker ⟳ işaretli) */
+    /* P101 (kullanıcı isteği) — rozet kartın İÇİNDE altın kenarlı plaka
+       (eskisi "★ ×1.5 ⟳" kartın dışına taşıyordu); kemerde ŞU AN takılı joker
+       ⟳ yerine kartın altın çerçevesiyle gösterilir. */
+    if (gs && gs.beltId === j.id) tile2.classList.add('belt-on');
+    /* 2. tur (kullanıcı): plaka çizimi kapatıyordu → köşede yalnız yıldız;
+       çarpan ipucunda (tipBelt satırı). */
     if (j.beltStars) {
       const rb = document.createElement('span');
-      rb.className = 'jt-rank' + (j.beltStars === 3 ? ' full' : '');
-      rb.textContent = `${t('belt' + j.beltStars)} ×${BELT_K[j.beltStars]}${gs && gs.beltId === j.id ? ' ⟳' : ''}`;
+      rb.className = 'jt-belt' + (j.beltStars === 3 ? ' full' : '');
+      rb.textContent = '★'.repeat(j.beltStars);
       tile2.appendChild(rb);
     }
     attachActs(tile2, () => jokerActs(j, opts));   // P41: sol tık kullan / sağ tık sat
@@ -4093,6 +4178,7 @@
       for (const id of [...selection]) if (!inHand.has(id)) selection.delete(id);
     }
     syncOwnedEver(); // "YENİ!" rozeti için sahiplik geçmişi güncel tutulur
+    Disc.sync();     // P101: koleksiyon keşfi (trainer dahil)
 
     /* Figma düzeni (2026-08-23): çipte artık "Stage 1/8 · Raund 1" değil
        RAUND ADI (Açılış Masası / Usta Masası) — boss raundunda BOSS ADI —
@@ -6779,8 +6865,11 @@
      yenisi eklenmez. Anahtarlar eski kayıtlar bozulmasın diye aynı kaldı;
      görünen adlar i18n'de (Çayır · Erik · Bal · Gece). Coin paneli artık
      temayla birlikte boyanıyor (Figma'nın dört frame'inde de öyle). */
+  /* P101 (kullanıcı isteği 2026-10-14) — Çayır (yesil) seçiciden KALKTI;
+     varsayılan ve eski 'yesil' kaydı artık Gece (lacivert). CSS'teki yeşil
+     temel yol (öznitelik yazmayan) kumarhane/kozmik dışı hiçbir ekranda
+     kullanılmaz ama silinmedi: run temaları ve eski seçiciler ona dayanır. */
   const THEMES = [
-    { key: 'yesil',    sw: ['#66862C', '#AEDF7A', '#BBD09E'] },   // Figma 320:221
     { key: 'mor',      sw: ['#4E1D4C', '#EBD3A2', '#D9CAB2'] },   // Figma 245:799
     { key: 'amber',    sw: ['#BB7125', '#FFEFAE', '#FFEFAE'] },   // Figma 245:977
     { key: 'lacivert', sw: ['#12354E', '#D9CFA7', '#D9CFA7'] },   // Figma 245:1310
@@ -6792,13 +6881,13 @@
       const t = localStorage.getItem(THEME_KEY);
       if (THEMES.some(x => x.key === t)) return t;
     } catch (e) { /* gizli sekme / dosya kısıtı — tema kozmetiktir */ }
-    return 'yesil';
+    return 'lacivert';
   }
 
   let themeKey = readTheme();
 
   function applyTheme(key, persist = true) {
-    if (!THEMES.some(x => x.key === key)) key = 'yesil';
+    if (!THEMES.some(x => x.key === key)) key = 'lacivert';
     themeKey = key;
     const root = document.documentElement;
     if (key === 'yesil') delete root.dataset.theme;
@@ -6852,6 +6941,46 @@
       return BOSS_UI_KEYS.has(s.boss.key) ? s.boss.key : null;
     } catch (e) { return null; }
   }
+  /* P101 — LADY LUCK SAHNE DETAYLARI (kullanıcı onayı 2026-10-15; Gemini
+     örneğinin abartısız hâli): karakterin ETRAFINDA ağır akan duman şeritleri
+     (ağızdan değil — ilk örnek reddedildi) + yerde ince sis, ruletin çevresinde
+     göz kırpan ışıltılar, zar/kart/fişlerde nefes alan altın parıltı. Yalnız CSS
+     animasyonu (filtre animasyonu yok, bkz. P84). Koordinatlar 1920 tuvali. */
+  const BOSS_FX = {
+    ladyLuck() {
+      const rb = (d, w, a, dur, delay, cls = '') =>
+        `<path class="bf-rb ${cls}" d="${d}" style="stroke-width:${w};--a:${a};animation-duration:${dur}s;animation-delay:${delay}s"/>`;
+      const svg = (inner) => `<svg class="bf-svg" viewBox="0 0 1920 1080" width="1920" height="1080" aria-hidden="true"><g filter="url(#bfBlur)">${inner}</g></svg>`;
+      const back = `<svg width="0" height="0" style="position:absolute"><defs><filter id="bfBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter></defs></svg>`
+        + svg(rb('M1120 600 C 1240 520, 1330 610, 1440 540 S 1600 470, 1700 520', 34, .42, 9, 0)
+          + rb('M1150 470 C 1260 400, 1300 470, 1380 400 S 1500 330, 1560 380', 22, .34, 11, -3)
+          + rb('M860 620 C 760 560, 690 640, 600 570 S 440 520, 330 590', 34, .40, 10, -2)
+          + rb('M820 430 C 730 380, 700 440, 620 380 S 520 310, 470 350', 20, .32, 12, -6));
+      const sparks = Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2 + 0.3, r = 255 + (i % 3) * 18;
+        const x = 990 + Math.cos(a) * r, y = 205 + Math.sin(a) * r * 0.92;
+        return y > 560 ? '' : `<i class="bf-spark" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px;--d:${((i * 0.37) % 2.4).toFixed(2)}s;--k:${(0.7 + (i % 3) * 0.2).toFixed(2)}"></i>`;
+      }).join('');
+      const glows = [[452, 218, 62], [1523, 155, 62], [603, 500, 62], [668, 312, 48], [1300, 368, 48], [1684, 578, 46], [1380, 260, 34], [452, 540, 34], [220, 580, 34]]
+        .map(([x, y, r], i) => `<i class="bf-glow" style="left:${x}px;top:${y}px;--r:${r}px;--d:${(i * 0.45).toFixed(2)}s"></i>`).join('');
+      const front = glows + sparks + svg(rb('M260 690 C 520 650, 760 720, 1000 680 S 1400 650, 1700 700', 46, .20, 14, -4, 'mist')
+        + rb('M1000 760 C 1120 720, 1200 760, 1300 720', 26, .18, 8, -1));
+      return { back, front };
+    },
+  };
+  function syncBossFx(boss) {
+    const stage = document.querySelector('#gameScreen .gm-stage');
+    if (!stage) return;
+    const cur = stage.querySelector('#bossFxBack');
+    if (cur && cur.dataset.boss === boss) return;
+    stage.querySelectorAll('#bossFxBack, #bossFx').forEach((e) => e.remove());
+    const make = boss && BOSS_FX[boss];
+    if (!make) return;
+    const { back, front } = make();
+    const b = document.createElement('div'); b.id = 'bossFxBack'; b.dataset.boss = boss; b.innerHTML = back;
+    const f = document.createElement('div'); f.id = 'bossFx'; f.innerHTML = front;
+    stage.prepend(f); stage.prepend(b);
+  }
   function applyRunTheme() {
     let key, boss = null;
     try {
@@ -6864,6 +6993,7 @@
     if (root.dataset.csPattern !== casinoPattern) root.dataset.csPattern = casinoPattern;
     if (boss) { if (root.dataset.bossUi !== boss) root.dataset.bossUi = boss; }
     else if (root.dataset.bossUi) delete root.dataset.bossUi;
+    syncBossFx(boss);
     if (key === 'yesil') { if (root.dataset.theme) delete root.dataset.theme; }
     else if (root.dataset.theme !== key) root.dataset.theme = key;
     if (key === 'kozmik') {
@@ -7059,6 +7189,8 @@
       stats: statsPane(),
       extra:
         go('setHintsReset', t('hintsLabel'), t('hintsResetDesc')) +
+        /* P101 — kilitli/keşfedilmemiş görünümü test (gerçek kayıt silinmez) */
+        cyc('colrev', t('colRevealLabel'), DISC_MODES.map((k) => ({ v: k, text: t('colRev_' + k), cls: 'set-colrev', attr: 'data-colrev' })), Disc.mode()) +
         /* P90d (kullanıcı 2026-10-12) — yenmekle uğraşmadan test: her final için
            "yenildi" tik kutusu (kilit + maskot eşyası + run başı final jokeri) */
         `<div class="set-card set-fw-card"><span class="go-txt"><span class="set-label">${t('finalWinHead')}</span>`
@@ -7199,6 +7331,11 @@
       ov.querySelectorAll('.set-cspat').forEach((x) => x.classList.toggle('on', x === b));
       applyRunTheme();
       toast(t('csPatToast', t('csPat_' + casinoPattern)), true);
+    }));
+    ov.querySelectorAll('.set-colrev').forEach((b) => b.addEventListener('click', () => {
+      Disc.setMode(b.dataset.colrev);
+      ov.querySelectorAll('.set-colrev').forEach((x) => x.classList.toggle('on', x === b));
+      toast(t('colRevToast', t('colRev_' + Disc.mode())), true);
     }));
     /* Tema anında uygulanır (CSS değişkeni); pencere yeni temanın renkleriyle tazelenir. */
     ov.querySelectorAll('.set-theme').forEach((b) => b.addEventListener('click', () => {
@@ -7475,17 +7612,26 @@
     const swaps = Game.swapBuyOptions ? Game.swapBuyOptions(index) : [];
     const canSwap = swaps.some(o => o.ok);
     const cheapest = swaps.filter(o => o.ok).reduce((a, o) => Math.min(a, o.net), Infinity);
+    /* P101 (kullanıcı raporu 2026-10-14: "düzgün durmuyor") — pencere eski
+       .tp-box kalıbındaydı (stili yalnız #tutResume'da) → düğmeler farklı
+       genişlikte, hizasız. Artık diğer seçim pencereleriyle aynı pk-ov kalıbı:
+       yan yana üç seçenek kartı (ad · doluluk · ne olur) + altta Vazgeç.
+       Düğme kimlikleri (bdMain/bdBackup/bdSwap/bdCancel) aynı kaldı. */
+    const mainFull = s.jokers.length >= Game.slotCap(), backFull = s.backup.length >= MAX_BACKUP;
+    const opt = (id, name, sub, desc, dis) =>
+      `<button class="pk-card bd-opt" id="${id}" ${dis ? 'disabled' : ''}><div class="pk-name">${name}</div>`
+      + `<div class="pk-sub">${dis ? t('bdFull') : sub}</div><div class="pk-desc">${desc}</div></button>`;
+    ov.className = 'pk-ov tone-violet';
     ov.innerHTML =
-      `<div class="tp-box"><h3>${T.name(item)}</h3>` +
-      `<p>${t('buyWhere')}</p>` +
-      `<div class="tr-row">` +
-      `<button class="btn primary" id="bdMain" ${s.jokers.length >= Game.slotCap() ? 'disabled' : ''}>${t('buyWhereMain', s.jokers.length, Game.slotCap())}</button>` +
-      `<button class="btn primary" id="bdBackup" ${s.backup.length >= MAX_BACKUP ? 'disabled' : ''}>${t('buyWhereBackup', s.backup.length)}</button>` +
-      (swaps.length
-        ? `<button class="btn primary" id="bdSwap" ${canSwap ? '' : 'disabled'}>` +
-          `${t('buySwapBtn', canSwap ? cheapest : item.price, COIN)}</button>` : '') +
-      `<button class="btn ghost" id="bdCancel">${t('cancel')}</button>` +
-      `</div></div>`;
+      `<div class="pk-box">` +
+      `<div class="pk-title">${T.name(item)}</div>` +
+      `<div class="pk-sub-title">${t('buyWhere')}</div>` +
+      `<div class="pk-body pk-choice">` +
+      opt('bdMain', t('bdMainName'), `${s.jokers.length}/${Game.slotCap()}`, t('bdMainDesc'), mainFull) +
+      opt('bdBackup', t('bdBackupName'), `${s.backup.length}/${MAX_BACKUP}`, t('bdBackupDesc'), backFull) +
+      (swaps.length ? opt('bdSwap', t('bdSwapName'), `${canSwap ? cheapest : item.price} ${COIN}`, t('bdSwapDesc'), !canSwap) : '') +
+      `</div>` +
+      `<div class="pk-foot"><button class="btn ghost" id="bdCancel">${t('cancel')}</button></div></div>`;
     document.body.appendChild(ov);
     ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
     ov.querySelector('#bdCancel').addEventListener('click', () => ov.remove());
@@ -8785,6 +8931,19 @@
     });
     return c;
   }
+  /* P101 — KEŞFEDİLMEMİŞ KART (Figma 480:3664 "KİLİTLİ_JOKERLER": zincirli
+     asma kilit). Adı/nadirliği/etkisi gizli; ipucu Balatro'daki gibi yalnız
+     nasıl keşfedileceğini söyler. Final boss jokeri "Kilitli" başlığı ve
+     kendi açılma koşuluyla. */
+  function colLockedCard(catKey, d) {
+    const c = document.createElement('div');
+    c.className = 'col-lock-card';
+    c.innerHTML = '<div class="col-lock-art"></div>';
+    const fin = d.rarity === 'final';
+    attachTip(c, { name: t(fin ? 'lockedTitle' : 'undiscTitle'),
+      desc: fin ? (t('finalLockedHint_' + d.key) || t('finalLockedHint')) : t('undiscDesc_' + (d.rarity === 'epic' ? 'boss' : catKey)) }, {});
+    return c;
+  }
   function colFinalCard(d) {
     const c = colJokerCard(d);
     if (!Finals.has(d.key)) { c.classList.add('col-locked'); c.title = t('finalLockedHint_' + d.key) || t('finalLockedHint'); }
@@ -8793,7 +8952,7 @@
   const COL_CATS = [
     /* P100 (kullanıcı isteği 2026-10-14) — kumarhane jokerleri Jokerler bölümünün İÇİNDE;
        üstteki "Kumarhane" çipi yalnız onları süzer (ayrı bölüm kalktı). */
-    { key: 'jokers', ico: '🃏', big: true, filters: ['all', 'common', 'rare', 'legendary', 'mythic', 'casino'],
+    { key: 'jokers', ico: '🃏', big: true, disc: 'joker', filters: ['all', 'common', 'rare', 'legendary', 'mythic', 'casino'],
       filterLabel: (f) => (f === 'casino' ? t('colF_casino') : f === 'all' ? t('colAll') : T.rarity(f)),
       filterFn: (d, f) => (f === 'casino' ? !!d.casino : d.rarity === f),
       items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.rarity !== 'epic' && d.rarity !== 'final')), card: (d) => colJokerCard(d) },
@@ -8801,14 +8960,14 @@
        artık iki nadirliği birlikte taşır: Hepsi / Boss / Final Boss çipleri, diğer
        joker bölümleriyle aynı filtre mantığı (d.rarity === filtre). Final boss
        jokerleri önde; açılmamışsa gri/kilitli (colFinalCard). */
-    { key: 'boss', ico: '👹', filters: ['all', 'epic', 'final'],
+    { key: 'boss', ico: '👹', disc: 'joker', filters: ['all', 'epic', 'final'],
       filterLabel: (f) => (f === 'epic' ? t('colF_boss') : t('colF_finalBoss')),
       items: () => [...Object.values(JOKER_DEFS).filter(d => d.rarity === 'final'),
         ...Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic')],
-      card: (d) => (d.rarity === 'final' ? colFinalCard(d) : colJokerCard(d)) },
-    { key: 'consum', ico: '🪄', items: () => byRarity(Object.values(CONSUMABLES)), card: (d) => colConsumCard(d) },
-    { key: 'special', ico: '💠', items: () => Object.values(SPECIAL_TILES), card: (d) => colSpecialCard(d) },
-    { key: 'upgrade', ico: '⭐', items: () => Object.values(UPGRADE_DEFS), card: (d) => colUpgradeTile(d) },
+      card: (d) => (d.rarity === 'final' && !Disc.known('joker', d) ? colFinalCard(d) : colJokerCard(d)) },
+    { key: 'consum', ico: '🪄', disc: 'consum', items: () => byRarity(Object.values(CONSUMABLES)), card: (d) => colConsumCard(d) },
+    { key: 'special', ico: '💠', disc: 'special', items: () => Object.values(SPECIAL_TILES), card: (d) => colSpecialCard(d) },
+    { key: 'upgrade', ico: '⭐', disc: 'upgrade', items: () => Object.values(UPGRADE_DEFS), card: (d) => colUpgradeTile(d) },
     { key: 'modes', ico: '🎮', items: () => Modes.statusRows(), card: null },
     { key: 'music', ico: '🎵', filters: ['all', 'tema', 'store', 'boss'], filterLabel: (f) => t('musF_' + f),
       items: () => musicCatalog(), card: (d) => colMusicCard(d) },
@@ -8837,7 +8996,7 @@
         b.className = 'col-cat' + (c.big ? ' big' : '');
         b.dataset.cat = c.key;
         b.innerHTML = `<span class="cc-ico">${c.ico}</span><span class="cc-name">${t('colCat_' + c.key)}</span>`
-          + `<span class="cc-count">${c.items().length}</span>`;
+          + `<span class="cc-count">${c.disc ? `${Disc.count(c.disc, c.items())}/${c.items().length}` : c.items().length}</span>`;
         b.addEventListener('click', () => { colPage = 0; colFilter = 'all'; showCollection('cat:' + c.key); });
         hub.appendChild(b);
       }
@@ -8850,10 +9009,22 @@
     const bar = document.createElement('div');
     bar.className = 'col-bar';
     bar.innerHTML = `<div class="col-plate">${cat.ico} ${t('colCat_' + cat.key)}</div>`;
-    if (cat.filters) {
+    /* P101 — keşifli bölümde çip yalnız o filtreden EN AZ BİR keşfedilmiş kart
+       varsa görünür (hiç keşif yokken kaç Mythic olduğu belli olmasın);
+       tek çip bile açılınca başına "Hepsi" gelir. */
+    const knownOf = (d) => !cat.disc || Disc.known(cat.disc, d);
+    const fitF = (d, f) => (cat.filterFn ? cat.filterFn(d, f) : d.rarity === f);
+    let filters = cat.filters;
+    if (filters && cat.disc) {
+      const kn = cat.items().filter(knownOf);
+      filters = filters.filter((f) => f !== 'all' && kn.some((d) => fitF(d, f)));
+      if (filters.length) filters = ['all', ...filters];
+      if (!filters.includes(colFilter)) colFilter = 'all';
+    }
+    if (filters && filters.length) {
       const chips = document.createElement('div');
       chips.className = 'col-chips';
-      for (const f of cat.filters) {
+      for (const f of filters) {
         const b = document.createElement('button');
         b.className = 'col-chip tr-' + f + (colFilter === f ? ' on' : '');
         b.textContent = f === 'all' ? t('colAll') : cat.filterLabel ? cat.filterLabel(f) : T.rarity(f);
@@ -8878,12 +9049,13 @@
       return;
     }
     let items = cat.items();
-    if (cat.filters && colFilter !== 'all') items = items.filter(d => (cat.filterFn ? cat.filterFn(d, colFilter) : d.rarity === colFilter));
+    if (cat.filters && colFilter !== 'all') items = items.filter(d => knownOf(d) && fitF(d, colFilter));
     const pages = Math.max(1, Math.ceil(items.length / COL_PAGE));
     colPage = Math.min(Math.max(0, colPage), pages - 1);
     const grid = document.createElement('div');
     grid.className = 'col-page-grid col-well col-cat-' + cat.key;
-    for (const d of items.slice(colPage * COL_PAGE, (colPage + 1) * COL_PAGE)) grid.appendChild(cat.card(d));
+    for (const d of items.slice(colPage * COL_PAGE, (colPage + 1) * COL_PAGE))
+      grid.appendChild(knownOf(d) ? cat.card(d) : colLockedCard(cat.disc, d));
     el.colBody.appendChild(grid);
     if (cat.key === 'music') colMusicSync();
     const pager = document.createElement('div');
@@ -9879,7 +10051,8 @@
   else showScreen('menu');
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
-  window.__test = { render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
+  window.__test = {
+    disc: Disc, pickBuyDest, render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     // Playtest 17 — Grup A/F doğrulaması için
     notify, showCoinFlip, pickFuzyon, flushRoundStart,

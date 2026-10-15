@@ -11341,3 +11341,213 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .var-ov .var-card { width: 190px; min-height: 0; cursor: default; }
 .var-ov .var-card:hover { transform: none; box-shadow: none; }
 .var-ov .var-card .col-jk-art { margin-bottom: 4px; }
+
+/* P101 — KEŞFEDİLMEMİŞ KOLEKSİYON KARTI (Figma 480:3664 "KİLİTLİ_JOKERLER",
+   81 × 110 tasarım kutusu → diğer koleksiyon kartlarıyla aynı 110 × 150). */
+.col-lock-card { position: relative; cursor: default; animation: fadeIn .25s ease; }
+.col-lock-art {
+  width: 110px;
+  height: 150px;
+  background: url('assets/game/joker/kilitli.svg') no-repeat center / 100% 100%;
+  image-rendering: pixelated;
+}
+
+/* P101 — SATIN ALMA YERİ PENCERESİ (#buyDest) — pk-ov seçim kartları:
+   üç kart aynı ölçüde (ad · doluluk · ne olur); dolu seçenek sönük + "DOLU". */
+#buyDest .pk-body.pk-choice { align-items: stretch; }
+#buyDest .bd-opt {
+  width: 176px; min-height: 0; padding: 12px 10px 14px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  font: inherit;
+}
+#buyDest .bd-opt .pk-name { font-size: 18px; letter-spacing: -.5px; }
+#buyDest .bd-opt .pk-sub { font: 700 15px/1 var(--gm-font); opacity: .8; }
+#buyDest .bd-opt:disabled { opacity: .5; cursor: default; filter: grayscale(.6); }
+#buyDest .bd-opt:disabled:active { transform: none; }
+#buyDest #bdMain:not(:disabled) { border-top-color: var(--gm-turn-on); }
+
+/* P101 — ORION EŞİ PANELİ (2. tur): TEK geniş kutu, Raund Puan kalıbı —
+   koyu zemin + açık kenar, solda etiket, sağda açık plakada taş sayısı. */
+.gm-stage #orionPanel.gm-orion.partner {
+  background: none; border: 0; padding: 0; margin: 10px 0 4px; width: 350px;
+  text-transform: none; letter-spacing: 0;
+}
+.gm-stage #orionPanel .up-mate {
+  display: flex; align-items: stretch; gap: 6px; height: 56px; padding: 5px; box-sizing: border-box;
+  background: var(--gm-dark); border: 3px solid var(--gm-light); border-radius: 10px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35);
+}
+.gm-stage #orionPanel .up-mate-lbl {
+  flex: 0 0 auto; display: flex; align-items: center; padding: 0 4px 0 6px;
+  font: 700 16px/1 var(--gm-font); letter-spacing: -1px; color: var(--gm-light); white-space: nowrap;
+}
+.gm-stage #orionPanel .up-mate-val {
+  flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 0 8px;
+  background: var(--gm-light); color: var(--gm-dark); border-radius: 7px;
+  font: 700 22px/1 var(--gm-font); letter-spacing: -1px; white-space: nowrap; overflow: hidden;
+}
+
+/* P101 — KART ROZETLERİ oyunun plaka dilinde.
+   Kalan raund: açık plaka + koyu kenar (piksel font), kartın sağ üst köşesi. */
+.gm-stage .joker-tile .jt-uses {
+  top: -9px; right: -9px; min-width: 24px; height: 24px; padding: 0 5px; box-sizing: border-box;
+  border-radius: 5px; background: var(--gm-light); border: 2px solid var(--gm-dark); color: var(--gm-dark);
+  font: 700 13px/1 var(--gm-font); letter-spacing: 0; box-shadow: 0 2px 0 rgba(0, 0, 0, .45);
+}
+.gm-stage .joker-tile .jt-uses.danger { background: var(--gm-turn-on); border-color: var(--gm-dark); color: var(--gm-dark); }
+.gm-stage .joker-tile .jt-uses.frozen { background: #CFE6FF; border-color: #2C5F8E; color: #1B3D5E; }
+.gm-stage .joker-tile.run-long .jt-uses { background: #7C6FD6; border-color: var(--gm-dark); color: #fff; }
+/* Kemer yıldızı (2. tur): çizimi kapatmasın diye SOL ÜST KÖŞEDE yalnız
+   yıldız(lar) — raund baloncuğunun eşi, altın zemin; çarpan ipucunda. */
+.joker-tile .jt-rank { display: none; }
+.joker-tile .jt-belt {
+  position: absolute; top: -9px; left: -9px; z-index: 3; height: 24px; min-width: 24px; padding: 0 4px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; border-radius: 5px; pointer-events: none;
+  background: #F2D863; border: 2px solid var(--gm-dark, #181716); color: var(--gm-dark, #181716);
+  font: 700 12px/1 var(--gm-font); letter-spacing: -1px; box-shadow: 0 2px 0 rgba(0, 0, 0, .45);
+}
+.joker-tile .jt-belt.full { background: #FFE27A; box-shadow: 0 2px 0 rgba(0, 0, 0, .45), 0 0 10px rgba(242, 216, 99, .8); }
+/* kemerde şu an takılı joker: altın çerçeve (eski ⟳ işaretinin yerine) */
+.joker-tile.belt-on { box-shadow: 0 0 0 3px #F2D863, 0 0 12px rgba(242, 216, 99, .55); }
+
+/* P101 — OYUN EKRANLARI MENÜ DİLİNDE ("yumuşak" UI, kullanıcı onayı 2026-10-15):
+   menülerdeki pencere dili = koyu zemin + 4px açık kenar + yuvarlak köşe + alt gölge,
+   içte açık plakalar (koyu yazı). Figma'nın pahlı SVG çerçeveleri bu katmanda kapatılır
+   (varlıklar duruyor; blok silinirse eski görünüm döner). Oyun, harita, store, boss
+   ve run temaları aynı kurallarla çizilir; renkler temanın --gm-* tokenlarından. */
+:root { --sf-r: 12px; --sf-r2: 8px; --sf-bw: 4px; --sf-sh: 0 5px 0 rgba(0, 0, 0, .38); }
+.sf-panel, .gm-stage :is(#roundChip, .gm-score, .gm-stat, .gm-map-title, .gm-map-okey, .gm-okeyblock, .gm-jokers, .map-card,
+  .gm-actions, .gm-shoulder, #previewBar, .gm-left #permMult, #rack, #bossBanner, #orionPanel:not(.partner)) {
+  background: var(--gm-dark) !important; border: var(--sf-bw) solid var(--gm-edge, var(--gm-light)) !important;
+  border-radius: var(--sf-r) !important; box-shadow: var(--sf-sh) !important; box-sizing: border-box;
+}
+/* --- sol sütun --- */
+.gm-stage #roundChip { color: var(--gm-light) !important; }
+.gm-stage .gm-score { padding: 5px !important; }
+.gm-stage .gm-score .gm-score-lbl { flex: 0 0 76px; width: 76px; padding-left: 3px; letter-spacing: -2px; font-size: 15px; }
+.gm-stage .gm-score .gm-score-body { background: var(--gm-light); border-radius: var(--sf-r2); }
+.gm-stage .gm-score .gm-score-val, .gm-stage .gm-score .gm-score-val * { color: var(--gm-dark) !important; font-size: 32px !important; }
+.gm-stage .gm-stat { padding: 0 5px 5px !important; }
+.gm-stage .gm-stat .gm-stat-h { height: 24px; color: var(--gm-light); }
+.gm-stage .gm-stat .gm-stat-v { background: var(--gm-light); border-radius: var(--sf-r2); color: var(--gm-dark); }
+.gm-stage .gm-map-title { display: flex; flex-direction: column; justify-content: center; }
+.gm-stage .gm-map-okey { display: flex; align-items: stretch; padding: 5px !important; }
+.gm-stage .gm-map-okey .mo-lbl { color: var(--gm-light); }
+.gm-stage .gm-map-okey .mo-tile { background: var(--gm-light); border-radius: var(--sf-r2); }
+.gm-stage .gm-okeyblock .gm-okey-lbl { color: var(--gm-light); }
+/* --- joker paneli + değnek/backup: koyu panel, kesikli yuva --- */
+.gm-stage :is(#jokerSlots, #mapJokerSlots) .joker-slot-empty,
+.gm-stage .gm-sh-body .joker-slot-empty,
+#mapScreen .st-sh-body .joker-slot-empty,
+.gm-stage .discard-slot {
+  background: none !important; border: 3px dashed var(--gm-light) !important; border-radius: var(--sf-r2) !important;
+  opacity: .45; box-sizing: border-box;
+}
+.gm-stage .gm-jk-head { color: var(--gm-light); }
+:is(#storeStage, #mapScreen) .st-shoulder.st-inv { border-color: var(--gm-edge, var(--gm-light)); border-radius: var(--sf-r); }
+:is(#storeStage, #mapScreen) .st-inv .st-sh-body { background: none; box-shadow: none; padding: 4px 0 0; }
+#mapScreen #mapBackupShoulder .st-sh-tab .gm-sh-count, #mapScreen #mapTotemShoulder .st-sh-tab .gm-sh-count { color: var(--gm-light); opacity: .8; }
+/* --- para: açık plaka --- */
+.gm-stage .gm-coin {
+  background: var(--gm-light) !important; border: var(--sf-bw) solid var(--gm-edge, var(--gm-light)) !important;
+  border-radius: var(--sf-r) !important; box-shadow: var(--sf-sh) !important; color: var(--gm-dark) !important;
+}
+.gm-stage .gm-coin * { color: var(--gm-dark) !important; }
+/* --- harita kartı --- */
+.gm-stage .map-card .mc-select, .gm-stage .map-card .mc-pill, .gm-stage .map-card .mc-target {
+  background: var(--gm-light) !important; border-radius: var(--sf-r2) !important; color: var(--gm-dark) !important;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .35) !important;
+}
+.gm-stage .map-card .mc-target * { color: var(--gm-dark); }
+.gm-stage .map-card.active .mc-select { background: var(--gm-turn-on) !important; }
+.gm-stage .map-card .mc-select::after { filter: brightness(0); opacity: .7; }
+.gm-stage .map-card.locked .mc-select { background: rgba(255, 255, 255, .18) !important; color: var(--gm-light) !important; }
+.gm-stage .map-card.locked .mc-select::before { display: none; }
+.gm-stage .map-card.done:not(.collapsed) .mc-select { opacity: .7; }
+/* --- açılım satırları / tepsiler: gömme kuyu --- */
+.gm-stage .gm-meld .combo, .gm-stage .gm-trays .combo {
+  background: rgba(0, 0, 0, .28) !important; border-radius: var(--sf-r2) !important; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .3) !important;
+}
+/* --- Sırala çubuğu: menü düğmeleri --- */
+.gm-stage .gm-actions { padding: 6px 12px 12px !important; min-height: 0 !important; }
+.gm-stage .gm-sortlbl { color: var(--gm-light); height: 26px; }
+.gm-stage .gm-btn {
+  background: var(--gm-light) !important; color: var(--gm-dark); border: 3px solid var(--gm-edge, var(--gm-light)) !important;
+  border-radius: var(--sf-r2) !important; box-shadow: 0 4px 0 rgba(0, 0, 0, .4) !important; height: 54px;
+}
+.gm-stage .gm-btn-open { background: var(--gm-turn-on) !important; }
+/* --- ıstaka: koyu panel; satırlar açık çerçeve, hücreler koyu, hepsi yuvarlak --- */
+.gm-stage .rack-row { background: var(--gm-light) !important; border-radius: 14px !important; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .18); }
+.gm-stage #rack::before, .gm-stage #rack::after { display: none !important; }   /* pahlı çerçeveye göre çizilmiş gölge/hâle görselleri; panelin kendi gölgesi var */
+.gm-stage .rack-empty { background: var(--gm-dark) !important; border-radius: 6px !important; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35); }
+/* omuz (değnek / backup sekmesi) */
+.gm-stage .gm-shoulder { top: -40px; }
+.gm-stage .gm-sh-tab { color: var(--gm-light) !important; }
+
+/* joker paneli: kenar 4px geldi → iç boşluk daralır, iki sütun korunur */
+.gm-stage :is(#jokerPanel, #mapJokerPanel).gm-jokers { padding: 9px 6px !important; }
+.gm-stage :is(#jokerSlots, #mapJokerSlots) { gap: 14px 15px !important; }
+.gm-stage .gm-score .gm-score-lbl { font-size: 14px !important; letter-spacing: -2.4px !important; }
+.gm-stage .gm-score .gm-score-body { margin-left: 4px; }
+.gm-stage .rack-row { height: 132px !important; }
+.gm-stage #rackRow1 { top: 27px !important; }
+.gm-stage #rackRow2 { top: 164px !important; }
+/* ---- 3. tur düzeltmeleri (kullanıcı işaretleri 2026-10-15) ---- */
+/* harita kartı: 4px kenar iç öğeleri sağa/aşağı itiyordu → ortaya geri */
+.gm-stage .map-card :is(.mc-select, .mc-pill, .mc-target, .mc-art, .mc-cond) { translate: -4px -4px; }
+/* stage okey: eski renk ayrımı — solda koyu etiket, sağda açık plaka içinde taş */
+.gm-stage .gm-map-okey .mo-lbl { left: 6px; top: 50%; transform: translateY(-50%); width: 140px; line-height: 1.25; }
+.gm-stage .gm-map-okey .mo-tile {
+  left: auto; right: 5px; top: 5px; bottom: 5px; height: auto; width: 180px;
+  display: flex; align-items: center; justify-content: center;
+}
+/* sırala çubuğu: kenar düğmeleri çerçeveye yapışmasın */
+.gm-stage .gm-actions { padding: 6px 16px 12px !important; width: 448px !important; min-width: 448px !important; left: 737px !important; }
+/* ıstaka: iki satır çerçevenin tam ortasında */
+.gm-stage .rack-row { left: 50% !important; translate: -50% 0; }
+/* okey kutusu: etiket koyu üst bölümde, taş açık plakada */
+.gm-stage .gm-okeyblock { overflow: hidden; }
+.gm-stage .gm-okey-lbl { top: 9px; }
+.gm-stage #okeyChip.gm-okey-tile { left: 10px; top: 48px; }
+.gm-stage .gm-okeyblock::after {
+  content: ''; position: absolute; left: 4px; right: 4px; top: 40px; bottom: 4px; z-index: 0;
+  background: var(--gm-light); border-radius: var(--sf-r2);
+}
+.gm-stage #okeyChip.gm-okey-tile { z-index: 1; }
+/* raund puan etiketi: plakaya değmesin */
+.gm-stage .gm-score .gm-score-lbl { flex: 0 0 74px !important; width: 74px !important; font-size: 16px !important; letter-spacing: -1.6px !important;
+  padding: 0 !important; line-height: 1.1 !important; align-items: center !important; text-align: center !important; }   /* her ekranda aynı: ortalı, okunur boy */
+.gm-stage .gm-score .gm-score-body { margin-left: 6px !important; }
+
+/* P101 — LADY LUCK SAHNE DETAYLARI (ui.js BOSS_FX / syncBossFx) */
+#bossFxBack { position: absolute; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
+#bossFx { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+:is(#bossFxBack, #bossFx) .bf-svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.bf-rb { fill: none; stroke: rgb(226, 222, 236); stroke-linecap: round; opacity: var(--a);
+  stroke-dasharray: 520 90; animation-name: bfFlow, bfSway; animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite, infinite; transform-box: fill-box; transform-origin: center; }
+.bf-rb.mist { stroke: rgb(240, 214, 220); stroke-dasharray: 520 120; }
+@keyframes bfFlow { to { stroke-dashoffset: -610; } }
+@keyframes bfSway { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-14px) scaleY(1.15); } }
+#bossFx .bf-spark { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; transform: scale(var(--k)); opacity: 0;
+  background: linear-gradient(#FFE9A8, #FFE9A8) center / 4px 20px no-repeat, linear-gradient(#FFE9A8, #FFE9A8) center / 20px 4px no-repeat,
+    radial-gradient(circle, rgba(255, 233, 168, .95) 0 4px, transparent 5px);
+  image-rendering: pixelated; animation: bfTwinkle 2.4s steps(6, end) infinite; animation-delay: var(--d); }
+@keyframes bfTwinkle { 0%, 100% { opacity: 0; transform: scale(calc(.4 * var(--k))); }
+  30% { opacity: 1; transform: scale(var(--k)); } 55% { opacity: .2; transform: scale(calc(.6 * var(--k))); } }
+#bossFx .bf-glow { position: absolute; width: calc(var(--r) * 2); height: calc(var(--r) * 2); margin: calc(var(--r) * -1) 0 0 calc(var(--r) * -1);
+  border-radius: 50%; background: radial-gradient(circle, rgba(255, 214, 120, .38), rgba(255, 214, 120, 0) 68%);
+  mix-blend-mode: screen; animation: bfBreathe 3.6s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes bfBreathe { 0%, 100% { opacity: .25; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .bf-rb, #bossFx .bf-spark, #bossFx .bf-glow { animation: none; } }
+/* store: joker paneli kenarı 4px → iki sütun sığsın; boş yuvalar kesikli (oyun ekranıyla aynı) */
+#storeStage #storeJokerPanel.gm-jokers { padding: 9px 6px; }
+#storeStage #storeSlotsRow { gap: 14px 15px; }
+#storeStage .joker-slot-empty {
+  background: none !important; border: 3px dashed var(--gm-light) !important; border-radius: var(--sf-r2) !important;
+  opacity: .45; box-sizing: border-box;
+}
+/* taş atma aşaması: çubuk yalnız büyük düğme kadar, düğme menü dilinde (pahsız, vurgu rengi) */
+.gm-stage .gm-actions.discard-only { width: auto !important; min-width: 0 !important; left: 961px !important; translate: -50% 0; padding: 10px !important; grid-template-columns: auto !important; min-height: 0 !important; }
+.gm-stage .gm-actions.discard-only > #btnDiscard { clip-path: none; background: var(--gm-turn-on) !important; color: var(--gm-dark); }
+/* kemer yıldızı: komşu kartın raund baloncuğuyla çakışmasın */
+.joker-tile .jt-belt { left: -4px; }
