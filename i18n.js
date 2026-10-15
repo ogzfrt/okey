@@ -173,7 +173,7 @@
       modeName_base: 'Kozmik Run (8 Stage + Final)',   // P90b — mod adı temasından (eski: Temel Run); anahtar 'base' kaldı
       modeName_trainer: 'Trainer Modu',
       modeName_hizli: 'Kumarhane Run (4 Stage + Final)',      // P58 · Grup C (anahtar 'hizli' kaldı)
-      modeLockedTip: 'İlk Kozmik Run’ı tamamlayınca açılır.',
+      modeLockedTip: 'Kozmik Run’ı kazanınca (Orion’u yenince) açılır.',
       /* MADDE D4 — mod seçim katmanı */
       modePickTitle: 'RUN MODU SEÇ',
       modePickBody: 'Bulutsular mı, kumarhane mi?',
@@ -1188,7 +1188,7 @@
       modeName_base: 'Cosmic Run (8 Stages + Final)',
       modeName_trainer: 'Trainer Mode',
       modeName_hizli: 'Casino Run (4 Stages + Final)',
-      modeLockedTip: 'Unlocks when you finish your first Cosmic Run.',
+      modeLockedTip: 'Unlocks when you win a Cosmic Run (defeat Orion).',
       modePickTitle: 'CHOOSE RUN MODE',
       modePickBody: 'The nebulae or the casino?',
       modeDesc_base: '8 stages · 24 rounds. Targets start at 250, standard economy.',

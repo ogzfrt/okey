@@ -8,6 +8,11 @@
 (function () {
   const $ = (id) => document.getElementById(id);
 
+  /* LUSORIA BETA (test sürümü) — TEST_SÜRÜM derlemesinde window.LUSORIA_BETA
+     tanımlıdır; prototipte null → aşağıdaki tüm `BETA` dalları inert. */
+  const BETA = window.LUSORIA_BETA || null;
+  const betaHook = (name, data) => { if (BETA && BETA.hook) BETA.hook(name, data); };
+
   const el = {};
   ['menuScreen','mapScreen','gameScreen','btnPlay','btnSettings',
    'btnCollection','btnQuit','menuLogo','btnTrainer',
@@ -193,6 +198,7 @@
     if (!s || s.status === 'lost' || s.status === 'runComplete') return;
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({ where, data: Game.serialize() }));
+      betaHook('saved', { where });
     } catch (e) { /* depolama dolu vb. — kayıt sessizce atlanır */ }
   }
   function markInRound() {
@@ -6087,6 +6093,7 @@
       el.overlay.classList.add('hidden');
       Game.tutorialMode = false;
       localStorage.setItem('okeyTutDone', '1');
+      betaHook('tutorialEnd', { mode, steps: [...this.seen] });
       // gerçek durumu geri yükle — öğretici oyun state'ini bozmaz
       if (this.saved) {
         Game.state = this.saved.state;
@@ -6094,6 +6101,7 @@
       }
       selection.clear();
       newTileIds.clear();
+      if (BETA) { showScreen('menu'); showRunPick(); return; }   // beta: öğreticiden sonra doğrudan mod seçimi
       if (mode === 'play') {
         Game.newRun(undefined, { finals: finalJokers() });
         showScreen('map');
@@ -6109,6 +6117,7 @@
   /* ---------- Menüler / pause (Grup D) ---------- */
 
   function startNewRun(mode) {
+    if (BETA && loadSave()) betaHook('runAbandoned', { mode: mode || 'base' });
     clearSave();
     Game.newRun(mode, { finals: finalJokers() });
     selection.clear();
@@ -6319,6 +6328,7 @@
     let tab = opts.tab || (save ? 'cont' : 'new');
     let sv = null;
     try { sv = save ? JSON.parse(save.data) : null; } catch (e) { sv = null; }
+    if (!sv) tab = 'new';   // okunamayan kayıt: Devam Et sekmesi sv.runMode'da çöküyordu
     const ov = document.createElement('div');
     ov.id = 'runPickOv';
     ov.className = 'ep-ov rp-ov';
@@ -6606,6 +6616,7 @@
     try {
       Game.restore(save.data);
     } catch (e) {
+      betaHook('saveIncompatible', { message: String(e && e.message), stack: String(e && e.stack) });
       clearSave();
       startNewRun();
       return;
@@ -6631,7 +6642,10 @@
      raund içindeyse SORMADAN devam ediyor, raund arasındaysa ayrı bir beyaz
      kutu açıyordu; artık her durumda aynı ekran — kayıt varsa Devam Et
      sekmesi açık gelir. */
-  el.btnPlay.addEventListener('click', () => showRunPick());
+  el.btnPlay.addEventListener('click', () => {
+    if (BETA && !localStorage.getItem('okeyTutDone')) { TUT.start(); return; }   // beta: ilk Oyna = öğretici
+    showRunPick();
+  });
 
   /* GRUP I (2026-09-07): haritadaki "Ana Menü" düğmesi kaldırıldı —
      tasarımda yok. Ana menüye artık haritanın DURAKLAT düğmesindeki
@@ -6759,7 +6773,7 @@
        eleman eklenmez. Oynanış sayıları burada değil motorda (RUN_MODES).
        Gelecekte kilitli bir mod eklenecekse örnek:
          { key: 'endless', btn: 'btnEndless', requires: 'base' } */
-    { key: 'hizli', requires: null },
+    { key: 'hizli', requires: BETA ? 'base' : null },   // beta: Orion yenilince açılır
   ];
 
   const Modes = {
@@ -8412,6 +8426,7 @@
     LStats.run(s, false);   // P88
     const st = endStats(s);
     clearSave();
+    betaHook('runEnd', { kind: 'lost' });
     SFX.lose();
     const boss = Game.isBossRound && Game.isBossRound() && s.boss;
     const art = boss && JOKER_ART.has(s.boss.key)
@@ -8456,6 +8471,8 @@
     /* P71 — modun final boss'u yenildiyse ödül kalıcı açılır (Trainer hariç) */
     const finKey = Game.finalBeaten();
     const finNew = finKey ? Finals.unlock(finKey) : false;
+    betaHook('runEnd', { kind: 'won' });
+    if (openedModes.length) betaHook('modesOpened', { keys: openedModes.map((m) => m.key) });
     /* P53 — "Sonsuz Mod'a devam" yalnız TEMEL run'ın sonunda (trainer'da ve
        Kumarhane Run'da yok; run zaten sonsuzsa tekrar gösterilmez). */
     const canEndless = !Game.trainerMode && !Game.state.endless && Game.state.runMode !== 'hizli';
@@ -10011,7 +10028,7 @@
      tarayıcının kendi "tüm sekmeleri yer imine ekle" kısayoluna
      yakalanabilir; F9 hiçbir yere bağlı değildir ve exe'de de çalışır. */
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'F9' || (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd'))) {
+    if (!BETA && (e.key === 'F9' || (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')))) {
       e.preventDefault();
       showDiagnostics();
     } else if (e.key === 'Escape') {
@@ -10051,7 +10068,7 @@
   else showScreen('menu');
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
-  window.__test = {
+  if (!BETA) window.__test = {
     disc: Disc, pickBuyDest, render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     // Playtest 17 — Grup A/F doğrulaması için
