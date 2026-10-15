@@ -11011,6 +11011,10 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .jk-vampir   { --jk-art: url('assets/game/joker/vampir.svg'); }    /* 469:2 · P100 */
 .jk-paratoner { --jk-art: url('assets/game/joker/simsek-avcisi.svg'); }  /* 475:2 Şimşek Avcısı · P100 */
 .jk-sansliYedili { --jk-art: url('assets/game/joker/sansli-yedili.svg'); }  /* 476:25 · P100 */
+.jk-bungieGum { --jk-art: url('assets/game/joker/bungie-gum.svg'); }  /* 485:2 Bungee_gum · P105 */
+.jk-tercuman  { --jk-art: url('assets/game/joker/renk-koru.svg'); }   /* 485:35 Renk_körü · P105 */
+.jk-ikiYuzlu  { --jk-art: url('assets/game/joker/iki-yuzlu.svg'); }   /* 485:21 Two_face · P105 */
+.jk-krupiye   { --jk-art: url('assets/game/joker/krupiye.svg'); }     /* 488:85 Krupiye · P105 */
 #pandoraOv .pd-art { width: 162px; height: 220px; margin: 0 auto; background: var(--jk-art) no-repeat center / 100% 100%; image-rendering: pixelated; }
 /* P91 — Füzyon kartının ipucunda içindeki jokerler ilk satırdan başlar */
 #jokerTip.tip-fz .tip-fused:first-of-type { margin-top: 6px; }
@@ -11637,3 +11641,16 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 #buySwap #swBack, #buySwap #swCancel { margin: 0 6px; }
 #buySwap .sw-row { background: var(--gm-light); color: var(--gm-dark); border: 4px solid var(--gm-edge); border-top-width: 7px; border-radius: 8px; box-shadow: 0 4px 0 rgba(0, 0, 0, .4); }
 #buySwap .sw-row.r-rare { border-top-color: #4A90D9; } #buySwap .sw-row.r-legendary { border-top-color: #F5A623; } #buySwap .sw-row.r-mythic { border-top-color: #FF3CAC; } #buySwap .sw-row.r-epic { border-top-color: #9B59B6; }
+.belt-ov .belt-pick .bp-fz { max-width: 120px; font: 700 12px/1.25 var(--gm-font); color: var(--gm-dark); opacity: .8; text-align: center; }
+
+/* P105 — FÜZYON seçim penceresi pk-ov kalıbında (satın alma penceresiyle aynı kart dili) */
+#fuzyonMenu .pk-body.pk-choice { align-items: stretch; }
+#fuzyonMenu .fzm-opt { width: 186px; padding: 12px 10px 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; font: inherit; }
+#fuzyonMenu .fzm-opt .pk-name { font-size: 18px; letter-spacing: -.5px; }
+#fuzyonMenu .fzm-opt.fzm-use:not(:disabled) { border-top-color: #9B59B6; }
+#fuzyonMenu .fzm-opt:disabled { opacity: .5; cursor: default; filter: grayscale(.6); }
+#fuzyonMenu .fzm-opt:disabled:active { transform: none; }
+/* P105 — ★★★ Orion'un Kemeri: süresiz joker altın ∞ rozeti (raund sayısı yerine) */
+.gm-stage .joker-tile.belt-perm .jt-uses, .joker-tile.belt-perm .jt-uses { background: #F2D863; color: var(--gm-dark, #181716); border-color: var(--gm-dark, #181716); font-size: 15px; }
+#fuzyonMenu .fzm-opt.fzm-use { background: var(--gm-light); color: var(--gm-dark); }
+#fuzyonMenu .fzm-opt { min-height: 0; justify-content: flex-start; }

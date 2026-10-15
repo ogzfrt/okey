@@ -120,12 +120,14 @@ const LADY_STAR_MULT = 2;    // P71 — Sahnenin Yıldızı: seçilen jokerin ka
 const LADY_USES = 6;         // P71 — boss jokerlerinin (2–4) belirgin şekilde üstü
 /* P90 — TEMEL RUN FİNALİ · ORION (spec 2026-10-11). Değerler uzman botla
    kalibre edilir (S8'i geçenlerin ≈%50'si finali geçmeli). */
-const ORION_FLOOR = 4200;                 // taban hedef (S8 boss 3620'nin üstü)
+const ORION_FLOOR = 5700;                 // taban hedef (S8 boss 4900'ün üstü · P105: 4200 → 5700, aynı ×1.16 oran)
 const ORION_TURN_MULT = [8, 10, 13, 17];   // Orion'un açılım çarpanı, tur tur büyür (P90 ölçüm: final geçiş temiz %63 · kurtarmalı %47 — kullanıcı B'yi seçti)
 const ORION_HAND = 21;                    // Orion'un (rakip ya da eş) eli
 const ORION_DRAW = { race: 5, partner: 5 };   // tur başı çekiş: finalde de jokerdeki eşte de oyuncu kadar (kullanıcı kararı 2026-10-11; eş 5 → güç ≈ Lady Luck ×2, bilerek seçildi)
 const BELT_K = { 1: 1.5, 2: 2, 3: 4 };    // Orion'un Kemeri: ★ · ★★ · ★★★
-const BELT_TWO_AT = 2, BELT_FULL_AT = 4;  // yıldız için kemerde geçen raund
+/* P105 (kullanıcı: "2 raundda ★★ fazla güçlü, oyunu kırıyor") — ★★ 3 raundda, ★★★ ORION'UN ÖMRÜ (6 raund)
+   dolunca: yani yalnız Orion'un geldiği ilk raunddan beri hiç değiştirilmeden bağlı kalan joker ustalaşır. */
+const BELT_TWO_AT = 3, BELT_FULL_AT = LADY_USES;  // yıldız için kemerde geçen raund (eski 2 / 4)
 /* P71 — puanı _calcOpening'deki ÖZEL bloklardan gelen jokerler (effect()
    fonksiyonu olmayanlar). Yıldız adayı = effect() olan + bu liste. */
 const STAR_SCORE_KEYS = ['ankaKusu', 'ayna', 'ejderha', 'godzilla', 'katalizor', 'kirby', 'kumarbaz',
@@ -177,11 +179,11 @@ const RUN_MODES = {
        Güvenli %12 run bitirir. Nefes: 660<865 · 910<1190 · 1175<1505.
        Bahsin kendisi bu tablonun ÜSTÜNE çarpar (×1 / ×1.5 / ×2). */
     targets: [
-      [ 430,  650,  865],       // S1   (eski 540 · 810 · 1080)
-      [ 660,  930, 1190],       // S2   (eski 825 · 1160 · 1490)
-      [ 910, 1220, 1505],       // S3   (eski 1140 · 1525 · 1880)
-      [1175, 1500, 1785],       // S4   (eski 1470 · 1875 · 2230)
-      [1175, 1500, FINAL_TARGET],   // S5 FİNAL — yalnız 3. sütun kullanılır (P71)
+      [ 450,  650,  850],       // S1   (eski 540 · 810 · 1080 · P105 yuvarlak: 430 · 650 · 865)
+      [ 650,  950, 1200],       // S2   (eski 825 · 1160 · 1490 · P105: 660 · 930 · 1190)
+      [ 900, 1200, 1500],       // S3   (eski 1140 · 1525 · 1880 · P105: 910 · 1220 · 1505)
+      [1200, 1500, 1800],       // S4   (eski 1470 · 1875 · 2230 · P105: 1175 · 1500 · 1785)
+      [1200, 1500, FINAL_TARGET],   // S5 FİNAL — yalnız 3. sütun kullanılır (P71)
     ],
     /* P50 — kullanıcı: "coin kazancını arttırmayalım, normal run'daki gibi
        test edeceğim". ×1.5 → ×1. Diğer güç paketi (el +2, +0.5x, 3 açılış
@@ -565,7 +567,7 @@ const STAGE_TARGETS = [
   /* P67c (kullanıcı kararı 2026-10-05): sabit raf (3 joker + 4 ürün) S1 boss geçişini tutumlu
      botta %47 → %56'ya çıkardı; boss hedefi %5 yükseltildi (730 → 767). P67d: R1/R2 de %5
      (290 → 305, 510 → 536) — oran yine 0.40/0.70. */
-  [305, 536, 767],      // S1 — el 21 · oran 0.40/0.70
+  [300, 550, 800],      // S1 — el 21 · oran 0.40/0.70
   /* P51 · GRUP B (kullanıcı onayı 2026-09-15) — BALATRO EĞRİSİ, tam run botuyla
      ölçülerek kuruldu (tools/run_audit.js).
      v2 (10.3) S4-S8'de sabit 1.42x adımla büyüyordu: erken stage'ler (el 15→21
@@ -635,17 +637,31 @@ const STAGE_TARGETS = [
        avcı     %52  %65  %71  %67  %65  %59  %56  %43   (≈ tutumlu: reroll avantajı yok)
      Uzman botun temiz run bitirmesi %1 → %4; asıl eleyen hâlâ S1 (jokersiz
      başlangıç, kullanıcı kararı) ve joker ömrü varyansı. */
-  [435,  730, 1020],    // S2 — el 23 · oran 0.43/0.72 · boss ×1.40
-  [615,  975, 1340],    // S3 — el 25 · oran 0.46/0.73 · boss ×1.31
-  [835, 1280, 1720],    // S4 — el 27 · oran 0.49/0.74 · boss ×1.28
-  [1130, 1665, 2200],   // S5 — el 29 · oran 0.51/0.76 · boss ×1.28
-  [1420, 2020, 2620],   // S6 — el 30 · oran 0.54/0.77 · boss ×1.19
-  [1785, 2450, 3120],   // S7 — el 30 · oran 0.57/0.79 · boss ×1.19
-  [2170, 2895, 3620],   // S8 — el 30 · FINAL BOSS · oran 0.60/0.80 · ×1.16
+  [750, 1050, 1300],    // S2 — el 23 · oran 0.43/0.72 · boss ×1.40
+  [1050, 1400, 1750],    // S3 — el 25 · oran 0.46/0.73 · boss ×1.31
+  [1400, 1850, 2250],    // S4 — el 27 · oran 0.49/0.74 · boss ×1.28
+  [1800, 2350, 2900],   // S5 — el 29 · oran 0.51/0.76 · boss ×1.28
+  [2300, 2900, 3500],   // S6 — el 30 · oran 0.54/0.77 · boss ×1.19
+  [2800, 3500, 4200],   // S7 — el 30 · oran 0.57/0.79 · boss ×1.19
+  [3300, 4100, 4900],   // S8 — el 30 · FINAL BOSS · oran 0.60/0.80 · ×1.16
 ];
 /* Tablo dışına taşan stage'ler için (Trainer Sonsuz Mod) büyüme çarpanı.
    P51 · Grup B: eğrinin son adımıyla aynı (sonsuz modda yavaşlayan uç). */
-const TARGET_GROWTH = 1.16;   // P53 v13: eğrinin son adımıyla aynı (Sonsuz Mod bunu kullanır)
+const TARGET_GROWTH = 1.16;
+/* P105 (kullanıcı isteği 2026-10-15: "hedefler 400, 800, 2000, 750, 4500 gibi olsun, 762 gibi küsuratlı
+   olmasın") — ekrana çıkan HER hedef yuvarlak: 10 000'in altı 50'nin (750, 1750, 4500), üstü 500'ün
+   katı. dir = 1 yukarı (ceza / artış küçülmesin), -1 aşağı, 0 en yakın. */
+function niceTarget(x, dir = 0) {
+  const step = x < 10000 ? 50 : 500;
+  const f = dir > 0 ? Math.ceil : dir < 0 ? Math.floor : Math.round;
+  return Math.max(step, f(x / step) * step);
+}
+/* artış: en yakın yuvarlak sayıya, ama eskisinden EN AZ bir adım yukarı (küçük %'ler kaybolmasın,
+   yukarı yuvarlama da cezayı şişirmesin: Lanetli Kaptan %20 S1'de 300 → 350, 400 değil) */
+function niceUp(old, x) {
+  const r = niceTarget(x);
+  return r > old ? r : niceTarget(old) + (old < 10000 ? 50 : 500);
+}   // P53 v13: eğrinin son adımıyla aynı (Sonsuz Mod bunu kullanır)
 
 /* Çoklu kombinasyon ham puan bonusu (MULTI_RAW_BONUS) playtest 3'te
    KALDIRILDI (kullanıcı kararı): GDD 4.2 çarpan tablosu çok grubu
@@ -2411,13 +2427,13 @@ const JOKER_DEFS = {
     desc: `Raundu kaybedeceğin anda zar atılır: 5-6 gelirse raundu kıl payı kazanırsın (bahis ödülü yok). Her iki durumda kart kırılır.` },
   kartSayici: { key: 'kartSayici', name: 'Kart Sayıcı', rarity: 'common', casino: true,
     desc: 'Bahis penceresinde elinden 6 taş açık görünür.' },
-  fisUstasi: { key: 'fisUstasi', name: 'Fiş Ustası', rarity: 'common', casino: true,
+  fisUstasi: { key: 'fisUstasi', name: 'Fiş Kulesi',   /* P105: eski ad Fiş Ustası (kullanıcı) */ rarity: 'common', casino: true,
     desc: '🟢 Güvenli bahis tutunca kalıcı +0.2x.' },
   rulet: { key: 'rulet', name: 'Rulet', rarity: 'rare', casino: true,
     desc: `Her raund başında 🔴 ya da ⚫ seç: açılımındaki o renkten her taş +0.3x, hiç yoksa −1x.` },
   hileliZar: { key: 'hileliZar', name: 'Hileli Zar', rarity: 'rare', casino: true,
     desc: `Yüksek mi Alçak mı oyununda eşitlik senin sayılır, her doğru tahmin kalıcı +0.08x verir. Her stage’de 1 kez geri alabilirsin.` },
-  martingale: { key: 'martingale', name: 'Martingale', rarity: 'rare', casino: true,
+  martingale: { key: 'martingale', name: 'Altın Jeton',   /* P105: eski ad Martingale (kullanıcı: anlamsız) */ rarity: 'rare', casino: true,
     desc: `Kaybettiğin yan bahis, sonrakinin ödemesini 2 katına çıkarır (en çok ×8). Tutunca kat başına kalıcı +0.2x.` },
 
   /* ===== BOSS (EPIC) — Slot Jokerleri (4) + Deste Jokerleri (4, GDD 10):
@@ -2636,7 +2652,7 @@ const TUCCAR_BOSS_OFFERS = [
       if (hi) G._takeTile(hi, 'tüccar-takas');
       return hi ? `${COLOR_TR[hi.color]} ${hi.number} kervana verildi` : 'Verilecek taş yoktu';
     },
-    penalty: (s) => { s.target = Math.ceil(s.target * 1.1); return `Bedel ödenmedi — hedef %10 arttı (${s.target})`; } },
+    penalty: (s) => { s.target = niceUp(s.target, s.target * 1.1); return `Bedel ödenmedi — hedef %10 arttı (${s.target})`; } },
 ];
 
 /* The Corporates BOSS Koşulu (GDD 13.4): tek şirket, RAUND BOYU geçerli ve
@@ -3831,15 +3847,15 @@ const Game = {
     else if (stage <= last) base = tbl[stage - 1][ric - 1];
     else {
       const scale = Math.pow(TARGET_GROWTH, stage - last);
-      base = Math.round(tbl[last - 1][ric - 1] * scale / 10) * 10;
+      base = niceTarget(tbl[last - 1][ric - 1] * scale);
     }
     // Derin Nefes (değnek, altinCanak) — run'ın kalanında tüm hedefler kalıcı düşer
     const cut = this.state?.permTargetCut || 0;
-    if (cut) base = Math.max(10, Math.round(base * (1 - cut) / 5) * 5);
+    if (cut) base = niceTarget(base * (1 - cut));
     /* The World (P31 · Grup A) — tetiklendiği andan run sonuna kadar tüm
        hedefler kalıcı +%10. Bir kerelik değil, çarpan gibi her hedefe. */
     const up = this.state?.permTargetUp || 0;
-    return up ? Math.round(base * (1 + up) / 5) * 5 : base;
+    return up ? niceUp(base, base * (1 + up)) : niceTarget(base);
   },
 
   /* Tüketilebilir envanter kapasitesi — taban GDD 6.5b'deki 3, Heybe ile
@@ -4205,7 +4221,7 @@ const Game = {
   betOptions() {
     const s = this.state;
     const base = s.betBaseTarget ?? s.target;
-    return BET_KEYS.map(k => ({ ...BETS[k], ...this.betReward(k), target: Math.ceil(base * BETS[k].targetMult) }));
+    return BET_KEYS.map(k => ({ ...BETS[k], ...this.betReward(k), target: niceTarget(base * BETS[k].targetMult) }));
   },
   /* P61 — bahis ödülü STAGE'E GÖRE (kullanıcı isteği: "ilk stage'de ödüller
      küçük, stage ilerledikçe büyüsün"). BETS[k].permByStage / coinByStage /
@@ -4228,7 +4244,7 @@ const Game = {
     if (s.bet) return { ok: false, error: 'Bu raundun bahsi zaten konuldu.' };
     s.bet = key;
     s.betBaseTarget = s.target;
-    s.target = Math.ceil(s.target * b.targetMult);
+    s.target = niceTarget(s.target * b.targetMult);
     return { ok: true, note: `🎰 Bahis: ${b.name} — hedef ${s.target}` };
   },
   betState() {
@@ -4281,7 +4297,7 @@ const Game = {
     /* P61 · 🪙 Fiş Ustası — Güvenli bahis de kalıcı çarpan bırakır */
     if (b.key === 'guvenli' && this.hasActive('fisUstasi')) {
       s.permMult = round2(s.permMult + FIS_USTASI_MULT);
-      notes.push(`🪙 Fiş Ustası: Güvenli bahis tuttu → +${FIS_USTASI_MULT.toFixed(1)}x kalıcı`);
+      notes.push(`🪙 Fiş Kulesi: Güvenli bahis tuttu → +${FIS_USTASI_MULT.toFixed(1)}x kalıcı`);
     }
     const picks = rw.picks * kat;
     if (!Array.isArray(s.betPicks)) s.betPicks = [];
@@ -4411,12 +4427,12 @@ const Game = {
         const k = Math.pow(2, Math.min(MARTINGALE_CAP, mg.mg || 0));
         const add = round2(MARTINGALE_PERM * k);
         s.permMult = round2(s.permMult + add);
-        notes.push(`📈 Martingale: seri bitti → +${add.toFixed(2)}x kalıcı`);
+        notes.push(`📈 Altın Jeton: seri bitti → +${add.toFixed(2)}x kalıcı`);
       }
       if (mg) mg.mg = 0;
     } else {
       notes.push(`🎲 Yan bahis tutmadı: ${SIDE_BETS[sb.key].name} (−${sb.stake})`);
-      if (mg && !s.jokersDisabled) { mg.mg = Math.min(MARTINGALE_CAP, (mg.mg || 0) + 1); notes.push(`📈 Martingale: sonraki yan bahsin ödemesi ×${Math.pow(2, mg.mg)}`); }
+      if (mg && !s.jokersDisabled) { mg.mg = Math.min(MARTINGALE_CAP, (mg.mg || 0) + 1); notes.push(`📈 Altın Jeton: sonraki yan bahsin ödemesi ×${Math.pow(2, mg.mg)}`); }
     }
   },
 
@@ -5115,17 +5131,17 @@ const Game = {
     // fresh bayrağı: raund başlarken temizlenir — bu raund boyunca aktif
     // olan her joker, raund sonundaki yaşlanmada (GDD 7.2) süre kaybeder
     for (const j of [...s.jokers, ...s.deckJokers]) j.fresh = false;
-    s.target = Math.ceil(this.targetFor(s.stage, s.roundInStage) * (s.nextTargetMult || 1));
+    s.target = niceTarget(this.targetFor(s.stage, s.roundInStage) * (s.nextTargetMult || 1));
     /* Lanetli Kaptan laneti (Grup B): bir kez kurtardıysa, joker yaşadığı
        sürece HER raundun hedefi +%20 — kurtuluşun bedeli. */
     if (this.slotRecs().some(j => j.key === 'kaptan' && j.saveUsed)) {
-      s.target = Math.ceil(s.target * KAPTAN_CURSE);
+      s.target = niceUp(s.target, s.target * KAPTAN_CURSE);
       s.kaptanCursed = true;
     } else {
       s.kaptanCursed = false;
     }
     // Öğretici modu: hedefler yarıya iner — amaç öğretmek, zorlamak değil
-    if (this.tutorialMode) s.target = Math.ceil(s.target * 0.5);
+    if (this.tutorialMode) s.target = niceTarget(s.target * 0.5);
     s.nextTargetMult = 1;
     /* PLAYTEST 17 · GRUP B/12 — ÖNCEKİ RAUNDUN MASASI YENİ DESTE
        KURULMADAN ÖNCE TOPLANIR.
@@ -5387,9 +5403,9 @@ const Game = {
     if (this.bossOn()) {
       if (s.boss.key === 'godzilla') {                                     // GDD 10/15 Boss Koşulu
         s.maxTurns = 3;
-        s.target = Math.ceil(s.target * 0.9); // Grup J telafisi: 3 tur = %25 az fırsat
+        s.target = niceTarget(s.target * 0.9); // Grup J telafisi: 3 tur = %25 az fırsat
       }
-      if (s.boss.key === 'misunderstood') s.target = Math.ceil(s.target * 1.25);
+      if (s.boss.key === 'misunderstood') s.target = niceUp(s.target, s.target * 1.25);
       // Kara Kedi: başlangıç eli de dönüşümden geçer (çekilişle aynı kural)
       if (s.boss.key === 'karaKedi') this._karaKediBite(s.hand, s.roundStartNotes);
       /* Freedom Fighters BOSS Koşulu (Grup F): boss, oyuncunun jokeri
@@ -5411,7 +5427,7 @@ const Game = {
     // Kıyamet Trompeti — jokerler kapanır, hedef %60 düşer (GDD 12 · P31 · Grup D: %80 → %90 · P51: → %60)
     if (this.slotRecs().some(j => j.key === 'kiyamet')) {
       s.jokersDisabled = true;
-      s.target = Math.max(50, Math.ceil(s.target * KIYAMET_KEEP));
+      s.target = niceTarget(s.target * KIYAMET_KEEP);
       s.roundStartNotes.push(`Kıyamet Trompeti: tüm joker efektleri kapalı, hedef %${Math.round((1 - KIYAMET_KEEP) * 100)} düştü`);
     }
     /* PINKY WARRIOR (P31 · Grup C) — küçükler ordusu. Okey işareti fiziksel
@@ -5995,7 +6011,7 @@ const Game = {
         events.push(`◈ ${j.name} eline geldi — aktif!`);
         if (j.key === 'misunderstood' && !j.awakened && !s.misuActive && !s.jokersDisabled) {
           s.misuActive = true;
-          s.target = Math.ceil(s.target * 1.15);
+          s.target = niceUp(s.target, s.target * 1.15);
           events.push('The Misunderstood: hedef puan +%15 arttı');
         }
       }
@@ -7551,7 +7567,7 @@ const Game = {
     return Math.max(0, withJ.final - none.final);
   },
   /* ===== P90 · KEMER BAĞLA (spec §3.1; eski adı Çırak Yetiştir) — Orion'un
-     Kemeri: ★ ×1.5 → 2 raundda ★★ ×2 → 4 raundda ★★★ ×4, süresiz ===== */
+     Kemeri: ★ ×1.5 → 3 raundda ★★ ×2 → 6 raundda (Orion'un ömrü) ★★★ ×4, süresiz (P105; eski 2 / 4) ===== */
   _orionJokerOn() {
     return !this.state.jokersDisabled && this.state.jokers.some(j => j.key === 'orion')
       && !(this._raceOn && this._raceOn());
@@ -8038,7 +8054,7 @@ const Game = {
     // Önce kuru hesap: elimizdeki kopyalar hedefi puanın altına indirebiliyor mu?
     let cut = s.permTargetCut || 0;
     let need = 0;
-    const base = () => Math.ceil(this.targetFor(s.stage, s.roundInStage)
+    const base = () => niceTarget(this.targetFor(s.stage, s.roundInStage)
       * (1 - cut) * (s.nextTargetMult || 1));
     for (const _ of cands) {
       if (base() <= s.score) break;
@@ -8476,7 +8492,7 @@ const Game = {
       s.fatalityHit = true;
       // Boss Koşulu (GDD 13.4): %15; joker olarak %10
       const cut = bossFat ? 0.85 : 0.9;
-      s.target = Math.max(50, Math.ceil(s.target * cut));
+      s.target = niceTarget(s.target * cut);
       events.push(`⚔ Fatality: sınır aşıldı — hedef %${bossFat ? 15 : 10} düştü (${s.target})`);
     }
     // Kahin hedef takibi
@@ -10852,7 +10868,7 @@ const Game = {
       case 'altinCanak':
         s.permTargetCut = round2(Math.min(0.4, (s.permTargetCut || 0) + 0.10));
         if (s.status === 'playing')
-          s.target = Math.ceil(this.targetFor(s.stage, s.roundInStage) * (s.nextTargetMult || 1));
+          s.target = niceTarget(this.targetFor(s.stage, s.roundInStage) * (s.nextTargetMult || 1));
         consume();
         return { ok: true, note: `🏆 Derin Nefes: tüm hedef puanlar kalıcı -%${Math.round(s.permTargetCut * 100)}` };
       case 'klonSisesi': {
@@ -12992,7 +13008,7 @@ if (typeof module !== 'undefined') {
     YILDIZ_SHOW, SPECIAL_RARITY_W, SHOP_EXTRA_FIXED, FERMAN_MAX, MAGNET_MAX,
     /* PLAYTEST 26 — Yankee birikimi · PLAYTEST 30 — Legendary denge sabitleri */
     VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
-    WORLD_PERM_MULT, WORLD_TARGET_UP, KIYAMET_KEEP, EJDERHA_TILE_MULT, VOID_SCORE, VOID_MULT,
+    niceTarget, niceUp, WORLD_PERM_MULT, WORLD_TARGET_UP, KIYAMET_KEEP, EJDERHA_TILE_MULT, VOID_SCORE, VOID_MULT,
     SEYTAN_SCORE, SEYTAN_MULT, PINKY_MAX, APPLE_MULT, APPLE_DRAW_CUT, APPLE_ISLEK, KAGIT_TILES,
     MEDUSA_MULT, MEDUSA_FLAT, NOSTRA_MULT, TEKER_FLAT, ATES_HAGGLE_WIN, ATES_DISCOUNT,
     ATES_STEAL_WIN, ATES_STEAL_ISLEK, SISYPHUS_STEPS, FRANK_REVIVE_FLAT, FRANK_STITCH_MULT,

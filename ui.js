@@ -1016,6 +1016,9 @@
   const MC_GLYPHS_BOSS = 6;     // ≈ 30 coin
 
   function renderMap() {
+    /* P105 (kullanıcı raporu): Kozmik run'ın stage rengi haritada geç değişiyordu — stage atlama / harita
+       tazelemesi showScreen'den geçmeden olunca tema tonu eski stage'de kalıyordu. Her harita çiziminde eşitlenir. */
+    applyRunTheme();
     const s = Game.state;
     if (mapOpenDoneRound !== s.roundInStage) { mapOpenDone.clear(); mapOpenDoneRound = s.roundInStage; }
     const finalOnly = Game.isFinalStage();   // P71 — final stage'inde tek kart (Lady Luck)
@@ -1379,7 +1382,8 @@
       : (j.rarityText ? `<div class="tip-rarity">${j.rarityText}</div>` : '');
     const usesLine = opts.backup
       ? `<div class="tip-uses">${t('tipBackup', j.waitLeft)}</div>`
-      : (Game.isRunLong && Game.isRunLong(j) ? `<div class="tip-uses">${t('tipUsesRun')}</div>`
+      : (j.beltStars === 3 ? `<div class="tip-uses">${t('tipUsesBelt')}</div>`
+        : Game.isRunLong && Game.isRunLong(j) ? `<div class="tip-uses">${t('tipUsesRun')}</div>`
         : (j.usesLeft != null ? `<div class="tip-uses">${t('tipUses', j.usesLeft)}</div>` : ''));
     /* Füzyonla birleşmiş jokerler — her birinin adı+efekti listelenir.
        P91 (kullanıcı kararı 2026-10-12): kart artık FÜZYON KARTI — başlık
@@ -1953,8 +1957,8 @@
     const ov = document.createElement('div');
     ov.className = 'pk-ov tone-violet belt-ov' + (locked ? ' belt-locked' : '');
     /* P103 (kullanıcı: "çok uzun") — kural paragrafı yerine yıldız merdiveni + iki kısa satır */
-    const ladder = `<div class="bt-ladder"><span class="bt-st"><b>★</b> ×${BELT_K[1]}</span><i>${t('beltAfter', 2)}</i>`
-      + `<span class="bt-st"><b>★★</b> ×${BELT_K[2]}</span><i>${t('beltAfter', 4)}</i>`
+    const ladder = `<div class="bt-ladder"><span class="bt-st"><b>★</b> ×${BELT_K[1]}</span><i>${t('beltAfter', BELT_TWO_AT)}</i>`
+      + `<span class="bt-st"><b>★★</b> ×${BELT_K[2]}</span><i>${t('beltAfter', BELT_FULL_AT)}</i>`
       + `<span class="bt-st bt-top"><b>★★★</b> ×${BELT_K[3]}</span></div>`;
     ov.innerHTML = `<div class="pk-box"><div class="pk-title">🎩 ${t('beltTitle')}</div>`
       + `<div class="pk-sub-title">${ladder}<div class="bt-rule">${t('beltRule1')}</div><div class="bt-rule">${t('beltRule2')}</div></div>`
@@ -1970,9 +1974,14 @@
       const now = j.beltStars ? `${t('belt' + j.beltStars)} ×${BELT_K[j.beltStars]}` : t('beltNone');
       /* P103 (kullanıcı): kartlar jokerin ÇİZİMİYLE (çizimi yoksa adıyla) görünür, açıklama
          üstüne gelince ipucunda — koleksiyon / store kartlarıyla aynı dil */
-      c.innerHTML = (JOKER_ART.has(j.key)
-        ? `<div class="col-jk-art jk-${j.key}"></div>`
+      /* P105 (kullanıcı raporu): füzyonlu kart ana jokerin (Godzilla) çiziminde görünüyordu — slottaki
+         kart gibi FÜZYON çizimi + içindeki jokerlerin adları */
+      const fz = (j.fused || []).length > 0;
+      const artKey = fz ? 'fuzyon' : j.key;
+      c.innerHTML = (JOKER_ART.has(artKey)
+        ? `<div class="col-jk-art jk-${artKey}"></div>`
         : `<div class="bp-name">${T.name(j)}</div>`)
+        + (fz ? `<div class="bp-fz">${[j, ...j.fused].map((x) => T.name(x)).join(' + ')}</div>` : '')
         + `<div class="pk-sub bp-sub">${now}${s.beltId === j.id ? ' · ' + t('beltNow') : ''}</div>`;
       attachTip(c, j, {});
       c.addEventListener('click', () => {
@@ -2062,7 +2071,8 @@
     ov.className = 'pk-ov tone-violet';
     ov.innerHTML =
       `<div class="pk-box">` +
-      `<div class="pk-title">⚗ ${T.name(j)}</div>` +
+      /* P105 (kullanıcı raporu): füzyon kartında başlık ana jokerin adını (Godzilla) yazıyordu → Füzyon */
+      `<div class="pk-title">⚗ ${(j.fused || []).length ? T.name({ key: 'fuzyon', name: 'Füzyon' }) : T.name(j)}</div>` +
       `<div class="pk-sub-title">${t('useChooseBody')}</div>` +
       `<div class="pk-body pk-choice"></div>` +
       `<div class="pk-foot"><button class="btn ghost" id="ucCancel">${t('backBtn')}</button></div></div>`;
@@ -2104,10 +2114,13 @@
     const tile2 = document.createElement('div');
     // Grup B2 — "run boyunca" jokerlerde raund sayacı YOKTUR: yıpranma
     // sınıfları da rozet de sayı yerine ∞ ile çalışır.
-    const runLong = !!(Game.isRunLong && Game.isRunLong(j));
+    /* P105 (kullanıcı raporu): ★★★ Orion'un Kemeri'ne ulaşan joker süresizdir ama rozet hâlâ eski
+       raund sayısını gösteriyordu → altın ∞ rozeti */
+    const beltPerm = j.beltStars === 3;
+    const runLong = !!(Game.isRunLong && Game.isRunLong(j)) || beltPerm;
     tile2.className = `joker-tile r-${j.rarity}`
       + (!opts.backup && !runLong && j.usesLeft <= 1 ? ' dying' : '')
-      + (runLong ? ' run-long' : '');
+      + (runLong ? ' run-long' : '') + (beltPerm ? ' belt-perm' : '');
     tile2.dataset.jid = j.id;
     /* P71 — Lady Luck: büyülü (💋) ve sahnedeki (⭐) joker işaretleri */
     const gs = Game.state;
@@ -3682,16 +3695,21 @@
     const d = Game.fuzyonDests ? Game.fuzyonDests() : { main: false, backup: false, fuse: true };
     const ov = document.createElement('div');
     ov.id = 'fuzyonMenu';
+    /* P105 (kullanıcı: "pop-up sorunlu görünüyor") — eski .tp-box düğme yığını (farklı genişlik ve
+       tarzlar) yerine satın alma penceresiyle aynı pk-ov kalıbı: üç eşit seçenek kartı (ad · ne olur),
+       kapalı seçenek gerekçesiyle sönük, altta "Şimdi değil". Kimlikler (fzm*) aynı. */
+    ov.className = 'pk-ov tone-violet';
+    const opt = (id, name, desc, on, cls = '') =>
+      `<button class="pk-card fzm-opt${cls}" id="${id}"${on ? '' : ' disabled'}><div class="pk-name">${name}</div><div class="pk-desc">${desc}</div></button>`;
     ov.innerHTML =
-      `<div class="tp-box"><h3>${t('fzTitle')}</h3>` +
-      `<p>${t('fzMenuBody')}</p>` +
-      `<div class="fzm-row">` +
-        `<button class="btn fzm-use" id="fzmUse"${d.fuse ? '' : ' disabled'}>${t('fzMenuUse')}</button>` +
-        `<button class="btn" id="fzmMain"${d.main ? '' : ' disabled'}>${t('fzMenuMain')}</button>` +
-        `<button class="btn" id="fzmBackup"${d.backup ? '' : ' disabled'}>${t('fzMenuBackup')}</button>` +
+      `<div class="pk-box"><div class="pk-title">${t('fzTitle')}</div>` +
+      `<div class="pk-sub-title">${t('fzMenuBody')}</div>` +
+      `<div class="pk-body pk-choice">` +
+        opt('fzmUse', t('fzMenuUse'), d.fuse ? t('fzUseDesc') : t('fzNeed'), d.fuse, ' fzm-use') +
+        opt('fzmMain', t('fzMenuMain'), d.main ? t('fzMainDesc') : t('bdFull'), d.main) +
+        opt('fzmBackup', t('fzMenuBackup'), d.backup ? t('fzBackupDesc') : t('bdFull'), d.backup) +
       `</div>` +
-      (d.fuse ? '' : `<p class="fzm-note">${t('fzNeed')}</p>`) +
-      `<button class="btn ghost" id="fzmLater">${t('fzLater')}</button></div>`;
+      `<div class="pk-foot"><button class="btn ghost" id="fzmLater">${t('fzLater')}</button></div></div>`;
     const close = () => ov.remove();
     ov.querySelector('#fzmUse').addEventListener('click', () => {
       close();
@@ -8819,7 +8837,9 @@
     'ankaKusu', 'atesTuccari', 'hidra', 'kaioken', 'truva', 'satrancSaati', 'sisyphus', 'vasiyet',
     /* P91 · Figma RARE-JOKERLER 468:256 — ilk Rare çizimleri */
     'fuzyon', 'sarmasik',
-    'vampir', 'paratoner', 'sansliYedili']);   // P100 · Figma 469:2 / 475:2 (Şimşek Avcısı) / 476:25
+    'vampir', 'paratoner', 'sansliYedili',   // P100 · Figma 469:2 / 475:2 (Şimşek Avcısı) / 476:25
+    'bungieGum', 'tercuman', 'ikiYuzlu',
+    'krupiye']);   // P105 · Figma 488:85 Krupiye (kumarhane Legendary)   // P105 · Figma 485:2 Bungee_gum / 485:35 Renk_körü / 485:21 Two_face
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
@@ -10148,7 +10168,7 @@
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
   if (!BETA) window.__test = {
-    disc: Disc, pickBuyDest, render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
+    disc: Disc, pickBuyDest, fuzyonMenu, showUseChooser, render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     // Playtest 17 — Grup A/F doğrulaması için
     notify, showCoinFlip, pickFuzyon, flushRoundStart,
