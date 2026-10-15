@@ -10785,13 +10785,6 @@ html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .g
   background: var(--gm-dark); color: var(--gm-light); border: 4px solid var(--gm-edge); border-radius: 8px;
   padding: 8px 30px; font: 700 28px/1 var(--gm-font); letter-spacing: -1px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
 }
-#settingsOv .set-x {
-  position: absolute; right: -20px; top: -24px; width: 52px; height: 52px; padding: 0; cursor: pointer;
-  background: var(--gm-light); color: var(--gm-dark); border: 4px solid var(--gm-edge); border-radius: 8px;
-  font: 700 26px/1 var(--gm-font); box-shadow: 0 5px 0 rgba(0, 0, 0, .45); transition: transform .06s ease, box-shadow .06s ease;
-}
-#settingsOv .set-x:hover { filter: brightness(1.1); }
-#settingsOv .set-x:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
 #settingsOv .set-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 0 12px; }
 #settingsOv .set-tab {
   cursor: pointer; background: var(--gm-dark); color: var(--gm-light); border: 4px solid var(--gm-edge); border-radius: 8px;

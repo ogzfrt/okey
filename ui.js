@@ -7216,7 +7216,6 @@
     };
     ov.innerHTML =
       `<div class="tp-box set-box"><div class="set-plate">${t('settingsTitle')}</div>` +
-      `<button type="button" class="set-x" id="setX" aria-label="${t('close')}">✕</button>` +
       `<div class="set-tabs">` + tabs.map(([k, l]) => `<button type="button" class="set-tab${k === setTabNow ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('') + `</div>` +
       `<div class="set-body">` + Object.entries(panes).map(([k, h]) => `<div class="set-pane${k === setTabNow ? ' on' : ''}" data-pane="${k}">${h}</div>`).join('') + `</div>` +
       `<button type="button" class="ep-btn ep-blue set-back" id="setClose">${t('close')}</button></div>`;
@@ -7298,8 +7297,8 @@
       if (!Music.on && Music.vol > 0) mOn.click();     // sürgüyü oynatan müziği duymak ister
     });
     ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+    /* 2026-10-15 (kullanıcı): sağ üstteki ✕ kalktı — alttaki KAPAT zaten var, iki kapama tuşu gereksiz */
     ov.querySelector('#setClose').addEventListener('click', () => ov.remove());
-    ov.querySelector('#setX').addEventListener('click', () => ov.remove());
     ov.querySelectorAll('.set-lang[data-lang]').forEach((b) => b.addEventListener('click', () => {
       if (b.dataset.lang === T.lang) return;
       T.setLang(b.dataset.lang);
