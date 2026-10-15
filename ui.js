@@ -2025,13 +2025,19 @@
     const col = document.querySelector('#gameScreen .gm-left');
     /* P106b (kullanıcı: "hala çakışma var") — ölçü sekmenin GÖRÜNEN çerçevesi (.gm-shoulder),
        içindeki yazı kutusu değil; arada en az 12px boşluk kalır (kutu gölgesi dahil). */
-    const tab = document.querySelector('#gameScreen .gm-sh-left');
-    if (!col || !tab || col.offsetParent === null) return;
+    /* P106c — sekmeler ortaya kaydı: sınır, sütunla YATAYDA kesişen engellerin (sekme çerçevesi,
+       ıstaka) en üstü; arada en az 12px. */
+    if (!col || col.offsetParent === null) return;
     col.classList.remove('fit1', 'fit2', 'fit3');
+    const cb = col.getBoundingClientRect();
+    const limit = Math.min(...[...document.querySelectorAll('#gameScreen .gm-shoulder'), document.getElementById('rackArea')]
+      .filter(Boolean).map((e) => e.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.left < cb.right && r.right > cb.left).map((r) => r.top));
+    if (!isFinite(limit)) return;
     const over = () => {
       const kids = [...col.children].filter((e) => !e.classList.contains('hidden') && e.offsetHeight > 0);
       if (!kids.length) return false;
-      return Math.max(...kids.map((e) => e.getBoundingClientRect().bottom)) > tab.getBoundingClientRect().top - 12;
+      return Math.max(...kids.map((e) => e.getBoundingClientRect().bottom)) > limit - 12;
     };
     for (const c of ['fit1', 'fit2', 'fit3']) { if (!over()) break; col.classList.add(c); }
   }

@@ -5251,8 +5251,11 @@ body.game-open #overlay { align-items: center; justify-content: center; }
   transition: transform .26s cubic-bezier(.25,.9,.35,1);
   transform: translateY(0);
 }
-.gm-stage .gm-sh-left  { left: 26px; }
-.gm-stage .gm-sh-right { left: 1166px; }
+/* P106c (kullanıcı: "sekmeler açılınca çakışma olmayacak mı", "paralel durmalı") — açılınca 125px
+   yükselen sekmeler sol sütuna / Ay Kuyusu'na / Eşin Orion'a biniyordu. İkisi de Sırala barına
+   22px uzaklıkta, ıstakanın ortasına göre AYNA: sol 405–715, sağ 1207–1517 (bar 737–1185). */
+.gm-stage .gm-sh-left  { left: 196px; }
+.gm-stage .gm-sh-right { left: 998px; }
 .gm-stage .gm-shoulder.open { transform: translateY(-125px); }
 
 .gm-stage .gm-sh-tab {
