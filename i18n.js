@@ -314,7 +314,7 @@
       hint_ayKuyusu: '<b>AY KUYUSU</b> (Öteki Dünya): her tur desteden kuyuya 2 taş düşer. Attığın taş da '
         + 'buraya düşer ve <b>kalıcı</b> 🌙 Ay Taşı olur.\n'
         + 'Kuyu dolduğu an 🌕 <b>DOLUNAY</b>: kuyu ıstakana akar ve o tur elindeki bütün Ay Taşları <b>OKEY</b> olur (attığın taşla dolarsa sonraki tur başında). '
-        + 'Ne kadar çok atarsan ay o kadar hızlı dolar.\nAçılımdaki her Ay Taşı +1.5x.',
+        + 'Ne kadar çok atarsan ay o kadar hızlı dolar.\nAçılımda kalıcı Ay Taşı +3.0x (Öteki Dünya gitse de), kuyudan gelen taş +1.5x.',
       hint_catchUp: 'ACİL RAF: paran azaldığı için en ucuz kart indirime girdi ve bu '
         + 'store’da yenileme bedava. Stage başına bir kez olur.',
       hint_tradeUp: 'TAKAS: bir jokerine tıklayıp farkı ödeyerek onu bir üst '
@@ -760,8 +760,8 @@
       tipNowTiles: (n) => `öteki dünyada ${n} taş`,
       tipNowWell: (n, mx, m) => `${m} Ay Kuyusu ${n}/${mx}`,
       wellTitle: 'AY KUYUSU',
-      wellLeft: (n) => `${n} taş daha → 🌕 DOLUNAY`, wellFull: '🌕 Ay doldu — sonraki tur DOLUNAY',
-      wellDolunay: '🌕 DOLUNAY — Ay Taşların bu tur OKEY', dolunayTitle: 'DOLUNAY',
+      wellLeft: (n) => `Dolunaya ${n} taş kaldı`, wellFull: 'Sonraki tur DOLUNAY',
+      wellDolunay: 'DOLUNAY: Ay Taşları OKEY', dolunayTitle: 'DOLUNAY',
       dolunaySub: (n) => `${n} Ay Taşı ıstakanda · bu tur hepsi OKEY`,
       fogName: 'Sisli Taş',
       fogTag: 'Öteki Dünya',
@@ -1340,7 +1340,7 @@
       hint_ayKuyusu: '<b>MOON WELL</b> (Other World): every turn 2 tiles fall from the deck into the well. '
         + 'Your discard falls in too and becomes a <b>PERMANENT</b> 🌙 Moon Tile.\n'
         + 'The moment the well is full: 🌕 <b>FULL MOON</b> — the well flows to your rack and every Moon Tile in your hand is an <b>OKEY</b> that turn (filled by your discard: at the start of next turn). '
-        + 'The more you discard, the faster the moon fills.\nEvery Moon Tile in a meld gives +1.5x.',
+        + 'The more you discard, the faster the moon fills.\nIn a meld a permanent Moon Tile gives +3.0x (even after the Other World is gone), a tile from the well +1.5x.',
       hint_catchUp: 'RELIEF SHELF: you were low on coins, so the cheapest card is '
         + 'discounted and this shop\'s reroll is free. Once per stage.',
       hint_tradeUp: 'TRADE UP: click one of your jokers and pay the difference to swap it '
@@ -1719,8 +1719,8 @@
       tipNowTiles: (n) => `${n} tiles in the other world`,
       tipNowWell: (n, mx, m) => `${m} Moon Well ${n}/${mx}`,
       wellTitle: 'MOON WELL',
-      wellLeft: (n) => `${n} more → 🌕 FULL MOON`, wellFull: '🌕 The moon is full — FULL MOON next turn',
-      wellDolunay: '🌕 FULL MOON — your Moon Tiles are OKEYS this turn', dolunayTitle: 'FULL MOON',
+      wellLeft: (n) => `${n} more to FULL MOON`, wellFull: 'FULL MOON next turn',
+      wellDolunay: 'FULL MOON: Moon Tiles are OKEY', dolunayTitle: 'FULL MOON',
       dolunaySub: (n) => `${n} Moon Tiles on your rack · all OKEYS this turn`,
       fogName: 'Fogged Tile',
       fogTag: 'Other World',
@@ -2076,7 +2076,7 @@
     uzayli: { name: 'Alien', desc: 'In hand, copies 3 of your tiles every turn. A copy scores +100 pts in a meld and vanishes at round end.' },
     ahtapot: { name: 'Octopus', desc: '8 arms: +0.5x per arm on every meld. One arm is sacrificed each turn and gives an extra +1.5x that turn.' },
     ucKagitci: { name: 'Three-Card Monte', desc: '3 face-down tiles every turn, you take one; one is a one-turn okey. Peek at one for 3 coins.' },
-    otekiDunya: { name: 'Other World', desc: `Your discard falls into the Moon Well and becomes a permanent 🌙 Moon Tile (+1.5x in melds). When the well fills, Full Moon: the tiles come to your hand as okeys that turn.` },
+    otekiDunya: { name: 'Other World', desc: `Your discard falls into the Moon Well and becomes a permanent 🌙 Moon Tile (+3.0x in melds). When the well fills, Full Moon: the tiles come to your hand as okeys that turn.` },
     terziIgne: { name: "Tailor's Needle", desc: 'In hand, sews 2 of your tiles every turn. A sewn tile cannot be discarded; meld it for +2.0x.' },
     freedom: { name: 'Freedom Fighters', desc: 'Marks 5 tiles when acquired. A marked tile that reaches your hand is worth 10x its value.' },
     avukat: { name: 'Lawyer', desc: 'At every round end it defends your rarest joker: 75% it is saved, 25% both are destroyed.' },
@@ -2156,7 +2156,7 @@
     aynaTasi: { name: 'Mirror Tile', desc: `Joins your deck permanently. The highest tile of its group scores 3 times.` },
     yildizTasi: { name: 'Star Tile', desc: `Joins your deck permanently. Meld it and 3 tiles are revealed from the deck; pick one to take into your hand.` },
     zamanTasi: { name: 'Time Tile', desc: 'Joins your deck permanently. Meld it and no joker ages this round.' },
-    ayTasi: { name: 'Moon Tile', desc: `Born from the Other World and permanent. It becomes an okey on a Full Moon turn; while the Other World is in a slot it gives +1.5x in melds.` },
+    ayTasi: { name: 'Moon Tile', desc: `Born from the Other World and permanent. Gives +3.0x in melds; it becomes an okey on a Full Moon turn.` },
     ates: { name: 'Fire Tile', desc: 'Joins your deck permanently. +120 pts when melded; while it waits in hand it burns 15 pts a turn.' },
   };
 

@@ -1903,10 +1903,12 @@
   function renderOrionPanel() {
     const box = document.getElementById('orionPanel');
     if (!box) return;
+    const mate = document.getElementById('orionMate');
     const s = Game.state;
     const u = s && s.status === 'playing' && Game.orionState ? Game.orionState() : null;
-    box.classList.toggle('hidden', !u);
-    if (!u) { box.innerHTML = ''; return; }
+    box.classList.toggle('hidden', !u || u.mode !== 'race');
+    if (mate) mate.classList.toggle('hidden', !u || u.mode === 'race');
+    if (!u) { box.innerHTML = ''; if (mate) mate.innerHTML = ''; return; }
     /* P90f (kullanıcı: "attığı taşı alma seçeneği çok belli olmuyor") — başlık
        satırı (puan / hedef + elindeki taş) + ayrı ATTIĞI TAŞ kutusu: taş ıstakadaki
        taşın aynısı (comboTileEl), yanında belirgin ⬇ ELE AL düğmesi + bedeli.
@@ -1919,10 +1921,15 @@
          kalıbında: iki küçük panel, üstte etiket, altta değer. Emoji yok. */
       /* 2. tur (kullanıcı): iki kutu sıkışıktı, "son açılımı" anlaşılmadı →
          TEK geniş kutu (Raund Puan kalıbı): solda etiket, sağda açık plakada sayı. */
-      box.innerHTML = `<div class="up-mate" title="${t('orionMateTip')}"><span class="up-mate-lbl">${t('orionMateLbl')}</span>`
+      /* P106 (kullanıcı raporu: Öteki Dünya + Orion birlikteyken sol sütun ıstaka sekmesine
+         taşıyordu) — kutu joker panelinin ALTINDA (#orionMate), STAGE kutusu kalıbında:
+         üstte etiket, altta açık plakada sayı. */
+      box.innerHTML = '';
+      if (mate) mate.innerHTML = `<div class="up-mate" title="${t('orionMateTip')}"><span class="up-mate-lbl">${t('orionMateLbl')}</span>`
         + `<span class="up-mate-val">${t('orionMateVal', u.handCount)}</span></div>`;
       return;
     }
+    if (mate) mate.innerHTML = '';
     const canTake = !!u.drop && s.phase === 'meld';
     /* P90g — el sayısı başlıkta küçük not (ayrı satır sol sütunu ıstaka sekmesine taşırıyordu) */
     const hand = `<small class="up-hand" title="${t('orionHidden')}">${t('orionHandN', u.handCount)}</small>`;
@@ -2009,6 +2016,23 @@
   }
 
   let dolunaySeen = null;
+  let bossGlowKey = null;   // P106 — boss kural kutusunun ışığı hangi tur için döndü
+  /* P106 (kullanıcı: "uzun metinli bossta aşağı kayıyor") — sol sütun (boss adı, kural, puan,
+     STAGE/RAUND, Ay Kuyusu, Orion yarışı) Değnek sekmesine taşarsa kademeli sıkılaşır:
+     fit1 boşluklar · fit2 boss yazısı 16px · fit3 boss yazısı 14px + küçük kuyu taşı.
+     Ölçüm (TR/EN × 20 boss × Ferman): en kötü durum EN Terzi İğne + Ferman. */
+  function fitLeftColumn() {
+    const col = document.querySelector('#gameScreen .gm-left');
+    const tab = document.querySelector('#gameScreen .gm-sh-left .gm-sh-tab');
+    if (!col || !tab || col.offsetParent === null) return;
+    col.classList.remove('fit1', 'fit2', 'fit3');
+    const over = () => {
+      const kids = [...col.children].filter((e) => !e.classList.contains('hidden') && e.offsetHeight > 0);
+      if (!kids.length) return false;
+      return Math.max(...kids.map((e) => e.getBoundingClientRect().bottom)) > tab.getBoundingClientRect().top - 4;
+    };
+    for (const c of ['fit1', 'fit2', 'fit3']) { if (!over()) break; col.classList.add(c); }
+  }
   function renderWell() {
     const box = document.getElementById('ayWell');
     if (!box) return;
@@ -2016,6 +2040,13 @@
     const o = s && s.status === 'playing' && Game.otekiState ? Game.otekiState() : null;
     const show = !!(o && o.id != null);
     box.classList.toggle('hidden', !show);
+    /* P106 — finalde Orion yarış paneli sol sütundayken (Orion Öteki Dünya'yı kemerine
+       takmadıysa) kuyu sağ sütuna, joker panelinin altına geçer; ikisi sol sütuna sığmıyor. */
+    const side = show && !!(Game.orionState && Game.orionState()?.mode === 'race');
+    const home = document.querySelector('#gameScreen .gm-left'), stage = document.querySelector('#gameScreen .gm-stage');
+    if (side && box.parentElement !== stage && stage) stage.appendChild(box);
+    else if (!side && home && box.parentElement !== home) home.insertBefore(box, document.getElementById('orionPanel'));
+    box.classList.toggle('aw-side', side);
     if (!show) return;
     if (!Hints.seen('ayKuyusu')) setTimeout(() => Hints.show('ayKuyusu'), 200);   // P60
     box.classList.toggle('aw-full', o.full && !o.dolunay);
@@ -4321,6 +4352,15 @@
       el.bossBanner.innerHTML = bossHtml;
       el.bossBanner.classList.remove('hidden', 'two-col');
       el.bossBanner.classList.toggle('boss-void', !!s.bossVoided);
+      /* P106 (kullanıcı: "kurallara gözüm gitmiyor") — boss raundu açılınca ve her yeni turun
+         başında çerçevede birkaç tur ışık döner, sonra durur (P84: sürekli animasyon kasıyor). */
+      const glowKey = `${s.stage}:${s.roundInStage}:${s.turn}:${s.boss.key}`;
+      if (bossGlowKey !== glowKey) {
+        bossGlowKey = glowKey;
+        el.bossBanner.classList.remove('bb-glow');
+        void el.bossBanner.offsetWidth;
+        el.bossBanner.classList.add('bb-glow');
+      }
     } else {
       el.bossChip.classList.add('hidden');
       el.bossBanner.classList.add('hidden');
@@ -4442,6 +4482,7 @@
     el.rack.classList.toggle('rack-free', freeRack());
     renderWell();   // P59 · Öteki Dünya — Ay Kuyusu
     renderOrionPanel();   // P90 · Orion (final rakibi / eş)
+    fitLeftColumn();      // P106 · sol sütun ıstaka sekmesine taşmasın
     maybeBeltPrompt();    // P90 · kemer boşsa sor
     if (freeRack()) {
       const [r1, r2] = freeRows();

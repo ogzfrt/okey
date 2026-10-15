@@ -11654,3 +11654,58 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .gm-stage .joker-tile.belt-perm .jt-uses, .joker-tile.belt-perm .jt-uses { background: #F2D863; color: var(--gm-dark, #181716); border-color: var(--gm-dark, #181716); font-size: 15px; }
 #fuzyonMenu .fzm-opt.fzm-use { background: var(--gm-light); color: var(--gm-dark); }
 #fuzyonMenu .fzm-opt { min-height: 0; justify-content: flex-start; }
+
+/* ============================================================
+   P106 — sol sütun sığdırma + boss kuralı vurgusu
+   ============================================================ */
+/* Boss kural kutusu adın altında; altın çerçeve kalıcı, tur başlarında çerçevede ışık döner */
+@property --bb-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.gm-stage #bossBanner.gm-boss-cond { margin: 0; border-color: #F2C94C; }
+.gm-stage #bossBanner.gm-boss-cond.bb-glow {
+  border-color: transparent;
+  background: linear-gradient(var(--gm-dark), var(--gm-dark)) padding-box,
+    conic-gradient(from var(--bb-a), #F2C94C 0 66%, #FFC83A 74%, #FFFFFF 80%, #FFC83A 86%, #F2C94C 94%) border-box;
+  box-shadow: 0 0 14px rgba(255, 214, 102, .45);
+  animation: bbSpin 1.3s linear 3;
+}
+@keyframes bbSpin { from { --bb-a: 0deg; } to { --bb-a: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .gm-stage #bossBanner.gm-boss-cond.bb-glow { animation: none; } }
+
+/* Ay Kuyusu kompakt: küçük taş + tek satır durum (en uzun boss metninde bile ıstaka sekmesine değmez) */
+.gm-stage .gm-well .aw-row { margin-top: 4px; }
+.gm-stage .gm-well .aw-moon { font-size: 32px; }
+.gm-stage .gm-well .aw-slots { --tw: 38px; }
+.gm-stage .gm-well .aw-status { margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Orion eşi kutusu joker panelinin altında (panel 161 + 388 → 549) — STAGE kutusu kalıbı */
+.gm-stage #orionMate.gm-orion-mate { position: absolute; left: 1638px; top: 565px; width: 211px; z-index: 2; }
+.gm-stage #orionMate.gm-orion-mate.hidden { display: none; }
+.gm-stage #orionMate .up-mate {
+  display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 6px 8px 8px; box-sizing: border-box;
+  background: var(--gm-dark); border: 3px solid var(--gm-light); border-radius: 10px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35);
+  font-family: var(--gm-font);
+}
+.gm-stage #orionMate .up-mate-lbl {
+  text-align: center; padding-top: 2px;
+  font: 700 16px/1 var(--gm-font); letter-spacing: -1px; color: var(--gm-light); white-space: nowrap;
+}
+.gm-stage #orionMate .up-mate-val {
+  height: 36px; display: flex; align-items: center; justify-content: center; padding: 0 8px;
+  background: var(--gm-light); color: var(--gm-dark); border-radius: 7px;
+  font: 700 22px/1 var(--gm-font); letter-spacing: -1px; white-space: nowrap; overflow: hidden;
+}
+
+/* P106 — sol sütun sığdırma kademeleri (ui.js fitLeftColumn) */
+.gm-stage .gm-left.fit1 { gap: 10px; }
+.gm-stage .gm-left.fit1 #bossBanner.gm-boss-cond { padding: 8px 12px; }
+.gm-stage .gm-left.fit2 #bossBanner.gm-boss-cond .bb-desc { font-size: 16px; line-height: 1.28; }
+.gm-stage .gm-left.fit3 #bossBanner.gm-boss-cond .bb-desc { font-size: 14px; line-height: 1.25; }
+.gm-stage .gm-left.fit3 .gm-well .aw-slots { --tw: 34px; }
+.gm-stage .gm-left.fit3 .gm-well .aw-moon { font-size: 28px; }
+
+/* P106 — finalde (Orion yarışı) kuyu sağ sütunda, joker panelinin altında: dar kalıp, ay simgesi yok */
+.gm-stage #ayWell.gm-well.aw-side { position: absolute; left: 1638px; top: 561px; width: 211px; padding: 6px 8px 8px; z-index: 2; }
+.gm-stage #ayWell.gm-well.aw-side .aw-head { font-size: 14px; }
+.gm-stage #ayWell.gm-well.aw-side .aw-moon { display: none; }
+.gm-stage #ayWell.gm-well.aw-side .aw-slots { --tw: 34px; gap: 8px; justify-content: center; }
+.gm-stage #ayWell.gm-well.aw-side .aw-status { font-size: 11px; text-align: center; white-space: normal; }

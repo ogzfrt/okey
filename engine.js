@@ -638,12 +638,15 @@ const STAGE_TARGETS = [
      Uzman botun temiz run bitirmesi %1 → %4; asıl eleyen hâlâ S1 (jokersiz
      başlangıç, kullanıcı kararı) ve joker ömrü varyansı. */
   [750, 1050, 1300],    // S2 — el 23 · oran 0.43/0.72 · boss ×1.40
-  [1050, 1400, 1750],    // S3 — el 25 · oran 0.46/0.73 · boss ×1.31
-  [1400, 1850, 2250],    // S4 — el 27 · oran 0.49/0.74 · boss ×1.28
-  [1800, 2350, 2900],   // S5 — el 29 · oran 0.51/0.76 · boss ×1.28
-  [2300, 2900, 3500],   // S6 — el 30 · oran 0.54/0.77 · boss ×1.19
-  [2800, 3500, 4200],   // S7 — el 30 · oran 0.57/0.79 · boss ×1.19
-  [3300, 4100, 4900],   // S8 — el 30 · FINAL BOSS · oran 0.60/0.80 · ×1.16
+  /* P106 (kullanıcı): yeni stage'in R1'i önceki stage'in R2'sine eşit ya da altındaydı (S3 R1 1050 =
+     S2 R2 1050). Kural: R1(n+1) önceki R2'den YÜKSEK, önceki boss'tan biraz (~%10) DÜŞÜK. Yalnız
+     R1'ler değişti (bot: uzman stage geçme S3 %41→%35, S8 %28→%25; diğerleri gürültü içinde). */
+  [1200, 1400, 1750],    // S3 — el 25 · R1 = S2 boss ×0.92
+  [1600, 1850, 2250],    // S4 — el 27 · R1 = S3 boss ×0.91
+  [2100, 2350, 2900],   // S5 — el 29 · R1 = S4 boss ×0.93
+  [2600, 2900, 3500],   // S6 — el 30 · R1 = S5 boss ×0.90
+  [3150, 3500, 4200],   // S7 — el 30 · R1 = S6 boss ×0.90
+  [3800, 4100, 4900],   // S8 — el 30 · FINAL BOSS · R1 = S7 boss ×0.90
 ];
 /* Tablo dışına taşan stage'ler için (Trainer Sonsuz Mod) büyüme çarpanı.
    P51 · Grup B: eğrinin son adımıyla aynı (sonsuz modda yavaşlayan uç). */
@@ -1291,7 +1294,12 @@ const AY_WELL_SIZE = 4;
      2 taş/tur, dolduğu an Dolunay, +2.0x          +1573 · +1639 · +1469 · +1479
      Gökyüzü Ejderhası (karşılaştırma)             ≈ +500 · +600 · +650 · +750
    Bot raundda ~2 Dolunay görür. Kullanıcı: "daha güçlü olmalı" → +1.5x. */
-const AY = { wellSize: AY_WELL_SIZE, tileMult: 1.5, drop: 2 };
+/* P106 (kullanıcı): kalıcı Ay Taşı Öteki Dünya yokken hiçbir işe yaramıyordu; Zümrüt (+1.5x,
+   store'da satılır) ile aynı olmasın diye KALICI Ay Taşı HER ZAMAN taş başı +3x (tileMult) —
+   Öteki Dünya slotta olsun olmasın. Kuyudan gelen raund içi taş (moonTemp) +1.5x kalır (tempMult).
+   Ölçüm (Öteki Dünya'nın raund başına katkısı, S1·S3·S5·S8): hepsi +1.5x  +784 · +675 · +496 · +479;
+   hepsi +3x +1808 · +1700 · +1426 · +1390 (2.6 kat — reddedildi); kalıcı +3x / geçici +1.5x seçildi. */
+const AY = { wellSize: AY_WELL_SIZE, tileMult: 3, tempMult: 1.5, drop: 2 };
 /* Ayın dolma görünümü: kuyudaki taş sayısı / kuyu boyu → 🌑 🌒 🌓 🌔 🌕 */
 const MOON_FILL = ['🌑', '🌒', '🌓', '🌔', '🌕'];
 const moonFillIcon = (n, max) => MOON_FILL[Math.max(0, Math.min(4, Math.round(4 * n / Math.max(1, max))))];
@@ -1750,7 +1758,7 @@ const SPECIAL_TILES = {
      Öteki Dünya slottayken açılımda +AY.tileMult. */
   ayTasi: { key: 'ayTasi', name: 'Ay Taşı', icon: '🌙', price: 0, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
     noStore: true,
-    desc: `Öteki Dünya’dan doğar ve kalıcıdır. Dolunay turunda okey olur; Öteki Dünya slottayken açılımda +1.5x verir.` },
+    desc: `Öteki Dünya’dan doğar ve kalıcıdır. Açılımda +${AY.tileMult.toFixed(1)}x verir; Dolunay turunda okey olur.` },
   karaDelikTasi: { key: 'karaDelikTasi', name: 'Kara Delik Taşı', icon: '🕳', price: 9, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
     desc: `Destene kalıcı girer. Açılımda +${KD_TASI_BASE} puan verir, her kullanımda +${KD_TASI_STEP} artar (en çok +${KD_TASI_MAX}) ve atarken işlek cezası yemez.` },
   aynaTasi: { key: 'aynaTasi', name: 'Ayna Taşı', icon: '🪞', price: 13, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
@@ -2405,7 +2413,7 @@ const JOKER_DEFS = {
      ıstaka: kartına tıklayınca iki el yer değiştirir (tur başına bir kez).
      P59: AY TAKVİMİ olarak yeniden kuruldu — bkz. AY_WELL_SIZE üstündeki blok. */
   otekiDunya: { key: 'otekiDunya', name: 'Öteki Dünya', rarity: 'mythic', uses: 1,
-    desc: `Attığın taş Ay Kuyusu’na düşer ve açılımda +1.5x veren kalıcı 🌙 Ay Taşı olur. Kuyu dolunca Dolunay: taşlar o tur eline okey olarak gelir.` },
+    desc: `Attığın taş Ay Kuyusu’na düşer ve açılımda +${AY.tileMult.toFixed(1)}x veren kalıcı 🌙 Ay Taşı olur. Kuyu dolunca Dolunay: taşlar o tur eline okey olarak gelir.` },
   kagit: { key: 'kagit', name: 'Kağıt', rarity: 'mythic', uses: 1,
     desc: `Her raund başında elindeki en düşük taş kalıcı olarak okeye dönüşür (Okey Mührü gibi, her stage o stage’in okeyi olur).` },
 
@@ -6985,14 +6993,17 @@ const Game = {
       if (hit) { const add = round2(RULET_PER * me); mult += add; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} ×${me} taş +${add.toFixed(1)}x` }); }
       else { mult -= RULET_MISS; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} tutmadı −${RULET_MISS.toFixed(1)}x` }); }
     }
-    /* P59/P77 — Öteki Dünya slottayken açılımdaki her Ay Taşı +AY.tileMult */
-    if (AY.tileMult > 0 && this._otekiOpen()) {
-      const mn = ctx.tiles.filter(isMoonTile).length;
+    /* P59/P77 — açılımdaki her Ay Taşı +AY.tileMult. P106: Öteki Dünya şartı KALKTI — Ay Taşı
+       kendi başına çalışan özel taş (Zümrüt gibi), joker satılınca / süresi bitince de değerli. */
+    if (AY.tileMult > 0) {
+      const moons = ctx.tiles.filter(isMoonTile);
+      const mn = moons.length;
       if (mn) {
-        const m = round2(AY.tileMult * mn);
+        const perm = moons.filter(t => t.special === 'ayTasi').length;
+        const m = round2(AY.tileMult * perm + AY.tempMult * (mn - perm));
         mult += m;
         const oj = this.slotRecs().find(j => j.key === 'otekiDunya');
-        triggered.push({ id: oj ? oj.id : 'oteki', name: 'Öteki Dünya', text: `🌙 ${mn} Ay Taşı +${m.toFixed(1)}x` });
+        triggered.push({ id: oj ? oj.id : 'ayTasi', name: oj ? 'Öteki Dünya' : 'Ay Taşı', text: `🌙 ${mn} Ay Taşı +${m.toFixed(1)}x` });
       }
     }
     const bakirN = spN('bakir');

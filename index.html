@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OKEY Roguelike — Prototip</title>
-<link rel="stylesheet" href="style.css?v=746cdf7">
+<link rel="stylesheet" href="style.css?v=8cecdf7">
 <script>
 /* RENK TEMASI — İLK BOYAMADAN ÖNCE UYGULANIR.
    Tema `html[data-theme]` ile sürülüyor. Bu satır ui.js'e bırakılsaydı
@@ -203,6 +203,10 @@
            doldurmaz. -->
       <div class="gm-left">
         <div id="roundChip" class="gm-chip-round">Raund 1</div>
+        <!-- Boss raund kural kutusu (GDD 13.3) — SADECE boss raundunda.
+             P106 (kullanıcı: "gözüm oraya gitmiyor"): boss adının HEMEN ALTINDA
+             (ad → kural → Raund Puan → STAGE/RAUND); tur başlarında çerçevesinde ışık döner. -->
+        <div id="bossBanner" class="gm-boss-cond hidden"></div>
         <div id="scorePanel" class="gm-score">
           <div class="gm-score-lbl" id="lblScoreBox">Raund<br>Score</div>
           <!-- Grup L: Figma'da bu kutuda İLERLEME BARI YOKTUR — yalnız
@@ -224,9 +228,6 @@
         </div>
         <div id="permMult" class="perm-mult hidden"></div>
         <div id="bossChip" class="chip boss-chip hidden"></div>
-        <!-- Boss raund kural kutusu (GDD 13.3) — SADECE boss raundunda.
-             Sütunun EN SON elemanı: aşağıya serbestçe uzar. -->
-        <div id="bossBanner" class="gm-boss-cond hidden"></div>
         <!-- P59 · Öteki Dünya — Ay Kuyusu (boss kutusunun altına akar) -->
         <div id="ayWell" class="gm-well hidden"></div>
         <!-- P90 · ORION — final rakibi / eş (boss kutusunun altına akar, Ay Kuyusu kalıbı) -->
@@ -266,6 +267,9 @@
         <div class="gm-jk-head"><span id="lblJokers">JOKERLER</span> <span id="slotCount">0/5</span></div>
         <div id="jokerSlots"></div>
       </aside>
+      <!-- P106 · Orion EŞİ kutusu joker panelinin ALTINDA (sol sütunda Ay Kuyusu + uzun boss
+           metniyle ıstaka sekmesine taşıyordu). Finaldeki yarış paneli sol sütunda kalır. -->
+      <div id="orionMate" class="gm-orion-mate hidden"></div>
 
       <!-- ---- merkez: ipucu · tepsi · önizleme · aksiyonlar ---- -->
       <main id="stage">
@@ -499,8 +503,8 @@
   </div>
 
 </div>
-<script src="engine.js?v=746cdf7"></script>
-<script src="i18n.js?v=746cdf7"></script>
-<script src="ui.js?v=746cdf7"></script>
+<script src="engine.js?v=8cecdf7"></script>
+<script src="i18n.js?v=8cecdf7"></script>
+<script src="ui.js?v=8cecdf7"></script>
 </body>
 </html>
