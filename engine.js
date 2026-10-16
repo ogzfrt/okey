@@ -1333,7 +1333,14 @@ const IPOTEK_TURNS = 2;   // (P54'te kart kaldırıldı — eski dışa aktarım
 const CLOCK_SECONDS = 30;
 const CLOCK_STEP = 5;
 const CLOCK_MULT_STEP = 0.5;
-const CLOCK_MULT_CAP = 3.0;
+/* P110 (kullanıcı: "teoride iyi ama düzgün çalışmıyor; Legendary'ye göre olmalı") — bonus artık
+   5 sn'lik basamak değil SANİYE başına: onay anında kalan her saniye +CLOCK_PER_SEC (ekranda
+   görülen bonus = alınan bonus). Eski basamak +3.0x'i yalnız turun ilk saniyesinde veriyordu. */
+/* Ölçüm (uzman bot, onayda 18 sn kalmış, raund başına puan, S1·S3·S5·S8 ort.): eski basamak +309 ·
+   0.1/sn +356 · 0.15/sn +550 · 0.2/sn +735. Puan veren Legendary'ler: Truva +673, Medusa +426,
+   Frankenstein +417, Anka +304. Kullanıcı: 0.15 (Legendary'ye yakışır). */
+const CLOCK_PER_SEC = 0.15;
+const CLOCK_MULT_CAP = CLOCK_SECONDS * CLOCK_PER_SEC;
 
 /* Grup E/21 — Ahtapot: kol başına çarpan ve feda edilen kolun anlık çarpanı.
    Eski sabit puan değerlerinin (20 / 60) birbirine oranı korundu: feda,
@@ -2265,7 +2272,7 @@ const JOKER_DEFS = {
      SATRANÇ SAATİ (yeni anahtar; `ipotek` kayıtlardan restore() ile düşer).
      Karar her tur: en iyi açılımı aramak mı, hızlı çarpanı almak mı? */
   satrancSaati: { key: 'satrancSaati', name: 'Satranç Saati', rarity: 'legendary', uses: 3,
-    desc: `Her tur 30 saniyelik saat işler: onaylarken kalan her 5 sn +0.5x (en çok +3.0x). Raundda bir kez saati durdurabilirsin.` },
+    desc: `Her tur ${CLOCK_SECONDS} saniyelik saat işler: onayladığında kalan her saniye +${CLOCK_PER_SEC}x (en çok +${(CLOCK_SECONDS * CLOCK_PER_SEC).toFixed(1)}x). Raundda bir kez saati o tur için durdurabilirsin.` },
   /* PLAYTEST 11 · GRUP F (kullanıcı kararı) — TRUVA ATI → PANDORA.
      Eski "Pandora" (her raund iyi/kötü kutu) TAMAMEN KALDIRILDI; ismi ve
      teması bu karta geçti. Store'da gizemli bir KUTU olarak satılır ve
@@ -10589,12 +10596,18 @@ const Game = {
      "arada geçen süre" yüzünden erimez. */
   clockOn() {
     const s = this.state;
-    return !!s && !s.jokersDisabled && this.hasActive('satrancSaati');
+    if (!s || s.jokersDisabled || !this.hasActive('satrancSaati')) return false;
+    /* P110 — Avukat boss'u saati susturduysa saat de, bonusu da yok */
+    if (this.bossOn() && s.boss && s.boss.key === 'avukat' && s.bossMutedJoker === 'satrancSaati') return false;
+    return true;
   },
 
   clockTick(sec) {
     const s = this.state;
     if (!this.clockOn() || s.status !== 'playing' || s.phase !== 'meld' || s.clockFrozen) return s && s.clockLeft;
+    /* P110 — oyuncudan karar bekleyen bir seçim açıkken saat işlemez (Tanrının Eli, Üç Kağıtçı,
+       Tüccar/Şeytan/Boşluk teklifi, Kumarbaz yazı-turası…) */
+    if (s.godPick || s.ucKagit || s.tuccarOffer || s.seytanPending || s.voidPending || s.kumarbazFlip || s.ghostOffer) return s.clockLeft;
     s.clockLeft = Math.max(0, (s.clockLeft ?? CLOCK_SECONDS) - (sec || 1));
     return s.clockLeft;
   },
@@ -10603,7 +10616,7 @@ const Game = {
     const s = this.state;
     if (!this.clockOn()) return 0;
     const left = s.clockLeft ?? CLOCK_SECONDS;
-    return Math.min(CLOCK_MULT_CAP, Math.floor(left / CLOCK_STEP) * CLOCK_MULT_STEP);
+    return Math.min(CLOCK_MULT_CAP, Math.round(left * CLOCK_PER_SEC * 100) / 100);
   },
 
   clockState() {
@@ -12880,7 +12893,7 @@ if (typeof window !== 'undefined') {
     PACK_CHOICES, CONSUM_SLOT_MAX, TUCCAR_MAX_REFUSE, SPECIAL_RARITY_W, FERMAN_MAX,
     MAGNET_MAX,
     /* PLAYTEST 26/30 — kart rozetleri motorun sabitlerinden okunur */
-    VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, CLOCK_STEP, CLOCK_MULT_STEP, CLOCK_MULT_CAP, YANKEE_STEP, YANKEE_RESET_KEEP, YANKEE_CAP,
+    VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, CLOCK_STEP, CLOCK_MULT_STEP, CLOCK_MULT_CAP, CLOCK_PER_SEC, YANKEE_STEP, YANKEE_RESET_KEEP, YANKEE_CAP,
     /* P29 sabitleri — testler ve denge araçları buradan okur */
     ZINCIR_START, ZINCIR_STEP, ZINCIR_DECAY, ZINCIR_CAP, VAMPIR_MULT,
     PARATONER_MULT, KATALIZOR_STEP, KATALIZOR_CAP, BUNGIE_SNAP, STORE_TILE_PICKS,
@@ -13053,7 +13066,7 @@ if (typeof module !== 'undefined') {
     CONSUM_SELL_RATE, CONSUM_SLOT_MAX, KD_TASI_BASE, KD_TASI_STEP, KD_TASI_MAX,
     YILDIZ_SHOW, SPECIAL_RARITY_W, SHOP_EXTRA_FIXED, FERMAN_MAX, MAGNET_MAX,
     /* PLAYTEST 26 — Yankee birikimi · PLAYTEST 30 — Legendary denge sabitleri */
-    VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
+    VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, CLOCK_PER_SEC, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
     niceTarget, niceUp, WORLD_PERM_MULT, WORLD_TARGET_UP, KIYAMET_KEEP, EJDERHA_TILE_MULT, VOID_SCORE, VOID_MULT,
     SEYTAN_SCORE, SEYTAN_MULT, PINKY_MAX, APPLE_MULT, APPLE_DRAW_CUT, APPLE_ISLEK, KAGIT_TILES,
     MEDUSA_MULT, MEDUSA_FLAT, NOSTRA_MULT, TEKER_FLAT, ATES_HAGGLE_WIN, ATES_DISCOUNT,

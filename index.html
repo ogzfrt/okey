@@ -8,7 +8,7 @@
      Oyun kendi temalarını çizer; renklerine dokunulmasın. -->
 <meta name="color-scheme" content="only light">
 <title>OKEY Roguelike — Prototip</title>
-<link rel="stylesheet" href="style.css?v=f61ee6c">
+<link rel="stylesheet" href="style.css?v=84f3ee1">
 <script>
 /* RENK TEMASI — İLK BOYAMADAN ÖNCE UYGULANIR.
    Tema `html[data-theme]` ile sürülüyor. Bu satır ui.js'e bırakılsaydı
@@ -255,6 +255,11 @@
       <div id="turnIndicator" class="gm-turn"></div>
       <!-- PLAYTEST 35 · GRUP J — Kahin kehaneti: TUR göstergesinin altında raund boyu sabit -->
       <div id="kahinChip" class="gm-kahin hidden"></div>
+      <!-- P110 · Satranç Saati üst ortada (kullanıcı onayı): süre, eriyen çubuk, o anki bonus, DURDUR -->
+      <div id="chessClock" class="gm-cclock hidden"><div class="cc-body"><div class="cc-ico"></div>
+        <div class="cc-mid"><div class="cc-row"><span class="cc-time"></span><span class="cc-bonus"></span></div>
+          <div class="cc-bar"><i></i></div><div class="cc-tag"></div></div>
+        <button class="cc-btn" type="button"></button></div></div>
       <!-- Figma 210:3740: "$" (Edit Undo BRK 48px) + sayı (36px), ikon YOK -->
       <div id="coinChip" class="gm-coin"><span class="gm-cur">$</span><span id="coinVal">0</span></div>
 
@@ -507,8 +512,8 @@
   </div>
 
 </div>
-<script src="engine.js?v=f61ee6c"></script>
-<script src="i18n.js?v=f61ee6c"></script>
-<script src="ui.js?v=f61ee6c"></script>
+<script src="engine.js?v=84f3ee1"></script>
+<script src="i18n.js?v=84f3ee1"></script>
+<script src="ui.js?v=84f3ee1"></script>
 </body>
 </html>

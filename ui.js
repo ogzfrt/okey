@@ -1824,6 +1824,34 @@
   }
 
   /* P54 · Grup C — Satranç Saati: kartın sol tıkı saati bu tur için durdurur. */
+  /* P110 — SATRANÇ SAATİ ÜST ORTADA (kullanıcı onayı): süre, eriyen çubuk, şimdi onaylarsan
+     alınacak bonus, raundda bir kez DURDUR. Boss notu (#kahinChip) görünürken onun altına iner. */
+  const CLOCK_PAUSERS = '.offer-pop, #settingsOv, .set-ov, #pilePopup, #kumarOv, #pandoraOv, #terziPick, #okeySlotPick, '
+    + '#runInfoPop:not(.hidden), #collectionOverlay:not(.hidden), #hintOv, #godPickPop, #useChooser, #fuzyonMenu, #fuzyonPick';
+  function renderChessClock() {
+    const box = document.getElementById('chessClock');
+    if (!box) return;
+    const s = Game.state;
+    const on = !!(s && s.status === 'playing' && Game.clockOn && Game.clockOn());
+    box.classList.toggle('hidden', !on);
+    if (!on) return;
+    const left = s.clockLeft ?? CLOCK_SECONDS, st = Game.clockState();
+    box.classList.toggle('low', !s.clockFrozen && left <= 5);
+    box.classList.toggle('frozen', !!s.clockFrozen);
+    box.querySelector('.cc-time').textContent = `0:${String(left).padStart(2, '0')}`;
+    box.querySelector('.cc-bonus').textContent = `+${Game.clockMult().toFixed(1)}x`;
+    box.querySelector('.cc-bar > i').style.width = `${Math.max(0, Math.min(100, left / CLOCK_SECONDS * 100))}%`;
+    box.querySelector('.cc-tag').textContent = s.clockFrozen ? t('ccFrozen') : '';
+    const btn = box.querySelector('.cc-btn');
+    btn.classList.toggle('hidden', !st || !st.canUse);
+    btn.innerHTML = `${t('ccStop')}<small>${t('ccOnce')}</small>`;
+    btn.title = t('ccStopTip');
+    const k = document.getElementById('kahinChip');
+    const under = k && !k.classList.contains('hidden') && k.offsetHeight > 0;
+    box.style.top = under ? `${k.offsetTop + k.offsetHeight + 10}px` : '';
+  }
+  document.querySelector('#chessClock .cc-btn')?.addEventListener('click', (e) => { e.stopPropagation(); SFX.tap?.(); useClockCard(); });
+
   function useClockCard() {
     const res = Game.clockPause();
     if (!res.ok) { toast(T.ev(res.error)); return; }
@@ -2281,14 +2309,7 @@
     }
     /* P54 · Grup C — SATRANÇ SAATİ: kalan saniye kartta canlı durur (♟N).
        Saat saniyede bir `tickClock` ile güncellenir; render beklenmez. */
-    if (!opts.backup && (j.key === 'satrancSaati' || (j.fused || []).some(f => f.key === 'satrancSaati'))
-        && Game.state.status === 'playing') {
-      const b = document.createElement('span');
-      b.className = 'jt-charge jt-clock on' + (Game.state.clockFrozen ? ' frozen' : '');
-      b.textContent = `♟${Game.state.clockLeft ?? CLOCK_SECONDS}`;
-      b.title = t('clockBadge', Game.clockMult ? Game.clockMult().toFixed(1) : '0');
-      tile2.appendChild(b);
-    }
+    /* P110 — kartın üstündeki ♟ rozeti KALKTI: saat ekranın üst ortasında (#chessClock, renderChessClock) */
     /* P54 · Grup B — ÖTEKİ DÜNYA'DA BEKLEYEN EL kartta canlı durur (🌗N).
        Vasiyet / Godzilla rozetiyle aynı kalıp. */
     if (!opts.backup && (j.key === 'otekiDunya' || (j.fused || []).some(f => f.key === 'otekiDunya'))
@@ -4281,19 +4302,22 @@
     if (document.visibilityState !== 'visible' || el.gameScreen.classList.contains('hidden')) return;
     if (el.menuPop && !el.menuPop.classList.contains('hidden')) return;
     if (document.querySelector('.pk-ov') || (el.overlay && !el.overlay.classList.contains('hidden'))) return;
+    /* P110 — her karar / bakış penceresi açıkken saat DURUR (Ayarlar, deste görünümü, Kumarbaz
+       yazı-turası, teklif pencereleri, ipucu, koleksiyon…) */
+    if (document.querySelector(CLOCK_PAUSERS)) return;
     const before = s.clockLeft;
     Game.clockTick(1);
     if (s.clockLeft === before) return;
-    const b = document.querySelector('#jokerSlots .jt-clock');
-    if (b) b.textContent = `♟${s.clockLeft}`;
-    /* çarpan kademesi değiştiyse önizleme kutusu da güncellensin */
-    if (s.clockLeft % CLOCK_STEP === CLOCK_STEP - 1 && (s.staged.length || s.islemeler.length)) render();
+    renderChessClock();
+    /* bonus her saniye değişir: açılım hazırlanıyorsa önizleme kutusu da güncellensin */
+    if (s.staged.length || s.islemeler.length) render();
   }, 1000);
 
   function render() {
     if (Game.state && Game.state.ghostOffer && !document.getElementById('ghostOv'))
       setTimeout(showGhostOffer, 0);   // P100 — kayıttan dönülünce bekleyen Hayalet tur teklifi
     applyRunTheme();   // P78 — boss raundu arayüzü (raund ekran değişmeden başlayıp bitebilir)
+    renderChessClock();   // P110
     if (curScreen() === 'map') setTimeout(() => { if (curScreen() === 'map') renderMap(); }, 0);   // P80 — haritadaki envanter tazelensin
     const s = Game.state;
     hideTip(); // hover'daki eleman yeniden çizimde kaybolabilir
@@ -4788,6 +4812,7 @@
         el.kahinChip.innerHTML = lines.join('');
         el.kahinChip.title = el.kahinChip.textContent;
       }
+      renderChessClock();   // P110 — saat boss notunun yüksekliğine göre yeniden konumlanır
       /* P58 (kullanıcı raporu 2026-10-02) — ÜST KUTU ÇAKIŞMASI. Kutu üst
          ortada 640…1280 aralığını kaplıyor; Trade Jokeri'nin borsa çipi
          (x 470→) ve Fatality çipi (x 1040) aynı şeritte (top 41) durduğu için

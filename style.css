@@ -11769,3 +11769,34 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 #storeStage .store-item .s-buy .anar-old s { text-decoration-color: #FFFFFF; text-decoration-thickness: 3px; }
 #storeStage .store-item.st-it .s-buy .anar-old { font-size: 17px; }
 #storeStage .store-item.st-it .s-buy { font-size: 15px; letter-spacing: -.5px; }
+
+/* ============================================================
+   P110 — SATRANÇ SAATİ üst ortada (kullanıcı onayı)
+   ============================================================ */
+.gm-stage #chessClock.gm-cclock { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); z-index: 30;
+  font-family: var(--gm-font); filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .35)); }
+.gm-stage #chessClock.hidden { display: none; }
+#chessClock .cc-body { display: flex; align-items: center; gap: 14px; padding: 8px 14px 8px 12px; background: var(--gm-dark);
+  border: 3px solid var(--gm-light); border-radius: 12px; }
+#chessClock .cc-ico { width: 44px; height: 60px; flex: 0 0 44px; background: url('assets/game/joker/satranc-saati.svg') no-repeat center / 100% 100%; }
+#chessClock .cc-mid { display: flex; flex-direction: column; gap: 6px; min-width: 210px; }
+#chessClock .cc-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+#chessClock .cc-time { font-size: 34px; color: var(--gm-light); letter-spacing: -1px; line-height: 1; }
+#chessClock .cc-bonus { font-size: 26px; color: var(--gm-turn-on); line-height: 1; }
+#chessClock .cc-bar { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+#chessClock .cc-bar > i { display: block; height: 100%; background: var(--gm-turn-on); border-radius: 5px; transition: width .9s linear; }
+#chessClock .cc-tag { font-size: 13px; color: #8FD3FF; }
+#chessClock .cc-tag:empty { display: none; }
+#chessClock .cc-btn { margin-left: 4px; align-self: center; padding: 10px 14px; border-radius: 8px; border: 3px solid var(--gm-dark);
+  background: var(--gm-light); color: var(--gm-dark); font: 700 16px/1.05 var(--gm-font); text-align: center; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .4); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+#chessClock .cc-btn small { font-size: 12px; opacity: .8; }
+#chessClock .cc-btn:hover { filter: brightness(1.08); }
+#chessClock .cc-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+#chessClock .cc-btn.hidden { display: none; }
+#chessClock.low .cc-body { border-color: #FF5A5A; }
+#chessClock.low :is(.cc-time, .cc-bonus) { color: #FF7A7A; }
+#chessClock.low .cc-bar > i { background: #FF5A5A; }
+#chessClock.frozen .cc-body { border-color: #8FD3FF; }
+#chessClock.frozen .cc-time { color: #8FD3FF; }
+#chessClock.frozen .cc-bar > i { background: #8FD3FF; }
