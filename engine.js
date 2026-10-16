@@ -8274,6 +8274,19 @@ const Game = {
     if (!s.staged.length && !s.islemeler.length) s.turnMode = null;
   },
 
+  /* P111 (kullanıcı: "Balatro'daki gibi hesaplansın") — onaydan ÖNCEKİ hesap çubuğu yalnız grubun
+     kendi değerini gösterir: jokerlerin hiçbiri sayılmaz (Orion eş hesabındaki `_calcOnlyId` kalıbı,
+     var olmayan bir kimlik = jokersiz). Jokerler onaydan sonra puanlama sahnesinde tek tek eklenir. */
+  previewBase() {
+    const s = this.state;
+    if (!s.staged.length && !s.islemeler.length) return null;
+    this._calcOnlyId = -1;
+    try {
+      const r = this._calcOpeningRaw();
+      return { raw: r.raw, carpan: r.carpan, parts: r.parts, final: r.final, mixed: r.mixed };
+    } finally { this._calcOnlyId = null; }
+  },
+
   previewScore() {
     const s = this.state;
     if (!s.staged.length && !s.islemeler.length) return null;

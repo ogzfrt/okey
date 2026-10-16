@@ -11800,3 +11800,42 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 #chessClock.frozen .cc-body { border-color: #8FD3FF; }
 #chessClock.frozen .cc-time { color: #8FD3FF; }
 #chessClock.frozen .cc-bar > i { background: #8FD3FF; }
+
+/* ============================================================
+   P111 — PUANLAMA SAHNESİ: jokerler sırayla tetiklenir (Balatro gibi)
+   ============================================================ */
+.gm-stage #scoreSeq { position: absolute; left: 50%; top: 452px; transform: translateX(-50%); z-index: 40;
+  display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 12px;
+  background: var(--gm-dark); border: 3px solid var(--gm-light); box-shadow: 0 5px 0 rgba(0, 0, 0, .4);
+  font: 700 40px/1 var(--gm-font); color: var(--gm-light); white-space: nowrap; pointer-events: none; }
+#scoreSeq .ss-chips { color: #6EC1FF; }
+#scoreSeq .ss-mult { color: #FF6B6B; min-width: 2.4em; text-align: center; }
+#scoreSeq .ss-plus { color: #FFD45A; font-size: 26px; }
+#scoreSeq .ss-plus.hidden { display: none; }
+#scoreSeq .ss-x, #scoreSeq .ss-eq { opacity: .7; font-size: 26px; }
+#scoreSeq .ss-total { color: var(--gm-turn-on); min-width: 1.6em; text-align: center; }
+#scoreSeq.ss-bump { animation: ssBump .22s ease-out; }
+#scoreSeq.ss-done .ss-total { animation: ssTotal .45s ease-out; }
+@keyframes ssBump { 0% { transform: translateX(-50%) scale(1); } 45% { transform: translateX(-50%) scale(1.08); } 100% { transform: translateX(-50%) scale(1); } }
+@keyframes ssTotal { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+.gm-stage :is(#jokerSlots) .joker-tile.jk-seq-pop { animation: jkSeqPop .6s ease-out; z-index: 5; box-shadow: 0 0 0 4px var(--gm-turn-on), 0 0 22px var(--gm-turn-on); }
+@keyframes jkSeqPop {
+  0% { transform: translateY(0) rotate(0) scale(1); }
+  20% { transform: translateY(-16px) rotate(-8deg) scale(1.22); }
+  45% { transform: translateY(-16px) rotate(7deg) scale(1.22); }
+  70% { transform: translateY(-6px) rotate(-3deg) scale(1.08); }
+  100% { transform: translateY(0) rotate(0) scale(1); }
+}
+.jk-bubble { position: fixed; z-index: 1500; transform: translate(-50%, -100%); pointer-events: none;
+  padding: 7px 14px; border-radius: 10px; border: 3px solid #1a1530; background: #FF6B6B; color: #FFFFFF;
+  font: 700 30px/1 var(--gm-font, monospace); white-space: nowrap; box-shadow: 0 4px 0 rgba(0, 0, 0, .4);
+  animation: jkBubble 1.05s ease-out forwards; }
+.jk-bubble.flat { background: #FFD45A; color: #1a1530; }
+.jk-bubble.mul { background: #B36BFF; }
+@keyframes jkBubble { 0% { opacity: 0; transform: translate(-50%, -60%) scale(.6); } 20% { opacity: 1; transform: translate(-50%, -110%) scale(1.15); }
+  70% { opacity: 1; transform: translate(-50%, -120%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -150%) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .joker-tile.jk-seq-pop, .jk-bubble, #scoreSeq { animation: none !important; } }
+
+/* P111 — hesap çubuğunda "+ jokerler" (gerçek sonuç onaydan sonra sahnede) */
+.gm-preview .pv-jk { margin-left: 10px; padding: 3px 8px; border-radius: 6px; background: var(--gm-turn-on); color: var(--gm-dark);
+  font-size: .62em; letter-spacing: 0; white-space: nowrap; align-self: center; }

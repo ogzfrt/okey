@@ -4896,7 +4896,15 @@
       keepPreviewClear();
     }
     // Önizleme
-    const pv = (tzPv || ptPv) ? null : Game.previewScore();
+    const pvFull = (tzPv || ptPv) ? null : Game.previewScore();
+    /* P111 — Balatro gibi: çubuk jokersiz grup değerini gösterir; jokerler katkı verecekse yanında
+       "+ jokerler" yazar, gerçek sonuç onaydan sonra puanlama sahnesinde ortaya çıkar */
+    const pvBase = pvFull && Game.previewBase ? Game.previewBase() : null;
+    /* Üçüncü Teker gibi KURAL açan joker (karışık Per + Çift) jokersiz hesapta kurulamaz: karışık
+       açılımda çubuk iki tabloyu tam hesapla göstermeye devam eder */
+    const mixedOnlyFull = !!(pvFull && pvFull.parts && pvFull.parts.length && !(pvBase && pvBase.parts && pvBase.parts.length));
+    const pv = pvBase && !mixedOnlyFull ? { ...pvFull, ...pvBase, damgaBonus: 0 } : pvFull;
+    /* kullanıcı: "+ jokerler" yazmasın — sistem öğreticide gösterilerek öğretilir (tip 'jokerPreview') */
     if (pv && s.phase === 'meld') {
       /* Figma 210:3744 — kutu SADECE şunu gösterir: <ham>x<çarpan>=<sonuç>
          (ham mavi, x koyu, çarpan kırmızı, =sonuç koyu). Kombinasyon sayısı,
@@ -5085,7 +5093,9 @@
   });
 
   const doConfirm = () => {
+    const pre = Game.previewBase ? Game.previewBase() : null;   // P111 — sahne jokersiz değerden başlar
     const res = Game.confirmMelds();
+    if (res && res.ok && pre) res.pre = pre;
     if (!res.ok) { if (res.error) toast(res.error); return; }
     selection.clear();
     /* Grup H — Uzaylı boss: açılımın TAMAMI gizli uzaylı yüzünden çöktüyse
@@ -5098,28 +5108,127 @@
       render();
       return;
     }
-    scoreFly(`+${res.final}`);
-    SFX.meld(res.count);
-    if (res.carpanText) flashMult(res.tamEl ? 'TAM EL!' : `×${res.carpanText}`);
-    toast(t('confirmToast', res.count, res.carpanText, res.final), true);
     notify(res.triggered.map(tr => `${tr.name}: ${tr.text}`));
     notify(res.bonuses);
     notify(res.events);
     if (TUT.active && res.triggered.length && Game.state.jokers.length) TUT.flag('jokerFire');
+    const after = (seqShown) => {
+      scoreFly(`+${res.final}`);
+      SFX.meld(res.count);
+      /* P111 — sahne çarpanı zaten gösterdi; eski ×N parlaması yalnız sahne atlanınca (testler) */
+      if (res.carpanText && (!seqShown || res.tamEl)) flashMult(res.tamEl ? 'TAM EL!' : `×${res.carpanText}`);
+      toast(t('confirmToast', res.count, res.carpanText, res.final), true);
+      /* GRUP H — KUZEY YILDIZI. Açılımda Yıldız Taşı kullanıldıysa motor
+         3 taş açtı; seçim penceresi burada belirir. */
+      if (Game.state.yildizPick) setTimeout(showYildizPick, 520);
+      if (res.katlaOffer) setTimeout(showKatlaOffer, 650);   // P58 · Kumarhane
+      if (Game.state.status !== 'playing') setTimeout(showRoundEnd, 900);
+    };
+    const oldScore = Game.state.score - (res.final || 0);
     render();
-    res.triggered.forEach(tr => {
-      const card = el.jokerSlots.querySelector(`[data-jid="${tr.id}"]`);
-      if (card) {
-        card.classList.add('fired');
-        setTimeout(() => card.classList.remove('fired'), 900);
-      }
-    });
-    /* GRUP H — KUZEY YILDIZI. Açılımda Yıldız Taşı kullanıldıysa motor
-       3 taş açtı; seçim penceresi burada belirir. */
-    if (Game.state.yildizPick) setTimeout(showYildizPick, 520);
-    if (res.katlaOffer) setTimeout(showKatlaOffer, 650);   // P58 · Kumarhane
-    if (Game.state.status !== 'playing') setTimeout(showRoundEnd, 900);
+    playScoreSeq(res, oldScore, after);   // P111 — jokerler sırayla tetiklenir (Balatro gibi)
   };
+
+  /* ============================================================
+     P111 (kullanıcı: "joker bonus vereceği zaman Balatro'daki gibi titresin, bonusunu eklesin;
+     açılımda direkt eklenip hesabı çoktan eklenmiş görmeyelim") — PUANLAMA SAHNESİ.
+     Hesap çubuğunun yerinde "puan × çarpan" plakası; tetiklenen her joker SIRAYLA zıplar,
+     kartın üstünde kendi bonusu belirir, plaka adım adım büyür; sonda toplam puana eklenir.
+     Hız: Ayarlar › Oyun › Animasyon hızı (Normal / Hızlı); tıklayınca atlanır. Otomasyon
+     tarayıcısında (testler) anında biter. Motor sonucu DEĞİŞMEZ — yalnız gösterim sırası.
+     ============================================================ */
+  const ANIM_KEY = 'okeyAnimSpeed';
+  const animSpeed = () => { try { return localStorage.getItem(ANIM_KEY) === 'fast' ? 'fast' : 'normal'; } catch (e) { return 'normal'; } };
+  const seqStep = (tr) => {
+    const txt = String(tr.text || '');
+    let m = txt.match(/^\+(\d+(?:\.\d+)?)x/);
+    if (m) return { kind: 'add', v: +m[1], label: `+${(+m[1]).toFixed(1)}x` };
+    m = txt.match(/×\s?(\d+(?:\.\d+)?)/);
+    if (m && /çarpan|mult/i.test(txt)) return { kind: 'mul', v: +m[1], label: `×${m[1]}` };
+    m = txt.match(/^\+(\d+)\s*(puan|pts|points)?/i);
+    if (m) return { kind: 'flat', v: +m[1], label: `+${m[1]}` };
+    return { kind: 'note', v: 0, label: txt.split(/[ (]/)[0] || '✦' };
+  };
+  function playScoreSeq(res, oldScore, done) {
+    const steps = (res.triggered || []).map((tr) => ({ tr, ...seqStep(tr) }));
+    const auto = typeof navigator !== 'undefined' && navigator.webdriver && !window.__animTest;
+    if (auto || !res.final) { done(false); return; }
+    const k = animSpeed() === 'fast' ? 0.45 : 1;
+    const adds = steps.filter((x) => x.kind === 'add').reduce((a, x) => a + x.v, 0);
+    const muls = steps.filter((x) => x.kind === 'mul').reduce((a, x) => a * x.v, 1);
+    /* başlangıç = onaydan önce çubukta görülen jokersiz değer */
+    const chips0 = (res.pre && res.pre.raw) || res.raw || 0;
+    let mult = (res.pre && res.pre.carpan) || Math.max(0.1, (res.carpan || 1) / (muls || 1) - adds), flat = 0;
+    const stage = document.querySelector('#gameScreen .gm-stage');
+    document.getElementById('scoreSeq')?.remove();
+    const box = document.createElement('div');
+    box.id = 'scoreSeq';
+    box.innerHTML = `<span class="ss-chips">${chips0}</span><span class="ss-x">×</span><span class="ss-mult"></span>`
+      + `<span class="ss-plus hidden"></span><span class="ss-eq">=</span><span class="ss-total">?</span>`;
+    stage.appendChild(box);
+    const multEl = box.querySelector('.ss-mult'), plusEl = box.querySelector('.ss-plus'), totEl = box.querySelector('.ss-total');
+    const show = () => {
+      multEl.textContent = mult.toFixed(1);
+      plusEl.classList.toggle('hidden', !flat); plusEl.textContent = `+${flat}`;
+    };
+    show();
+    el.scoreNow.textContent = oldScore;
+    const timers = [];
+    let finished = false;
+    const finish = () => {
+      if (finished) return; finished = true;
+      timers.forEach(clearTimeout);
+      document.removeEventListener('pointerdown', skip, true);
+      document.querySelectorAll('.jk-seq-pop').forEach((c) => c.classList.remove('jk-seq-pop'));
+      document.querySelectorAll('.jk-bubble').forEach((b) => b.remove());
+      multEl.textContent = (res.carpan || mult).toFixed(1);
+      totEl.textContent = res.final;
+      box.classList.add('ss-done');
+      el.scoreNow.textContent = Game.state.score;
+      timers.push(setTimeout(() => box.remove(), 650 * k));
+      done(true);
+    };
+    const skip = (e) => { if (e.target.closest && e.target.closest('#settingsOv, #menuPop')) return; finish(); };
+    document.addEventListener('pointerdown', skip, true);
+    let at = 450 * k;   // kullanıcı: daha yavaş / belirgin
+    steps.forEach((st, i) => {
+      timers.push(setTimeout(() => {
+        if (st.kind === 'add') mult += st.v; else if (st.kind === 'mul') mult *= st.v; else if (st.kind === 'flat') flat += st.v;
+        show();
+        box.classList.remove('ss-bump'); void box.offsetWidth; box.classList.add('ss-bump');
+        const card = el.jokerSlots.querySelector(`[data-jid="${st.tr.id}"]`);
+        const b = document.createElement('div');
+        b.className = 'jk-bubble' + (st.kind === 'mul' ? ' mul' : st.kind === 'flat' ? ' flat' : '');
+        b.textContent = st.label;
+        if (card) {
+          card.classList.remove('jk-seq-pop'); void card.offsetWidth; card.classList.add('jk-seq-pop');
+          const r = card.getBoundingClientRect();
+          b.style.left = `${r.left + r.width / 2}px`; b.style.top = `${r.top - 6}px`;
+        } else {
+          const r = box.getBoundingClientRect();
+          b.style.left = `${r.left + r.width / 2}px`; b.style.top = `${r.top - 6}px`;
+        }
+        document.body.appendChild(b);
+        timers.push(setTimeout(() => { b.remove(); card && card.classList.remove('jk-seq-pop'); }, 1050 * k));
+        beep(560 + Math.min(i, 10) * 70, .09, 'square', .08);
+      }, at));
+      at += 720 * k;
+    });
+    /* sonda toplam: puan paneli eski değerden yeniye sayar */
+    timers.push(setTimeout(() => {
+      totEl.textContent = res.final;
+      box.classList.add('ss-done');
+      const from = oldScore, to = Game.state.score, t0 = performance.now(), dur = 800 * k;
+      const tick2 = (now) => {
+        if (finished) return;
+        const p = Math.min(1, (now - t0) / dur);
+        el.scoreNow.textContent = Math.round(from + (to - from) * p);
+        if (p < 1) requestAnimationFrame(tick2);
+      };
+      requestAnimationFrame(tick2);
+    }, at));
+    timers.push(setTimeout(finish, at + 900 * k));
+  }
 
   /* ============================================================
      P58 · GRUP C — KUMARHANE RUN arayüzü
@@ -5985,6 +6094,12 @@
           when: () => s().roundInStage === 1 && s().jokers.length > 0,
           spot: () => [el.btnStoreContinue],
           gate: () => !storeOpen() },
+        /* P111 (kullanıcı: "sistemin böyle çalıştığını öğreticide gösterelim") — Balatro hesabı:
+           çubuk yalnız grubun değeri; jokerler onaydan sonra sırayla eklenir */
+        { id: 'jokerPreview', screen: 'game',
+          when: () => s().jokers.length > 0 && s().staged.length > 0 && s().roundInStage >= 2,
+          spot: () => [el.previewBar, el.jokerSlots, el.btnConfirm],
+          gate: () => s().openedThisTurn || s().phase === 'discard' },
         { id: 'jokerFire', screen: 'game',
           when: () => TUT.flags.jokerFire,
           spot: () => [el.jokerSlots] },
@@ -7398,6 +7513,9 @@
     const panes = {
       game:
         cyc('lang', t('language'), [{ v: 'tr', text: 'Türkçe', cls: 'set-lang', attr: 'data-lang' }, { v: 'en', text: 'English', cls: 'set-lang', attr: 'data-lang' }], T.lang) +
+        /* P111 — joker puanlama animasyonu hızı */
+        cyc('anim', t('animSpeedLabel'), [{ v: 'normal', text: t('animNormal'), cls: 'set-anim', attr: 'data-anim' },
+          { v: 'fast', text: t('animFast'), cls: 'set-anim', attr: 'data-anim' }], animSpeed()) +
         `<div class="set-grid">` +
         (finalsOn
           ? chk('set-finaljk', t('finalJokerLabel'), finalJokerOn, '💋')
@@ -7513,6 +7631,10 @@
     sVol.addEventListener('change', () => SFX.tick());   // bırakınca örnek ses
     const mOn = ov.querySelector('#setMusicOn'), mVol = ov.querySelector('#setMusicVol');
     mOn.addEventListener('click', () => { Music.setOn(!Music.on); setChk(mOn, Music.on); });
+    ov.querySelectorAll('.set-anim').forEach((b) => b.addEventListener('click', () => {   // P111
+      try { localStorage.setItem(ANIM_KEY, b.dataset.anim); } catch (e) {}
+      ov.querySelectorAll('.set-anim').forEach((x) => x.classList.toggle('on', x === b));
+    }));
     ov.querySelectorAll('.set-mset').forEach((b) => b.addEventListener('click', () => {
       Music.setSet(b.dataset.mset);
       ov.querySelectorAll('.set-mset').forEach((x) => x.classList.toggle('on', x === b));
