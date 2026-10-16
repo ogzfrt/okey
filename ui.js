@@ -1093,6 +1093,7 @@
       btn.title = done ? t(folded ? 'mcExpand' : 'mcCollapse') : '';
       if (active) btn.addEventListener('click', () => {
         if (boss) SFX.boss();              // boss girişi (GDD 14.5)
+        else SFX.mapPlay();                // P113
         const go = () => {
           markInRound();                   // raund içine girildi
           showScreen('game');
@@ -1802,7 +1803,7 @@
   function sellJokerNow(j) {
     const res = Game.sellJoker(j.id);
     if (!res.ok) { toast(res.error || t('sellFail')); return; }
-    toast(t('sellToast', T.name(res), res.gain), true); SFX.coin(); renderStore(); render();
+    toast(t('sellToast', T.name(res), res.gain), true); SFX.sell(); renderStore(); render();
     if (curScreen() === 'map') { hideActBadge(); renderMap(); }   // P58: haritadan satış
   }
 
@@ -1890,7 +1891,7 @@
          Artık kullanılabilir TÜM efektler toplanır: tek efekt doğrudan çalışır,
          birden fazlaysa sol tık bir seçim penceresi açar (showUseChooser). */
       const list = [];
-      const add = (key, lbl, fn) => list.push({ key, lbl, fn });
+      const add = (key, lbl, fn) => list.push({ key, lbl, fn: (...a) => { SFX.jokerUse(); return fn(...a); } });   // P113
       const dm = has('ayna') && Game.damgaState && Game.damgaState();
       if (dm && dm.id === j.id && !dm.used) add('ayna', t(dm.armed ? 'abUndo' : 'abUse'), useDamga);
       if (has('satrancSaati') && Game.clockState && Game.clockState().canUse) add('satrancSaati', t('abUse'), useClockCard);
@@ -2488,7 +2489,7 @@
     /* P65 — taslaktaki piksel asma kilit (açık/kapalı), tema vurgusuyla boyanır */
     b.innerHTML = '<span class="lk-ico" aria-hidden="true"></span>';
     b.title = locked ? t('lockOn') : t('lockOff');
-    b.addEventListener('click', onToggle);
+    b.addEventListener('click', (e) => { SFX.lock(); onToggle(e); });   // P113
     return b;
   }
 
@@ -2501,7 +2502,9 @@
   if (isNaN(sfxVol)) sfxVol = 100;
   let actx = null;
 
+  let lastSfxAt = 0;   // P113 — bu tıklamada bir eylem sesi çaldı mı (genel tık sesi ikinci kez çalmasın)
   function beep(freq, dur = 0.08, type = 'triangle', vol = 0.1, when = 0) {
+    lastSfxAt = performance.now();
     if (!sfxOn || sfxVol <= 0) return;
     vol *= sfxVol / 100;
     try {
@@ -2517,8 +2520,29 @@
     } catch (e) { /* ses desteklenmiyorsa sessiz devam */ }
   }
 
+  /* P113 (kullanıcı: "oyundaki tüm tıklanılabilir efekt işleyen her şeye ses efekti") — kendi sesi
+     olmayan her tıklanabilir öğe kısa bir düğme sesi çalar. Tıklama yakalanır, eylem kendi sesini
+     çaldıysa (lastSfxAt değişti) genel ses çalmaz → çift ses yok. */
+  const UI_CLICKABLE = 'button, [role="button"], .cyc-dot, .set-chk, .set-tab, .pk-card, .map-card, .mc-select, .joker-tile, .consum-card, .gm-sh-tab, .st-sh-tab, .col-cat, .set-go';
+  document.addEventListener('click', (e) => {
+    const tEl = e.target && e.target.closest && e.target.closest(UI_CLICKABLE);
+    if (!tEl || tEl.disabled || tEl.closest('#rack')) return;   // ıstaka taşlarının kendi sesi var
+    const before = lastSfxAt;
+    setTimeout(() => { if (lastSfxAt === before) SFX.ui(); }, 0);
+  }, true);
+
   const SFX = {
     tick: () => beep(880, .04, 'square', .05),
+    /* P113 (kullanıcı onayı: ses örnekleri videosu) — sessiz kalan eylemler */
+    ui: () => { beep(520, .035, 'triangle', .07); beep(780, .03, 'triangle', .045, .022); },
+    tap: () => { beep(700, .03, 'square', .05); beep(950, .025, 'square', .03, .02); },
+    sell: () => { beep(1568, .05, 'square', .07); beep(1175, .07, 'square', .07, .05); beep(880, .1, 'square', .06, .11); },
+    reroll: () => [660, 880, 740, 990].forEach((f, i) => beep(f, .04, 'square', .05, i * .045)),
+    wand: () => [1320, 1760, 2093, 2637].forEach((f, i) => beep(f, .07, 'triangle', .06, i * .055)),
+    jokerUse: () => { beep(440, .05, 'sawtooth', .05); beep(880, .06, 'square', .05, .04); beep(1320, .08, 'triangle', .05, .09); },
+    mapPlay: () => [392, 523, 659, 784].forEach((f, i) => beep(f, .09, 'triangle', .08, i * .06)),
+    shoulder: () => beep(980, .03, 'triangle', .05),
+    lock: () => { beep(1200, .03, 'square', .06); beep(600, .05, 'square', .05, .03); },
     draw: () => { beep(660, .05); beep(880, .05, 'triangle', .08, .06); },
     meld: (n) => { for (let i = 0; i < Math.min(n || 1, 5); i++) beep(520 + i * 110, .09, 'triangle', .1, i * .07); },
     islek: () => { beep(220, .18, 'sawtooth', .12); beep(160, .22, 'sawtooth', .12, .12); },
@@ -4096,7 +4120,7 @@
   function finishConsum(res) {
     if (!res.ok) { toast(res.error || t('useFail')); render(); return; }
     toast(res.note, true);
-    SFX.coin();
+    SFX.wand();   // P113
     render();
     if (storeOpen()) renderStore();
   }
@@ -4250,7 +4274,7 @@
       const res = Game.sellConsumable(index);
       if (!res.ok) { toast(res.error || t('sellConsumFail')); return; }
       toast(t('sellToast', T.consumName(res.key, res.name), res.gain), true);
-      SFX.coin(); renderStore(); render();
+      SFX.sell(); renderStore(); render();
     };
     /* P47 (kullanıcı isteği 2026-09-14): değnek de RAUND İÇİNDE sağ tıkla satılır
        (P41'de yalnız store rafındaydı; jokerler P46'da açılmıştı). */
@@ -5995,7 +6019,7 @@
   }
   function toggleShoulder(which) {
     setShoulder(which, !shoulderState[which]);
-    SFX.tick();
+    SFX.shoulder();   // P113
   }
   const shoulderSeen = { backup: null, totem: null };
   function autoShoulder(which, n) {
@@ -8629,6 +8653,7 @@
   el.btnReroll.addEventListener('click', () => {
     const res = Game.rerollStore();
     if (!res.ok) { toast(res.error); return; }
+    SFX.reroll();   // P113
     renderStore();
   });
 
