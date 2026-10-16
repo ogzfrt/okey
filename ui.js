@@ -3917,6 +3917,13 @@
   function flushRoundStart() {
     const s = Game.state;
     notify(s.roundStartNotes);
+    /* P109 — Kağıt sessiz çalışıyordu: okeye dönen taş parlar + kısa yazı */
+    if (s.kagitShow) {
+      const k = s.kagitShow; s.kagitShow = null;
+      for (const id of k.ids) newTileIds.add(id);
+      if (k.faces.length) setTimeout(() => toast(t('kagitToast', k.faces.join(', ')), true), 700);
+      render();
+    }
     cheatFlash();   // Grup G (P19) — raundun ilk turundaki hile de duyurulsun
     s.roundStartNotes = [];
     if (s.seytanPending) { showSeytanPop(s.seytanPending); s.seytanPending = null; }
@@ -5727,7 +5734,8 @@
       render();
       setTimeout(() => newTileIds.clear(), 600);
       if (res.worldRestart) return; // raund baştan — oyun ekranında kal
-      if (res.ghostOffer) { setTimeout(showGhostOffer, 380); return; }   // P100 — Hayalet tur
+      if (res.ghostOffer) { setTimeout(showGhostOffer, 380); return; }   // P100 — Hayalet tur (eski kayıt)
+      if (Game.state.ghostJustStarted) { Game.state.ghostJustStarted = false; toast(t('ghostAutoToast'), true); }   // P109
       if (res.roundOver) setTimeout(showRoundEnd, 400);
       // P31 · Grup E — Tanrının Eli: önce desteden seçim, sonra yazı-tura
       else if (Game.state.godPick) showGodPick(maybeCoinFlip);
@@ -5857,6 +5865,23 @@
     get tips() {
       if (this._tips) return this._tips;
       const s = () => Game.state;
+      /* P109 (kullanıcı: "yalnız etkileşime gireceğim yerleri çevrele") — spot ıstakanın tamamı değil,
+         dokunulacak TAŞLAR: */
+      const rackTile = (t) => t && document.querySelector(`#rack .tile[data-id="${t.id}"]`);
+      const handOf = (c, n, k = 1) => s().hand.filter((x) => x.color === c && x.number === n && !x.jokerTile && !x.fakeOkey
+        && !s().staged.some((g) => g.tiles.some((y) => y.id === x.id))).slice(0, k);
+      const tilesOf = (list) => list.map(rackTile);
+      const sevens = () => s().hand.filter((x) => x.number === 7 && x.color !== 'yellow' && !x.jokerTile && !Game.isOkeyTile(x)
+        && !s().staged.some((g) => g.tiles.some((y) => y.id === x.id))).slice(0, 3);
+      const sirali = () => [9, 10, 11].map((n) => handOf('red', n)[0]).filter(Boolean);
+      const pair = () => {
+        const free = s().hand.filter((x) => !x.jokerTile && !Game.isOkeyTile(x));
+        const y = free.filter((x) => x.color === 'yellow' && x.number === 12);
+        if (y.length >= 2) return y.slice(0, 2);
+        for (const a of free) { const b = free.find((x) => x !== a && x.color === a.color && x.number === a.number); if (b) return [a, b]; }
+        return [];
+      };
+      const t1 = () => s().roundInStage === 1 && s().turn === 1;
       /* P92 (kullanıcı onayı 2026-10-13) — MÜHÜR ANLATIR. 23 ipucu 18'e indi,
          her balon bir-iki cümle. `gate` olan adım EYLEMDİR: İLERİ yok, oyuncu
          söyleneni yapınca kendiliğinden geçer; `gate` yoksa BİLGİ (İLERİ). */
@@ -5867,30 +5892,41 @@
           gate: () => curScreen() === 'game' },
         { id: 'goal', screen: 'game',
           when: () => s().roundInStage === 1 && s().turn === 1,
-          spot: () => [$('scorePanel')] },
+          spot: () => [$('scorePanel'), el.turnIndicator] },   // P109 (kullanıcı): tur kutuları da gösterilir
         { id: 'rack', screen: 'game', when: () => s().roundInStage === 1, spot: () => [el.rack] },
-        { id: 'combos', screen: 'game', when: () => s().roundInStage === 1,
-          spot: () => [el.btnSortRank, el.btnSortSuit] },
+        { id: 'combos', screen: 'game', when: () => s().roundInStage === 1 },
+        /* P109 (kullanıcı: "çifti, peri, sıralıyı uygulatarak öğret") — 1. tur Per + Sıralı birlikte
+           (çoklu grup çarpanı), 2. tur işleme, 3. tur Çift; atışta en çok 3 taş + işlek şansı. */
         { id: 'selectPer', screen: 'game',
-          when: () => s().roundInStage === 1 && s().hand.filter(x => x.number === 7 && !x.jokerTile).length >= 3,
-          spot: () => [el.rack, el.btnAddCombo],
+          when: () => t1() && s().staged.length === 0 && sevens().length >= 3,
+          spot: () => [...tilesOf(sevens()), el.btnAddCombo],
           gate: () => s().staged.length > 0 || s().openedThisTurn },
+        { id: 'selectSirali', screen: 'game',
+          when: () => t1() && s().staged.length === 1 && sirali().length === 3,
+          spot: () => [...tilesOf(sirali()), el.btnAddCombo],
+          gate: () => s().staged.length >= 2 || s().openedThisTurn },
+        { id: 'multiGroup', screen: 'game',
+          when: () => t1() && s().staged.length >= 2,
+          spot: () => [el.previewBar] },
         { id: 'confirmBtn', screen: 'game',
-          when: () => s().staged.length > 0,
+          when: () => s().staged.length > 0 && s().turnMode !== 'cift',
           spot: () => [el.btnConfirm],
           gate: () => s().openedThisTurn || s().phase === 'discard' },
         { id: 'score', screen: 'game',
           when: () => s().score > 0 && s().roundInStage === 1,
           spot: () => [$('scorePanel')] },
+        { id: 'discardInfo', screen: 'game',
+          when: () => s().phase === 'discard' && t1(),
+          spot: () => [el.btnDiscard] },
         { id: 'discard1', screen: 'game',
-          when: () => s().phase === 'discard' && s().roundInStage === 1,
-          spot: () => [el.rack, el.btnDiscard],
+          when: () => s().phase === 'discard' && t1(),
+          spot: () => [...tilesOf(handOf('blue', 2)), el.btnDiscard],
           gate: () => s().turn >= 2 },
         { id: 'isleme', screen: 'game',
           when: () => s().roundInStage === 1 && s().turn === 2 && s().prevOpen.length > 0 &&
             s().hand.some(x => x.color === 'yellow' && x.number === 7 && !x.jokerTile) &&
             Game.canIsleme(0),
-          spot: () => [el.meldArea, el.rack],
+          spot: () => [...tilesOf(handOf('yellow', 7)), el.meldArea],
           gate: () => s().islemeler.length >= 1 ||
             (s().prevOpen[0] && s().prevOpen[0].tiles.length >= 4) || !s().prevOpen.length },
         { id: 'islemeConfirm', screen: 'game',
@@ -5900,8 +5936,20 @@
         { id: 'okey', screen: 'game',
           when: () => s().turn >= 2 && s().roundInStage === 1,
           spot: () => [el.okeyChip] },
+        { id: 'discard2', screen: 'game',
+          when: () => s().phase === 'discard' && s().roundInStage === 1 && s().turn === 2 && pair().length === 2,
+          spot: () => [el.btnDiscard],
+          gate: () => s().turn >= 3 },
+        { id: 'ciftTurn', screen: 'game',
+          when: () => s().roundInStage === 1 && s().turn === 3 && s().phase !== 'discard' && s().staged.length === 0 && pair().length === 2,
+          spot: () => [...tilesOf(pair()), el.btnAddCombo],
+          gate: () => s().staged.length > 0 || s().openedThisTurn },
+        { id: 'ciftConfirm', screen: 'game',
+          when: () => s().staged.length > 0 && s().turnMode === 'cift',
+          spot: () => [el.btnConfirm],
+          gate: () => s().openedThisTurn || s().phase === 'discard' },
         { id: 'freeplay', screen: 'game',
-          when: () => s().roundInStage === 1 },
+          when: () => s().roundInStage === 1 && s().turn >= 3 && s().status === 'playing' },
         { id: 'islekHit', screen: 'game',
           when: () => TUT.flags.islekHit },
         { id: 'store1', store: true, pos: 'left',
@@ -5938,7 +5986,7 @@
       };
       const hand = [];
       [['red', 7], ['blue', 7], ['black', 7],        // hazır Per
-       ['yellow', 3], ['yellow', 3],                  // hazır Çift
+       ['yellow', 12], ['yellow', 12],                // hazır Çift (P109: 3. turun Çift dersi — raundu bitirir)
        ['red', 9], ['red', 10], ['red', 11],          // hazır Sıralı
        ['yellow', 5],                                 // okey (joker)
        ['blue', 2]].forEach(([c, n]) => {             // atılacak ufak taş
@@ -6036,9 +6084,15 @@
        anlatılan yerle ÇAKIŞMAYAN tarafa (sağ / sol) konur. */
     _dom() {
       if (this.panel) return;
+      /* P109 (kullanıcı: "çevreleme genel bir kutu, çizgileri diğer elementlerin üstüne geliyor —
+         yalnız etkileşime gireceğim yerleri çevrele") — spot artık TEK birleşik kutu değil: tam ekran
+         kap; karartmada her hedef için ayrı delik (SVG maske), her hedefe ayrı çerçeve. */
       this.spotEl = document.createElement('div');
       this.spotEl.id = 'tutSpot';
       this.spotEl.style.opacity = '0';
+      this.spotEl.innerHTML = `<svg class="ts-dim" width="100%" height="100%" aria-hidden="true"><defs><mask id="tsMask" maskUnits="userSpaceOnUse">`
+        + `<rect x="0" y="0" width="100%" height="100%" fill="white"/><g class="ts-holes"></g></mask></defs>`
+        + `<rect x="0" y="0" width="100%" height="100%" fill="rgba(8, 6, 20, .62)" mask="url(#tsMask)"/></svg><div class="ts-rings"></div>`;
       document.body.appendChild(this.spotEl);
       this.dimEl = document.createElement('div');
       this.dimEl.id = 'tutDim';
@@ -6120,28 +6174,23 @@
         if (this._spotKey !== 'off') { this._spotKey = 'off'; sp.style.opacity = '0'; this._placePanel(null); }
         return;
       }
-      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+      const rects = [];
       for (const e of els) {
         if (!e) continue;
         const r = e.getBoundingClientRect();
         if (!r.width && !r.height) continue;
-        x1 = Math.min(x1, r.left); y1 = Math.min(y1, r.top);
-        x2 = Math.max(x2, r.right); y2 = Math.max(y2, r.bottom);
+        rects.push(r);
       }
-      if (x1 === Infinity) {
+      if (!rects.length) {
         if (this._spotKey !== 'off') { this._spotKey = 'off'; sp.style.opacity = '0'; this._placePanel(null); }
         return;
       }
-      const key = Math.round(x1) + ',' + Math.round(y1) + ',' + Math.round(x2) + ',' + Math.round(y2);
+      const key = rects.map((r) => [r.left, r.top, r.right, r.bottom].map(Math.round).join(',')).join('|');
       if (key === this._spotKey) return;
       this._spotKey = key;
-      const pad = 8;
+      this._drawSpots(rects);
       sp.style.opacity = '1';
-      sp.style.left = (x1 - pad) + 'px';
-      sp.style.top = (y1 - pad) + 'px';
-      sp.style.width = (x2 - x1 + pad * 2) + 'px';
-      sp.style.height = (y2 - y1 + pad * 2) + 'px';
-      this._placePanel({ left: x1, top: y1, right: x2, bottom: y2 });
+      this._placePanel(rects);
     },
 
     _track() {
@@ -6158,7 +6207,30 @@
     /* P92 — panel 1920×1080 tuval birimiyle sağ (1090,70) ya da sol
        (430,70) sütuna konur; anlatılan yerle EN AZ çakışan taraf seçilir.
        "Söyleme" (bitiş / kayıp) ekranın ortasında. */
-    _placePanel(rect) {
+    /* P109 — her hedefe ayrı delik + çerçeve. Birbirine değen hedefler (yan yana taşlar) tek
+       çerçevede birleşir; aralarında boşluk olan hedefler ayrı kalır (çizgiler başka öğeyi kesmez). */
+    _drawSpots(rects) {
+      const pad = 8;
+      let boxes = rects.map((r) => ({ l: r.left - pad, t: r.top - pad, r: r.right + pad, b: r.bottom + pad }));
+      for (let merged = true; merged;) {
+        merged = false;
+        outer: for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i], c = boxes[j];
+          if (a.l <= c.r && c.l <= a.r && a.t <= c.b && c.t <= a.b) {
+            boxes[i] = { l: Math.min(a.l, c.l), t: Math.min(a.t, c.t), r: Math.max(a.r, c.r), b: Math.max(a.b, c.b) };
+            boxes.splice(j, 1); merged = true; break outer;
+          }
+        }
+      }
+      const holes = this.spotEl.querySelector('.ts-holes'), rings = this.spotEl.querySelector('.ts-rings');
+      holes.innerHTML = boxes.map((x) => `<rect x="${x.l}" y="${x.t}" width="${x.r - x.l}" height="${x.b - x.t}" rx="14" fill="black"/>`).join('');
+      rings.innerHTML = boxes.map((x) => `<div class="ts-ring" style="left:${x.l}px;top:${x.t}px;width:${x.r - x.l}px;height:${x.b - x.t}px"></div>`).join('');
+    },
+
+    /* P108 (kullanıcı: işleme adımında Mühür masadaki gruba biniyordu) — yer seçiminde anlatılan
+       alanların BİRLEŞİK kutusu değil, HER BİRİ ayrı ölçülür: masa (sağ üst) + ıstaka (alt) birleşince
+       ekranın tamamı oluyor, iki aday da "çakışıyor" sayılıp yanlış taraf seçiliyordu. */
+    _placePanel(rects) {
       const p = this.panel;
       if (!p || p.classList.contains('hidden')) return;
       const k = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gm-scale')) || 1;
@@ -6174,12 +6246,16 @@
         y = oy + 140 * k;   // ⏸ / i düğmelerinin altı (çıkış ⏸ menüsünde, örtülmemeli)
       } else {
         const cands = [[1090, 50], [430, 50]].map(([cx, cy]) => [ox + cx * k, oy + cy * k]);
-        const over = ([cx, cy]) => {
-          if (!rect) return 0;
-          const ix = Math.max(0, Math.min(cx + w, rect.right + 10) - Math.max(cx, rect.left - 10));
-          const iy = Math.max(0, Math.min(cy + h, rect.bottom + 10) - Math.max(cy, rect.top - 10));
-          return ix * iy;
-        };
+        /* P109 — panelin BOŞ köşeleri değil, görünen parçaları (balon, maskot, düğmeler) ölçülür */
+        const pr = p.getBoundingClientRect();
+        const parts = [...p.children].map((ch) => ch.getBoundingClientRect()).filter((r) => r.width && r.height)
+          .map((r) => ({ dx: r.left - pr.left, dy: r.top - pr.top, w: r.width, h: r.height }));
+        if (!parts.length) parts.push({ dx: 0, dy: 0, w, h });
+        const over = ([cx, cy]) => (rects || []).reduce((sum, rect) => sum + parts.reduce((acc, q) => {
+          const ix = Math.max(0, Math.min(cx + q.dx + q.w, rect.right + 10) - Math.max(cx + q.dx, rect.left - 10));
+          const iy = Math.max(0, Math.min(cy + q.dy + q.h, rect.bottom + 10) - Math.max(cy + q.dy, rect.top - 10));
+          return acc + ix * iy;
+        }, 0), 0);
         [x, y] = cands.reduce((best, c) => (over(c) < over(best) ? c : best));
       }
       p.style.left = Math.round(x) + 'px';
@@ -6323,11 +6399,10 @@
     if (opts.spot) {
       TUT._dom();
       spot = TUT.spotEl;
-      const r = opts.spot.getBoundingClientRect();
-      const pad = 8;
       spot.classList.add('mh-spotting');
-      Object.assign(spot.style, { opacity: '1', left: (r.left - pad) + 'px', top: (r.top - pad) + 'px',
-        width: (r.width + pad * 2) + 'px', height: (r.height + pad * 2) + 'px' });
+      TUT._drawSpots([opts.spot.getBoundingClientRect()]);   // P109 — öğreticiyle aynı çerçeve
+      TUT._spotKey = null;
+      spot.style.opacity = '1';
     }
     const close = () => {
       ov.remove();
@@ -6682,15 +6757,9 @@
     }));
   }
 
-  /* "STOP !!" düğmesi — çarklar dururken basılır, sonra kaybolur */
-  function stopButton(foot, stop) {
-    foot.innerHTML = '';
-    const b = document.createElement('button');
-    b.className = 'pk-stop-btn';
-    b.textContent = t('slotStopBtn');
-    b.addEventListener('click', () => { b.disabled = true; stop(); });
-    foot.appendChild(b);
-  }
+  /* P109 (kullanıcı: "slot machine'lerin stop tuşunu kaldıralım, rastgele oyun versin") — STOP
+     düğmesi KALKTI: STOP'la orta çizgide duran ödül motorda değişiyor ama arkadaki ekran eski
+     ödülü gösteriyordu. Çarklar artık hep kendileri durur (motorun seçtiği ödül). */
 
   function showOpeningReel(list, reels, done) {
     const strips = (reels && reels.length === list.length) ? reels : list.map(j => [j]);
@@ -6711,14 +6780,7 @@
       body.appendChild(wrap);
       return wrap.querySelector('.pk-strip');
     });
-    /* P63: STOP basıldığında orta çizgideki joker motorda değiştirilir */
-    const canPick = !!(reels && reels.length === list.length && Game.reelStop);
-    const pick = canPick ? (i, sym) => {
-      const r = Game.reelStop('opening', i, sym);
-      if (r && r.ok && r.got) { list[i] = r.got; return r.landed; }
-      return null;
-    } : null;
-    stopButton(foot, loopReels(pkItems(els, pick), { onDone: finish }));
+    loopReels(pkItems(els, null), { onDone: finish });   // P109 — STOP yok
     function finish() {
       foot.innerHTML = '';
       // açıklamalı sonuç kartları — paket çarkındakiyle aynı
@@ -7989,12 +8051,7 @@
       body.appendChild(wrap);
       return wrap.querySelector('.pk-strip');
     });
-    const pick = (Game.reelStop && res.index != null) ? (i, sym) => {
-      const r = Game.reelStop('pack', res.index, i, sym);
-      if (r && r.ok && r.got) { res.contents[i] = r.got; return r.landed; }
-      return null;
-    } : null;
-    stopButton(foot, loopReels(pkItems(strips, pick), { onDone: finish }));
+    loopReels(pkItems(strips, null), { onDone: finish });   // P109 — STOP yok
     function finish() {
       foot.innerHTML = '';
       notify(res.contents.map(packOutLine), true, { quiet: true });   // çark zaten gösterdi
@@ -8125,8 +8182,10 @@
     el.srJokersLbl.textContent = t('srJokers');
     el.srExtrasLbl.textContent = t('srExtras');
     // Anarşist "Kara Pazar": eski fiyat üstü çizili gösterilir
+    /* P109 (kullanıcı onayı, B seçeneği) — indirim etiketi: üstü çizili eski fiyat + indirim oranı,
+       düğmenin üstünde ortalı kırmızı etiket (eskiden düğme yazısının içindeydi, taşıyordu) */
     const anarOld = (o) => (o.basePrice && o.basePrice > o.price)
-      ? `<s class="anar-old">${o.basePrice}</s> ` : '';
+      ? `<span class="anar-old"><s>${o.basePrice}</s> ${t('discPct', Math.round((1 - o.price / o.basePrice) * 100))}</span>` : '';
     s.store.items.forEach((item, i) => {
       const card = document.createElement('div');
       card.className = `store-item viz r-${item.rarity}` + (item.sold ? ' sold-out' : '') + (item.locked ? ' locked' : '');
@@ -8313,8 +8372,10 @@
           if (!res.ok) { toast(res.error); return; }
           SFX.coin();
           /* Grup F: içerik artık doğrudan cebe düşmez — paket türüne göre
-             seçim ekranı ya da slot makinesi açılır, notify/render orada. */
-          renderStore();
+             seçim ekranı ya da slot makinesi açılır, notify/render orada.
+             P109 — slot makinesi dönerken arkadaki store YENİLENMEZ: yenilenince ödül joker
+             panelinde önceden görünüyordu (sonucu ele veriyordu). "Ödülü Al" yeniler. */
+          if (res.mode === 'choice') renderStore();
           openPackResult(res);
         });
         card.appendChild(btn);
@@ -8823,20 +8884,14 @@
         } : null,
       };
     });
-    const stopBtn = document.createElement('button');
-    stopBtn.className = 'pk-stop-btn up-stop-btn';
-    stopBtn.textContent = t('slotStopBtn');
-    el.btnUpContinue.parentElement.insertBefore(stopBtn, el.btnUpContinue);
-    const stop = loopReels(items, {
+    loopReels(items, {   // P109 — STOP yok, çarklar kendileri durur
       auto: (i) => 1.2 + i * 0.5,
       onLand: (i) => { cards[i].classList.remove('spinning'); cards[i].classList.add('landed'); },
       onDone: () => {
-        stopBtn.remove();
         el.upgradeOverlay.classList.remove('spin-lock');
         grantUpgrades();
       },
     });
-    stopBtn.addEventListener('click', () => { stopBtn.disabled = true; stop(); });
   }
 
   /* Playtest 10: yenileme (reroll) kaldırıldı — seçim yokken "yeniden

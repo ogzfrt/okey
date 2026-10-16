@@ -11739,3 +11739,33 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 #storeStage .store-item .s-extra:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
 #storeStage .sr-grid:has(.s-extra) { align-items: start; }
 #storeStage .sr-grid:has(.s-extra) .store-item.st-jk .s-ico { width: 118px; height: 160px; }
+
+/* P108 — tarayıcının otomatik karanlık modu renkleri ters çevirmesin (Chrome Android auto-dark bunu dinler;
+   Opera'nın "sayfaları zorla karanlık yap" ayarı dinlemiyor — o ayar kullanıcı tarafında kapatılmalı) */
+:root { color-scheme: only light; }
+
+/* ============================================================
+   P109 — ÖĞRETİCİ / İPUCU SPOTU: tam ekran kap, her hedefe ayrı delik + çerçeve
+   (eski tek kutunun ::before karartması / ::after çerçevesi kapalı)
+   ============================================================ */
+#tutSpot { left: 0 !important; top: 0 !important; width: 100vw !important; height: 100vh !important;
+  border: 0; border-radius: 0; box-shadow: none; transition: opacity .3s ease; }
+#tutSpot::before, #tutSpot::after { display: none; }
+#tutSpot .ts-dim { position: absolute; inset: 0; display: block; }
+#tutSpot .ts-ring { position: absolute; box-sizing: border-box; border-radius: 14px;
+  border: 4px solid var(--gm-turn-on);
+  box-shadow: 0 0 0 3px var(--gm-dark), inset 0 0 0 2px var(--gm-dark), 0 0 22px 2px color-mix(in srgb, var(--gm-turn-on) 55%, transparent);
+  animation: tutSpotGlow 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { #tutSpot .ts-ring { animation: none; } }
+
+/* P109 (kullanıcı: "store'da indirim olunca alt raftaki ürünlerin yazıları kayıyor") — üstü çizili
+   eski fiyat düğmenin İÇİNDE satıra sığmıyordu (ör. "14 AÇ $9" 144px, yer 126px): düğmenin sağ üst
+   köşesine küçük etiket olarak çıkar. Alt raf düğmesi biraz küçük yazı (EN "OPEN $14" indirimsiz de taşıyordu). */
+#storeStage .store-item .s-buy .anar-old {
+  position: absolute; top: -38px; left: 50%; right: auto; transform: translateX(-50%); margin: 0; padding: 4px 8px;
+  font-size: 19px; line-height: 1; white-space: nowrap; background: #D83A34; color: #FFFFFF; opacity: 1;
+  border: 3px solid var(--gm-dark); border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .4); z-index: 2;
+}
+#storeStage .store-item .s-buy .anar-old s { text-decoration-color: #FFFFFF; text-decoration-thickness: 3px; }
+#storeStage .store-item.st-it .s-buy .anar-old { font-size: 17px; }
+#storeStage .store-item.st-it .s-buy { font-size: 15px; letter-spacing: -.5px; }

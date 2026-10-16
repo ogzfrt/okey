@@ -2115,7 +2115,7 @@ const JOKER_DEFS = {
     /* P100 (kullanıcı kararı 2026-10-14) — HAYALET TUR: raund kaçarken son çare olarak
        çekişsiz bir tur daha; o tur açılan taşlar desteden kalıcı silinir (bkz. _ghostOfferNow /
        ghostTurnChoice). Eski 'en yüksek taşın hayaleti' mekaniği kalktı. */
-    desc: 'Raundu kaybedeceksen çekişsiz bir hayalet tur daha oynarsın. O tur açtığın taşlar desteden silinir.' },
+    desc: 'Raundu kaybedeceksen kendiliğinden bir hayalet tur daha oynarsın (taş çekersin). O tur açtığın taşlar desteden silinir.' },
   /* PLAYTEST 29 · GRUP C — ZİNCİR KIRILMIYOR, GERİ SARIYOR (kullanıcı
      kararı 2026-09-12). Kademeler yükseldi (+1.5/+0.75, tavan 4.0 →
      +2.0/+1.0, tavan 8.0) ve "zincir kırılınca sıfırlanır" kuralının
@@ -5660,13 +5660,19 @@ const Game = {
       && j.appliedRound !== roundKey);
     if (kgJ) {
       kgJ.appliedRound = roundKey;
+      /* P109 (kullanıcı: "Kara Kedi raundunda çalışmadı; değeri değişmiş taşlar da sayılsın") —
+         aday artık yalnız ASIL deste taşı (IS_BASE_TILE) değil: Kara Kedi'nin 1'e çevirdiği,
+         Çekiç/Taç'la değeri değişmiş, kopya taşlar da elde GÖRÜNEN değeriyle sayılır. Okey,
+         deste jokeri, özel taş, hayalet, dikili ve yüzü kapalı taş aday değildir. */
       const low = [...s.hand]
-        .filter(t => IS_BASE_TILE(t) && !this.isOkeyTile(t) && !t.sewn && !t.bossSewn)
-        .sort((a, b) => a.number - b.number).slice(0, KAGIT_TILES);
+        .filter(t => !t.jokerTile && !t.fakeOkey && !t.special && !t.ghost && !t.faceDown && !t.hidden
+          && !this.isOkeyTile(t) && !t.sewn && !t.bossSewn && t.number > 0)
+        .sort((a, b) => a.number - b.number || String(a.id).localeCompare(String(b.id))).slice(0, KAGIT_TILES);
       const faces = [];
       for (const t of low) {
         faces.push(`${COLOR_TR[t.color]} ${t.number}`);
-        s.tileMods.push({ op: 'remove', color: t.color, number: t.number });
+        // asıl deste taşıysa destedeki yüzü silinir; değeri zaten değişmiş taşın silinecek asıl yüzü yok
+        if (IS_BASE_TILE(t)) s.tileMods.push({ op: 'remove', color: t.color, number: t.number });
         s.tileMods.push({ op: 'okeyClone' });
         this._dropMagnet(t);
         t.color = s.okey.color; t.number = s.okey.number;
@@ -5675,6 +5681,8 @@ const Game = {
       s.roundStartNotes.push(low.length
         ? `📃 Kağıt: ${faces.join(', ')} KALICI olarak okeye dönüştü`
         : '📃 Kağıt: okeye çevrilecek uygun taş yok');
+      /* P109 — bildirim kartları kapalı (NOTES_ENABLED): ui raund başında bunu toast + parlayan taşla gösterir */
+      s.kagitShow = { faces, ids: low.map(t => t.id) };
     }
     // Kahin — kehanet hedefi (GDD 10, tek hedefli uyarlama)
     s.kahinGoal = null;
@@ -9123,10 +9131,11 @@ const Game = {
              normal çekiş/tur akışına düşülür.
              ⚠ P28: 'turn' sınıfının şu an üyesi yok (bkz. _autoRescueTurn). */
           extendedTurn = true;
-        } else if (this._ghostOfferNow(events)) {
-          /* P100 — HAYALET TUR: oyuncuya sorulur (UI penceresi); karar verilene
-             kadar raund bekler. Hayır → zincir İkinci Şans / Game Over ile sürer. */
-          return { ok: true, ghostOffer: true, events };
+        } else if (this._ghostAuto(events)) {
+          /* P109 (kullanıcı: "Hayalet tur kaybettiğinde otomatik kullanılsın") — soru yok: raund
+             bir tur uzar ve normal tur akışına (çekiş dahil) düşülür; elde açılım kalmamış olsa da
+             çekişle yeni şans gelir (eski teklif %58 sessizce hiç çıkmıyordu). */
+          extendedTurn = true;
         } else if ((s.secondChance || 0) > 0) {
           /* GRUP I (P20) — İKİNCİ ŞANS. Kurtarıcı zincirin EN SONUNDA
              durur: joker tabanlı bütün kurtarışlar tükendikten sonra
@@ -9320,7 +9329,13 @@ const Game = {
       ...s.jokers,
       ...(withDeck ? s.deckJokers.filter(j => j.drawnThisRound && !this.isRunLong(j)) : []),
     ]
-      .filter(j => j.key !== exceptKey && j.key !== 'sarmasik' && j.key !== 'avukat' && !j.protected && !j.fresh)
+      .filter(j => j.key !== exceptKey && j.key !== 'sarmasik' && j.key !== 'avukat' && !j.protected && !j.fresh
+        /* P109 — zaten YAŞLANMAYAN joker korunmaz (The World gibi run boyu, ★★★ kemer, Orion'un
+           çırağı, henüz tetiklenmemiş Şeytan): savunma boşa gidiyor, kaybedilen davada da yok
+           ediliyordu (aşağıdaki yaşlanma döngüsüyle aynı istisnalar). */
+        && !this.isRunLong(j) && j.beltStars !== 3 && !(j.key === 'seytan' && !j.applied)
+        && !(j.id === s.beltId && s.jokers.some(x => x.key === 'orion'))
+        && Number.isFinite(j.usesLeft))
       .sort((a, b) => rarOrder.indexOf(b.rarity) - rarOrder.indexOf(a.rarity))[0];
     if (this.slotRecs().some(j => j.key === 'sarmasik')) {
       const t = pickTarget('sarmasik', true);
@@ -9337,7 +9352,10 @@ const Game = {
           t.protected = true;
           notes.push(`⚖ Avukat ${t.name} jokerini savundu — süresi azalmadı`);
         } else {
-          s.jokers = s.jokers.filter(j => j !== avJ && j !== t);
+          /* P109 — Avukat bir Füzyon kartının İÇİNDEYSE kart silinir (alt kayıt s.jokers'ta değil;
+             eskiden kart kalıyor, Avukat sonsuza dek savunuyordu) */
+          const avCard = s.jokers.find(c => c === avJ || this._recsOf(c).includes(avJ)) || avJ;
+          s.jokers = s.jokers.filter(j => j !== avCard && j !== t);
           notes.push(`⚖ Avukat davayı kaybetti — Avukat ve ${t.name} yok oldu`);
         }
       }
@@ -10486,7 +10504,12 @@ const Game = {
     if (kind === 'joker') {
       const rar = this._rollRarity(PACK_RARITY_CURVE);   // Grup K
       const owned = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
-      let pool = this.jokerPool(d => d.rarity === rar && d.rarity !== 'epic' && !owned.has(d.key));
+      /* P109 (kullanıcı: "store'da çıkan jokerlerden biri genelde slot machine'den de çıkıyor") —
+         raftaki jokerler de paketin ve makara süslerinin dışında (ölçüm: ödül %4-7, makarada
+         görünen sembollerden biri %47-68 raftakiyle aynıydı). Havuz boşalırsa eski kurala düşer. */
+      const shelf = new Set(((s.store && s.store.items) || []).filter(i => !i.sold).map(i => i.key));
+      let pool = this.jokerPool(d => d.rarity === rar && d.rarity !== 'epic' && !owned.has(d.key) && !shelf.has(d.key) && !skip.has(d.key));
+      if (!pool.length) pool = this.jokerPool(d => d.rarity === rar && d.rarity !== 'epic' && !owned.has(d.key));
       if (!pool.length) pool = this.jokerPool(d => d.rarity === rar && d.rarity !== 'epic');
       if (!pool.length) pool = this.jokerPool(d => d.rarity === 'common');
       const fresh = pool.filter(d => !skip.has(d.key));
@@ -11498,6 +11521,18 @@ const Game = {
 
   /* P100 — HAYALET TUR (kullanıcı kararı 2026-10-14). Son tur bitti, hedef tutmadı,
      kurtarıcı jokerler denendi: Hayalet slottaysa ve bu raund kullanılmadıysa teklif açılır. */
+  _ghostAuto(events) {
+    const s = this.state;
+    if (s.jokersDisabled || !this.hasActive('yanki') || s.ghostTurnUsed || s.ghostOffer) return false;
+    if (this.bossOn() && s.boss && s.boss.key === 'avukat' && s.bossMutedJoker === 'yanki') return false;   // Avukat boss susturdu
+    s.ghostTurnUsed = true;
+    s.ghostTurn = true;
+    s.ghostJustStarted = true;   // ui kısa duyuru gösterir
+    s.maxTurns += 1;
+    events.push('👻 Hayalet: raund kaçıyordu — bir hayalet tur oynuyorsun (bu tur açtığın taşlar desteden kalıcı silinir)');
+    return true;
+  },
+  /* P100 teklif yolu — P109'dan beri kullanılmıyor; eski kayıtta bekleyen teklif için korunur */
   _ghostOfferNow(events) {
     const s = this.state;
     if (s.jokersDisabled || !this.hasActive('yanki') || s.ghostTurnUsed || s.ghostOffer) return false;
