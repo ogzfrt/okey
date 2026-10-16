@@ -3072,13 +3072,46 @@ function createDeck(state) {
   for (let copy = 0; copy < 2; copy++)
     deck.push({ id: ++_tileId, color: 'red', number: 1, fakeOkey: true });
   for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(seededRandom() * (i + 1));   // P114 — seed'li karıştırma
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
   return deck;
 }
 
 const colorIdx = (c) => COLORS.indexOf(c);
+
+/* ===== P114 · SEED (kullanıcı onayı: "Balatro ve Gambonanza'daki gibi") =====
+   Her run'ın 8 karakterlik bir seed'i var (karışmayan harf/rakam: 0/O, 1/I yok). Motorun TÜM
+   rastgeleliği (Game.rng, işlek zarı, deste karıştırma) seed'den beslenen mulberry32 üretecinden
+   gelir; üretecin durumu kayda yazılır, kayıttan dönünce akış aynen sürer. Aynı seed + aynı
+   hamleler = aynı run. Oyuncunun girdiği seed'le açılan run `seeded` işaretlidir (istatistik /
+   keşif / kilit açmaya sayılmaz — ui.js). */
+const SEED_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const SEED_LEN = 8;
+let _rngS = (Math.random() * 4294967296) >>> 0;
+function seedHash(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+  h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+function seededRandom() {
+  _rngS = (_rngS + 0x6D2B79F5) >>> 0;
+  let t = _rngS;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function newSeedStr() {
+  let s = '';
+  for (let i = 0; i < SEED_LEN; i++) s += SEED_ABC[Math.floor(Math.random() * SEED_ABC.length)];
+  return s;
+}
+/* oyuncunun yazdığı seed: büyük harf, yalnız izinli karakterler; boşsa null */
+function normSeed(str) {
+  const s = String(str || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/I/g, '1');
+  return s.length ? s.slice(0, 16) : null;
+}
 
 /* ---------- Kombinasyon kuralları (GDD 3.2–3.4, 2.9) ---------- */
 
@@ -3424,8 +3457,8 @@ function computeScore(tiles, carpan) {
 
 const Game = {
   state: null,
-  rng: Math.random,        // genel rastgelelik (test için değiştirilebilir)
-  rngIslek: Math.random,   // işlek zarı (test için değiştirilebilir)
+  rng: seededRandom,        // genel rastgelelik — P114: run seed'inden (test için değiştirilebilir)
+  rngIslek: seededRandom,   // işlek zarı — P114: run seed'inden (test için değiştirilebilir)
   tutorialMode: false,     // öğretici: hedefler ×0.5, UI akışı TUT yönetir
   trainerMode: false,      // Grup H (2026-08): sandbox test modu — kayıt yok
 
@@ -3433,6 +3466,10 @@ const Game = {
      sessizce temel run'a düşülür — eski kayıtlar ve eski çağrılar için. */
   newRun(mode, opts = {}) {
     this.trainerMode = false;
+    /* P114 — seed: oyuncu girdiyse o, yoksa yeni; üretici run kurulmadan ÖNCE tohumlanır */
+    const userSeed = normSeed(opts.seed);
+    const runSeed = userSeed || newSeedStr();
+    _rngS = seedHash(runSeed);
     const rm = RUN_MODES[mode] ? mode : 'base';
     /* MADDE D — modun AÇILIŞ GÜCÜ. İki alan da run'ın BAŞLANGIÇ
        değerini kurar; yükseltmeler (Geniş Istaka, Altın Oran…) bunların
@@ -3551,6 +3588,8 @@ const Game = {
       statRerolls: 0,       // store yenilemesi
       statTypes: { per: 0, sirali: 0, cift: 0 },   // açılan grup türleri
       status: 'playing',
+      seed: runSeed,        // P114 — run seed'i (duraklat / oyun sonu ekranında)
+      seeded: !!userSeed,   // P114 — oyuncu seed girdi: istatistik / keşif / kilit sayılmaz
     };
     this.state.okey = this._rollOkey();
     this.state.bossOrder = this._rollBossOrder();
@@ -12661,11 +12700,13 @@ const Game = {
      Map içeren alanlar (staged/opened/prevOpen combos.values) özel
      işaretle serileştirilir. */
   serialize() {
+    if (this.state) this.state.rngState = _rngS;   // P114 — üretecin yeri kayda (kayıttan dönünce aynı akış)
     return JSON.stringify(this.state, (k, v) => (v instanceof Map ? { __map: [...v] } : v));
   },
 
   restore(json) {
     const st = JSON.parse(json, (k, v) => (v && v.__map ? new Map(v.__map) : v));
+    if (st.rngState != null) _rngS = st.rngState >>> 0;   // P114 — seed akışı kaldığı yerden
     /* Grup A göçü (2026-08-23): "Chapter" terimi "Stage" oldu. Eski
        kayıtlarda alan adları hâlâ chapter*; tek noktada göç ettirilir. */
     if (st.stage == null && st.chapter != null) st.stage = st.chapter;
@@ -13107,7 +13148,7 @@ if (typeof module !== 'undefined') {
     CONSUM_SELL_RATE, CONSUM_SLOT_MAX, KD_TASI_BASE, KD_TASI_STEP, KD_TASI_MAX,
     YILDIZ_SHOW, SPECIAL_RARITY_W, SHOP_EXTRA_FIXED, FERMAN_MAX, MAGNET_MAX,
     /* PLAYTEST 26 — Yankee birikimi · PLAYTEST 30 — Legendary denge sabitleri */
-    VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, CLOCK_PER_SEC, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
+    VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, CLOCK_PER_SEC, normSeed, seedHash, SEED_LEN, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
     niceTarget, niceUp, WORLD_PERM_MULT, WORLD_TARGET_UP, KIYAMET_KEEP, EJDERHA_TILE_MULT, VOID_SCORE, VOID_MULT,
     SEYTAN_SCORE, SEYTAN_MULT, PINKY_MAX, APPLE_MULT, APPLE_DRAW_CUT, APPLE_ISLEK, KAGIT_TILES,
     MEDUSA_MULT, MEDUSA_FLAT, NOSTRA_MULT, TEKER_FLAT, ATES_HAGGLE_WIN, ATES_DISCOUNT,

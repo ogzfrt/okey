@@ -1696,7 +1696,7 @@
   catch { ownedEver = new Set(); }
   function markOwnedEver(key) {
     // Trainer modu koleksiyon/istatistik sayaçlarına bulaşmaz (Grup H)
-    if (!key || Game.trainerMode || ownedEver.has(key)) return;
+    if (!key || Game.trainerMode || (Game.state && Game.state.seeded) || ownedEver.has(key)) return;   // P114
     ownedEver.add(key);
     localStorage.setItem('okeyOwnedEver', JSON.stringify([...ownedEver]));
   }
@@ -1750,7 +1750,7 @@
       return this.has(cat, d.key);
     },
     add(cat, key) {
-      if (!key) return;
+      if (!key || (Game.state && Game.state.seeded && !Game.trainerMode)) return;   // P114: seed'li run keşfe sayılmaz
       const o = this._read();
       if (o[cat].includes(key)) return;
       o[cat].push(key); this._dirty = true;
@@ -6525,10 +6525,11 @@
 
   /* ---------- Menüler / pause (Grup D) ---------- */
 
-  function startNewRun(mode) {
+  function startNewRun(mode, seed) {
     if (BETA && loadSave()) betaHook('runAbandoned', { mode: mode || 'base' });
     clearSave();
-    Game.newRun(mode, { finals: finalJokers() });
+    Game.newRun(mode, { finals: finalJokers(), seed });   // P114 — seed boşsa motor yenisini üretir
+    rpSeedVal = '';
     selection.clear();
     newTileIds.clear();
     showScreen('map');
@@ -6728,11 +6729,12 @@
     { key: 'soon5', soon: true }, { key: 'soon6', soon: true },
   ];
   let runPickIdx = 0;
+  let rpSeedVal = '';   // P114 — sekme / karusel yeniden çizilince yazılan seed kaybolmasın
   function showRunPick(opts = {}) {
     document.getElementById('runPickOv')?.remove();
     document.getElementById('modePickOv')?.remove();
     const save = 'save' in opts ? opts.save : loadSave();
-    const onPick = opts.onPick || ((m) => startNewRun(m));
+    const onPick = opts.onPick || ((m, seed) => startNewRun(m, seed));
     let tab = opts.tab || (save ? 'cont' : 'new');
     let sv = null;
     try { sv = save ? JSON.parse(save.data) : null; } catch (e) { sv = null; }
@@ -6744,6 +6746,7 @@
     const onKey = (e) => {
       if (!document.body.contains(ov)) { document.removeEventListener('keydown', onKey); return; }
       if (e.key === 'Escape') { e.preventDefault(); close(); }
+      else if (e.target && e.target.id === 'rpSeed' && e.key !== 'Enter') return;   // P114 — seed yazılırken oklar imleci oynatır
       else if (e.key === 'ArrowLeft' && tab === 'new') { e.preventDefault(); go(-1); }
       else if (e.key === 'ArrowRight' && tab === 'new') { e.preventDefault(); go(1); }
       else if (e.key === 'Enter') { e.preventDefault(); ov.querySelector('#rpGo:not([disabled])')?.click(); }
@@ -6751,7 +6754,7 @@
     const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
     const isOpen = (p) => !p.soon && Modes.unlocked(p.key);
     const go = (d) => { runPickIdx = (runPickIdx + d + RUN_PAGES.length) % RUN_PAGES.length; draw(); };
-    const play = (key) => { close(); onPick(key); };
+    const play = (key) => { const sd = (ov.querySelector('#rpSeed') || {}).value || ''; close(); onPick(key, sd.trim() || undefined); };
     const cont = () => {
       close();
       resumeSave(save);
@@ -6784,7 +6787,11 @@
           + `<div class="rp-stage">${RUN_PAGES.map(slide).join('')}</div>`
           + `<button class="rp-arrow" data-d="1" aria-label="›">›</button></div>`
           + `<div class="rp-dots">${RUN_PAGES.map((q, i) => `<i class="${i === runPickIdx ? 'on' : ''}${q.soon ? ' soon' : ''}" data-i="${i}"></i>`).join('')}</div>`;
-        foot = `<button class="ep-btn rp-go" id="rpGo"${isOpen(p) ? '' : ' disabled'}>${p.soon ? t('rpSoon') : t('rpPlay')}</button>`
+        /* P114 (kullanıcı onayı: Balatro gibi seed) — isteğe bağlı seed; girilirse istatistik / keşif / kilit sayılmaz */
+        foot = `<div class="rp-seed"><span class="rp-seed-lbl">${t('seedLabel')}</span>`
+          + `<input id="rpSeed" class="rp-seed-in" maxlength="16" placeholder="${t('seedPh')}" autocomplete="off" spellcheck="false" value="${rpSeedVal}"></div>`
+          + `<div class="ep-note rp-seed-note${rpSeedVal ? '' : ' hidden'}">${t('seedNote')}</div>`
+          + `<button class="ep-btn rp-go" id="rpGo"${isOpen(p) ? '' : ' disabled'}>${p.soon ? t('rpSoon') : t('rpPlay')}</button>`
           + (sv && isOpen(p) ? `<div class="ep-note rp-warn">${t('rpOverwrite')}</div>` : '');
       } else {
         const mode = sv.runMode || 'base';
@@ -6813,6 +6820,12 @@
       /* kullanıcı (2026-10-04): karta/açıklamaya tıklamak oyunu BAŞLATMAZ — yalnız seçer; başlatan OYNA */
       ov.querySelectorAll('.rp-slide.mp-card').forEach(b => b.addEventListener('click', () => { runPickIdx = +b.dataset.i; draw(); }));
       ov.querySelector('#rpBack').addEventListener('click', close);
+      const sIn = ov.querySelector('#rpSeed');
+      if (sIn) sIn.addEventListener('input', () => {
+        sIn.value = sIn.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        rpSeedVal = sIn.value;
+        ov.querySelector('.rp-seed-note')?.classList.toggle('hidden', !sIn.value);
+      });
       const goBtn = ov.querySelector('#rpGo');
       if (goBtn) goBtn.addEventListener('click', () => {
         if (goBtn.disabled) return;
@@ -7426,7 +7439,7 @@
   const LStats = {
     read() { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch (e) { return {}; } },
     _w(o) { try { localStorage.setItem(STATS_KEY, JSON.stringify(o)); } catch (e) {} },
-    off() { return !!(Game.trainerMode || Game.tutorialMode || TUT.active); },
+    off() { return !!(Game.trainerMode || Game.tutorialMode || TUT.active || (Game.state && Game.state.seeded)); },   // P114: seed'li run sayılmaz
     _sync(o, s) {
       const snap = s.lsSnap || (s.lsSnap = { types: {}, tiles: 0, disc: 0, bought: 0, rr: 0 });
       o.types = o.types || {};
@@ -8782,6 +8795,7 @@
     const mode = Game.trainerMode ? t('modeName_trainer') : t('modeName_' + (s.runMode || 'base'));
     const out = [];
     out.push(t('rpTitle'));
+    if (s.seed) out.push(`${t('seedLabel')}: ${s.seed}${s.seeded ? ' (' + t('seedEntered') + ')' : ''}`);   // P114
     out.push(t('rpMeta', mode, when, mins));
     out.push(t('rpMusic', Music.on ? t('musicSet' + Music.set) : t('musicOff')));   // P66b — arkadaş testi
     const where = Game.isFinalStage() ? `S${s.stage} ${t('stageFinal')}` : `S${s.stage} R${s.roundInStage}`;
@@ -8832,6 +8846,7 @@
   function wireReport(ov, kind, why) {
     const text = runReport(kind, why);
     ov.dataset.report = text;
+    ov.querySelectorAll('.ep-seed-copy').forEach((b) => b.addEventListener('click', () => { copyText(b.dataset.seed); toast(t('seedCopied'), true); }));   // P114
     const b = ov.querySelector('#epCopy');
     if (b) b.addEventListener('click', () => {
       copyText(text);
@@ -8860,7 +8875,8 @@
       epRow(t('epTiles'), st.tiles, 'c-blue') +
       epRow(t('epDiscarded'), st.discarded, 'c-red') +
       epRow(t('epBought'), st.bought, 'c-orange') +
-      epRow(t('epRerolls'), st.rerolls, 'c-green');
+      epRow(t('epRerolls'), st.rerolls, 'c-green')
+      + (s.seed ? epRow(t('seedLabel'), `<span class="ep-seed">${s.seed}</span><button type="button" class="ep-seed-copy" data-seed="${s.seed}">${t('seedCopy')}</button>`, '', true) : '');   // P114;
     const right =
       epRow(t('epStage'), st.stage + `<small>${st.stageOf}</small>`, 'c-orange') +
       epRow(t('epRound'), st.round, 'c-orange') +
@@ -8890,7 +8906,7 @@
     if (!Game.trainerMode) openedModes = Modes.complete('base');
     /* P71 — modun final boss'u yenildiyse ödül kalıcı açılır (Trainer hariç) */
     const finKey = Game.finalBeaten();
-    const finNew = finKey ? Finals.unlock(finKey) : false;
+    const finNew = finKey && !Game.state.seeded ? Finals.unlock(finKey) : false;   // P114: seed'li run kilit açmaz
     betaHook('runEnd', { kind: 'won' });
     if (openedModes.length) betaHook('modesOpened', { keys: openedModes.map((m) => m.key) });
     /* P53 — "Sonsuz Mod'a devam" yalnız TEMEL run'ın sonunda (trainer'da ve
@@ -8909,7 +8925,8 @@
       epRow(t('epTiles'), st.tiles, 'c-blue') +
       epRow(t('epDiscarded'), st.discarded, 'c-red') +
       epRow(t('epBought'), st.bought, 'c-orange') +
-      epRow(t('epRerolls'), st.rerolls, 'c-green');
+      epRow(t('epRerolls'), st.rerolls, 'c-green')
+      + (s.seed ? epRow(t('seedLabel'), `<span class="ep-seed">${s.seed}</span><button type="button" class="ep-seed-copy" data-seed="${s.seed}">${t('seedCopy')}</button>`, '', true) : '');   // P114;
     const lb = s.boss;
     const lbArt = lb && JOKER_ART.has(lb.key)
       ? `<div class="ep-def-art art-joker jk-${lb.key}"></div>` : `<div class="ep-def-ico">🏆</div>`;
