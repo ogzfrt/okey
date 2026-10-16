@@ -12122,6 +12122,34 @@ const Game = {
       note: `🐪 Teklif reddedildi. Bir kez daha reddedersen Tüccar gidecek.` };
   },
 
+  /* P112 (kullanıcı: "ana slottan backup'a tutup koyma ekleyelim") — sürükle-bırakla ana slottan
+     backup'a. Backup'a giren kart satın almadaki gibi donar ve bekleme sayacı alır (dolunca kendiliğinden
+     ana slota döner). Backup doluysa `swapId` (bırakılan yerdeki backup kartı) ile YER DEĞİŞTİRİR:
+     o kart ana slota geçer ve raund içindeyse hemen kurulur (moveToMain ile aynı). */
+  moveToBackup(jokerId, swapId) {
+    const s = this.state;
+    const idx = s.jokers.findIndex(j => j.id === jokerId);
+    if (idx === -1) return { ok: false };
+    const j = s.jokers[idx];
+    if (s.backup.length >= MAX_BACKUP) {
+      const bi = swapId != null ? s.backup.findIndex(b => b.id === swapId) : -1;
+      if (bi === -1) return { ok: false, error: 'Backup dolu.' };
+      const b = s.backup[bi];
+      delete b.waitLeft;
+      b.fresh = true;
+      j.waitLeft = j.usesLeft === 1 ? 1 : 3;
+      s.jokers[idx] = b;
+      s.backup[bi] = j;
+      const notes = [];
+      this.activateJokerNow(b, notes);
+      return { ok: true, swapped: true, name: j.name, inName: b.name, notes };
+    }
+    s.jokers.splice(idx, 1);
+    j.waitLeft = j.usesLeft === 1 ? 1 : 3;
+    s.backup.push(j);
+    return { ok: true, name: j.name };
+  },
+
   moveToMain(jokerId) {
     const s = this.state;
     const idx = s.backup.findIndex(j => j.id === jokerId);

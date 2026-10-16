@@ -2371,7 +2371,22 @@
       const row = card.parentElement;
       if (!row) return;
       const start = { x: e.clientX, y: e.clientY };
-      let started = false, ghost = null, marker = null, toIdx = -1;
+      let started = false, ghost = null, marker = null, toIdx = -1, other = null;
+      /* P112 — öbür raf: ana slottan sürüklenince backup, backup'tan sürüklenince ana slot */
+      const otherZoneAt = (x, y) => {
+        const ids = where === 'main' ? ['backupSlots', 'storeBackupRow', 'mapBackupRow'] : ['jokerSlots', 'storeSlotsRow', 'mapJokerSlots'];
+        for (const id of ids) {
+          const z = document.getElementById(id);
+          if (!z || !z.offsetParent) continue;
+          const host = z.closest('.gm-shoulder, .st-shoulder, .gm-jokers') || z;
+          const r = host.getBoundingClientRect();
+          if (!r.width || x < r.left || x > r.right || y < r.top || y > r.bottom) continue;
+          if (id === 'backupSlots' && el.backupShoulder.classList.contains('collapsed')) setShoulder('backup', true);
+          const tgt = [...z.querySelectorAll('.joker-tile')].find((c) => { const q = c.getBoundingClientRect(); return x >= q.left && x <= q.right && y >= q.top && y <= q.bottom; });
+          return { zone: host, id, tgt: tgt ? +tgt.dataset.jid : null };
+        }
+        return null;
+      };
       const cards = () => [...row.querySelectorAll('.joker-tile')];
       const fromIdx = cards().indexOf(card);
       if (fromIdx < 0) return;
@@ -2385,7 +2400,9 @@
           card.classList.add('jk-dragging');
           const r = card.getBoundingClientRect();
           ghost = card.cloneNode(true);
-          ghost.className = 'joker-tile jk-ghost r-' + j.rarity;
+          /* P112 — kartın kendi sınıfları korunur (çizim .jk-<anahtar> sınıfından gelir; eskiden kopya boş görünüyordu) */
+          ghost.className = card.className.replace(/jk-dragging|jk-seq-pop/g, '') + ' jk-ghost';
+          ghost.style.opacity = '1';
           ghost.style.width = r.width + 'px';
           ghost.style.height = r.height + 'px';
           document.body.appendChild(ghost);
@@ -2395,6 +2412,12 @@
         }
         ghost.style.left = (ev.clientX - 26) + 'px';
         ghost.style.top = (ev.clientY - 18) + 'px';
+        /* P112 — öbür rafa (ana slot ↔ backup) sürükleme: imleç öbür rafın üstündeyse bırakınca
+           taşınır; oyun ekranında kapalı backup sekmesinin üstüne gelince sekme kendiliğinden açılır */
+        other = otherZoneAt(ev.clientX, ev.clientY);
+        document.querySelectorAll('.jk-drop-zone').forEach((z) => z !== (other && other.zone) && z.classList.remove('jk-drop-zone'));
+        if (other) { other.zone.classList.add('jk-drop-zone'); marker.style.display = 'none'; return; }
+        marker.style.display = '';
         /* Hedef indeks: imlecin hangi kartın ortasını geçtiğine bakılır. */
         const list = cards().filter(c => c !== card);
         toIdx = list.length;
@@ -2415,6 +2438,20 @@
         card.classList.remove('jk-dragging');
         ghost?.remove();
         marker?.remove();
+        document.querySelectorAll('.jk-drop-zone').forEach((z) => z.classList.remove('jk-drop-zone'));
+        if (other) {
+          /* P112 — öbür rafa bırakıldı */
+          const res = where === 'main' ? Game.moveToBackup(j.id, other.tgt) : Game.moveToMain(j.id);
+          if (!res.ok) toast(res.error || t('moveFail'));
+          else {
+            SFX.tap?.();
+            toast(where === 'main' ? (res.swapped ? t('movedSwap', T.name(j), res.inName) : t('movedBackup', T.name(j))) : t('movedMain', T.name(j)), true);
+          }
+          render();
+          if (storeOpen()) renderStore();
+          if (curScreen() === 'map') renderMap();
+          return;
+        }
         const res = Game.reorderJoker(where, fromIdx, toIdx);
         if (res.ok) SFX.tap?.();
         render();

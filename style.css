@@ -11839,3 +11839,6 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 /* P111 — hesap çubuğunda "+ jokerler" (gerçek sonuç onaydan sonra sahnede) */
 .gm-preview .pv-jk { margin-left: 10px; padding: 3px 8px; border-radius: 6px; background: var(--gm-turn-on); color: var(--gm-dark);
   font-size: .62em; letter-spacing: 0; white-space: nowrap; align-self: center; }
+
+/* P112 — joker sürükle-bırak: öbür raf (ana slot ↔ backup) hedef olunca parlar */
+.jk-drop-zone { outline: 4px solid var(--gm-turn-on) !important; outline-offset: 4px; box-shadow: 0 0 24px color-mix(in srgb, var(--gm-turn-on) 60%, transparent) !important; }
