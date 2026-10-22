@@ -240,6 +240,7 @@
       rpStage: 'Stage', rpRound: 'Raund', rpCoins: 'Coin', rpBest: 'En İyi Açılım', rpMult: 'Kalıcı Çarpan',
       rpWhere_inStore: 'Store’da bıraktın — oradan devam edersin.',
       rpWhere_inRound: 'Raund içinde bıraktın — raundun başından devam edersin.',
+      rpWhere_inRoundMid: 'Raund içinde bıraktın — kaldığın turdan devam edersin.',   // denetim RK
       rpWhere_map: 'Haritada bıraktın — sıradaki raundu seçersin.',
       /* P61 — Kumarhane hissi */
       betClosed: 'BAHİSLER KAPANDI!',
@@ -487,6 +488,7 @@
       varName_oteki: 'Dolunay',
       varDesc_oteki: 'Ay Kuyusu dolup Dolunay gelince kart bu hâle geçer. Etkisi değişmez.',
       kahinCoin: 'coin',
+      avMutedTag: 'SUSTURULDU',   // denetim — Avukat'ın susturduğu joker kartındaki plaka
       kahinPts: 'puan',
       consumLeftUse: 'Sol tık: kullan',
       consumLeftCancel: 'Sol tık: seçimi iptal et',
@@ -574,7 +576,8 @@
       isleUndo: (n) => `↩ işleme ${n}`,
       comboUndo: 'Geri al',
       multiStaged: (n) => `${n} grup birden sahnelendi`,
-      confirmToast: (n, c, f) => `${n} grup × ${c} → +${f} puan`,
+      /* denetim SY-09 — yalnız işleme onaylanınca "0 grup" yazıyordu */
+      confirmToast: (n, c, f) => `${n ? n + ' grup' : 'İşleme'} × ${c} → +${f} puan`,
       /* ipuçları */
       hintDiscard: (n) => `Elinden <b>1-3 taş seç</b> ve at — ardından ${n} yeni taş çekilecek. İşlek riski yalnız <b>en yüksek</b> taşa işler.`,
       hintSelect: "Elinden taş seç, <b>Grup Aç</b>'a bas — Per · Sıralı · Çift",
@@ -645,9 +648,9 @@
       tuccarBtn: () => '🐪 Tüccar teklifini gör',
       /* Tüccar pop-up (Grup A5) */
       tuccarTitle: '🐪 TÜCCAR KERVANI',
-      tuccarSub: 'Her raund başında iki takas sunar. Birini seç ya da reddet.',
+      tuccarSub: 'Her tur iki takas sunar. Birini seç ya da reddet.',   // denetim JB-10
       tuccarRefuse: 'Reddet',
-      tuccarWarn: (n) => `⚠ Bir kez daha reddedersen Tüccar gider (kalan hak: ${n}).`,
+      tuccarWarn: (n) => `⚠ Üst üste ${n} kez daha reddedersen Tüccar gider.`,   // denetim JB-10 (eskiden "bir kez daha … kalan hak: 4")
       tuccarLast: '⚠ Bunu da reddedersen Tüccar kervanını toplar ve GİDER.',
       tuccarCost: (n, c) => (n ? `${n} ${c}` : 'bedava'),
       /* Tüccar BOSS varyantı (Grup F) */
@@ -939,7 +942,7 @@
       okeySlotTitle: '🃏 Okey Nereye Otursun?',
       okeySlotBody: 'Bu okey sıranın iki ucuna da oturabilir. Hangi taşın yerine geçsin?',
       terziTitle: '🦎 BUKALEMUN — Rengini Seç',
-      terziBody: 'Seçilen renkteki taşlar, raund süresi boyunca Per açılımlarında renk kuralından muaf olur.',
+      terziBody: 'Seçtiğin renkteki taşlar renksiz sayılır: her grupta, her yerde kullanılabilir.',   // denetim JA-05
       terziDone: (c) => `Bukalemun ${c} rengine büründü`,
       /* ritim */
       ritimTitle: (l) => `RİTİM JOKERİ — Zorluk ${l}/3`,
@@ -1281,6 +1284,7 @@
       rpStage: 'Stage', rpRound: 'Round', rpCoins: 'Coins', rpBest: 'Best Meld', rpMult: 'Permanent Mult',
       rpWhere_inStore: 'You left in the shop — you continue there.',
       rpWhere_inRound: 'You left mid-round — the round restarts.',
+      rpWhere_inRoundMid: 'You left mid-round — you continue from the same turn.',   // denetim RK
       rpWhere_map: 'You left on the map — pick the next round.',
       /* P61 — casino feel */
       betClosed: 'NO MORE BETS!',
@@ -1421,7 +1425,8 @@
       pauseMainMenu: 'Back to Main Menu',
       pauseSettings: '⚙ Settings',
       mapCoinLbl: 'COINS', mapPermLbl: 'PERM. MULTIPLIER',
-      mapTitleL1: 'CHOOSE YOUR', mapTitleL2: 'NEXT RAUND',
+      /* denetim UI-06 — EN arayüzde Türkçe "Raund" kalmıştı */
+      mapTitleL1: 'CHOOSE YOUR', mapTitleL2: 'NEXT ROUND',
       mapOkeyBoxLbl: 'STAGE<br>OKEY',
       mcSelect: 'SELECT',
       mcPassed: 'PASSED',
@@ -1458,8 +1463,9 @@
       riFermanReady: '🪶 Written — next boss',
       riFermanUsed: (n, max) => `🪶 Used (${n}/${max})`,
       fermanBanner: '🪶 EDICT: this condition is void',
-      totemTitle: 'Wand', meldTitle: 'Meld', scoreBoxLbl: 'Raund<br>Score',
-      stageBoxLbl: 'STAGE', roundBoxLbl: 'RAUND', okeyBoxLbl: 'OKEY',
+      /* denetim UI-06 — EN'de "Round" (TR "Raund") */
+      totemTitle: 'Wand', meldTitle: 'Meld', scoreBoxLbl: 'Round<br>Score',
+      stageBoxLbl: 'STAGE', roundBoxLbl: 'ROUND', okeyBoxLbl: 'OKEY',
       btnAddComboS: 'Open<br>Hand', btnConfirmS: 'Confirm', btnSkipS: 'Pass', btnDiscardS: 'Drop',
       btnDrawOnlyS: 'Draw →',
       btnAddCombo: 'Open Group', btnConfirm: 'Confirm Meld',
@@ -1497,6 +1503,7 @@
       varName_oteki: 'Full Moon',
       varDesc_oteki: 'The card looks like this when the Moon Well fills and the Full Moon comes. Its effect stays the same.',
       kahinCoin: 'coins',
+      avMutedTag: 'SILENCED',   // denetim — Avukat'ın susturduğu joker kartındaki plaka
       kahinPts: 'pts',
       consumLeftUse: 'Left-click: use',
       consumLeftCancel: 'Left-click: cancel the pick',
@@ -1571,7 +1578,8 @@
       isleUndo: (n) => `↩ extension ${n}`,
       comboUndo: 'Undo',
       multiStaged: (n) => `${n} groups staged at once`,
-      confirmToast: (n, c, f) => `${n} groups × ${c} → +${f} pts`,
+      /* denetim SY-09 — "0 groups" (yalnız işleme) ve "1 groups" düzeldi */
+      confirmToast: (n, c, f) => `${n ? n + (n === 1 ? ' group' : ' groups') : 'Extend'} × ${c} → +${f} pts`,
       hintDiscard: (n) => `<b>Select 1-3 tiles</b> and discard them — then you'll draw ${n} new tiles. İşlek only ever hits the <b>highest</b> one.`,
       hintSelect: 'Select tiles from your hand and press <b>Open Group</b> — Set · Run · Pair',
       hintMode: (m) => `This turn's mode: <b>${m}</b> — keep adding or confirm`,
@@ -1634,9 +1642,9 @@
         + 'The limit is recalculated every turn and rises as the round goes on.',
       tuccarBtn: () => '🐪 View the Merchant\'s offer',
       tuccarTitle: '🐪 THE MERCHANT\'S CARAVAN',
-      tuccarSub: 'Offers two trades at the start of every round. Pick one or refuse.',
+      tuccarSub: 'Offers two trades every turn. Pick one or refuse.',   // denetim JB-10
       tuccarRefuse: 'Refuse',
-      tuccarWarn: (n) => `⚠ Refuse once more and the Merchant leaves (refusals left: ${n}).`,
+      tuccarWarn: (n) => `⚠ Refuse ${n} more times in a row and the Merchant leaves.`,   // denetim JB-10
       tuccarLast: '⚠ Refuse this one too and the Merchant packs up and LEAVES.',
       tuccarCost: (n, c) => (n ? `${n} ${c}` : 'free'),
       tuccarBossTitle: '👹 THE MERCHANT — BOSS',
@@ -1894,7 +1902,7 @@
       okeySlotTitle: '🃏 Where Does the Joker Go?',
       okeySlotBody: 'This joker fits either end of the run. Which tile should it stand in for?',
       terziTitle: '🦎 CHAMELEON — Pick a Color',
-      terziBody: 'Tiles of the chosen color are exempt from the color rule in Set melds.',
+      terziBody: 'Tiles of the chosen color count as colorless: they fit any group, in any position.',   // denetim JA-05
       terziDone: (c) => `Chameleon turned ${c}`,
       ritimTitle: (l) => `RHYTHM JOKER — Difficulty ${l}/3`,
       ritimBody: (n) => `Listen to the drum, then repeat the same ${n} beats with Space or a click. Miss and the joker is destroyed.`,
@@ -2075,7 +2083,7 @@
     fuzyon: { name: 'Fusion', desc: `Merges two of your jokers into one card: both effects work together, and it keeps the longer duration.` },
     sisyphus: { name: 'Sisyphus', desc: 'The boulder climbs each turn you meld: +2.0x on turn 2, +4.0x on turn 3, +8.0x on turn 4. A turn without melding slides it down 2.0x; each new round it drops one step.' },
     midas: { name: 'Midas', desc: '+2 coins for every tile you meld. Paid at round end.' },
-    kaptan: { name: 'Cursed Captain', desc: 'Prevents Game Over once. Price: can’t be sold, targets rise 20% while it’s alive.' },
+    kaptan: { name: 'Cursed Captain', desc: 'Prevents Game Over once. After it saves you: can’t be sold, targets rise 20% while it’s alive.' },   // denetim JB-16
     ucuncuTeker: { name: 'Unicycle', desc: 'Pairs and Sets/Runs can share a turn. Both get +2.0x, plus +200 pts.' },
     kaioken: { name: 'Kaioken', desc: 'Skip 2 turns: next meld +4.0x. Skip 3: +9.0x.' },
     ankaKusu: { name: 'Phoenix', desc: 'Your melds get +1.5x, +3.5x in its last round. When it expires it becomes a random Mythic for 1 round.' },
@@ -2111,14 +2119,14 @@
     freedom: { name: 'Freedom Fighters', desc: 'Marks 5 tiles when acquired. A marked tile that reaches your hand is worth 10x its value.' },
     avukat: { name: 'Lawyer', desc: 'At every round end it defends your rarest joker: 75% it is saved, 25% both are destroyed.' },
     kahin: { name: 'Oracle', desc: 'Sets a prophecy goal every round. Fulfil it for a reward at round end.' },
-    tuccar: { name: 'Merchant', desc: `Brings two trade offers every round: take one or refuse. Refuse twice in a row and it leaves.` },
+    tuccar: { name: 'Merchant', desc: `Brings two trade offers every turn: take one or refuse. Refuse 4 times in a row and it leaves.` },   // denetim JB-10
     fatality: { name: 'Fatality', desc: 'Sets a score limit every turn. Break it and the target drops 10%.' },
     ritim: { name: 'Rhythm', desc: `A rhythm bar appears before you confirm a meld: stop it in time for +1.0x / +2.0x / +4.0x. Miss it and the joker is destroyed.` },
     corporates: { name: 'The Corporates', desc: 'A corporation sets a task every round: reward for success, penalty for failure.' },
     godzilla: { name: 'Godzilla', desc: 'Charges on turns you skip melding. Next meld: S1 +120/+2.0x, S2 +240/+3.5x, S3 +450/+6.0x.' },
     kelebek: { name: 'Butterfly Effect', desc: 'Meld a different type than last turn for a surprise reward: +2.0x, +200 pts or +8 coins.' },
     aynaKral: { name: 'Mirror King', desc: `Your meld scores pile up in the mirror. Skip melding a turn to cash them in: 2 melds stored ×1.5, 3 or more ×2.` },
-    karaKedi: { name: 'Black Cat', desc: 'Draw the lowest tile and it permanently becomes a 13; +80 pts when melded.' },
+    karaKedi: { name: 'Black Cat', desc: 'Draw the lowest tile and it becomes a 13 this round; +80 pts when melded.' },   // denetim BE-10
     ladyLuck: { name: 'Lady Luck', desc: 'Each draw refills your hand to 21; each turn one scoring joker pays x2.' },
     orion: { name: 'Orion', desc: 'Binds a joker to his belt (×1.5 → ×2 → ×4). Plays beside you with 21 tiles.' },
   };
@@ -2147,7 +2155,7 @@
     kahin: `Each turn brings a prophecy you must follow; break it and that turn scores zero. Follow them all for +500 pts.`,
     tuccar: 'The offers are far harsher and you cannot refuse: pay the price or take the penalty.',
     corporates: 'One heavy corporate task for the whole round. Fail it and it is Game Over.',
-    aynaKral: `Each meld’s score piles up as a debt and is subtracted from your next meld.`,
+    aynaKral: `Half of each meld’s score becomes a debt, subtracted from your next meld.`,   // denetim BE-08
   };
 
   const CONSUM_EN = {
@@ -2183,7 +2191,7 @@
     bakir: { name: 'Copper Tile', desc: 'Joins your deck permanently. +0.5x when melded.' },
     zumrut: { name: 'Emerald Tile', desc: 'Joins your deck permanently. +1.5x when melded.' },
     karaDelikTasi: { name: 'Black Hole Tile', desc: `Joins your deck permanently. +80 pts when melded, +25 more with each use (up to +300), and safe from the trap when discarded.` },
-    aynaTasi: { name: 'Mirror Tile', desc: `Joins your deck permanently. The highest tile of its group scores 3 times.` },
+    aynaTasi: { name: 'Mirror Tile', desc: `Joins your deck permanently. Adds 2× its group’s highest tile as flat points.` },   // denetim BE-18
     yildizTasi: { name: 'Star Tile', desc: `Joins your deck permanently. Meld it and 3 tiles are revealed from the deck; pick one to take into your hand.` },
     zamanTasi: { name: 'Time Tile', desc: 'Joins your deck permanently. Meld it and no joker ages this round.' },
     ayTasi: { name: 'Moon Tile', desc: `Born from the Other World and permanent. Gives +3.0x in melds; it becomes an okey on a Full Moon turn.` },
@@ -2267,6 +2275,10 @@
     [/^👹 Kahin: her turda kehanete uydun → \+500 puan$/, '👹 Oracle: you fulfilled every prophecy → +500 pts'],
     [/^🐪 Tüccar teklifi: 3 coin → bu raund \+1\.5x çarpan$/, '🐪 Merchant offer: 3 coins → +1.5x mult this round'],
     /* Playtest 17 · Grup B/11 — Tüccar HER TUR teklif sunar */
+    /* denetim JB-10 — ret notları kalan hakkı söyler */
+    [/^🐪 Teklif reddedildi\. Bir kez daha reddedersen Tüccar gidecek\.$/, '🐪 Offer refused. Refuse once more and the Merchant leaves.'],
+    [/^🐪 Teklif reddedildi\. Üst üste (\d+) kez daha reddedersen Tüccar gidecek\.$/, '🐪 Offer refused. Refuse $1 more times in a row and the Merchant leaves.'],
+    [/^🐪 Teklif reddedildi\.$/, '🐪 Offer refused.'],
     [/^🐪 Tüccar kervanı: (\d+) takas teklifi var — birini seç ya da reddet$/,
       '🐪 Merchant caravan: $1 trade offers — pick one or refuse'],
     [/^👹 Tüccar \(BOSS\): bedeli öde ya da cezayı ye — reddetme hakkın yok$/,
@@ -2296,7 +2308,15 @@
     [/^pas (\d+)\/(\d+)$/, 'passes $1/$2'],
     [/^tur (\d+)\/(\d+)$/, 'turn $1/$2'],
     [/^👹 Verdatek: pas hakkını kullandın — bundan sonra her turda açılım yap$/, '👹 Verdatek: you used your pass — meld every turn from now on'],
-    [/^👹 (.+): "(.+)" görevi tutmadı \((.+)\) — GAME OVER$/, '👹 $1: the task "$2" failed ($3) — GAME OVER'],
+    /* denetim BE-20 — görev metni ve neden de çevrilir (eskiden tırnak içi Türkçe kalıyordu) */
+    [/^👹 (.+): "(.+)" görevi tutmadı \((.+)\) — GAME OVER$/, (m) => `👹 ${evTranslate(m[1])}: the task "${evTranslate(m[2])}" failed (${evTranslate(m[3])}) — GAME OVER`],
+    [/^👹 (.+): "(.+)" görevi tamamlanmadı \((.+)\) — GAME OVER$/, (m) => `👹 ${evTranslate(m[1])}: the task "${evTranslate(m[2])}" was not completed (${evTranslate(m[3])}) — GAME OVER`],
+    [/^Çift olmayan bir grup açtın$/, 'you melded a group that is not a Pair'],
+    [/^bu turda (\d+)\/(\d+) grup açtın$/, 'you melded $1/$2 groups this turn'],
+    [/^(\d+)\. kez pas geçtin$/, 'you passed $1 times'],
+    [/^2\. tur bitti, raund geçilmedi$/, 'turn 2 ended without clearing the round'],
+    [/^raundda (\d+)\/(\d+) Çift açıldı$/, '$1/$2 Pairs melded this round'],
+    [/^raundda hiç açılım yapmadın$/, 'you made no meld this round'],
     [/^🏢 (.+?) cezası: -(\d+) puan$/, (m) => `🏢 ${trCorpName(m[1])} penalty: -${m[2]} pts`],
     [/^🗣 Dedikodu: raund sonu store'unda "(.+?)" \((.+?)\) çıkacak$/, '🗣 Gossip: "$1" ($2) will appear in the round-end store'],
     [/^◈ (.+?) eline geldi — aktif!$/, '◈ $1 drawn to hand — active!'],
@@ -2337,7 +2357,8 @@
     /* Playtest 9 · Grup N — GLITCH (eski Dervish) */
     [/^👹 GLITCH: (\d+) taş glitch'li geldi — (\d+) tanesi bozuk; açarsan puanın düşer$/, '👹 GLITCH: $1 tiles arrived glitched — $2 are corrupted; meld them and your score drops'],
     [/^🌀 GLITCH: (\d+) taşın glitch'lendi — birinde gizli \+(\d+) puan var$/, '🌀 GLITCH: $1 of your tiles got glitched — one secretly carries +$2 pts'],
-    [/^👹 Kelebek yasağı: bu tur (.+?) açarsan puan %30 kesilir$/, '👹 Butterfly ban: open $1 this turn and its score is cut 30%'],
+    /* denetim SY-08 — tür adı da çevrilir (eskiden "open Çift this turn") */
+    [/^👹 Kelebek yasağı: bu tur (.+?) açarsan puan %30 kesilir$/, (m) => `👹 Butterfly ban: open ${({ 'Çift': 'Pair', 'Per': 'Set', 'Sıralı': 'Run' })[m[1]] || m[1]} this turn and its score is cut 30%`],
     /* Playtest 9 · Grup Q — sabitleme kaldırıldı, taşlar ıstakaya geri dönüyor.
        Playtest 10 — dönüş SONRAKİ TUR BAŞINDA olduğu için metinler değişti. */
     [/^🍬 Bungie Gum koptu — bu turun (\d+) taşı geri dönmeyecek$/, '🍬 Bungie Gum snapped — this turn’s $1 tiles will not come back'],
@@ -2538,7 +2559,8 @@
       (m) => `🏆 Stage upgrades (automatic): +0.3x permanent mult · +1 permanent draw (${m[1]} tiles per turn) · +12 coins · Rare joker: ${trRareNote(m[2])}`],
     [/^Godzilla şarj oldu \(S(\d+)\)$/, 'Godzilla charged up (S$1)'],
     [/^Ayna Kral yansıması: \+(\d+) puan \((\d+) açılım ×([\d.]+)\)$/, 'Mirror King reflection: +$1 pts ($2 melds ×$3)'],
-    [/^Seçilen renk: (.+?)\. Bu renkteki taşlar Per açılımlarında renk kuralından muaftır\.$/, 'Chosen color: $1. Tiles of this color are exempt from the Set color rule.'],
+    /* denetim JA-05 — Bukalemun açıklaması güncellendi */
+    [/^Seçilen renk: (.+?)\. Bu renkteki taşlar renksiz sayılır: her grupta, her yerde kullanılabilir\.$/, 'Chosen color: $1. Tiles of this color count as colorless: they fit any group, in any position.'],
     [/^⚗ Füzyon: (.+?) \+ (.+?) birleşti — ikisi de Füzyon kartında çalışıyor \(süre: (\d+) raund\)$/, '⚗ Fusion: $1 + $2 fused — both now work on the Fusion card (duration: $3 rounds)'],
     [/^⚗ Füzyon: (.+?) Füzyon kartına eklendi \(süre: (\d+) raund\)$/, '⚗ Fusion: $1 added to the Fusion card (duration: $2 rounds)'],
     [/^⚗ Füzyon: (.+?) eridi → (.+?) artık onun efektlerini de taşıyor \(süre: max\((\d+), (\d+)\) = (\d+) raund\)$/, '⚗ Fusion: $1 melted → $2 now carries its effects too (duration: max($3, $4) = $5 rounds)'],
@@ -2595,6 +2617,7 @@
     [/^Ana Slot ve Backup dolu — önce bir joker sat\.$/, 'Main Slot and Backup are full — sell a joker first.'],
     [/^Ana Slot dolu\.$/, 'Main Slot is full.'],
     [/^Backup dolu\.$/, 'Backup is full.'],
+    [/^(.+?) kilitli — backup'a alınamaz\.$/, '$1 is locked — it can\'t go to the Backup.'],   // denetim JB-02
     [/^Envanter dolu — en fazla (\d+) wand taşınabilir\.$/, 'Inventory full — carry at most $1 wands.'],
     [/^(.+?) sadece raund içinde kullanılabilir\.$/, '$1 can only be used during a round.'],
     /* Grup K v2 — tüketilebilir notları/hataları */
@@ -2610,6 +2633,7 @@
     [/^🐉 Hidra: okey cezasız atıldı — sonraki tur iki kafa çıkacak$/, '🐉 Hydra: okey discarded with no penalty — two heads grow next turn'],
     [/^🐉 Hidra: (\d+) geçici okey ıstakana geldi \(raund sonunda kaybolur\)$/, '🐉 Hydra: $1 temporary okeys joined your rack (gone at round end)'],
     [/^🐉 Hidra: bu raundun okey sınırı doldu — yeni kafa çıkmadı$/, '🐉 Hydra: the okey limit for this round is reached — no new heads'],
+    [/^🐉 Hidra: ıstakan dolu — yeni kafalar sığmadı$/, '🐉 Hydra: your rack is full — the new heads didn\'t fit'],   // denetim JB-15
     [/^🧲 Mıknatıs: (.+?) artık her raundun başlangıç elinde gelecek$/, '🧲 Magnet: $1 will now be in your opening hand every round'],
     [/^🧲 Mıknatıs: (.+?) eline çekildi$/, '🧲 Magnet: $1 pulled into your hand'],
     [/^En fazla (\d+) taş mıknatıslanabilir\.$/, 'At most $1 tiles can be magnetised.'],
@@ -2657,6 +2681,41 @@
     [/^(.+?) sadece raund içinde kullanılabilir \(elinden taş seçmen gerekiyor\)\.$/, '$1 can only be used during a round (you need to pick a tile from your hand).'],
     [/^Önce elinden bir taş seç\.$/, 'Pick a tile from your hand first.'],
     [/^Bu taş dönüştürülemez \(özel\/deste jokeri taşı\)\.$/, 'This tile can\'t be transformed (special/deck-joker tile).'],
+    /* denetim BE-20 — EN'de Türkçe kalan değnek hataları ve Tüccar BOSS notları */
+    [/^Bu taş dönüştürülemez \(deste jokeri \/ uzaylı taşı\)\.$/, 'This tile can\'t be transformed (deck-joker / alien tile).'],
+    [/^Okey taşı dönüştürülemez — her stage o stage’in okeyine döner\.$/, 'The okey can\'t be transformed — it becomes each stage\'s okey.'],
+    [/^Bu taş türetilmiş bir kopya — destede karşılığı yok, kalıcı değnek tutmaz\.$/, 'This tile is a derived copy — it has no deck original, a permanent wand won\'t take.'],
+    [/^Bu taşın değeri bu raund değişti — kalıcı değnek asıl taşa ulaşamaz\.$/, 'This tile\'s value changed this round — a permanent wand can\'t reach the original tile.'],
+    [/^Bu taş zaten (.+?) — vernik tutmaz\.$/, 'This tile is already a $1 — the varnish won\'t take.'],
+    [/^(.+?) destede zaten (\d+)\/(\d+) — vernik tutmaz\.$/, '$1 is already $2/$3 in the deck — the varnish won\'t take.'],
+    [/^(.+?) destede zaten (\d+)\/(\d+) — kopya sığmaz\.$/, '$1 is already $2/$3 in the deck — no room for a copy.'],
+    [/^Kopyalanacak bir ANA SLOT jokeri seç\.$/, 'Pick a MAIN SLOT joker to copy.'],
+    [/^Ana Slot ve Backup dolu — kopyaya yer yok\.$/, 'Main Slot and Backup are full — no room for the copy.'],
+    [/^Envanter zaten en büyük hâlinde \((\d+)\)\.$/, 'Your inventory is already at its largest ($1).'],
+    [/^Ana Slot zaten en büyük hâlinde \((\d+)\)\.$/, 'Your Main Slot is already at its largest ($1).'],
+    [/^👹 Bedel ödenmedi — hedef %10 arttı \((\d+)\)$/, '👹 Price not paid — the target rose 10% ($1)'],
+    [/^👹 Bedel ödenmedi — bu raund çarpan -1\.0x$/, '👹 Price not paid — -1.0x multiplier this round'],
+    [/^👹 Bedel ödenmedi — (.+) kervanla gitti$/, '👹 Price not paid — $1 left with the caravan'],
+    [/^👹 Bedel ödenmedi — verilecek taş yoktu$/, '👹 Price not paid — there was no tile to give'],
+    [/^👹 5 coin ödendi — taşların güvende$/, '👹 Paid 5 coins — your tiles are safe'],
+    [/^👹 250 puan ödendi$/, '👹 Paid 250 pts'],
+    [/^👹 (\d+) puan ödendi, kalan (\d+) puan BORÇ — bu raundta kazandığın puandan düşülecek$/, '👹 Paid $1 pts, the remaining $2 pts are a DEBT — taken from the points you score this round'],
+    [/^👹 (.+) kervana verildi$/, '👹 $1 handed to the caravan'],
+    [/^👹 Verilecek taş yoktu$/, '👹 There was no tile to give'],
+    /* denetim SY-08 — EN'de Türkçe kalan motor metinleri (bot taramasıyla toplandı: hata toast'ları,
+       Tüccar'ın gidişi, Lanetli Kaptan kurtarışı, olay satırları) */
+    [/^Envanter dolu — en fazla (\d+) değnek taşınabilir\.$/, 'Inventory full — you can carry at most $1 wands.'],
+    [/^Istaka dolu \((\d+)\) — taş alınamadı\.$/, 'Rack full ($1) — couldn\'t take the tile.'],
+    [/^(.+?) satılamaz — Game Over'dan kurtardıktan sonra kilitlendi\.$/, '$1 can\'t be sold — it locked after saving you from Game Over.'],
+    [/^🐪 Tüccar (\d+) kez üst üste reddedildi — kervanını topladı ve gitti\.$/, '🐪 The Merchant was refused $1 times in a row — packed up the caravan and left.'],
+    [/^Lanetli Kaptan: Game Over önlendi! Bedeli: joker satılamaz ve süresi bitene kadar \((\d+) raund\) hedefler \+%(\d+)\.$/, 'Cursed Captain: Game Over prevented! The price: the joker can\'t be sold and targets are +$2% until it expires ($1 rounds).'],
+    [/^⭐ Kuzey Yıldızı: (\d+) taş açıldı — birini seç$/, '⭐ North Star: $1 tiles revealed — pick one'],
+    [/^❤️‍🩹 İkinci Şans kullanıldı — raund yeniden başladı$/, '❤️‍🩹 Second Chance used — the round restarted'],
+    [/^❤️‍🩹 İkinci Şans: raund baştan başlıyor!$/, '❤️‍🩹 Second Chance: the round starts over!'],
+    [/^👹 Ayna Kral: (\d+) puanlık yansıma borcu sıradaki açılımdan düşülecek$/, '👹 Mirror King: a $1-pt reflection debt will be taken from your next meld'],
+    [/^👹 Ayna Kral: yansıma borcu -(\d+) puan$/, '👹 Mirror King: reflection debt -$1 pts'],
+    [/^yansıma borcu -(\d+) puan$/, 'reflection debt -$1 pts'],
+    [/^👹 Ritim: sekans kaçtı — bu açılım puan vermiyor$/, '👹 Rhythm: you missed the sequence — this meld scores nothing'],
     [/^Önce süresini uzatacağın jokeri seç\.$/, 'Pick the joker to extend first.'],
     [/^Bu taş zaten 13 — çekiç işlemez\.$/, 'This tile is already 13 — the hammer has no effect.'],
     [/^Bu taş zaten 13\.$/, 'This tile is already 13.'],
@@ -2852,6 +2911,8 @@
     },
     typeName(type) { return this.t({ cift: 'typeCift', per: 'typePer', sirali: 'typeSirali' }[type]); },
     ev: evTranslate,
+    /* denetim UI-07 — Kahin kutusundaki çıplak hedef/kehanet metni (GOAL_EN yalnız olay kalıplarının içinde kullanılıyordu) */
+    goal(x) { return lang === 'en' && x && GOAL_EN[x] ? GOAL_EN[x] : evTranslate(x); },
     evAll(arr) { return (arr || []).map(evTranslate); },
   };
 

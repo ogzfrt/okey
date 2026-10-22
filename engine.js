@@ -180,9 +180,12 @@ const RUN_MODES = {
        Bahsin kendisi bu tablonun ÜSTÜNE çarpar (×1 / ×1.5 / ×2). */
     targets: [
       [ 450,  650,  850],       // S1   (eski 540 · 810 · 1080 · P105 yuvarlak: 430 · 650 · 865)
-      [ 650,  950, 1200],       // S2   (eski 825 · 1160 · 1490 · P105: 660 · 930 · 1190)
-      [ 900, 1200, 1500],       // S3   (eski 1140 · 1525 · 1880 · P105: 910 · 1220 · 1505)
-      [1200, 1500, 1800],       // S4   (eski 1470 · 1875 · 2230 · P105: 1175 · 1500 · 1785)
+      /* denetim (kullanıcı kararı 2026-10-22) — Kozmik'teki R1 kuralı: yeni stage'in R1'i önceki
+         stage'in R2'sinden yüksek, boss'undan düşük (eski R1: S2 650 · S3 900 · S4 1200). Bot:
+         run kazanma %4.2 → %3.9 (4000 run, gürültü içinde), R1 geçişi S3 %98 → %95. */
+      [ 750,  950, 1200],       // S2   (eski 825 · 1160 · 1490 · P105: 660 · 930 · 1190)
+      [1100, 1200, 1500],       // S3   (eski 1140 · 1525 · 1880 · P105: 910 · 1220 · 1505)
+      [1350, 1500, 1800],       // S4   (eski 1470 · 1875 · 2230 · P105: 1175 · 1500 · 1785)
       [1200, 1500, FINAL_TARGET],   // S5 FİNAL — yalnız 3. sütun kullanılır (P71)
     ],
     /* P50 — kullanıcı: "coin kazancını arttırmayalım, normal run'daki gibi
@@ -870,7 +873,8 @@ const BOSSES = [
   { key: 'kahin', name: 'Kahin', desc: `Her tur uyman gereken bir kehanet gelir; uymazsan o turun puanı sıfırlanır. Hepsine uyarsan +500 puan.` },
   { key: 'tuccar', name: 'Tüccar', desc: 'Teklifler çok daha ağır ve reddedemezsin: ya bedeli ödersin ya cezayı.' },
   { key: 'corporates', name: 'The Corporates', desc: 'Raund boyu tek bir ağır şirket görevi. Tamamlayamazsan Game Over.' },
-  { key: 'aynaKral', name: 'Ayna Kral', desc: `Her açılımın puanı borç olarak birikir ve sonraki açılımından düşülür.` },
+  /* denetim BE-08 — metin motora uyduruldu: borç açılımın YARISIDIR ve birikmez (bkz. confirmMelds) */
+  { key: 'aynaKral', name: 'Ayna Kral', desc: `Her açılımın yarısı borç olur ve sonraki açılımından düşülür.` },
 ];
 
 /* P71 · KUMARHANE FİNALİ (spec 2026-10-05) — modun SABİT final boss'u.
@@ -1769,7 +1773,8 @@ const SPECIAL_TILES = {
   karaDelikTasi: { key: 'karaDelikTasi', name: 'Kara Delik Taşı', icon: '🕳', price: 9, rarity: 'rare', maxCopies: SPECIAL_MAX_COPIES,
     desc: `Destene kalıcı girer. Açılımda +${KD_TASI_BASE} puan verir, her kullanımda +${KD_TASI_STEP} artar (en çok +${KD_TASI_MAX}) ve atarken işlek cezası yemez.` },
   aynaTasi: { key: 'aynaTasi', name: 'Ayna Taşı', icon: '🪞', price: 13, rarity: 'legendary', maxCopies: SPECIAL_MAX_COPIES,
-    desc: `Destene kalıcı girer. Girdiği grubun en yüksek taşı ${AYNA_TASI_TIMES} kat puan sayılır.` },
+    /* denetim BE-18 (kullanıcı kararı 16) — düz puan kalır, metin gerçeğe uyduruldu */
+    desc: `Destene kalıcı girer. Grubun en yüksek taşının ${AYNA_TASI_TIMES - 1} katı düz puan ekler.` },
   /* PLAYTEST 24 · GRUP H (kullanıcı seçimi 2026-09-06) — "KUZEY YILDIZI".
      Eski hâli açılımda +2 RASTGELE taş çektiriyordu; el zaten MAX_HAND'de
      tavanlı olduğu için çoğu raundda hiç hissedilmiyor ve kart bir KARAR
@@ -1976,7 +1981,8 @@ const JOKER_DEFS = {
   renkUstasi: { key: 'renkUstasi', name: 'Ressam Paleti', rarity: 'common',
     desc: 'Açılımında dört rengin hepsi varsa +2.0x.',
     effect: (c) => {
-      const seen = new Set(c.tiles.filter(t => !t.jokerTile && t.color).map(t => t.color));
+      const colOf = c.colorOf || ((t) => t.color);   // denetim JA-06 — okey yerine geçtiği renkle
+      const seen = new Set(c.tiles.filter(t => !t.jokerTile && colOf(t)).map(colOf));
       return seen.size >= COLORS.length ? { mult: 2.0, flat: 0 } : null;
     } },
   sayiTapinagi: { key: 'sayiTapinagi', name: 'Yin Yang', rarity: 'common',
@@ -2023,7 +2029,8 @@ const JOKER_DEFS = {
     desc: `Açılımında en çok bulunan rengin her taşı +${BRUSH_TILE_MULT}x.`,
     effect: (c) => {
       const cnt = {};
-      for (const t of c.tiles) if (t.color && !t.jokerTile) cnt[t.color] = (cnt[t.color] || 0) + 1;
+      const colOf = c.colorOf || ((t) => t.color);   // denetim JA-06 — okey yerine geçtiği renkle
+      for (const t of c.tiles) { const col = colOf(t); if (col && !t.jokerTile) cnt[col] = (cnt[col] || 0) + 1; }
       const n = Math.max(0, ...Object.values(cnt));
       return n ? { mult: round2(n * BRUSH_TILE_MULT), flat: 0 } : null;
     } },
@@ -2233,7 +2240,8 @@ const JOKER_DEFS = {
     /* P30 · Grup B (kullanıcı kararı): +1 → +3 coin (MIDAS_COIN). */
     desc: `Açılımda kullandığın her taş +${MIDAS_COIN} coin. Raund sonunda ödenir.` },
   kaptan: { key: 'kaptan', name: 'Lanetli Kaptan', rarity: 'legendary', uses: 3,
-    desc: 'Game Over’ı 1 kez önler. Bedeli: satılamaz olur, hedefler %20 yükselir.' },
+    /* denetim JB-16 — bedel kurtarıştan SONRA ve joker yaşadıkça işler (EN metniyle aynı) */
+    desc: 'Game Over’ı 1 kez önler. Sonra satılamaz, yaşadığı sürece hedefler %20 artar.' },   // (browser_p7: ortalama uzunluk < 75)
   /* v3 double-dip denetimi: kural açma + çarpan + flat üçlü ödüldü;
      flat kaldırıldı (kuralın kendisi + 0.5x yeterince güçlü) */
   ucuncuTeker: { key: 'ucuncuTeker', name: 'Tek Teker', rarity: 'legendary', uses: 3,
@@ -2511,7 +2519,9 @@ const JOKER_DEFS = {
   kahin: { key: 'kahin', name: 'Kahin', rarity: 'epic', uses: 3,
     desc: 'Her raund bir kehanet hedefi verir. Tutturursan raund sonunda ödül alırsın.' },
   tuccar: { key: 'tuccar', name: 'Tüccar', rarity: 'epic', uses: 4,
-    desc: `Her raund iki takas teklifi getirir: birini seç ya da reddet. Üst üste 2 kez reddedersen gider.` },
+    /* denetim JB-10 / BE-03 — teklif P17'den beri her TUR gelir, sabır eşiği TUCCAR_MAX_REFUSE (4);
+       sabit JOKER_DEFS'ten sonra tanımlı olduğu için (TDZ) sayı elle yazıldı. */
+    desc: `Her tur iki takas teklifi getirir: birini seç ya da reddet. Üst üste 4 kez reddedersen gider.` },
   fatality: { key: 'fatality', name: 'Fatality', rarity: 'epic', uses: 3,
     desc: 'Her tur bir skor sınırı koyar. Sınırı aşarsan hedef %10 düşer.' },
   /* P35 · Grup K — ad "Ritim Jokeri" → "Ritim" (EN "Rhythm"), kademeler RITIM_BONUS. */
@@ -2526,7 +2536,7 @@ const JOKER_DEFS = {
   aynaKral: { key: 'aynaKral', name: 'Ayna Kral', rarity: 'epic', uses: 2,
     desc: `Açılımlarının puanı aynada birikir. Açılım yapmadığın turda hepsini alırsın: 2 açılım biriktiyse ×1.5, 3 ve üstü ×2.` },
   karaKedi: { key: 'karaKedi', name: 'Kara Kedi', rarity: 'epic', uses: 2,
-    desc: 'En düşük taşı çekersen kalıcı 13 olur; açılımda +80 puan.' },
+    desc: 'En düşük taşı çekersen bu raund 13 olur; açılımda +80 puan.' },   // denetim BE-10 — dönüşüm raundluk (deste her raund yeniden kurulur)
   /* P71 — FİNAL nadirlik: yalnız Kumarhane finalinde Lady Luck'ı yenince
      kalıcı açılır; havuzlarda (store/paket/açılış/bahis) ASLA çıkmaz. */
   ladyLuck: { key: 'ladyLuck', name: 'Lady Luck', rarity: 'final', uses: LADY_USES, icon: '💋',
@@ -3148,10 +3158,10 @@ function normSeed(str) {
 function bukalemunColor() {
   const s = (typeof Game !== 'undefined' && Game.state) || null;
   if (!s || s.jokersDisabled || !Array.isArray(s.jokers)) return null;
-  for (const j of s.jokers) {
-    if (j.key === 'terzi' && j.color) return j.color;
-    if (j.fused) for (const f of j.fused) if (f.key === 'terzi' && f.color) return f.color;
-  }
+  /* denetim JA-10 — slotRecs: Füzyon alt kaydı + Vasiyet mirası + Lady Luck /
+     Orion atlaması tek kapıdan (eskiden yalnız s.jokers + fused taranıyordu) */
+  const recs = typeof Game.slotRecs === 'function' ? Game.slotRecs() : s.jokers;
+  for (const j of recs) if (j.key === 'terzi' && j.color) return j.color;
   return null;
 }
 const isColorWild = (t) => {
@@ -3829,8 +3839,29 @@ const Game = {
   slotRecs() {
     const out = [];
     const skip = this._recSkipIds();
-    for (const j of this.state.jokers) if (!skip.has(j.id)) out.push(...this._recsOf(j));
-    return out;
+    /* denetim karar 10 — `_calcSkipRec`: kemer katkısı hesabında yalnız TEK kayıt (ve mirası) düşer */
+    const sr = this._calcSkipRec;
+    const drop = sr ? new Set([sr, ...(sr.legacy || [])]) : null;
+    for (const j of this.state.jokers) if (!skip.has(j.id))
+      out.push(...(drop ? this._recsOf(j).filter(r => !drop.has(r)) : this._recsOf(j)));
+    /* denetim BE-01/JA-01/JB-04 (kullanıcı onayı: "gerçekten sustursun") — Avukat boss'unun
+       susturduğu joker bu tur HİÇBİR yolda çalışmaz. Tek kapı burası: effect döngüsü,
+       Godzilla/Zincir/Vampir/Boğa… blokları ve bütün hasActive kapıları buradan okur.
+       Eskiden yalnız effect döngüsü susuyordu (59 effect'siz kart çalışmaya devam ediyordu). */
+    const muted = this._mutedKey();
+    return muted ? out.filter(r => r.key !== muted) : out;
+  },
+  /* Susturmadan bağımsız liste: Avukat'ın seçimi ve arayüzde susturulan jokerin adı */
+  _allSlotRecs() {
+    this._noMute = true;
+    try { return this.slotRecs(); } finally { this._noMute = false; }
+  },
+  /* Bu tur susturulan joker anahtarı (yalnız Avukat boss raundu oynanırken; raund kazanılınca
+     yaşlanma / Sarmaşık / Kahin ödülü gibi raund sonu etkileri normal işler) */
+  _mutedKey() {
+    const s = this.state;
+    if (this._noMute || !s || !s.boss || s.boss.key !== 'avukat' || s.status !== 'playing') return null;
+    return this.bossOn() ? (s.bossMutedJoker || null) : null;
   },
 
   /* P71 — Lady Luck: büyülü joker o tur yok sayılır (mekanikleri susar);
@@ -3885,6 +3916,15 @@ const Game = {
     return out;
   },
 
+  /* denetim JB-14 — bir efekt kaydının GERÇEK kalan ömrü: Füzyon alt kaydı / Vasiyet mirası
+     yaşlanmaz, ömrü onu taşıyan slot kartınınkidir (★★★ kartta alt kayıt kendi süresiyle yaşar). */
+  _lifeOf(rec) {
+    const card = (this.state.jokers || []).find(c => c === rec || this._recsOf(c).includes(rec));
+    if (!card || card === rec) return rec.usesLeft;
+    if (card.beltStars === 3 && (card.fused || []).includes(rec)) return rec.usesLeft;
+    return card.usesLeft;
+  },
+
   hasActive(key) {
     return !this.state.jokersDisabled && this.slotRecs().some(j => j.key === key);
   },
@@ -3893,11 +3933,17 @@ const Game = {
     /* MADDE D4 — mod kendi hedef tablosunu getirebilir (Hızlı Run).
        Tablo dışına taşma kuralı (Trainer Sonsuz Mod) aynen korunur. */
     const tbl = runModeOf(this.state).targets || STAGE_TARGETS;
-    const last = tbl.length;
     let base;
     const fm = runModeOf(this.state);
-    const fb = fm.finalBoss && stage === fm.stages + 1 ? FINAL_BOSSES[fm.finalBoss] : null;
+    /* denetim SY-01 — final boss'lu modda tablonun son satırı (Kumarhane S5 = [1200, 1500,
+       FINAL_TARGET]) yalnız finalin yer tutucusudur: tablo dışı büyüme (Trainer Sonsuz) onu değil
+       son NORMAL stage'i taban alır. Final tabanı da yalnız boss raunduna (ric 3) uygulanır —
+       Trainer'da final stage'i 3 raundludur, R1/R2'ye 5700/5200 düşüyordu. Normal run'da final
+       stage zaten yalnız 3. raunddur; sayılar değişmez. */
+    const last = fm.finalBoss ? Math.min(tbl.length, fm.stages) : tbl.length;
+    const fb = fm.finalBoss && stage === fm.stages + 1 && ric === 3 ? FINAL_BOSSES[fm.finalBoss] : null;
     if (fb && fb.target) base = fb.target;          // P90 — Orion: sabit taban
+    else if (fb && tbl[stage - 1]) base = tbl[stage - 1][2];   // denetim SY-01 — Lady Luck: tablonun final satırı (FINAL_TARGET)
     else if (stage <= last) base = tbl[stage - 1][ric - 1];
     else {
       const scale = Math.pow(TARGET_GROWTH, stage - last);
@@ -4138,10 +4184,18 @@ const Game = {
     return true;
   },
 
+  /* denetim SY-12 — "sahip olduğun jokerler" (store/paket/bahis ödülü tekrar süzgeci) susturma
+     süzgeci OLMADAN: slotRecs() Lady Luck'ın büyülediği / Orion'un kemerine taktığı jokeri o raund
+     dışarıda bırakıyor, aynı joker yeniden teklif ediliyordu. */
+  _ownedJokerKeys() {
+    const s = this.state;
+    return new Set([...s.jokers.flatMap(j => this._recsOf(j)), ...(s.backup || []), ...(s.deckJokers || [])].map(j => j.key));
+  },
+
   _addShopSlotNow() {
     const s = this.state;
     if (!s.store) return false;
-    const owned = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
+    const owned = this._ownedJokerKeys();   // denetim SY-12
     const taken = new Set(s.store.items.map(i => i.key));
     const pool = this.jokerPool(d =>
       d.rarity !== 'epic' && !owned.has(d.key) && !taken.has(d.key));
@@ -4371,7 +4425,7 @@ const Game = {
     const s = this.state;
     const options = [];
     const skip = new Set(avoid || []);
-    const owned = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
+    const owned = this._ownedJokerKeys();   // denetim SY-12
     for (let i = 0; i < BET_PICK_CHOICES; i++) {
       let o = null;
       /* P61 — 'legendary' | 'rare' (yalnız Rare) | 'low' (Common/Rare) | 'any' (paket eğrisi) */
@@ -4516,10 +4570,19 @@ const Game = {
   _sansliZar(events) {
     const s = this.state;
     if (s.jokersDisabled || !this.kumarhaneOn()) return false;
-    const j = s.jokers.find(x => x.key === 'sansliZar');
+    /* denetim JA-09 — Füzyon alt kaydı / Vasiyet mirası da sayılır (slotRecs);
+       kırılırken yalnız Şanslı Zar kaydı taşıyıcı karttan çıkar. */
+    const j = this.slotRecs().find(x => x.key === 'sansliZar');
     if (!j) return false;
     const d = 1 + Math.floor(this.rng() * 6);
-    s.jokers = s.jokers.filter(x => x !== j);
+    const card = s.jokers.find(c => c === j || this._recsOf(c).includes(j));
+    if (!card || card === j) s.jokers = s.jokers.filter(x => x !== j);
+    else {
+      const drop = (list) => (list || []).filter(x => x !== j);
+      if (card.fused) card.fused = drop(card.fused);
+      if (card.legacy) card.legacy = drop(card.legacy);
+      for (const f of card.fused || []) if (f.legacy) f.legacy = drop(f.legacy);
+    }
     s.lastZar = d;
     if (d >= SANSLI_ZAR_MIN) { events.push(`🎲 Şanslı Zar: ${d} geldi — raund kurtuldu! (kart kırıldı)`); return true; }
     events.push(`🎲 Şanslı Zar: ${d} geldi — kurtarmadı (kart kırıldı)`);
@@ -5713,7 +5776,11 @@ const Game = {
       const low = [...s.hand]
         .filter(t => !t.jokerTile && !t.fakeOkey && !t.special && !t.ghost && !t.faceDown && !t.hidden
           && !this.isOkeyTile(t) && !t.sewn && !t.bossSewn && t.number > 0)
-        .sort((a, b) => a.number - b.number || String(a.id).localeCompare(String(b.id))).slice(0, KAGIT_TILES);
+        /* denetim SY-05 — eşitlik id'nin SAYI sırasıyla bozulur (eskiden metin sırası: "1000" < "999").
+           Id sayacı oturum boyunca birikir (sıfırlanmaz — testler ve öğretici geri yüklemesi düşük
+           id'lerle çakışırdı), ama taşlar hep aynı sırayla üretildiği için SAYI sırası her oturumda
+           aynıdır; metin sırası ise kaymaya göre değişiyor, aynı seed başka taşı seçiyordu. */
+        .sort((a, b) => a.number - b.number || a.id - b.id).slice(0, KAGIT_TILES);
       const faces = [];
       for (const t of low) {
         faces.push(`${COLOR_TR[t.color]} ${t.number}`);
@@ -5775,6 +5842,9 @@ const Game = {
     this._setupGossipTable(s.roundStartNotes);
     this._onTurnStart(s.roundStartNotes);
     this._rollKumarbaz();
+    /* denetim BE-19 — Orion yarışının TABANI raund başındaki hedeftir (Derin Nefes, The World,
+       Lanetli Kaptan, Kıyamet işlenmiş hâli); _orionTurn çıplak ORION_FLOOR'a dönmesin. */
+    s.orionFloor = this._raceOn() ? s.target : null;
   },
 
   /* ============================================================
@@ -5923,7 +5993,7 @@ const Game = {
     /* AVUKAT — "Her tur rastgele 1 jokerin o turki efekti iptal edilir;
        joker yok olmaz. Her tur FARKLI bir joker deaktif olur." */
     if (key === 'avukat') {
-      const recs = this.slotRecs();
+      const recs = this._allSlotRecs();   // denetim BE-01 — seçim susturmadan bağımsız havuzdan
       if (recs.length) {
         let pool = recs.filter(j => j.key !== s.bossMutedJoker);
         if (!pool.length) pool = recs;
@@ -6104,7 +6174,8 @@ const Game = {
       if (s.boss.key === 'kirby') {
         // okey taşları değer aşınmasından muaf (fiziksel okey işareti korunur)
         const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey
-          && !this.isOkeyTile(t) && !t.special);   /* Grup D: joker dönüşümü özel taşa dokunmaz */
+          && !this.isOkeyTile(t) && !t.special   /* Grup D: joker dönüşümü özel taşa dokunmaz */
+          && t.number > 1);   /* denetim BE-09 (karar 14) — 1'ler aday değil: hak boşa gitmez, 3 taş kemirilir */
         /* Grup A: HANGİ taşın kemirildiği yazılır. Eskiden yalnız sayı
            vardı; değeri düşen taş oyuncuya "kayboldu" gibi görünüyordu. */
         const bitten = [];
@@ -6231,10 +6302,16 @@ const Game = {
        glitch'ler, ama BURADA glitch İYİDİR: ikisinden birinde gizli +6
        puan vardır. Hangisi olduğu açılımda ortaya çıkar. Eski hâli tek
        taşa görünmez +3/+6 işliyordu; oyuncu ne olduğunu hiç göremiyordu. */
+    /* denetim BE-02 — önceki turun işaretleri temizlenirken GİZLİ BONUS da geri alınır.
+       Eskiden yalnız glitch/glitchGift siliniyor, +100 taşta kalıyordu: işaretsiz taşlarda
+       görünmez +100'ler birikiyordu. Temizlik joker elden çıksa da her tur başında çalışır. */
+    for (const t of s.hand) if (t.glitchGift) {
+      if (t.glitchLucky) { t.bonus = Math.max(0, (t.bonus || 0) - GLITCH_JOKER_BONUS); delete t.glitchLucky; }
+      delete t.glitchGift; delete t.glitch;
+    }
     const dervJ = s.deckJokers.find(j => j.key === 'dervish' && j.activeRound
       && s.hand.some(t => t.jokerTile === 'dervish'));
     if (dervJ) {
-      for (const t of s.hand) if (t.glitchGift) { delete t.glitchGift; delete t.glitch; } // önceki turun işaretleri
       const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !t.glitchCurse);
       const marked = [];
       for (let i = 0; i < GLITCH_JOKER_TILES && cand.length; i++)
@@ -6243,6 +6320,7 @@ const Game = {
       if (marked.length) {
         const lucky = marked[Math.floor(this.rng() * marked.length)];
         lucky.bonus = (lucky.bonus || 0) + GLITCH_JOKER_BONUS;
+        lucky.glitchLucky = true;   // denetim BE-02 — tur sonunda geri alınacak bonus
         events.push(`🌀 GLITCH: ${marked.length} taşın glitch'lendi — birinde gizli +${GLITCH_JOKER_BONUS} puan var`);
       }
     }
@@ -6586,10 +6664,30 @@ const Game = {
     const valOf = (t) => (t && valMap.has(t.id) ? valMap.get(t.id) : (t ? t.number : 0));
     // Açılım + işleme taşlarının tamamı (bkz. usedOkeyTile)
     const allTiles = tiles.concat(s.islemeler.flatMap(e => e.tiles));
+    /* denetim JA-06 (kullanıcı kararı 2026-10-21) — okey, değerde olduğu gibi
+       RENKTE de yerine geçtiği taşı taşır: Sıralı/Çift'te grubun rengi, Per'de
+       grupta henüz olmayan renk (okey kendi rengi boştaysa kendi rengi).
+       Renk sayan jokerler (Ressam Paleti, Boya Fırçası) `ctx.colorOf` okur. */
+    const colMap = new Map();
+    for (const c of combos) {
+      const plain = c.tiles.filter(t => !t.jokerTile && !this.isOkeyTile(t));
+      const anchor = plain.find(t => !isColorWild(t)) || plain[0];
+      const used = new Set(plain.map(t => t.color));
+      for (const t of c.tiles) {
+        if (t.jokerTile || !this.isOkeyTile(t)) continue;
+        let col = t.color;
+        if ((c.type === 'sirali' || c.type === 'cift') && anchor) col = anchor.color;
+        else if (c.type === 'per' && used.has(col)) col = COLORS.find(x => !used.has(x)) || col;
+        used.add(col);
+        colMap.set(t.id, col);
+      }
+    }
+    const colorOf = (t) => (t && colMap.has(t.id) ? colMap.get(t.id) : (t ? t.color : null));
     return {
       combos, tiles, count: combos.length,
       vals: tiles.map(valOf),
       valOf,
+      colorOf,   // denetim JA-06
       hasCift: combos.some(c => c.type === 'cift'),
       hasPer: combos.some(c => c.type === 'per'),
       hasSirali: combos.some(c => c.type === 'sirali'),
@@ -6633,8 +6731,14 @@ const Game = {
      sayı değil "Run boyunca" diyorsa). Bu jokerler hiç yaşlanmaz ve UI'da
      raund sayacı yerine ∞ gösterilir. Tanımdan okunur ki eski kayıtlardaki
      jokerler de (usesLeft 97, 96...) aynı kurala tabi olsun. */
+  /* denetim BE-16 — Ustanın Mührü'nün anlamlı hedefi: gerçekten yaşlanan joker */
+  _sealable(j) {
+    return !!j && !this.isRunLong(j) && j.beltStars !== 3 && Number.isFinite(j.usesLeft);
+  },
   isRunLong(j) {
-    return !!(j && JOKER_DEFS[j.key] && JOKER_DEFS[j.key].runLong);
+    /* denetim BE-16 — Ustanın Mührü KAYDA `runLong` yazar; eskiden yalnız tanıma bakılıyordu
+       ve mühürlenen joker yaşlanmaya devam ediyordu (UI'da ∞ da görünmüyordu). */
+    return !!(j && (j.runLong || (JOKER_DEFS[j.key] && JOKER_DEFS[j.key].runLong)));
   },
 
   /* Freedom Fighters işaret listesi (UI rozet/tooltip için) */
@@ -6647,8 +6751,11 @@ const Game = {
      jokeri hariç) açılım değerinde çift sayılır */
   _hipnoBonus(t, v) {
     const s = this.state;
+    if (this._calcBaseOnly) return 0;   // denetim karar 18 — saf grup değerinde Hipnotizör yok (sahnede ham adımı)
+    /* denetim JA-01/JA-02 — trans yalnız Hipnotizör GERÇEKTEN aktifken (susturulmamış,
+       kemer/yıldız/lanet hesabında atlanmamış) işler; eskiden state alanı tek başına yetiyordu. */
     return (!s.jokersDisabled && s.hipnoNumber && t.number === s.hipnoNumber
-      && !t.jokerTile && !t.fakeOkey && !this.isOkeyTile(t)) ? v : 0;
+      && !t.jokerTile && !t.fakeOkey && !this.isOkeyTile(t) && this.hasActive('hipnotizor')) ? v : 0;
   },
 
   comboSum(combo) {
@@ -6688,6 +6795,17 @@ const Game = {
     const out = [];
     for (const j of s.jokers) {
       if (skip.has(j.id)) continue;
+      /* denetim karar 10 — Füzyon kartında kemer unvanı yalnız unvanı TAŞIYAN kayda işler
+         (sonradan eritilen jokere ×1.5/×2/×4 geçmez). Yıldız (Lady Luck) kartın tamamına kalır. */
+      if ((j.fused || []).length) {
+        if (j.id === star) out.push({ id: j.id, k: LADY_STAR_MULT, name: j.name, star: true, rank: 0 });
+        for (const r of this._recsOf(j)) {
+          if (r.inherited) continue;   // miras kaydı sahibinin unvanıyla birlikte düşer
+          const rk = this._rankK(r);
+          if (rk !== 1) out.push({ id: j.id, rec: r, k: rk, name: r.name, star: false, rank: r.beltStars || 0 });
+        }
+        continue;
+      }
       let k = this._rankK(j);
       if (j.id === star) k *= LADY_STAR_MULT;
       if (k !== 1) out.push({ id: j.id, k, name: j.name, star: j.id === star, rank: j.beltStars || 0 });
@@ -6716,7 +6834,8 @@ const Game = {
     const skipRun = (id) => () => { this._calcSkipId = id; try { return this._calcOpeningRaw(); } finally { this._calcSkipId = null; } };
     const fns = [() => this._calcOpeningRaw()];
     if (charm) fns.push(() => { this._calcWithCharm = true; try { return this._calcOpeningRaw(); } finally { this._calcWithCharm = false; } });
-    for (const b of boosts) fns.push(skipRun(b.id));
+    const skipRec = (rec) => () => { this._calcSkipRec = rec; try { return this._calcOpeningRaw(); } finally { this._calcSkipRec = null; } };
+    for (const b of boosts) fns.push(b.rec ? skipRec(b.rec) : skipRun(b.id));   // denetim karar 10
     if (fns.length === 1) return fns[0]();
     const res = this._calcMany(fns);
     let out = charm ? this._ladyMix(res[0], res[1], -1, charm.name) : res[0];
@@ -6778,8 +6897,19 @@ const Game = {
 
     const islemeCount = s.islemeler.reduce((a, e) => a + e.tiles.length, 0);
     const islemeSum = s.islemeler.reduce((a, e) => a + e.addSum, 0);
+    /* denetim CS-02 / karar 18 — SAF GRUP DEĞERİ (previewBase): onaydan önceki çubuk Balatro gibi
+       yalnız grubun tablo değerini gösterir. Deste jokerleri, özel taşlar, kalıcı/raundluk çarpan,
+       işleme/Bileme/Altın Damar, Kumarbaz atışı ve boss kesintileri bu hesapta YOK — hepsi onaydan
+       sonra puanlama sahnesinde ayrı adım olarak eklenir (her biri `triggered`'da bir satırdır). */
+    const base = !!this._calcBaseOnly;
+    /* kalıcı / raundluk çarpan sahnede adım olsun diye döküm satırı (sahnenin ilk adımları) */
+    const fxm = (v) => { v = round2(v); return Math.abs(v * 10 - Math.round(v * 10)) > 1e-9 ? v.toFixed(2) : v.toFixed(1); };
+    if (!base && (s.permMult || 0) > 0)
+      triggered.push({ id: 'permMult', name: 'Kalıcı çarpan', text: `+${fxm(s.permMult)}x (kalıcı)` });
+    if (!base && s.roundMult > 0)
+      triggered.push({ id: 'roundMult', name: 'Raund çarpanı', text: `+${fxm(s.roundMult)}x (bu raund)` });
 
-    if (!s.jokersDisabled) {
+    if (!s.jokersDisabled && !base) {
       for (const j of this.slotRecs()) {
         // Avukat BOSS Koşulu (Grup F): bu tur susturulan jokerin efekti yok
         if (this.bossOn() && s.boss.key === 'avukat' && j.key === s.bossMutedJoker) continue;
@@ -6799,7 +6929,10 @@ const Game = {
       // Toplu Hipnoz bilgilendirme satırı (ham puana zaten işlendi)
       if (s.hipnoNumber) {
         const hn = ctx.tiles.filter(t => this._hipnoBonus(t, 1) > 0).length;
-        if (hn) triggered.push({ id: 'hipno', name: 'Hipnotizör', text: `🌀 ${hn} taş çift değer` });
+        /* denetim karar 18 — saf grup değerinde çift değer yok; sahne bu satırda hamı `chips` kadar büyütür */
+        const hChips = ctx.combos.reduce((a, c) => a + c.tiles.reduce((b, t) =>
+          b + (t.bossInfected ? 0 : this._hipnoBonus(t, c.values?.get(t.id) ?? t.number)), 0), 0);
+        if (hn) triggered.push({ id: 'hipno', name: 'Hipnotizör', text: `🌀 ${hn} taş çift değer`, chips: hChips });
       }
       // Godzilla şarjı
       const gz = this.slotRecs().find(j => j.key === 'godzilla');
@@ -6820,7 +6953,9 @@ const Game = {
       // Anka Kuşu — Yükselen Alev (P33 · Grup A): son raundunda alev büyür
       const ankj = this.slotRecs().find(j => j.key === 'ankaKusu');
       if (ankj) {
-        const last = ankj.usesLeft != null && ankj.usesLeft <= 1;
+        /* denetim JB-14 — Füzyon alt kaydının süresi donuktur; ömür TAŞIYICI karttan okunur */
+        const life = this._lifeOf(ankj);
+        const last = life != null && life <= 1;
         const am = last ? ANKA_MULT_LAST : ANKA_MULT_EARLY;
         mult += am;
         triggered.push({ id: ankj.id, name: ankj.name,
@@ -6846,10 +6981,9 @@ const Game = {
         }
       }
       /* P100 — BOĞA PİYASASI: birikmiş çarpan (bkz. commitMeld'de güncellenir). */
-      const tdj = this.slotRecs().find(j => j.key === 'tradeJokeri');
-      if (tdj && (tdj.bogaMult || 0) > 0) {
+      for (const tdj of this.slotRecs().filter(j => j.key === 'tradeJokeri')) if ((tdj.bogaMult || 0) > 0) {   // denetim karar 3 — her kopya
         mult += tdj.bogaMult;
-        triggered.push({ id: tdj.id, name: tdj.name, text: `+${tdj.bogaMult.toFixed(1)}x (boğa piyasası)` });
+        triggered.push({ id: tdj.id, name: tdj.name, text: `+${fxm(tdj.bogaMult)}x (boğa piyasası)` });   // denetim CS-07 — 0.25x yuvarlanmasın
       }
       /* P100 — BAHŞİŞ KAVANOZU kırıldıysa kavanozdaki her coin +JAR_MULT (kavanoz commitMeld'de boşalır). */
       const jarJ = s.jarArmed && this.slotRecs().find(j => j.key === 'rusvet' && (j.jarCoins || 0) > 0);
@@ -6859,8 +6993,7 @@ const Game = {
         triggered.push({ id: jarJ.id, name: jarJ.name, text: `+${m.toFixed(2)}x (🫙 ${jarJ.jarCoins} coin)` });
       }
       // Katalizör birikimi (P29 · Grup I — birikim jokerin üstünde)
-      const ktj = this.slotRecs().find(j => j.key === 'katalizor');
-      if (ktj && (ktj.katalizorMult || 0) > 0) {
+      for (const ktj of this.slotRecs().filter(j => j.key === 'katalizor')) if ((ktj.katalizorMult || 0) > 0) {   // denetim karar 3 — her kopya
         mult += ktj.katalizorMult;
         triggered.push({ id: ktj.id, name: ktj.name, text: `+${ktj.katalizorMult.toFixed(2)}x` });
       }
@@ -6933,7 +7066,8 @@ const Game = {
       /* Terazi — GRUP A (P20): hafif taş fedalarından RAUND boyu biriken
          çarpan. Eski `teraziMult` (tur bazlı) alanı eski kayıtlar için
          hâlâ toplanır; ikisi birden asla dolu olmaz. */
-      const teraziBank = round2((s.teraziRoundMult || 0) + (s.teraziMult || 0));
+      /* denetim JA-01/JA-02 — banka yalnız Terazi aktifken (susturma ve kemer/yıldız hesabı ayrışsın) */
+      const teraziBank = this.hasActive('terazi') ? round2((s.teraziRoundMult || 0) + (s.teraziMult || 0)) : 0;
       if (teraziBank > 0) {
         const tzj = this.slotRecs().find(j => j.key === 'terazi');
         mult += teraziBank;
@@ -6966,15 +7100,14 @@ const Game = {
         const m = round2((ahJ2.arms || 0) * AHTAPOT_ARM_MULT + (s.ahtapotBurst || 0));
         mult += m;
         triggered.push({ id: 'ahtapot', name: 'Ahtapot',
-          text: `+${m.toFixed(1)}x (${ahJ2.arms || 0} kol)` });
+          text: `+${fxm(m)}x (${ahJ2.arms || 0} kol)` });   // denetim CS-07
       }
       /* Vampir bankası (P29 · Grup D) — YALNIZ SON TURDA ve YALNIZ
          açılım yapılırsa ödenir. `s.maxTurns` bir değnek raundu uzatırsa
          kendiliğinden kayar, bu yüzden karşılaştırma dinamiktir.
          Banka confirmMelds'te sıfırlanır (burası önizlemeden de çağrılır,
          durum değiştiremez). */
-      const vmJ = this.slotRecs().find(j => j.key === 'vampir');
-      if (vmJ && s.turn >= s.maxTurns) {
+      for (const vmJ of this.slotRecs().filter(j => j.key === 'vampir')) if (s.turn >= s.maxTurns) {   // denetim karar 3 — her kopya bankayı öder
         /* BU TURUN EMİŞİ DE ÖDEMEYE GİRER: raundun son açılımı hem
            biriktirip hem ödemeseydi son turda emilen taşlar sessizce
            yanardı. Böylece kural tek cümlede kalır — "raund boyunca
@@ -6988,21 +7121,19 @@ const Game = {
         }
       }
       // Zincir birikimi (P29 · Grup C)
-      const zcJ2 = this.slotRecs().find(j => j.key === 'zincir');
-      if (zcJ2 && (zcJ2.zincirMult || 0) > 0) {
+      for (const zcJ2 of this.slotRecs().filter(j => j.key === 'zincir')) if ((zcJ2.zincirMult || 0) > 0) {   // denetim karar 3 — her kopya
         mult += zcJ2.zincirMult;
         triggered.push({ id: zcJ2.id, name: zcJ2.name, text: `+${zcJ2.zincirMult.toFixed(1)}x` });
       }
       // Yankee birikimi
-      const ykJ2 = this.slotRecs().find(j => j.key === 'yankee');
-      if (ykJ2 && (ykJ2.yankeeMult || 0) > 0) {
+      for (const ykJ2 of this.slotRecs().filter(j => j.key === 'yankee')) if ((ykJ2.yankeeMult || 0) > 0) {   // denetim karar 3 — her kopya
         mult += ykJ2.yankeeMult;
         triggered.push({ id: ykJ2.id, name: ykJ2.name, text: `+${ykJ2.yankeeMult.toFixed(1)}x` });
       }
       // Ritim Jokeri — mini oyun kazanıldıysa
       if ((s.ritimBonus || 0) > 0) {
         mult += s.ritimBonus;
-        triggered.push({ id: 'ritim', name: 'Ritim', text: `+${s.ritimBonus.toFixed(1)}x (ritim tuttu)` });
+        triggered.push({ id: 'ritim', name: 'Ritim', text: `+${fxm(s.ritimBonus)}x (ritim tuttu)` });   // denetim CS-07
       }
     }
     /* P54 · Grup C — Satranç Saati: onay anında kalan süre çarpana döner */
@@ -7010,10 +7141,12 @@ const Game = {
     if (clockM > 0) {
       mult += clockM;
       triggered.push({ id: 'satrancSaati', name: 'Satranç Saati',
-        text: `+${clockM.toFixed(1)}x (${s.clockLeft ?? CLOCK_SECONDS} sn kaldı)` });
+        text: `+${fxm(clockM)}x (${s.clockLeft ?? CLOCK_SECONDS} sn kaldı)` });   // denetim CS-07 — 2.55x yuvarlanmasın
     }
-    if (s.roundMult > 0) mult += s.roundMult;
+    if (s.roundMult > 0 && !base) mult += s.roundMult;   // denetim karar 18 — sahnede adım
     // Özel Normal Taşlar (GDD 6.5c) — joker değildir, Kıyamet'ten etkilenmez
+    /* denetim karar 18 — saf grup değerinde özel taşlar / işleme / Bileme yok (sahnede adım) */
+    if (!base) {
     const spN = (k) => ctx.tiles.filter(t => t.special === k).length;
     const altinN = spN('altin');
     if (altinN) {
@@ -7110,6 +7243,7 @@ const Game = {
       triggered.push({ id: 'up-bileme', name: 'Bileme Taşı',
         text: `+${s.permComboBonus.toFixed(1)}x (${ctx.count} grup)` });
     }
+    }   // denetim karar 18 — saf grup değeri: özel taş / işleme / Bileme bloğu sonu
 
     /* Kelebek Etkisi — önceki turdan FARKLI tür açınca sürpriz ödül.
        P47 (kullanıcı kararı 2026-09-14): "+%50 puan" kolu +3.0x ÇARPAN oldu. Çarpan
@@ -7154,13 +7288,23 @@ const Game = {
     const cStep = s.carpanStep || 0;      // Altın Oran — tabloda +1 basamak
     const cMul = 1 + (s.carpanScale || 0); // Usta Eli — sayıyı katlar
     const step = (n) => n * cMul + cStep;
-    if (mixed && teker) {
+    /* denetim karar 18 — kalıcı çarpan saf grup değerine girmez (sahnede "Kalıcı çarpan" adımı) */
+    const pm = base ? 0 : s.permMult;
+    /* denetim CS-06 — saf değerde karışık açılım da iki tablo kalır (Tek Teker'in kuralı açık,
+       bonusu yok): onay öncesi çubuk ve sahnenin başlangıcı aynı iki tabloyu gösterir */
+    const tkM = teker ? TEKER_MULT : 0;
+    if (mixed && (teker || base)) {
       const ciftCombos = ctx.combos.filter(c => c.type === 'cift');
       const perCombos = ctx.combos.filter(c => c.type !== 'cift');
-      let cCar = round2(getCarpan('cift', step(ciftCombos.length), s.permMult) + mult + TEKER_MULT
+      let cCar = round2(getCarpan('cift', step(ciftCombos.length), pm) + mult + tkM
         + ciftExtra(ciftCombos.length));   // P58 · Grup A — 8+ Çift
-      let pCar = round2(getCarpan('per', step(perCombos.length), s.permMult) + mult + TEKER_MULT);
-      if (s.kumarbazRoll) { cCar = round2(cCar * s.kumarbazRoll); pCar = round2(pCar * s.kumarbazRoll); }
+      let pCar = round2(getCarpan('per', step(perCombos.length), pm) + mult + tkM);
+      if (s.kumarbazRoll && !base && this.hasActive('kumarbaz')) {   // denetim JA-01/JA-02 — zar yalnız Kumarbaz aktifken
+        cCar = round2(cCar * s.kumarbazRoll); pCar = round2(pCar * s.kumarbazRoll);
+        /* denetim JA-08 — karışık açılımda da Kumarbaz dökümde görünsün (normal dalla aynı satır) */
+        const kj = this.slotRecs().find(j => j.key === 'kumarbaz');
+        if (kj) triggered.push({ id: kj.id, name: kj.name, text: `çarpan ×${s.kumarbazRoll}` });
+      }
       const cRaw = ciftCombos.reduce((a, c) => a + this.comboSum(c), 0) * ejMul;
       const pRaw = (perCombos.reduce((a, c) => a + this.comboSum(c), 0) + islemeSum) * ejMul;
       raw = cRaw + pRaw;
@@ -7171,15 +7315,19 @@ const Game = {
         { key: 'cift', label: 'Çift', raw: cRaw, carpan: cCar, score: ceilMul(cRaw, cCar) },
         { key: 'per', label: 'Per/Sıralı', raw: pRaw, carpan: pCar, score: ceilMul(pRaw, pCar) },
       ].filter(x => x.raw > 0);
-      flat += TEKER_FLAT;   // P30 · Grup C — karışık açılım başına bir kez
-      triggered.push({ id: teker.id, name: teker.name,
-        text: `+${TEKER_MULT.toFixed(1)}x +${TEKER_FLAT} puan (iki tablo)` });
+      if (teker) {
+        flat += TEKER_FLAT;   // P30 · Grup C — karışık açılım başına bir kez
+        triggered.push({ id: teker.id, name: teker.name,
+          text: `+${TEKER_MULT.toFixed(1)}x +${TEKER_FLAT} puan (iki tablo)` });
+      }
     } else {
       // yalnız işleme varsa per tablosu tek-açılım çarpanı esas alınır (tasarım kararı)
       const mode = ctx.count === 0 ? 'per' : s.turnMode;
-      carpan = round2(getCarpan(mode, step(Math.max(ctx.count, 1)), s.permMult) + mult
+      carpan = round2(getCarpan(mode, step(Math.max(ctx.count, 1)), pm) + mult
         + (mode === 'cift' ? ciftExtra(ctx.count) : 0));   // P58 · Grup A — 8+ Çift
-      if (s.kumarbazRoll) {
+      /* denetim CS-01 — Kumarbaz atışı saf grup değerine girmez; eskiden previewBase tabanı
+         zaten ×atış'lıydı, sahne "çarpan ×N" adımında bir kez daha çarpıyordu (×35 → 66150) */
+      if (s.kumarbazRoll && !base && this.hasActive('kumarbaz')) {   // denetim JA-01/JA-02 — zar yalnız Kumarbaz aktifken
         carpan = round2(carpan * s.kumarbazRoll);
         const kj = this.slotRecs().find(j => j.key === 'kumarbaz');
         if (kj) triggered.push({ id: kj.id, name: kj.name, text: `çarpan ×${s.kumarbazRoll}` });
@@ -7193,7 +7341,7 @@ const Game = {
        Çarpandan AYRI bir eksendir: çarpan tablosu grup sayısına
        bağlıdır, bu ise taşların toplam değerine. Böylece "az ama büyük
        grup" oynayan build'ler de ölçeklenebilir bir ödül bulur. */
-    if ((s.permRawBonus || 0) > 0) {
+    if ((s.permRawBonus || 0) > 0 && !base) {   // denetim karar 18 — sahnede adım
       const before = baseScore;
       baseScore = Math.ceil(baseScore * (1 + s.permRawBonus));
       triggered.push({ id: 'up-altinDamar', name: 'Altın Damar',
@@ -7237,14 +7385,18 @@ const Game = {
       triggered.push({ id: damgaJ.id, name: damgaJ.name, text: `+${damgaBonus} puan (damga: 2 kat)` });
     }
     // Boss koşulları — açılım puanına etki edenler (GDD 10)
-    if (this.bossOn()) {
+    /* denetim karar 19 — boss kesintisi saf grup değerine girmez; sahnede ayrı kırmızı adım.
+       `d` = kesintinin puana etkisi (negatif) — sahne yüzdeyi yeniden hesaplamaz, bunu kullanır. */
+    if (this.bossOn() && !base) {
       if (s.boss.key === 'kelebek' && s.bossBan && ctx.combos.some(c => c.type === s.bossBan)) {
+        const b0 = final;
         final = Math.ceil(final * 0.7);
-        triggered.push({ id: 'boss', name: 'Kelebek Etkisi (BOSS)', text: 'yasak tür açıldı: -%30' });
+        triggered.push({ id: 'boss', name: 'Kelebek Etkisi (BOSS)', text: 'yasak tür açıldı: -%30', d: final - b0, boss: true });
       }
       if (s.boss.key === 'ahtapot' && final > 0) {
+        const b0 = final;
         final = Math.ceil(final * 0.85);
-        triggered.push({ id: 'boss', name: 'Ahtapot (BOSS)', text: 'puanın %15\'i emildi' });
+        triggered.push({ id: 'boss', name: 'Ahtapot (BOSS)', text: 'puanın %15\'i emildi', d: final - b0, boss: true });
       }
       /* GLITCH (Grup N) — açılımda kullanılan her BOZUK glitch taşı bu
          açılımın puanını %25 düşürür. Ceza oransal olduğu için stage'le
@@ -7256,9 +7408,10 @@ const Game = {
              kesintiler raundu kazanılamaz yapmasın diye toplam kesinti
              GLITCH_MELD_MAX_CUT ile sınırlı. */
           const keep = Math.max(1 - GLITCH_MELD_MAX_CUT, Math.pow(1 - GLITCH_MELD_CUT, bad));
+          const b0 = final;
           final = Math.ceil(final * keep);
           triggered.push({ id: 'boss', name: 'GLITCH (BOSS)',
-            text: `${bad} bozuk taş: -%${Math.round((1 - keep) * 100)}` });
+            text: `${bad} bozuk taş: -%${Math.round((1 - keep) * 100)}`, d: final - b0, boss: true });
         }
       }
     }
@@ -7575,7 +7728,7 @@ const Game = {
         events.push(`🎩 Orion elini bitirdi: "Okey bitti!" — puanı ×2 (${s.orionScore})`);
         s.maxTurns = s.turn;                        // raund bu tur biter
       }
-      s.target = Math.max(ORION_FLOOR, s.orionScore);
+      s.target = Math.max(s.orionFloor || ORION_FLOOR, s.orionScore);   // denetim BE-19 — raund başı tabanı
       if (opened.length) events.push(`🎩 Orion ${opened.length} açılım yaptı: +${gain} (toplam ${s.orionScore})`);
     } else if (gain) {
       s.score += gain;
@@ -7723,7 +7876,7 @@ const Game = {
     const mode = this._raceOn() ? 'race' : (this._partnerOn && this._partnerOn() ? 'partner' : null);
     if (!mode) return null;
     return { mode, handCount: (s.orionHand || []).length, score: s.orionScore || 0, drop: mode === 'race' && s.orionDropFresh ? s.orionDrop : null,
-      last: s.orionLast, target: mode === 'race' ? Math.max(ORION_FLOOR, s.orionScore || 0) : null };
+      last: s.orionLast, target: mode === 'race' ? Math.max(s.orionFloor || ORION_FLOOR, s.orionScore || 0) : null };   // denetim BE-19
   },
 
   _partitionCombos(tiles, allowMixed, prefer) {
@@ -8112,6 +8265,19 @@ const Game = {
      otomatik kullan. Şu an tek üye: Derin Nefes (hedefler kalıcı -%10,
      tavan %40). Birden fazla kopya varsa hedefe yetene kadar kullanılır;
      hedefe yine ulaşılamıyorsa HİÇBİRİ harcanmaz (boşa gitmesin). */
+  /* denetim BE-12 — raund içinde hedefi GÖRELİ ölçekle (Derin Nefes). Raundun bütün hedef
+     değiştiricileri (boss, Kıyamet, Misunderstood, bahis, Katla, Orion tabanı) korunur; bahis
+     tabanı / katlama tabanı / Orion tabanı da aynı oranla iner ki sonraki hesaplar kaymasın. */
+  _scaleRoundTarget(k) {
+    const s = this.state;
+    if (!(k > 0) || k === 1) return;
+    s.target = niceTarget(s.target * k);
+    if (s.betBaseTarget != null) s.betBaseTarget = niceTarget(s.betBaseTarget * k);
+    if (s.katla && s.katla.base) s.katla.base = niceTarget(s.katla.base * k);
+    if (s.katlaOffer && s.katlaOffer.base) s.katlaOffer.base = niceTarget(s.katlaOffer.base * k);
+    if (s.orionFloor) s.orionFloor = niceTarget(s.orionFloor * k);
+  },
+
   _autoRescueTarget(events) {
     const s = this.state;
     const cands = this._roundRescueConsumables(['win']);
@@ -8119,8 +8285,10 @@ const Game = {
     // Önce kuru hesap: elimizdeki kopyalar hedefi puanın altına indirebiliyor mu?
     let cut = s.permTargetCut || 0;
     let need = 0;
-    const base = () => niceTarget(this.targetFor(s.stage, s.roundInStage)
-      * (1 - cut) * (s.nextTargetMult || 1));
+    /* denetim BE-12 — kuru hesap da mevcut hedeften GÖRELİ (useConsumable ile aynı formül);
+       eskiden targetFor'dan hesaplıyor, boss/Kıyamet değiştiricilerini görmüyordu. */
+    const cut0 = cut, t0 = s.target;
+    const base = () => niceTarget(t0 * (1 - cut) / (1 - cut0));
     for (const _ of cands) {
       if (base() <= s.score) break;
       if (cut >= 0.4) break;         // tavan
@@ -8320,13 +8488,21 @@ const Game = {
     const s = this.state;
     if (!s.staged.length && !s.islemeler.length) return null;
     this._calcOnlyId = -1;
+    this._calcBaseOnly = true;   // denetim karar 18 — yalnız grubun tablo değeri
     try {
       const r = this._calcOpeningRaw();
       return { raw: r.raw, carpan: r.carpan, parts: r.parts, final: r.final, mixed: r.mixed };
-    } finally { this._calcOnlyId = null; }
+    } finally { this._calcOnlyId = null; this._calcBaseOnly = false; }
   },
 
+  /* denetim CS-11 — ÖNİZLEME ZAR AKIŞINI TÜKETMEZ. Kelebek Etkisi hesap içinde zar atıyor; her
+     render() önizlemesi seed'li akışı ilerletiyordu (önizleme ≠ onay sonucu, aynı seed ≠ aynı run).
+     Üreteç durumu önizlemeden sonra geri alınır: onaydaki ilk çekiliş önizlemedekiyle aynıdır. */
   previewScore() {
+    const rs = _rngS;
+    try { return this._previewScoreRaw(); } finally { _rngS = rs; }
+  },
+  _previewScoreRaw() {
     const s = this.state;
     if (!s.staged.length && !s.islemeler.length) return null;
     const r = this._calcOpening();
@@ -8396,6 +8572,10 @@ const Game = {
         carpanText: '', triggered: [], bonuses: [], events: alienEv };
     }
 
+    /* denetim karar 18 — sahnenin başlangıcı (saf grup değeri) ÇÖKEN gruplardan SONRA alınır:
+       Uzaylı boss'u grupların bir kısmını ele döndürünce arayüzün onaydan önce aldığı değer
+       artık geçersizdir */
+    const preBase = this.previewBase();
     const r = this._calcOpening();
     /* GRUP F — boss koşullarının açılım anındaki etkileri. Puan EKLENMEDEN
        önce uygulanır ki "puan sıfırlanır" / "yansıma düşülür" kuralları
@@ -8414,7 +8594,7 @@ const Game = {
           : g.key === 'tiles5' ? c.tiles.length >= 5                     // eski havuz
           : g.key === 'perFull' ? c.combos.some(x => x.type === 'per' && x.tiles.length >= 4)
           : g.key === 'siraliLong' ? c.combos.some(x => x.type === 'sirali' && x.tiles.length >= 4)
-          : g.key === 'tiles7' ? c.tiles.length >= 7
+          : g.key === 'tiles7' ? c.tiles.length + (c.islemeTiles || 0) >= 7   // denetim BE-21 — işlenen taşlar da "kullanılan" taştır
           : g.key === 'noOkey' ? !c.usedOkey : true;
         g.met = met;
         if (!met) {
@@ -8438,6 +8618,8 @@ const Game = {
           const cut = Math.min(r.final, debt);
           r.final -= cut;
           bossEv.push(`👹 Ayna Kral: yansıma borcu -${cut} puan`);
+          /* denetim CS-05 / karar 19 — borç sahnede kırmızı boss adımı olarak görünsün */
+          if (cut > 0) r.triggered = [...r.triggered, { id: 'boss', name: 'Ayna Kral (BOSS)', text: `yansıma borcu -${cut} puan`, d: -cut, boss: true }];
         }
         /* Borç, açılımın YARISI kadar (GDD "biriken puan kazanımdan düşülür"
            birebir uygulanınca net kazanç sıfırlanıp raund matematiksel olarak
@@ -8473,16 +8655,17 @@ const Game = {
     s.jarArmed = false;
     /* P100 — BOĞA PİYASASI: açılım bir öncekinden yüksekse birikir, düşükse yarıya iner. */
     {
-      const bj = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'tradeJokeri');
-      if (bj && r.final > 0) {
+      /* denetim karar 3 — ikinci Boğa kopyası da kendi birikimini tutar */
+      const bjs = s.jokersDisabled ? [] : this.slotRecs().filter(j => j.key === 'tradeJokeri');
+      if (bjs.length && r.final > 0) for (const bj of bjs) {
         const before = bj.bogaMult || 0;
         if (s.bogaLast != null && r.final > s.bogaLast) bj.bogaMult = Math.min(BOGA_CAP, round2(before + BOGA_STEP));
         else if (s.bogaLast != null && r.final < s.bogaLast) bj.bogaMult = round2(before / 2);
         if (bj.bogaMult !== before)
           p100Ev.push(bj.bogaMult > before ? `🐂 Boğa: piyasa yükseliyor → +${bj.bogaMult.toFixed(1)}x`
             : `🐂 Boğa: piyasa düştü → +${(bj.bogaMult || 0).toFixed(1)}x`);
-        s.bogaLast = r.final;
       }
+      if (bjs.length && r.final > 0) s.bogaLast = r.final;   // denetim karar 3 — tüm kopyalar aynı öncekiyle kıyaslar
     }
     /* P100 — HAYALET TUR: bu turda açılan deste taşları desteden kalıcı silinir (Ustura yolu). */
     if (s.ghostTurn) {
@@ -8540,7 +8723,10 @@ const Game = {
        gezdirdikçe büyürdü. `usedTiles` bu turun açılımı + bu turun
        işlemelerini kapsar ve her onayda sıfırlandığı için aynı taş iki kez
        sayılmaz. */
-    for (const t of usedTiles) {
+    /* denetim BE-17 (kullanıcı kararı 15) — Kara Delik yalnız PUAN verdiği yolda büyür:
+       puanı `ctx.tiles` (yeni gruplar) üzerinden ödeniyor; işlemede puan vermediği hâlde
+       büyüyordu (bedava yoğunlaşma açığı). */
+    for (const t of r.ctx.tiles) {
       if (t.special !== 'karaDelikTasi') continue;
       const rec = s.specialTiles.find(x => x.sid === t.sid);
       if (!rec) continue;
@@ -8667,10 +8853,15 @@ const Game = {
        silinir: Ustura ile aynı defter (tileMods remove + özel/mıknatıs
        kaydı). Deste jokeri ve sahte okey kalıcı silinemez, aday değildir. */
     if (this.hasActive('ejderha') && s.hand.length) {
-      const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey);
+      /* denetim karar 6 — asıl okey yakılamaz (değneklerdeki kuralla aynı: okey hedef değil). */
+      const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !this.isOkeyTile(t));
       if (cand.length) {
         const t = cand[Math.floor(this.rng() * cand.length)];
-        s.tileMods.push({ op: 'remove', color: t.color, number: t.number });
+        /* denetim JB-09 — yalnız ASIL deste taşının yüzü desteden silinir. Kopya / dönüşmüş taş
+           (Hidra okeyi, Alien kopyası, dirilen/dikilen, Kara Kedi 13'ü, hayalet…) yalnız elden
+           gider; eskiden aynı yüzdeki asıl taş kalıcı siliniyordu (ör. asıl okey). Özel taşın
+           kaydı _dropSpecialRecord ile düşer. */
+        if (IS_BASE_TILE(t) && !t.ghost) s.tileMods.push({ op: 'remove', color: t.color, number: t.number });
         this._dropSpecialRecord(t);
         this._dropMagnet(t);
         const burned = this._takeTile(t, 'ejderha');
@@ -8679,7 +8870,7 @@ const Game = {
     }
 
     const result = {
-      raw: r.raw, carpan: r.carpan, carpanText: r.carpanText, parts: r.parts,
+      raw: r.raw, carpan: r.carpan, carpanText: r.carpanText, parts: r.parts, pre: preBase,
       final: r.final, count: r.ctx.count, mode: s.turnMode,
       bonuses: [], triggered: r.triggered, events,
     };
@@ -8976,7 +9167,8 @@ const Game = {
       for (const _t of picks) {
         s.copcuCount++;
         if (s.copcuCount % 3 === 0) {
-          const n = Math.round(COPCU_COIN * this._rankK(s.jokers.find(j => j.key === 'copcu')));   // P90 — kemer yıldızı
+          /* denetim karar 3 — her Kuzgun kopyası öder (kemer yıldızı kart başına) */
+          const n = this.slotRecs().filter(j => j.key === 'copcu').reduce((a, j) => a + Math.round(COPCU_COIN * this._rankK(j)), 0);
           gainCoins(s, n); events.push(`🐦‍⬛ Kuzgun: +${n} coin`);
         }
       }
@@ -8996,9 +9188,9 @@ const Game = {
        türetilmiş bir kopyadır ve tasarım gereği el sayısına girmez, yani
        bedava birikim üretmemeli. */
     {
-      const ktj = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'katalizor');
+      /* denetim karar 3 — her Cadı Kazanı kopyası kendi birikimini tutar */
       const n = this.realHandCount();
-      if (ktj && n) {
+      for (const ktj of (s.jokersDisabled ? [] : this.slotRecs().filter(j => j.key === 'katalizor'))) if (n) {
         const before = ktj.katalizorMult || 0;
         ktj.katalizorMult = Math.min(KATALIZOR_CAP, round2(before + KATALIZOR_STEP * n));
         if (ktj.katalizorMult !== before)
@@ -9009,8 +9201,8 @@ const Game = {
        Açılım yapıldıysa birikim bir kademe çıkar (ilk kademe doğrudan
        ZINCIR_START'tır), yapılmadıysa bir kademe geri sarar. Sıfırın
        altına inmez ve ZINCIR_CAP'i aşmaz. */
-    const zcJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'zincir');
-    if (zcJ) {
+    /* denetim karar 3 — her Zincir kopyası kendi birikimini tutar */
+    for (const zcJ of (s.jokersDisabled ? [] : this.slotRecs().filter(j => j.key === 'zincir'))) {
       const before = zcJ.zincirMult || 0;
       if (s.openedThisTurn) {
         zcJ.zincirMult = Math.min(ZINCIR_CAP,
@@ -9032,9 +9224,12 @@ const Game = {
        oyuncu dört raundluk kazanımını bir tıkla kaybediyordu. Yarıya
        inmek gerilimi (Çift açmak yine pahalı) korur, cezayı bir GERİ
        ADIMA çevirir. */
-    const ykJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'yankee');
-    if (ykJ) {
-      if (s.openedThisTurn && s.turnMode === 'cift') {
+    /* denetim JA-07 — Tek Teker'li karışık turda `turnMode` ilk sahnelenen türdür;
+       bu turun açılımları (discard başında prevOpen'a geçti) Çift içeriyorsa da sıfırlanır.
+       denetim karar 3 — her Balık Kavanozu kopyası kendi birikimini tutar. */
+    const ykCift = s.openedThisTurn && (s.turnMode === 'cift' || (s.prevOpen || []).some(c => c && c.type === 'cift'));
+    for (const ykJ of (s.jokersDisabled ? [] : this.slotRecs().filter(j => j.key === 'yankee'))) {
+      if (ykCift) {
         if (ykJ.yankeeMult) {
           const before = ykJ.yankeeMult;
           ykJ.yankeeMult = round2(before * YANKEE_RESET_KEEP);
@@ -9079,8 +9274,10 @@ const Game = {
       /* P29 · Grup D — ESKİ RAUND SONU ÖDEMESİ KALDIRILDI. Birikim artık
          son turun AÇILIM puanına giriyor (bkz. _calcOpening'deki Vampir
          bloğu); burada ikinci kez ödenirse çifte sayım olurdu. Son turda
-         açılım yapılmadıysa banka ödenmeden söner — kartın riski budur. */
-      s.vampirBank = 0;
+         açılım yapılmadıysa banka ödenmeden söner — kartın riski budur.
+         denetim JA-03 — söndürme kurtarma zincirinden SONRAYA taşındı
+         (aşağıda `if (!extendedTurn)`): Hayalet tur / tur uzatan değnek
+         raundu uzatırsa uzayan tur yeni son turdur ve banka ona ödenir. */
       this._otekiEclipse(events);   // P57 — Kavuşma yoksa ay tutulur
       /* P59 · Grup B (kullanıcı kararı 2026-10-02) — KATLA = YA HEP YA HİÇ.
          P58'de "tutmazsa yalnız katlama ödülü yanar, raund kazanılır"
@@ -9209,6 +9406,7 @@ const Game = {
           s.status = 'lost';
         }
       }
+      if (!extendedTurn) s.vampirBank = 0;   // denetim JA-03 — raund gerçekten bitti
       if (!extendedTurn) return { ok: true, roundOver: true, events };
     }
 
@@ -9331,7 +9529,9 @@ const Game = {
           isOkeyReal: true, copied: true, hidra: true, origin: 'hidra' });
       s.hidraSpawned = (s.hidraSpawned || 0) + k;
       events.push(k ? `🐉 Hidra: ${k} geçici okey ıstakana geldi (raund sonunda kaybolur)`
-        : '🐉 Hidra: bu raundun okey sınırı doldu — yeni kafa çıkmadı');
+        /* denetim JB-15 — kafa çıkmamasının nedeni ayrı yazılır (raund tavanı mı, dolu ıstaka mı) */
+        : left <= 0 ? '🐉 Hidra: bu raundun okey sınırı doldu — yeni kafa çıkmadı'
+        : '🐉 Hidra: ıstakan dolu — yeni kafalar sığmadı');
     }
     s.turn++;
     s.phase = 'meld';
@@ -9394,6 +9594,9 @@ const Game = {
            ediliyordu (aşağıdaki yaşlanma döngüsüyle aynı istisnalar). */
         && !this.isRunLong(j) && j.beltStars !== 3 && !(j.key === 'seytan' && !j.applied)
         && !(j.id === s.beltId && s.jokers.some(x => x.key === 'orion'))
+        /* denetim karar 7 — final jokerleri (Lady Luck / Orion ödülü) Avukat'ın davasından muaf:
+           kaybedilen davada kalıcı açılmış final ödülü yok oluyordu. */
+        && !(exceptKey === 'avukat' && this._recsOf(j).some(r => r.rarity === 'final' || JOKER_DEFS[r.key]?.rarity === 'final'))
         && Number.isFinite(j.usesLeft))
       .sort((a, b) => rarOrder.indexOf(b.rarity) - rarOrder.indexOf(a.rarity))[0];
     if (this.slotRecs().some(j => j.key === 'sarmasik')) {
@@ -9419,10 +9622,21 @@ const Game = {
         }
       }
     }
+    const subExpired = [];   // denetim karar 10 — ★★★ kartın içinde süresi biten Füzyon alt kayıtları
     for (const j of s.jokers) {
       /* P90 — usta olan joker HİÇ yaşlanmaz; Orion jokeri masadayken çırak da
          yaşlanmaz (Orion jokerinin kendisi normal yaşlanır). */
-      if (j.beltStars === 3) { delete j.protected; continue; }
+      if (j.beltStars === 3) {
+        /* denetim karar 10 — ★★★ unvanı Füzyon'la sonradan eritilen jokere GEÇMEZ: kart
+           yaşlanmaz ama içindeki alt kayıtlar kendi süreleriyle yaşlanır ve biter. */
+        if ((j.fused || []).length && !j.fresh && !j.protected && !s.ageSkip) {
+          for (const f of j.fused)
+            if (!this.isRunLong(f) && Number.isFinite(f.usesLeft) && !(f.key === 'seytan' && !f.applied)) f.usesLeft--;
+          const gone = j.fused.filter(f => f.usesLeft <= 0);
+          if (gone.length) { j.fused = j.fused.filter(f => f.usesLeft > 0); subExpired.push(...gone); }
+        }
+        delete j.protected; continue;
+      }
       if (j.id === s.beltId && s.jokers.some(x => x.key === 'orion')) { delete j.protected; continue; }
       // Şeytan'ın Teklifi henüz tetiklenmediyse (cüzdan boştu) yaşlanmaz —
       // yoksa tek kullanımını hiç çalışmadan yitiriyordu.
@@ -9434,8 +9648,17 @@ const Game = {
       delete j.protected;
     }
     if (s.ageSkip) notes.push('⏳ Zaman Taşı: hiçbir jokerin süresi azalmadı');
-    const expired = s.jokers.filter(j => j.usesLeft <= 0);
-    s.lastExpired = expired.map(j => j.name);
+    /* denetim JB-01 — bu raund ana slotta çalışıp raund içinde backup'a çekilen joker de
+       yaşlanır (backup'ın "süre donar" kuralı yalnız o raund hiç çalışmamış kart içindir). */
+    for (const j of s.backup || []) {
+      if (j.mainLeftRound !== (s.roundSerial || 0) || j.fresh || s.ageSkip) continue;
+      if (this.isRunLong(j) || j.beltStars === 3 || (j.key === 'seytan' && !j.applied)) continue;
+      if (Number.isFinite(j.usesLeft)) j.usesLeft--;
+    }
+    const deadBackup = (s.backup || []).filter(j => j.usesLeft <= 0);
+    if (deadBackup.length) s.backup = s.backup.filter(j => j.usesLeft > 0);
+    const expired = [...s.jokers.filter(j => j.usesLeft <= 0), ...deadBackup];
+    s.lastExpired = [...expired, ...subExpired].map(j => j.name);
     s.jokers = s.jokers.filter(j => j.usesLeft > 0);
     if (!s.jokers.some(j => j.key === 'orion')) s.beltId = null;
 
@@ -9459,12 +9682,14 @@ const Game = {
 
     // Anka Kuşu — küllerinden Mythic doğar (GDD 11)
     // Füzyonla birleşmiş alt kayıtların ölüm efektleri de tetiklenir
-    for (const j of expired.flatMap(x => this._recsOf(x))) {
+    for (const j of [...expired.flatMap(x => this._recsOf(x)), ...subExpired]) {
       if (j.key === 'ankaKusu' && s.jokers.length < this.slotCap()) {
-        const mythics = this.jokerPool(d => d.rarity === 'mythic');
+        /* denetim JB-07 — "1 raundluk" Mythic run boyu süren (runLong) kart olamaz: Crimson King
+           çıkınca hiç yaşlanmıyordu. denetim S-6 — kart _initJoker'dan geçer (diğer edinme yolları gibi). */
+        const mythics = this.jokerPool(d => d.rarity === 'mythic' && !d.runLong);
         const def = mythics[Math.floor(this.rng() * mythics.length)];
-        s.jokers.push({ id: ++_jokerId, key: def.key, name: def.name, desc: def.desc,
-          rarity: 'mythic', usesLeft: 1, fresh: true });
+        s.jokers.push(this._initJoker({ id: ++_jokerId, key: def.key, name: def.name, desc: def.desc,
+          rarity: 'mythic', usesLeft: 1, fresh: true }));
         notes.push(`Anka Kuşu küllerinden doğdu → ${def.name} (1 raund)`);
       }
     }
@@ -9478,10 +9703,11 @@ const Game = {
          · depo FIFO — VASIYET_CAP dolunca en eski miras düşer
        Kayıt kopyalanır (durum alanlarıyla), `inherited` işaretlenir. */
     const heir = this.slotRecs().find(j => j.key === 'vasiyet' && !j.inherited);
-    if (heir && expired.length) {
-      const dying = expired.flatMap(x => [x, ...(x.fused || [])])
+    if (heir && (expired.length || subExpired.length)) {
+      /* denetim karar 8 — final jokerleri (Lady Luck / Orion) mirasa geçmez (Orion mirasta ölüydü) */
+      const dying = [...expired.flatMap(x => [x, ...(x.fused || [])]), ...subExpired]
         .filter(r => r.key !== 'vasiyet' && r.key !== 'ankaKusu' && r.key !== 'fuzyon'
-          && JOKER_DEFS[r.key] && JOKER_DEFS[r.key].mech !== 'deck');
+          && JOKER_DEFS[r.key] && JOKER_DEFS[r.key].mech !== 'deck' && JOKER_DEFS[r.key].rarity !== 'final');
       for (const d of dying) {
         const rec = JSON.parse(JSON.stringify(d));
         delete rec.fused; delete rec.legacy; delete rec.protected; delete rec.fresh;
@@ -9617,6 +9843,13 @@ const Game = {
     const key = `${s.stage}-${s.roundInStage}-${s.turn}`;
     if (s.sisyphusTurnKey === key) return;
     s.sisyphusTurnKey = key;
+    /* denetim JB-13 — kaya yalnız Sisyphus SAHİPLİYKEN (ana slot ya da backup, Füzyon/miras dahil)
+       hareket eder; eskiden jokersiz de yükseliyor, sonradan alınan Sisyphus ilk açılımda +8.0x
+       veriyordu. Kıyamet raundunda (jokersDisabled) kaya korunur, sıfırlanmaz. */
+    if (![...s.jokers, ...(s.backup || [])].some(c => this._recsOf(c).some(r => r.key === 'sisyphus'))) {
+      s.sisyphusRock = 0;
+      return;
+    }
     const v = s.sisyphusRock || 0;
     s.sisyphusRock = s.openedThisTurn ? this._sisyphusRise(v) : Math.max(0, round2(v - SISYPHUS_SLIP));
   },
@@ -9680,6 +9913,10 @@ const Game = {
     }
     // The Corporates görev değerlendirmesi (GDD 10)
     let corpCoinHalf = false;
+    /* denetim BE-05 (kullanıcı kararı 11) — BOSS görevi şirket JOKERİNİN ödül/cezasını
+       vermez: boss'u geçmenin ödülü Epic kartıdır. Eskiden boss görevi de bu bloğa girip
+       +1.0x kalıcı / +12 coin gibi joker ödüllerini veriyordu. */
+    if (s.corpTask && s.corpTask.boss) s.corpTask = null;
     if (s.corpTask) {
       const c = s.corpTask;
       if (c.key === 'altin') c.done = s.wonOnTurn <= 2;
@@ -9924,7 +10161,7 @@ const Game = {
       if (u.key === 'ikinciSans'
         && ((s.secondChance || 0) >= 1 || s.secondChanceTaken || this.hasRescueJoker())) return false;
       if (u.key === 'ustaninMuhru'
-        && ![...s.jokers, ...s.backup, ...s.deckJokers].some(j => !j.runLong)) return false;
+        && ![...s.jokers, ...s.backup, ...s.deckJokers].some(j => this._sealable(j))) return false;   // denetim BE-16
       return true;
     });
     const rolled = [];
@@ -10007,7 +10244,8 @@ const Game = {
       }
     } else if (key === 'ustaninMuhru') {
       const order = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
-      const cand = [...s.jokers, ...s.backup, ...s.deckJokers].filter(j => !j.runLong);
+      /* denetim BE-16 — zaten yaşlanmayan joker (The World, Freedom, ★★★ kemer, ∞ süre) mühür almaz */
+      const cand = [...s.jokers, ...s.backup, ...s.deckJokers].filter(j => this._sealable(j));
       const best = cand.sort((a, b) => order.indexOf(b.rarity) - order.indexOf(a.rarity))[0];
       if (best) {
         best.runLong = true;
@@ -10112,7 +10350,10 @@ const Game = {
     const anarchist = this.slotRecs().some(j => j.key === 'anarsist');
     // Anarşist "Kara Pazar" (yeniden tasarım): fiyatlar HER ZAMAN oyuncu
     // lehine sapar (×0.4–×0.9). basePrice UI'da üstü çizili gösterilir.
-    const anar = (base) => Math.max(1, Math.round(base * (0.4 + this.rng() * 0.5)));
+    /* denetim karar 4 (kullanıcı kararı 2026-10-21) — Kupon normal indirimin
+       ÜSTÜNE binince toplam indirim %60'ı geçmez: fiyat liste fiyatının %40'ının
+       altına inmez (`list` verilmezse `base` liste fiyatıdır). rng çekiş sayısı aynı. */
+    const anar = (base, list = base) => Math.max(1, Math.ceil(list * 0.4), Math.round(base * (0.4 + this.rng() * 0.5)));
     // kilitli ürünler döngüden düşmez; Anarşist varsa fiyatları yine sapar (GDD 9/15)
     for (const it of (locks?.items ?? []).slice(0, slotCount)) {
       if (anarchist) { it.basePrice = jokerPrice(it.key, it.rarity); it.price = anar(it.basePrice); }
@@ -10122,7 +10363,7 @@ const Game = {
     // seçilenler ve bir önceki store'da çıkanlar havuzdan düşülür —
     // "hep aynı jokerler çıkıyor" hissini kıran katmanlı filtre.
     // Aday kalmazsa filtreler sırayla gevşetilir.
-    const ownedKeys = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
+    const ownedKeys = this._ownedJokerKeys();   // denetim SY-12 — susturulan joker de "sahip olunan" sayılır
     const recentKeys = new Set(s.lastStoreKeys || []);
     const takenKeys = new Set(items.map(i => i.key));
     for (let i = items.length; i < slotCount; i++) {
@@ -10149,7 +10390,7 @@ const Game = {
          mekanik çalışıyordu, yalnız GÖRÜLMÜYORDU. */
       let price = discounted ? this.modePrice(jokerDiscPrice(def.key, rarity)) : listPrice, basePrice;
       if (discounted) basePrice = listPrice;
-      if (anarchist) { basePrice = basePrice ?? price; price = anar(price); }
+      if (anarchist) { basePrice = basePrice ?? price; price = anar(price, basePrice); }   // denetim karar 4
       /* GRUP D/17 (kullanıcı kararı 2026-08-28) — PANDORA STORE'DA KENDİ
          ADIYLA DURUR. Kart eskiden "Gizemli Kutu" takma adıyla satılıyordu;
          oysa temanın kendisi zaten "Pandora'nın kutusu" — ismi saklamak
@@ -10289,7 +10530,7 @@ const Game = {
         && s.specialTiles.filter(x => x.kind === k.key).length < k.maxCopies);
     if (kind === 'consum') return true;
     if (kind === 'joker') {
-      const owned = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
+      const owned = this._ownedJokerKeys();   // denetim SY-12
       return this.jokerPool(d => d.rarity !== 'epic' && !owned.has(d.key)).length > 0;
     }
     return false;
@@ -10562,7 +10803,7 @@ const Game = {
     }
     if (kind === 'joker') {
       const rar = this._rollRarity(PACK_RARITY_CURVE);   // Grup K
-      const owned = new Set([...this.slotRecs(), ...s.backup, ...s.deckJokers].map(j => j.key));
+      const owned = this._ownedJokerKeys();   // denetim SY-12
       /* P109 (kullanıcı: "store'da çıkan jokerlerden biri genelde slot machine'den de çıkıyor") —
          raftaki jokerler de paketin ve makara süslerinin dışında (ölçüm: ödül %4-7, makarada
          görünen sembollerden biri %47-68 raftakiyle aynıydı). Havuz boşalırsa eski kurala düşer. */
@@ -10904,6 +11145,15 @@ const Game = {
          stage o stage'in okeyine döner — yüzü değneğe açık değildir. */
       if (this.isOkeyTile(t))
         return { error: 'Okey taşı dönüştürülemez — her stage o stage’in okeyine döner.' };
+      /* denetim BE-13 — türetilmiş, destede karşılığı olmayan taş (Hayalet, dirilen/dikilen):
+         değnek değere göre yazdığı için desteden İLGİSİZ bir gerçek taşı siliyor/değiştiriyordu.
+         Kopya Mürekkebi istisna: görünen yüzün kopyasını eklemek tutarlıdır. */
+      if (key !== 'kopyaci' && (t.ghost || t.revived || t.stitched))
+        return { error: 'Bu taş türetilmiş bir kopya — destede karşılığı yok, kalıcı değnek tutmaz.', needsTarget: def.target };
+      /* denetim BE-14 — değeri bu raund değişmiş taş (Kara Kedi, Sir.by, Tüccar, Pandora…):
+         kalıcı kayıt görünen yüze yazılıyor, asıl taş sonraki raund eski hâliyle dönüyordu. */
+      if (key !== 'kopyaci' && t.retuned)
+        return { error: 'Bu taşın değeri bu raund değişti — kalıcı değnek asıl taşa ulaşamaz.', needsTarget: def.target };
       return { tile: t };
     };
     const rndIns = (tile) => {
@@ -10964,12 +11214,16 @@ const Game = {
         s.fermanUsed = (s.fermanUsed || 0) + 1;
         consume();
         return { ok: true, note: `🪶 Ferman yazıldı: sıradaki boss raundunun koşulu işlemeyecek (${s.fermanUsed}/${FERMAN_MAX})` };
-      case 'altinCanak':
-        s.permTargetCut = round2(Math.min(0.4, (s.permTargetCut || 0) + 0.10));
-        if (s.status === 'playing')
-          s.target = niceTarget(this.targetFor(s.stage, s.roundInStage) * (s.nextTargetMult || 1));
+      case 'altinCanak': {
+        /* denetim BE-12 — raund içindeki hedef sıfırdan (targetFor) DEĞİL, mevcut hedef
+           üzerinden GÖRELİ düşer. Eskiden boss/joker/bahis değiştiricileri siliniyordu:
+           Misunderstood boss +%25 kayboluyor, Kıyamet'te hedef 500 → 1100 çıkıyordu. */
+        const cut0 = s.permTargetCut || 0;
+        s.permTargetCut = round2(Math.min(0.4, cut0 + 0.10));
+        if (s.status === 'playing') this._scaleRoundTarget((1 - s.permTargetCut) / (1 - cut0));
         consume();
         return { ok: true, note: `🏆 Derin Nefes: tüm hedef puanlar kalıcı -%${Math.round(s.permTargetCut * 100)}` };
+      }
       case 'klonSisesi': {
         const src = s.jokers.find(x => x.id === target?.jokerId);
         if (!src) return { ok: false, error: 'Kopyalanacak bir ANA SLOT jokeri seç.', needsTarget: 'joker' };
@@ -11642,9 +11896,11 @@ const Game = {
   jarState() {
     const s = this.state;
     if (!s || s.status !== 'playing' || s.jokersDisabled) return null;
-    const card = (s.jokers || []).find(x => x.key === 'rusvet' || (x.fused || []).some(f => f.key === 'rusvet'));
+    /* denetim JB-08 — kavanoz Vasiyet mirasında (legacy) da olabilir: dolum slotRecs ile mirası
+       buluyordu ama kırma düğmesi yalnız kart/Füzyon'a bakıyordu → mirastaki kavanoz kırılamıyordu. */
+    const card = (s.jokers || []).find(x => this._recsOf(x).some(r => r.key === 'rusvet'));
     if (!card) return null;
-    const rec = card.key === 'rusvet' ? card : card.fused.find(f => f.key === 'rusvet');
+    const rec = this._recsOf(card).find(r => r.key === 'rusvet');
     return { id: card.id, coins: rec.jarCoins || 0, armed: !!s.jarArmed,
       canUse: s.phase === 'meld' && (rec.jarCoins || 0) > 0 };
   },
@@ -11787,7 +12043,8 @@ const Game = {
       : [...s.jokers, ...s.backup].find(x => x.id === jokerOrId);
     if (!j || j.key !== 'terzi' || !COLORS.includes(color)) return { ok: false };
     j.color = color;
-    j.desc = `Seçilen renk: ${COLOR_TR[color]}. Bu renkteki taşlar Per açılımlarında renk kuralından muaftır.`;
+    /* denetim JA-05 — açıklama P29 · Grup L kuralına uyduruldu (her grupta renksiz) */
+    j.desc = `Seçilen renk: ${COLOR_TR[color]}. Bu renkteki taşlar renksiz sayılır: her grupta, her yerde kullanılabilir.`;
     return { ok: true, color };
   },
 
@@ -11898,7 +12155,7 @@ const Game = {
       const refund = s.sellFull ? insuredSell(j.key, j.rarity) : jokerSell(j.key, j.rarity);
       const net = Math.max(0, price - refund);
       let error = null;
-      if (j.noSell) error = `${j.name} takas edilemez — kilitli.`;
+      if (this._noSellCard(j)) error = `${j.name} takas edilemez — kilitli.`;   // denetim JB-03
       else if (s.coins + refund < price) error = `Yetersiz coin (${net} gerekli).`;
       rows.push({ jokerId: j.id, key: j.key, name: j.name, rarity: j.rarity,
         where, slotIdx, refund, net, ok: !error, error });
@@ -11956,7 +12213,12 @@ const Game = {
      adayı olabilmelidir. */
   fusableJokers() {
     const s = this.state;
-    return [...s.jokers, ...s.backup];
+    /* denetim JB-05 / karar 9 — run boyu süren (runLong: Crimson King) kart Füzyon'a giremez:
+       taşıyıcı olunca kart hiç yaşlanmıyor, eşi ölümsüz oluyordu; tetiklenince eşi de siliniyordu.
+       denetim JB-06 / karar 8 — final jokerleri (Lady Luck / Orion) Füzyon'a giremez (Orion
+       eritilince kemer/eş tamamen duruyordu). */
+    return [...s.jokers, ...s.backup].filter(j => !this._recsOf(j).some(r =>
+      JOKER_DEFS[r.key]?.runLong || r.rarity === 'final' || JOKER_DEFS[r.key]?.rarity === 'final'));
   },
 
   /* Grup F/23 — Füzyon önce BEKLEYEN eylem olarak aranır; eski kayıtlarda
@@ -12080,7 +12342,7 @@ const Game = {
   ritimLevel() {
     if (this.ritimIsBoss()) return Math.max(1, Math.min(3, this.state.turn));
     const j = this.slotRecs().find(x => x.key === 'ritim');
-    return j ? Math.max(1, Math.min(3, 4 - j.usesLeft)) : 1;
+    return j ? Math.max(1, Math.min(3, 4 - this._lifeOf(j))) : 1;   // denetim JB-14 — Füzyonda kartın ömrü
   },
 
   setRitimResult(success) {
@@ -12099,6 +12361,13 @@ const Game = {
       return { ok: true, success: true, bonus };
     }
     s.jokers = s.jokers.filter(j => j.key !== 'ritim'); // kombo kaçtı — joker gider (GDD)
+    /* denetim BE-04 — Füzyon'a eritilmiş ya da Vasiyet mirasındaki Ritim de gider
+       (eskiden yalnız ana slot kaydı siliniyordu: füzyondaki Ritim cezasız kalıyordu). */
+    for (const j of [...s.jokers, ...s.backup]) {
+      if (j.fused) j.fused = j.fused.filter(f => f.key !== 'ritim');
+      if (j.legacy) j.legacy = j.legacy.filter(f => f.key !== 'ritim');
+      for (const f of (j.fused || [])) if (f.legacy) f.legacy = f.legacy.filter(x => x.key !== 'ritim');
+    }
     s.ritimBonus = 0;
     return { ok: true, success: false };
   },
@@ -12158,7 +12427,10 @@ const Game = {
         note: `🐪 Tüccar ${TUCCAR_MAX_REFUSE} kez üst üste reddedildi — kervanını topladı ve gitti.` };
     }
     return { ok: true, left: TUCCAR_MAX_REFUSE - tucJ.refuseStreak,
-      note: `🐪 Teklif reddedildi. Bir kez daha reddedersen Tüccar gidecek.` };
+      /* denetim JB-10 — kalan hakka göre (eskiden her retten sonra "bir kez daha" diyordu) */
+      note: TUCCAR_MAX_REFUSE - tucJ.refuseStreak <= 1
+        ? `🐪 Teklif reddedildi. Bir kez daha reddedersen Tüccar gidecek.`
+        : `🐪 Teklif reddedildi. Üst üste ${TUCCAR_MAX_REFUSE - tucJ.refuseStreak} kez daha reddedersen Tüccar gidecek.` };
   },
 
   /* P112 (kullanıcı: "ana slottan backup'a tutup koyma ekleyelim") — sürükle-bırakla ana slottan
@@ -12170,12 +12442,17 @@ const Game = {
     const idx = s.jokers.findIndex(j => j.id === jokerId);
     if (idx === -1) return { ok: false };
     const j = s.jokers[idx];
+    /* denetim JB-02 — kurtardıktan sonra kilitlenen Lanetli Kaptan (ya da onu taşıyan Füzyon
+       kartı) backup'a alınamaz: backup'ta lanet (hedef +%20) işlemiyordu, bedel kaçıyordu. */
+    if (this._noSellCard(j))
+      return { ok: false, error: `${j.name} kilitli — backup'a alınamaz.` };
     if (s.backup.length >= MAX_BACKUP) {
       const bi = swapId != null ? s.backup.findIndex(b => b.id === swapId) : -1;
       if (bi === -1) return { ok: false, error: 'Backup dolu.' };
       const b = s.backup[bi];
       delete b.waitLeft;
-      b.fresh = true;
+      this._enterMain(b);   // denetim JB-01
+      this._leaveMain(j);
       j.waitLeft = j.usesLeft === 1 ? 1 : 3;
       s.jokers[idx] = b;
       s.backup[bi] = j;
@@ -12184,9 +12461,31 @@ const Game = {
       return { ok: true, swapped: true, name: j.name, inName: b.name, notes };
     }
     s.jokers.splice(idx, 1);
+    this._leaveMain(j);   // denetim JB-01
     j.waitLeft = j.usesLeft === 1 ? 1 : 3;
     s.backup.push(j);
     return { ok: true, name: j.name };
+  },
+
+  /* denetim JB-01 (beta LG-03) — BACKUP GİDİŞ-DÖNÜŞÜYLE ÖLÜMSÜZLÜK.
+     moveToMain her girişte `fresh = true` yazıyordu; raund içinde ana → backup → ana
+     sürüklenen joker o raund hiç yaşlanmıyordu (her raund tekrarlanınca hiç bitmiyordu).
+     Artık raund İÇİNDE ana slottan çıkan joker işaretlenir: aynı raund geri dönerse `fresh`
+     verilmez (önceki değeri korunur), backup'ta kalırsa da raund sonunda yaşlanır
+     (bkz. _ageJokers) — o raund ana slotta çalıştı. Raund DIŞINDA (store/harita) taşıma
+     eskisi gibidir: `fresh` raund başında zaten temizlenir. */
+  _leaveMain(j) {
+    const s = this.state;
+    if (s.status === 'playing') j.mainLeftRound = s.roundSerial || 0;
+  },
+  _enterMain(j) {
+    const s = this.state;
+    const sameRound = s.status === 'playing' && j.mainLeftRound === (s.roundSerial || 0);
+    if (!sameRound) j.fresh = true;
+  },
+  /* denetim JB-02/JB-03 — satış kilidi Füzyon alt kaydında da olabilir (Kaptan eritildiyse) */
+  _noSellCard(j) {
+    return !!j && this._recsOf(j).some(r => r && r.noSell);
   },
 
   moveToMain(jokerId) {
@@ -12196,7 +12495,7 @@ const Game = {
     if (s.jokers.length >= this.slotCap()) return { ok: false, error: 'Ana Slot dolu.' };
     const j = s.backup.splice(idx, 1)[0];
     delete j.waitLeft;
-    j.fresh = true;
+    this._enterMain(j);   // denetim JB-01 — aynı raund geri dönen joker `fresh` almaz
     s.jokers.push(j);
     const notes = [];
     this.activateJokerNow(j, notes);   // Grup G (bug) — bkz. aşağıdaki not
@@ -12229,19 +12528,9 @@ const Game = {
     }
     if (j.key === 'terzi' && !j.color)
       this.setTerziColor(j, COLORS[Math.floor(this.rng() * 4)]);
-    /* GRUP D (P20) — joker raund ortasında Ana Slot'a girdiyse piyasa
-       hemen açılır; yoksa oyuncu o raundu etkisiz geçirirdi. */
-    if (j.key === 'tradeJokeri' && !this.state.borsa) {
-      const s = this.state;
-      const pool = [...BORSA_TYPES];
-      const up = pool.splice(Math.floor(this.rng() * pool.length), 1)[0];
-      const down = pool.splice(Math.floor(this.rng() * pool.length), 1)[0];
-      s.borsa = { up, down, flat: pool[0] };
-      s.borsaMelds = 0;
-      j.phase = 'market';
-      notes.push(`📈 Piyasa açıldı: ${TYPE_TR[up]} YÜKSELİŞTE (hisseleri temettü öder) · `
-        + `📉 ${TYPE_TR[down]} DÜŞÜŞTE (hisselerinin yarısı yanar)`);
-    }
+    /* denetim JA-04 — eski Borsa piyasası kurulumu (P20 · Grup D) SİLİNDİ: P100'de
+       kart Boğa oldu, raund içi kurulum ihtiyacı yok; blok yanlış not yazıp
+       seed'li rng'den 2 çekiş harcıyordu. */
     if (j.key === 'truva' && !j.revealed) this._revealPandora(j, notes);
     /* P57 (kullanıcı raporu: "raund içinde hiçbir şirkete dönüşmedi") —
        raund ortasında ana slota geçen Corporates görevini ANINDA alır;
@@ -12276,7 +12565,8 @@ const Game = {
     const s = this.state;
     const j = [...s.jokers, ...s.backup, ...s.deckJokers].find(x => x.id === jokerId);
     if (!j) return { ok: false };
-    if (j.noSell)
+    /* denetim JB-03 — Füzyon içindeki Kaptan kurtarınca kilit alt kayıtta duruyordu; kart satılabiliyordu */
+    if (this._noSellCard(j))
       return { ok: false, error: `${j.name} satılamaz — Game Over'dan kurtardıktan sonra kilitlendi.` };
     return { ok: true };
   },
@@ -12328,7 +12618,7 @@ const Game = {
     const s = this.state;
     const j = [...s.jokers, ...s.backup].find(x => x.id === jokerId);
     if (!j) return { ok: false };
-    if (j.noSell) return { ok: false, error: `${j.name} takas edilemez — kilitli.` };
+    if (this._noSellCard(j)) return { ok: false, error: `${j.name} takas edilemez — kilitli.` };   // denetim JB-03
     const to = this.TRADE_UP_NEXT[j.rarity];
     if (!to) return { ok: false, error: 'Bu nadirlik takas edilemez.' };
     // MADDE D4: takas farkı da mod fiyat çarpanını okur (satış değeri çarpılmaz).
@@ -12877,6 +13167,16 @@ const Game = {
           && !st.bossOrder.some(b => b && b.key === fb))
         st.bossOrder.push(FINAL_BOSSES[fb]);
     }
+    /* denetim SY-04 — Bungie Gum kuyruğundaki taş, masadaki (opened/prevOpen/staged/işleme) taşla
+       AYNI nesnedir; JSON kaydı bu paylaşımı iki ayrı nesneye bölüyordu. _healDuplicateIds bunları
+       "çakışan kimlik" sanıp yeniden numaralıyor, raund ortası kayıtta dönüşte taş ÇOĞALIYORDU.
+       Kuyruk, masadaki aynı kimlikli nesneye yeniden bağlanır (masada yoksa olduğu gibi kalır). */
+    if (Array.isArray(st.bungiePending) && st.bungiePending.length) {
+      const table = new Map();
+      for (const list of [st.opened, st.prevOpen, st.staged, st.islemeler])
+        for (const c of (list || [])) for (const t of ((c && c.tiles) || [])) if (t && t.id != null) table.set(t.id, t);
+      st.bungiePending = st.bungiePending.map(t => (t && table.get(t.id)) || t);
+    }
     this.state = st;
     /* id sayaçlarını mevcut kayıttaki en büyük id'nin üstüne taşı.
        PLAYTEST 16 · GRUP E/F — KÖK NEDEN DÜZELTMESİ: bu tarama eskiden
@@ -12934,10 +13234,13 @@ const Game = {
     const s = this.state;
     if (!s) return 0;
     const seen = new Set();
+    const seenObj = new Set();   // denetim SY-04 — aynı NESNE iki kapta (sakız kuyruğu + masa) çakışma değildir
     const remap = [];
     for (const arr of this.tileRefs())
       for (const t of (arr || [])) {
         if (!t || t.id == null) continue;
+        if (seenObj.has(t)) continue;
+        seenObj.add(t);
         if (!seen.has(t.id)) { seen.add(t.id); continue; }
         const old = t.id;
         t.id = nextTileId(s);

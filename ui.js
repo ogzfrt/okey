@@ -211,6 +211,36 @@
       localStorage.setItem(SAVE_KEY, JSON.stringify(obj));
     } catch (e) { /* bozuk kayıt görmezden gelinir */ }
   }
+  /* denetim RK (kullanıcı kararı 2026-10-22) — RAUND ORTASI KAYIT.
+     Eskiden raund içinde çıkıp dönen oyuncu raundu BAŞTAN, aynı deste sırasıyla oynuyordu
+     (geleceği bilerek; Kumarhane'de kör bahis eli görerek verilebiliyor, tutmayacak Katla'dan
+     çıkıp dönülerek Game Over'dan kaçılabiliyordu). Artık raund oynanırken her çizimden sonra
+     (setTimeout 0 ile birleştirilir) motorun TAM durumu yazılır: el, ıstaka, masa, tur, puan,
+     bahis/Katla, deste sırası, rng durumu (serialize → rngState). `mid: true` bu kaydı eski
+     "raund başı" kaydından ayırır. Raund kaybedildiği AN kayıt silinir (Game Over geri alınamaz).
+     Bahis henüz verilmediyse (Kumarhane, eli görmeden) raund içi kayıt yazılmaz. */
+  let roundSaveTimer = null;
+  function saveRoundNow() {
+    if (roundSaveTimer) { clearTimeout(roundSaveTimer); roundSaveTimer = null; }
+    if (TUT.active || Game.tutorialMode || Game.trainerMode) return;
+    const s = Game.state;
+    if (!s) return;
+    if (s.status === 'lost') { if (loadSave()) clearSave(); return; }
+    /* kazanılan raund (zafer penceresi, store'a geçmeden) da yazılır: yenilenince son tur
+       yeniden oynanmaz; resumeSave store / güçlendirme / sonraki raunda geçer. Run bittiyse
+       zafer ekranı kaydı kendisi siler. */
+    const won = s.status === 'won' && !s.runFinished;
+    if ((s.status !== 'playing' && !won) || curScreen() !== 'game') return;
+    if (Game.needsBet && Game.needsBet()) return;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ where: 'inRound', mid: true, data: Game.serialize() }));
+    } catch (e) { /* depolama dolu vb. — kayıt sessizce atlanır */ }
+  }
+  function scheduleRoundSave() {
+    if (!roundSaveTimer) roundSaveTimer = setTimeout(saveRoundNow, 0);
+  }
+  window.addEventListener('pagehide', saveRoundNow);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveRoundNow(); });
   function loadSave() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
@@ -688,13 +718,18 @@
         d.classList.remove('drag-src');
         if (started) {
           setTimeout(() => { dragging = false; }, 0);
+          /* denetim SA-11 — taşın yeri değişince joker sürüklemesindeki gibi kısa "tık" sesi */
           if (freeRack()) {
             if (targetIdx && typeof targetIdx === 'object') {
               applyFreeDrop(tile.id, targetIdx);   // GRUP J (P20)
+              SFX.tap();
               render();
             }
           } else if (targetIdx >= 0) {
+            const slotOf = () => (Game.state.hand.find((x) => x.id === tile.id) || {}).slot;
+            const was = slotOf();
             Game.moveTile(tile.id, targetIdx); // hedef hücreye koy / takas et
+            if (slotOf() !== was) SFX.tap();
             render();
           }
         }
@@ -1163,6 +1198,13 @@
       /* P65 rötuş — uzun boss adları (TERZİ'NİN İĞNESİ) şeridin dışına
          taşıyordu: yazı şeride sığana kadar küçülür. */
       fitText(pill, 24, 13);
+      /* denetim UI-01 — uzun boss kuralı (EN Tailor's Needle / Lady Luck) hedef kutusunun altına kaçıyordu:
+         metin hedefe 6px'ten çok yaklaşırsa satır aralığı sıkışır (.mc-cond.fit) */
+      const condEl = card.querySelector('.mc-cond');
+      if (condEl && condEl.offsetParent) {
+        const rg = document.createRange(); rg.selectNodeContents(condEl);
+        if (rg.getBoundingClientRect().bottom > tgt.getBoundingClientRect().top - 6) condEl.classList.add('fit');
+      }
 
       /* TRAINER — RAUND ATLAMA. Düğme kartların ARASINDAKİ boşlukta durur
          ve solundaki raundu atlar; her tıklama TEK raund ilerletir.
@@ -1841,7 +1883,8 @@
     box.classList.toggle('frozen', !!s.clockFrozen);
     box.querySelector('.cc-time').textContent = `0:${String(left).padStart(2, '0')}`;
     box.querySelector('.cc-bonus').textContent = `+${Game.clockMult().toFixed(1)}x`;
-    box.querySelector('.cc-bar > i').style.width = `${Math.max(0, Math.min(100, left / CLOCK_SECONDS * 100))}%`;
+    /* denetim SA-10 — width yerine transform (bileşikleştiricide kalır; style.css #chessClock .cc-bar > i) */
+    box.querySelector('.cc-bar > i').style.transform = `translateX(${Math.max(0, Math.min(100, left / CLOCK_SECONDS * 100)) - 100}%)`;
     box.querySelector('.cc-tag').textContent = s.clockFrozen ? t('ccFrozen') : '';
     const btn = box.querySelector('.cc-btn');
     btn.classList.toggle('hidden', !st || !st.canUse);
@@ -1906,7 +1949,7 @@
     /* P46 (kullanıcı isteği 2026-09-14): jokerler RAUND İÇİNDE de sağ tıkla
        satılır (P41'de satış yalnız store'daydı). Değnek satışı store'da kalır —
        istek jokerler içindi. P58: harita panelinde de satılır (attachActs). */
-    const right = !j.noSell && j.id != null
+    const right = !Game._noSellCard(j) && j.id != null   /* denetim JB-03 — Füzyon içindeki kilit de sayılır */
       ? { lbl: t('abSell', sellPrice(j.rarity, j.key)), fn: () => sellJokerNow(j) } : null;
     return { left, right };
   }
@@ -2040,8 +2083,14 @@
     if (!Game.beltNeedsPick || !Game.beltNeedsPick()) return;
     if (beltAsked === beltKey() || document.querySelector('.pk-ov')) return;
     if (!['game', 'map'].includes(curScreen()) && !storeOpen()) return;
-    beltAsked = beltKey();
-    setTimeout(() => { if (Game.beltNeedsPick() && !document.querySelector('.pk-ov')) showBeltPicker(); }, 450);
+    /* denetim JB-11 — "soruldu" işareti pencere GERÇEKTEN açılınca yazılır: 450 ms içinde başka
+       bir seçim penceresi (Üç Kağıtçı, Tanrının Eli…) açıldıysa soru o raund kayboluyordu;
+       artık sonraki render (pencere kapanınca) yeniden dener. */
+    setTimeout(() => {
+      if (beltAsked === beltKey() || !Game.beltNeedsPick() || document.querySelector('.pk-ov')) return;
+      beltAsked = beltKey();
+      showBeltPicker();
+    }, 450);
   }
 
   let dolunaySeen = null;
@@ -2195,10 +2244,13 @@
     const gs = Game.state;
     if (gs && gs.bossCharmId === j.id && Game.isBossRound() && gs.boss && gs.boss.key === 'ladyLuck') tile2.classList.add('ll-charm');
     if (gs && gs.ladyStarId === j.id) tile2.classList.add('ll-star');
+    /* denetim — Avukat: bu tur susturulan joker (Game._mutedKey) sönük + kartın içinde plaka; backup'taki kart değil */
+    const avMute = !opts.backup && Game._mutedKey && Game._mutedKey();
+    if (avMute && (j.key === avMute || (j.fused || []).some((f) => f.key === avMute))) tile2.classList.add('av-muted');
     /* P90 — finalde Orion'un kemerine taktığı joker (bu raund ona çalışır) */
     if (gs && gs.orionBeltId === j.id && Game._raceOn && Game._raceOn()) tile2.classList.add('orion-belted');
     if (!jokerSeen.has(j.id)) { jokerSeen.add(j.id); tile2.classList.add('jt-enter'); }
-    if (j.noSell) tile2.classList.add('locked-sell');
+    if (Game._noSellCard(j)) tile2.classList.add('locked-sell');   // denetim JB-03
     /* BOSS (EPIC) JOKER ÇİZİMİ SLOTTA (kullanıcı isteği 2026-09-10).
        KÖK NEDEN: koleksiyon (.col-jk-art) ve harita (.mc-art.art-joker)
        `--jk-art` değişkenini okuyordu, SLOT hiç okumuyordu — bu kart
@@ -2235,7 +2287,7 @@
     tile2.innerHTML =
       (hasArt
         ? '<div class="jt-art"></div>'
-        : `<div class="jt-name">${(j.noSell ? '🔒 ' : '')}${fzCard ? '⚗ ' + T.name({ key: 'fuzyon', name: 'Füzyon' }) : T.name(j)}</div>`) +
+        : `<div class="jt-name">${(Game._noSellCard(j) ? '🔒 ' : '')}${fzCard ? '⚗ ' + T.name({ key: 'fuzyon', name: 'Füzyon' }) : T.name(j)}</div>`) +
       `<span class="jt-uses${opts.backup ? ' frozen' : (!runLong && j.usesLeft <= 1 ? ' danger' : '')}">` +
       (opts.backup ? `❄${j.waitLeft}` : (runLong ? '∞' : j.usesLeft)) + `</span>`;
     /* P71 — 💋/⭐ rozeti gerçek öğe (::after legendary parıltısıyla çakışırdı) */
@@ -2244,6 +2296,13 @@
       lb.className = 'll-badge';
       lb.textContent = tile2.classList.contains('ll-charm') ? '💋' : '⭐';
       tile2.appendChild(lb);
+    }
+    /* denetim — Avukat'ın susturduğu kartta 🔇 plakası (kartın içinde, ortada) */
+    if (tile2.classList.contains('av-muted')) {
+      const ab = document.createElement('span');
+      ab.className = 'av-badge';
+      ab.innerHTML = `<i>🔇</i><b>${t('avMutedTag')}</b>`;
+      tile2.appendChild(ab);
     }
     // Godzilla şarj rozeti — o anki gerçek seviye canlı görünür
     if (!opts.backup && (j.key === 'godzilla' || (j.fused || []).some(f => f.key === 'godzilla'))) {
@@ -2519,15 +2578,23 @@
       o.stop(actx.currentTime + when + dur + 0.02);
     } catch (e) { /* ses desteklenmiyorsa sessiz devam */ }
   }
+  /* denetim S-4 — bu tıklamanın genel düğme sesini sustur (eylem kendi sesini SONRA çalacaksa) */
+  function muteUiClick() { lastSfxAt = performance.now(); }
 
   /* P113 (kullanıcı: "oyundaki tüm tıklanılabilir efekt işleyen her şeye ses efekti") — kendi sesi
      olmayan her tıklanabilir öğe kısa bir düğme sesi çalar. Tıklama yakalanır, eylem kendi sesini
      çaldıysa (lastSfxAt değişti) genel ses çalmaz → çift ses yok. */
-  const UI_CLICKABLE = 'button, [role="button"], .cyc-dot, .set-chk, .set-tab, .pk-card, .map-card, .mc-select, .joker-tile, .consum-card, .gm-sh-tab, .st-sh-tab, .col-cat, .set-go';
+  /* denetim SA-06 — deste kartı, atık yuvası, Yeni Run noktaları ve slayt kartı da tıklanabilir (sessiz kalıyordu) */
+  const UI_CLICKABLE = 'button, [role="button"], .cyc-dot, .set-chk, .set-tab, .pk-card, .map-card, .mc-select, .joker-tile, .consum-card, .gm-sh-tab, .st-sh-tab, .col-cat, .set-go, .deck-pile, .discard-slot, .rp-dots i, .mp-card';
+  /* denetim SA-07 — sesini pointerdown'da çalan öğeler (Ritim pedi) için: aynı basışın pointerdown'ı ile
+     click'i arasında bir eylem sesi çaldıysa genel ses çalmaz. Klavye/programla gelen click'te
+     (yakın zamanda pointerdown yok) eski kural geçerli. */
+  let downSfxMark = 0, downAt = -1e9;
+  document.addEventListener('pointerdown', () => { downSfxMark = lastSfxAt; downAt = performance.now(); }, true);
   document.addEventListener('click', (e) => {
     const tEl = e.target && e.target.closest && e.target.closest(UI_CLICKABLE);
     if (!tEl || tEl.disabled || tEl.closest('#rack')) return;   // ıstaka taşlarının kendi sesi var
-    const before = lastSfxAt;
+    const before = (e.detail > 0 && performance.now() - downAt < 1500) ? downSfxMark : lastSfxAt;
     setTimeout(() => { if (lastSfxAt === before) SFX.ui(); }, 0);
   }, true);
 
@@ -2594,7 +2661,8 @@
     let preview = null;             // ayarlarda seçeneğe basınca o parça dinletilir
     let master = null, noise = null, unlocked = false, cur = null;
     let duckK = 1;   // P71c — Ritim mini oyunu açıkken müzik kısılır (çubuk müziğe kilitli değil)
-    const level = () => (on ? Math.pow(Math.max(0, Math.min(100, vol)) / 100, 1.5) * 0.6 * duckK : 0);
+    let pauseK = 1;  // denetim S-2 — duraklat menüsü açıkken 0.5
+    const level = () => (on ? Math.pow(Math.max(0, Math.min(100, vol)) / 100, 1.5) * 0.6 * duckK * pauseK : 0);   // denetim S-2: pauseK
 
     /* ── nota yazımı: "D5 - C5 . | A4" → olaylar. "-" önceki notayı uzatır,
        "." sus, "|" yalnız okunurluk için ölçü çizgisi, "D3+F#3" akor,
@@ -3244,9 +3312,10 @@
       const timer = setInterval(tick, 40);
       return {
         name,
-        stop() {
-          out.gain.setTargetAtTime(0, actx.currentTime, .25);
-          setTimeout(() => { clearInterval(timer); out.disconnect(); }, 1400);
+        /* denetim S-1 — slow: oyun sonu ekranında ~3-4 sn'de yavaşça kapanır */
+        stop(slow) {
+          out.gain.setTargetAtTime(0, actx.currentTime, slow ? .8 : .25);
+          setTimeout(() => { clearInterval(timer); out.disconnect(); }, slow ? 5000 : 1400);
         },
       };
     }
@@ -3254,12 +3323,12 @@
     function playFile(name) {
       const a = new Audio(MUSIC_FILES[name]);
       a.loop = true; a.volume = 0;
-      a.play().catch(() => {});
+      if (!document.hidden) a.play().catch(() => {});   // denetim SA-12 — gizli sekmede başlamaz (görününce çalar)
       let k = 0, fading = null;
-      const fade = (from, to, done) => {
+      const fade = (from, to, done, step = .05) => {
         clearInterval(fading); k = 0;
         fading = setInterval(() => {
-          k = Math.min(1, k + .05);
+          k = Math.min(1, k + step);
           a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
           if (k >= 1) { clearInterval(fading); if (done) done(); }
         }, 50);
@@ -3267,11 +3336,13 @@
       fade(0, Math.min(1, level() * 2));
       return {
         name, el: a,
-        stop() { fade(a.volume, 0, () => { a.pause(); a.src = ''; }); },
+        stop(slow) { fade(a.volume, 0, () => { a.pause(); a.src = ''; }, slow ? .0125 : .05); },   // denetim S-1: slow ≈ 4 sn
       };
     }
 
     let force = null;               // test/kayıt kancası: belirli parçayı zorla
+    /* denetim SA-12 — parça ya sentezde (TRACKS) ya da dosyada (MUSIC_FILES) olabilir */
+    const hasTrack = (k) => !!(k && (TRACKS[k] || MUSIC_FILES[k]));
     function want() {
       if (force) return force;
       if (preview && document.getElementById('settingsOv')) return preview;
@@ -3287,21 +3358,28 @@
         try {
           if (!Game.state || !Game.isBossRound()) return theme;
           const own = Game.state.boss && 'b_' + Game.state.boss.key;
-          return own && TRACKS[own] ? own : 'bossGenel';     // boss'un kendi müziği
+          return hasTrack(own) ? own : 'bossGenel';     // boss'un kendi müziği (denetim SA-12: dosyası da sayılır)
         } catch (e) { return theme; }
       }
       /* P74 — final stage'in haritası da final boss'un parçasını çalar */
       try {
         if (curScreen() === 'map' && Game.isFinalStage && Game.isFinalStage() && Game.state.boss) {
           const fin = 'b_' + Game.state.boss.key;
-          if (TRACKS[fin]) return fin;
+          if (hasTrack(fin)) return fin;   // denetim SA-12
         }
       } catch (e) { /* yok */ }
       return theme;                   // menü + harita: seçili tema
     }
 
+    /* denetim S-2 — duraklat menüsü (oyun / harita / store) açıkken müzik yarı sese iner (pauseK, level()) */
+    const pauseOpen = () => ['menuPop', 'mapMenuPop', 'storeMenuPop'].some((id) => { const p = document.getElementById(id); return !!p && !p.classList.contains('hidden'); });
+    /* denetim S-1 — Game Over / Run Tamamlandı ekranında raund müziği yavaşça kapanır, yenisi başlamaz */
+    const endOpen = () => !force && !!document.querySelector('#gameOverOv, #runCompleteOv');
     function sync() {
+      const pk = pauseOpen() ? .5 : 1;
+      if (pk !== pauseK) { pauseK = pk; applyLevel(); }
       if (!unlocked || !on) return;
+      if (endOpen()) { if (cur) { cur.stop(true); cur = null; } return; }
       const w = want();
       if (cur && cur.name === w) return;
       try {
@@ -3319,7 +3397,9 @@
     function unlock() {
       if (unlocked) return;
       unlocked = true;
-      try { ensureCtx(); if (actx.state === 'suspended') actx.resume(); } catch (e) { /* sessiz */ }
+      /* denetim LG-09 — resume() promise döndürür; ses cihazı açılamazsa (çıkışsız/sessiz
+         cihaz) "Failed to start the audio device" yakalanmamış ret olarak düşüyordu */
+      try { ensureCtx(); if (actx.state === 'suspended') Promise.resolve(actx.resume()).catch(() => {}); } catch (e) { /* sessiz */ }
       sync();
     }
     document.addEventListener('pointerdown', unlock, true);
@@ -3327,7 +3407,14 @@
     /* arka plan sekmesinde zamanlayıcı kısılır → bağlamı uyut, dönünce uyandır */
     document.addEventListener('visibilitychange', () => {
       if (!actx || !unlocked) return;
-      if (document.hidden) actx.suspend(); else actx.resume();
+      Promise.resolve(document.hidden ? actx.suspend() : actx.resume()).catch(() => {});   // denetim LG-09
+    });
+    /* denetim SA-12 — dosyadan çalan parça (<audio>) AudioContext'e bağlı değil: gizli sekmede
+       ayrıca durdurulur, görününce sürer */
+    document.addEventListener('visibilitychange', () => {
+      if (!cur || !cur.el) return;
+      if (document.hidden) cur.el.pause();
+      else if (on) cur.el.play().catch(() => {});
     });
     setInterval(sync, 500);
 
@@ -3346,9 +3433,11 @@
         sync();
       },
       want, sync, unlock, TRACKS,
+      FILES: MUSIC_FILES,   // denetim SA-12 — test kancası (dosyalı parça yolunu test sırasında yazmak için)
       /* P71c — Ritim mini oyunu: müziği kıs / geri aç */
       duck(onDuck) { duckK = onDuck ? .35 : 1; applyLevel(); },
       get ducked() { return duckK < 1; },
+      get levelNow() { return level(); },   // denetim S-2 — test kancası (duraklatta yarıya iner)
       /* P71c — çevrimdışı ölçüm: parçayı OfflineAudioContext'e çizip RMS / tepe
          döndürür (ses seviyesi dengesi testi). Canlı çalımla aynı playStep. */
       async analyze(name, secs = 12) {
@@ -3374,7 +3463,7 @@
         for (let i = 0; i < d.length; i++) { sum += d[i] * d[i]; peak = Math.max(peak, Math.abs(d[i])); }
         return { rms: Math.sqrt(sum / d.length), peak };
       },
-      force(name) { force = name && TRACKS[name] ? name : null; unlock(); sync(); },
+      force(name) { force = hasTrack(name) ? name : null; unlock(); sync(); },   // denetim SA-12: dosyalı parça da
       get forced() { return force; },
       setOn(b) {
         on = !!b;
@@ -4331,7 +4420,7 @@
     const k = s.boss.key;
     if (k === 'kelebek' && s.bossBan) n.push(t('bossBanExtra', T.typeName(s.bossBan)));
     if (k === 'avukat' && s.bossMutedJoker) {
-      const mj = Game.slotRecs().find(j => j.key === s.bossMutedJoker);
+      const mj = Game._allSlotRecs().find(j => j.key === s.bossMutedJoker);   // denetim BE-01 — susturulan joker slotRecs'te görünmez
       n.push(t('bossMutedExtra', mj ? T.name(mj) : s.bossMutedJoker));
     }
     /* P71 — Lady Luck: bildirim kartları kapalı olduğundan lanet BURADA görünür */
@@ -4379,13 +4468,17 @@
       setTimeout(showGhostOffer, 0);   // P100 — kayıttan dönülünce bekleyen Hayalet tur teklifi
     applyRunTheme();   // P78 — boss raundu arayüzü (raund ekran değişmeden başlayıp bitebilir)
     renderChessClock();   // P110
+    scheduleRoundSave();   // denetim RK — raund ortası kayıt (her eylem render ile biter)
     if (curScreen() === 'map') setTimeout(() => { if (curScreen() === 'map') renderMap(); }, 0);   // P80 — haritadaki envanter tazelensin
     const s = Game.state;
     hideTip(); // hover'daki eleman yeniden çizimde kaybolabilir
     /* P54 · Grup A — Üç Kağıtçı'nın bekleyen seçimi (tur başında motor kurar).
        Hangi akıştan gelinirse gelinsin (raund başı, discard, kayıttan dönüş)
        pencere render üzerinden açılır; açıksa ikinci kez kurulmaz. */
-    if (s && s.ucKagit && s.status === 'playing' && !document.getElementById('ucKagitPop'))
+    /* denetim LG-01 — yalnız raund ekranında: el haritada (raunda girmeden) dağıtılmış olur;
+       haritadaki joker taşıma render()'ı pencereyi raund dışında açıyordu. Raunda girince
+       showScreen('game') → render() bekleyen seçimi açar. */
+    if (s && s.ucKagit && s.status === 'playing' && curScreen() === 'game' && !document.getElementById('ucKagitPop'))
       setTimeout(showUcKagit, 450);
     /* PLAYTEST 9 · GRUP D (bug) — SEÇİM BUDAMASI.
        `selection` taş ID'si tutar; eldeki taş başka bir yolla elden çıkarsa
@@ -4480,7 +4573,7 @@
       Array.from({ length: s.maxTurns }, (_, i) =>
         `<i class="${i < s.turn ? 'on' : ''}"></i>`).join('') + '</span>';
     el.turnIndicator.title = `${s.turn}/${s.maxTurns}`;
-    el.scoreNow.textContent = s.score;
+    if (!seqLock) el.scoreNow.textContent = s.score;   // denetim CS-13 — puanlama sahnesi sayıyor
     el.scoreTarget.textContent = s.target;
     /* Grup L: ilerleme barı Figma'da yok, DOM'dan kaldırıldı. Eski
        kayıt/test yollarında eleman bulunmayabilir → koşullu. */
@@ -4848,7 +4941,7 @@
         if (g || bo) {
           done = g ? !!g.done : !!bo.met;
           const reward = g ? ` → +${g.amount} ${g.reward === 'coin' ? t('kahinCoin') : t('kahinPts')}` : '';
-          const txt = t('kahinChip', T.ev(g ? g.text : bo.text) + reward);
+          const txt = t('kahinChip', T.goal(g ? g.text : bo.text) + reward);   // denetim UI-07 — EN çevirisi
           lines.push(`<div class="kc-line"><span class="kc-ico">🔮</span><span class="kc-val">${txt}</span>`
             + (done ? '<span class="kc-ok">✓</span>' : '') + '</div>');
         }
@@ -5101,7 +5194,11 @@
     if (autoFinishing || !Game.hopelessRound()) return;
     autoFinishing = true;
     toast(t('autoLoss'));
-    setTimeout(() => {
+    /* denetim LG-02 — puanlama sahnesi (#scoreSeq) sürerken bekle: sahnenin sonundaki
+       raund-sonu çağrısıyla yarışıp Game Over'ı iki kez kuruyor, kayıp raundu iki kez
+       sayıyordu. Sahne bitince (kutu kalkınca) karar yeniden verilir. */
+    const fire = () => {
+      if (document.getElementById('scoreSeq')) { setTimeout(fire, 300); return; }
       autoFinishing = false;
       if (!Game.hopelessRound()) return;
       const res = Game.autoFinishHopeless();
@@ -5109,7 +5206,8 @@
       if (res.events && res.events.length) notify(res.events);
       render();
       if (res.roundOver) setTimeout(showRoundEnd, 400);
-    }, 900);
+    };
+    setTimeout(fire, 900);
   }
 
   /* ---------- Etkileşim ---------- */
@@ -5155,9 +5253,11 @@
 
   const doConfirm = () => {
     const pre = Game.previewBase ? Game.previewBase() : null;   // P111 — sahne jokersiz değerden başlar
+    const score0 = Game.state.score;   // denetim CS-10 — sayaç gerçek eski puandan saysın (Cellat, Orion ×2)
     const res = Game.confirmMelds();
-    if (res && res.ok && pre) res.pre = pre;
+    if (res && res.ok && pre && !res.pre) res.pre = pre;   // denetim karar 18 — motorun verdiği taban (çöken gruplar sonrası) önceliklidir
     if (!res.ok) { if (res.error) toast(res.error); return; }
+    muteUiClick();   // denetim S-4 — Onayla'da tek ses: genel düğme tıkı çalmaz, yalnız açılım sesi (sahne sonunda)
     selection.clear();
     /* Grup H — Uzaylı boss: açılımın TAMAMI gizli uzaylı yüzünden çöktüyse
        puan/çarpan gösterme, taşlar ele döndü; oyuncu aynı turda yeniden
@@ -5172,8 +5272,10 @@
     notify(res.triggered.map(tr => `${tr.name}: ${tr.text}`));
     notify(res.bonuses);
     notify(res.events);
-    if (TUT.active && res.triggered.length && Game.state.jokers.length) TUT.flag('jokerFire');
     const after = (seqShown) => {
+      /* denetim CS-12 — öğretici "zıpladı ve ekledi" der: sahne BİTİNCE işaretlenir (eskiden
+         sahne başlarken çıkıyordu) */
+      if (TUT.active && res.triggered.length && Game.state.jokers.length) TUT.flag('jokerFire');
       scoreFly(`+${res.final}`);
       SFX.meld(res.count);
       /* P111 — sahne çarpanı zaten gösterdi; eski ×N parlaması yalnız sahne atlanınca (testler) */
@@ -5185,7 +5287,7 @@
       if (res.katlaOffer) setTimeout(showKatlaOffer, 650);   // P58 · Kumarhane
       if (Game.state.status !== 'playing') setTimeout(showRoundEnd, 900);
     };
-    const oldScore = Game.state.score - (res.final || 0);
+    const oldScore = score0;
     render();
     playScoreSeq(res, oldScore, after);   // P111 — jokerler sırayla tetiklenir (Balatro gibi)
   };
@@ -5200,78 +5302,190 @@
      ============================================================ */
   const ANIM_KEY = 'okeyAnimSpeed';
   const animSpeed = () => { try { return localStorage.getItem(ANIM_KEY) === 'fast' ? 'fast' : 'normal'; } catch (e) { return 'normal'; } };
-  const seqStep = (tr) => {
+  /* denetim CS-02…CS-08 / karar 18-19 — SAHNE AYRIŞTIRICISI.
+     Motorun döküm metni (dil bağımsız Türkçe) bir satırda BİRDEN ÇOK etki taşıyabilir
+     ("+6.0x +450 puan", "+2.0x ve +50 puan"); eski ayrıştırıcı yalnız satır başını okuyordu.
+     Artık her satır işlem DİZİSİNE çevrilir:
+       add  : "+N.Nx" / "−N.Nx" (satırın herhangi bir yerinde)   → her tablonun çarpanına eklenir
+       mul  : "çarpan ×N" (Kumarbaz)                                → çarpan çarpılır
+       chips: motorun `chips` alanı (Hipnotizör) / "ham A → B" (Ejderha) → ham değer büyür
+       flat : "+N puan" / "−N puan" / sondaki "(+N)"                → düz puan
+       d    : boss kesintisi / Ayna Kral borcu (motorun `d` alanı)  → toplam (kırmızı adım)
+       coin : "+N coin" (Kelebek)                                   → plakaya girmez
+     Taban (res.pre) artık SAF grup değeri olduğu için her adım plakaya bir kez eklenir; sonda
+     plakanın kendi hesabı motorun sonucuyla birebir tutar (tests/test_denetim_carpan.js). */
+  const SEQ_ADD_RE = /(^|[\s(:→+])([+\-−])(\d+(?:\.\d+)?)x(?![A-Za-z0-9])/g;
+  const seqOps = (tr) => {
     const txt = String(tr.text || '');
-    let m = txt.match(/^\+(\d+(?:\.\d+)?)x/);
-    if (m) return { kind: 'add', v: +m[1], label: `+${(+m[1]).toFixed(1)}x` };
-    m = txt.match(/×\s?(\d+(?:\.\d+)?)/);
-    if (m && /çarpan|mult/i.test(txt)) return { kind: 'mul', v: +m[1], label: `×${m[1]}` };
-    m = txt.match(/^\+(\d+)\s*(puan|pts|points)?/i);
-    if (m) return { kind: 'flat', v: +m[1], label: `+${m[1]}` };
-    return { kind: 'note', v: 0, label: txt.split(/[ (]/)[0] || '✦' };
+    const ops = [];
+    if (tr.d != null) { ops.push({ k: 'd', v: tr.d }); return ops; }
+    if (tr.chips) ops.push({ k: 'chipsAdd', v: tr.chips });
+    let m = txt.match(/ham (\d+) → (\d+)/);
+    if (m && +m[1] > 0) ops.push({ k: 'chipsMul', v: +m[2] / +m[1] });
+    m = txt.match(/çarpan ×(\d+(?:\.\d+)?)/);
+    if (m) ops.push({ k: 'mul', v: +m[1] });
+    for (const x of txt.matchAll(SEQ_ADD_RE))
+      ops.push({ k: 'add', v: (x[2] === '+' ? 1 : -1) * +x[3], s: `${x[2] === '+' ? '+' : '−'}${x[3]}x` });
+    for (const x of txt.matchAll(/([+\-−])(\d+) puan/g)) ops.push({ k: 'flat', v: (x[1] === '+' ? 1 : -1) * +x[2] });
+    m = txt.match(/\(\+(\d+)\)\s*$/);
+    if (m) ops.push({ k: 'flat', v: +m[1] });
+    m = txt.match(/^\+(\d+) coin/);
+    if (m) ops.push({ k: 'coin', v: +m[1] });
+    return ops;
   };
+  /* balon etiketi ve rengi (kind): sayılar motor yazımıyla (iki ondalık korunur — CS-07);
+     sayısız satır çevrilmiş metnin kısa hâli (CS-08: eskiden "en", "ham", "yasak" gibi ilk kelime) */
+  const seqLabel = (tr, ops) => {
+    const sgn = (v) => (v < 0 ? '−' : '+') + Math.abs(v);
+    const d = ops.find((o) => o.k === 'd');
+    if (d) { const pm = String(tr.text || '').match(/-%(\d+)/); return { kind: 'boss', label: pm ? `−%${pm[1]}` : sgn(d.v) }; }
+    const parts = [];
+    let kind = '';
+    for (const o of ops) {
+      if (o.k === 'add') { parts.push(o.s); kind = kind || 'add'; }
+      else if (o.k === 'mul') { parts.push(`×${o.v}`); kind = kind || 'mul'; }
+      else if (o.k === 'flat') { parts.push(sgn(o.v)); kind = kind || 'flat'; }
+      else if (o.k === 'chipsAdd') { parts.push(`+${o.v}`); kind = kind || 'chips'; }
+      else if (o.k === 'chipsMul') { parts.push(`×${+o.v.toFixed(2)}`); kind = kind || 'chips'; }
+      else if (o.k === 'coin') { parts.push(`+${o.v} 🪙`); kind = kind || 'coin'; }
+    }
+    if (parts.length) return { kind, label: parts.join(' ') };
+    const tx = T.ev ? T.ev(String(tr.text || '')) : String(tr.text || '');
+    return { kind: 'note', label: tx.length > 26 ? tx.slice(0, 25) + '…' : (tx || '✦') };
+  };
+  /* Kumarbaz atışı motorda TÜM çarpan eklemelerinden sonra uygulanır (karışık açılımda Tek Teker
+     satırı atıştan sonra yazılsa da) → sahnede de çarpma adımı son eklemenin arkasına alınır. */
+  const seqOrder = (steps) => {
+    const muls = steps.filter((st) => st.ops.some((o) => o.k === 'mul'));
+    if (!muls.length) return steps;
+    const rest = steps.filter((st) => !muls.includes(st));
+    let at = -1;
+    rest.forEach((st, i) => { if (st.ops.some((o) => o.k === 'add')) at = i; });
+    rest.splice(at + 1, 0, ...muls);
+    return rest;
+  };
+  const seqCeil = (raw, car) => Math.ceil(Math.round(raw * car * 1000) / 1000);   // motorun ceilMul'u
+  const seqR2 = (x) => Math.round(x * 100) / 100;
+  /* plaka modeli: tablolar (karışık açılımda iki) × çarpan + düz puan; boss adımından sonra toplam */
+  const seqPlate = (pre, res) => {
+    const P = {
+      parts: (pre && pre.parts && pre.parts.length ? pre.parts : [{ raw: (pre && pre.raw) || res.raw || 0, carpan: (pre && pre.carpan) || 1 }])
+        .map((p) => ({ c: p.raw, m: p.carpan })),
+      flat: 0, total: null,
+    };
+    P.sub = () => P.parts.reduce((a, p) => a + seqCeil(p.c, p.m), 0) + P.flat;
+    P.value = () => (P.total != null ? P.total : P.sub());
+    P.apply = (o) => {
+      if (o.k === 'add') P.parts.forEach((p) => { p.m = seqR2(p.m + o.v); });
+      else if (o.k === 'mul') P.parts.forEach((p) => { p.m = seqR2(p.m * o.v); });
+      else if (o.k === 'chipsMul') P.parts.forEach((p) => { p.c = Math.round(p.c * o.v); });
+      else if (o.k === 'chipsAdd') P.parts[P.parts.length - 1].c += o.v;
+      else if (o.k === 'flat') { if (P.total != null) P.total += o.v; else P.flat += o.v; }
+      else if (o.k === 'd') { if (P.total == null) P.total = P.sub(); P.total = Math.max(0, P.total + o.v); }
+    };
+    return P;
+  };
+  /* tetik satırının kartı: Füzyon/Vasiyet alt kaydı taşıyıcı kartta, sabit kimlikli satırlar
+     anahtarıyla, Orion kemeri / Lady Luck satırı metindeki joker adıyla bulunur (CS-09) */
+  const SEQ_KEY = { satrancSaati: 'satrancSaati', frankRevive: 'frankenstein', frankStitch: 'frankenstein',
+    hipno: 'hipnotizor', pandoraGift: 'truva', rulet: 'rulet', terazi: 'terazi', apple: 'yasakElma', ayTasi: 'otekiDunya' };
+  const seqCard = (tr) => {
+    const js = (Game.state && Game.state.jokers) || [];
+    const recs = (j) => (Game._recsOf ? Game._recsOf(j) : [j]);
+    let j = js.find((x) => x.id === tr.id) || js.find((x) => recs(x).some((r) => r.id === tr.id));
+    if (!j && SEQ_KEY[tr.id]) j = js.find((x) => recs(x).some((r) => r.key === SEQ_KEY[tr.id]));
+    if (!j && (tr.id === 'orion' || tr.id === 'ladyLuck')) j = js.find((x) => x.name && String(tr.text || '').includes(x.name));
+    return j ? el.jokerSlots.querySelector(`[data-jid="${j.id}"]`) : null;
+  };
+  var seqLock = false;   // denetim CS-13 — sahne sürerken render() puan panelini son değere atlatmasın (var: render() bu satırdan önce de çağrılır, TDZ olmasın)
   function playScoreSeq(res, oldScore, done) {
-    const steps = (res.triggered || []).map((tr) => ({ tr, ...seqStep(tr) }));
+    const steps = seqOrder((res.triggered || []).map((tr) => { const ops = seqOps(tr); return { tr, ops, ...seqLabel(tr, ops) }; }));
     const auto = typeof navigator !== 'undefined' && navigator.webdriver && !window.__animTest;
     if (auto || !res.final) { done(false); return; }
     const k = animSpeed() === 'fast' ? 0.45 : 1;
-    const adds = steps.filter((x) => x.kind === 'add').reduce((a, x) => a + x.v, 0);
-    const muls = steps.filter((x) => x.kind === 'mul').reduce((a, x) => a * x.v, 1);
-    /* başlangıç = onaydan önce çubukta görülen jokersiz değer */
-    const chips0 = (res.pre && res.pre.raw) || res.raw || 0;
-    let mult = (res.pre && res.pre.carpan) || Math.max(0.1, (res.carpan || 1) / (muls || 1) - adds), flat = 0;
+    /* başlangıç = onaydan önce çubukta görülen SAF grup değeri (karışık açılımda iki tablo) */
+    const P = seqPlate(res.pre, res);
+    /* güvenlik: plakanın hesabı motorla tutmazsa (beklenmeyen yeni bir döküm metni) son kare
+       motorun sonucunu yazar — puan asla yanlış gösterilmez; test bu durumu yakalar */
+    const probe = seqPlate(res.pre, res);
+    steps.forEach((st) => st.ops.forEach(probe.apply));
+    const exact = probe.value() === res.final;
+    if (!exact && window.console) console.warn('puanlama sahnesi motorla tutmadı', probe.value(), res.final, res.triggered);
     const stage = document.querySelector('#gameScreen .gm-stage');
     document.getElementById('scoreSeq')?.remove();
     const box = document.createElement('div');
     box.id = 'scoreSeq';
-    box.innerHTML = `<span class="ss-chips">${chips0}</span><span class="ss-x">×</span><span class="ss-mult"></span>`
+    box.innerHTML = P.parts.map((p, i) => (i ? '<span class="ss-x">+</span>' : '')
+      + `<span class="ss-chips"></span><span class="ss-x">×</span><span class="ss-mult"></span>`).join('')
       + `<span class="ss-plus hidden"></span><span class="ss-eq">=</span><span class="ss-total">?</span>`;
     stage.appendChild(box);
-    const multEl = box.querySelector('.ss-mult'), plusEl = box.querySelector('.ss-plus'), totEl = box.querySelector('.ss-total');
+    const chipEls = box.querySelectorAll('.ss-chips'), multEls = box.querySelectorAll('.ss-mult');
+    const plusEl = box.querySelector('.ss-plus'), totEl = box.querySelector('.ss-total');
+    const fm = (m) => (Math.abs(m * 10 - Math.round(m * 10)) > 1e-9 ? m.toFixed(2) : m.toFixed(1));
     const show = () => {
-      multEl.textContent = mult.toFixed(1);
-      plusEl.classList.toggle('hidden', !flat); plusEl.textContent = `+${flat}`;
+      P.parts.forEach((p, i) => { chipEls[i].textContent = p.c; multEls[i].textContent = fm(p.m); });
+      plusEl.classList.toggle('hidden', !P.flat);
+      plusEl.textContent = P.flat ? `${P.flat < 0 ? '−' : '+'}${Math.abs(P.flat)}` : '';
+      if (P.total != null) totEl.textContent = P.total;
     };
     show();
+    seqLock = true;
     el.scoreNow.textContent = oldScore;
     const timers = [];
     let finished = false;
     const finish = () => {
       if (finished) return; finished = true;
+      seqLock = false;
       timers.forEach(clearTimeout);
       document.removeEventListener('pointerdown', skip, true);
       document.querySelectorAll('.jk-seq-pop').forEach((c) => c.classList.remove('jk-seq-pop'));
       document.querySelectorAll('.jk-bubble').forEach((b) => b.remove());
-      multEl.textContent = (res.carpan || mult).toFixed(1);
+      /* atlanınca kalan adımlar plakaya işlenir (son kare tutarlı denklem) */
+      steps.forEach((st) => { if (!st.done) { st.ops.forEach(P.apply); st.done = true; } });
+      show();
       totEl.textContent = res.final;
       box.classList.add('ss-done');
       el.scoreNow.textContent = Game.state.score;
       timers.push(setTimeout(() => box.remove(), 650 * k));
       done(true);
     };
-    const skip = (e) => { if (e.target.closest && e.target.closest('#settingsOv, #menuPop')) return; finish(); };
+    /* İLERİ (öğretici) sahneyi atlatmaz — CS-12 */
+    /* denetim S-3 — atlatan basış YALNIZ atlatır: pointerdown alttaki öğeye ulaşmaz (sürükleme/ped
+       başlamaz), ardından gelen click ve sağ tık da window'da yutulur (düğme çalışmaz, genel tık sesi yok) */
+    const skip = (e) => {
+      if (e.target.closest && e.target.closest('#settingsOv, #menuPop, #tutPanel')) return;
+      e.stopPropagation(); e.preventDefault();
+      const swallow = (ev) => { ev.stopImmediatePropagation(); ev.preventDefault(); off(); };
+      const off = () => { clearTimeout(tOff); window.removeEventListener('click', swallow, true); window.removeEventListener('contextmenu', swallow, true); };
+      const tOff = setTimeout(off, 1000);
+      window.addEventListener('click', swallow, true);
+      window.addEventListener('contextmenu', swallow, true);
+      finish();
+    };
     document.addEventListener('pointerdown', skip, true);
+    /* SA-08 — balon tuvalin içinde (gm-stage koordinatı): tuvalle birlikte ölçeklenir */
+    const toStage = (r) => {
+      const sr = stage.getBoundingClientRect(), sc = (sr.width / (stage.offsetWidth || sr.width)) || 1;
+      return { x: (r.left + r.width / 2 - sr.left) / sc, y: (r.top - sr.top) / sc - 6 };
+    };
     let at = 450 * k;   // kullanıcı: daha yavaş / belirgin
     steps.forEach((st, i) => {
       timers.push(setTimeout(() => {
-        if (st.kind === 'add') mult += st.v; else if (st.kind === 'mul') mult *= st.v; else if (st.kind === 'flat') flat += st.v;
+        st.ops.forEach(P.apply); st.done = true;
         show();
         box.classList.remove('ss-bump'); void box.offsetWidth; box.classList.add('ss-bump');
-        const card = el.jokerSlots.querySelector(`[data-jid="${st.tr.id}"]`);
+        if (st.kind === 'boss') { box.classList.remove('ss-cut'); void box.offsetWidth; box.classList.add('ss-cut'); }
+        const card = st.kind === 'boss' ? null : seqCard(st.tr);
         const b = document.createElement('div');
-        b.className = 'jk-bubble' + (st.kind === 'mul' ? ' mul' : st.kind === 'flat' ? ' flat' : '');
+        b.className = 'jk-bubble' + (st.kind === 'add' ? '' : ' ' + st.kind);
         b.textContent = st.label;
-        if (card) {
-          card.classList.remove('jk-seq-pop'); void card.offsetWidth; card.classList.add('jk-seq-pop');
-          const r = card.getBoundingClientRect();
-          b.style.left = `${r.left + r.width / 2}px`; b.style.top = `${r.top - 6}px`;
-        } else {
-          const r = box.getBoundingClientRect();
-          b.style.left = `${r.left + r.width / 2}px`; b.style.top = `${r.top - 6}px`;
-        }
-        document.body.appendChild(b);
+        if (card) { card.classList.remove('jk-seq-pop'); void card.offsetWidth; card.classList.add('jk-seq-pop'); }
+        const p = toStage((card || box).getBoundingClientRect());
+        b.style.left = `${p.x}px`; b.style.top = `${p.y}px`;
+        stage.appendChild(b);
         timers.push(setTimeout(() => { b.remove(); card && card.classList.remove('jk-seq-pop'); }, 1050 * k));
-        beep(560 + Math.min(i, 10) * 70, .09, 'square', .08);
+        if (st.kind === 'boss') beep(220, .16, 'sawtooth', .07);
+        else beep(560 + Math.min(i, 10) * 70, .09, 'square', .08);
       }, at));
       at += 720 * k;
     });
@@ -5769,6 +5983,7 @@
   function showUcKagit() {
     const s = Game.state;
     if (!s || !s.ucKagit || s.status !== 'playing' || document.getElementById('ucKagitPop')) return;
+    if (curScreen() !== 'game') return;   // denetim LG-01 — 450 ms içinde haritaya dönüldüyse açma
     const cost = UC_PEEK_COST;   // engine.js üst düzey sabiti (i18n CHEAT_HILE_MULT ile aynı yol)
     const ov = document.createElement('div');
     ov.id = 'ucKagitPop';
@@ -6758,7 +6973,7 @@
     const cont = () => {
       close();
       resumeSave(save);
-      toast(t(save.where === 'inRound' ? 'roundRestartToast' : 'resumedToast'), true);
+      toast(t(save.where === 'inRound' && !save.mid ? 'roundRestartToast' : 'resumedToast'), true);   // denetim RK
     };
     const slide = (p, i) => {
       const open = isOpen(p);
@@ -6799,7 +7014,7 @@
         const total = (typeof RUN_MODES !== 'undefined' && RUN_MODES[mode]) ? RUN_MODES[mode].stages : 8;
         const totalShown = total + ((typeof RUN_MODES !== 'undefined' && RUN_MODES[mode] && RUN_MODES[mode].finalBoss) ? 1 : 0);   // P71
         const svFinal = sv.stage > total && !!(typeof RUN_MODES !== 'undefined' && RUN_MODES[mode] && RUN_MODES[mode].finalBoss);   // P71
-        const where = save.where === 'inStore' ? 'inStore' : save.where === 'inRound' ? 'inRound' : 'map';
+        const where = save.where === 'inStore' ? 'inStore' : save.where === 'inRound' ? (save.mid ? 'inRoundMid' : 'inRound') : 'map';   // denetim RK
         body = `<div class="rp-slide on rp-cont">` + (pg.img ? `<div class="rp-art rp-art-img mode-${pg.key}"></div>` : `<div class="rp-art"><span>${pg.ico || '🀄'}</span></div>`)
           + `<div class="rp-info"><div class="rp-name">${t('rpName_' + mode)}</div>`
           + `<div class="rp-desc rp-sum">`
@@ -7041,6 +7256,19 @@
       // store'da bırakılmıştı — doğrudan store sahnesine dön (Grup C)
       showScreen('game');
       openStore();
+    } else if (save.mid && s.status === 'playing' && !(Game.needsBet && Game.needsBet())) {
+      /* denetim RK — raund ortası kayıt: kaldığı turdan devam. Bekleyen karar pencereleri
+         (Şeytan/Boşluk/Tüccar duyurusu, Katla, Rulet, yan bahis) yeniden açılır; Üç Kağıtçı,
+         Tanrının Eli ve Hayalet teklifi render içinde zaten açılır. */
+      showScreen('game');
+      render();
+      flushRoundStart();
+      if (s.katlaOffer) setTimeout(showKatlaOffer, 400);
+      else setTimeout(kumarStartPanels, 600);
+    } else if (save.mid && s.status === 'won' && !s.runFinished) {
+      /* denetim RK — kazanılmış raundun zafer penceresinde bırakıldı (Kumarhane: raund arası
+         store yok) → "Devam" ile aynı yol: sonraki raunda geçilir. */
+      goNextRound();
     } else {
       showScreen('map');
     }
@@ -7461,6 +7689,12 @@
     round(s, won) {
       if (this.off() || !s) return;
       const o = this.read();
+      /* denetim SY-11 — raund sonu yazılır ama oyun kaydı ancak store/harita açılınca alınır: arada
+         sayfa yenilenirse raund kayıttan baştan oynanır ve İKİNCİ kez sayılıyordu. Aynı run + aynı
+         raund (seed + roundSerial) bir kez sayılır. */
+      const rk = `${s.seed || ''}:${s.roundSerial || 0}`;
+      if (s.seed && o.lastRound === rk) { this._sync({ types: {} }, s); return; }   // yalnız lsSnap ilerler, kalıcı kayda eklenmez
+      o.lastRound = rk;
       this._sync(o, s);
       o.rounds = (o.rounds || 0) + 1;
       if (won) o.roundsWon = (o.roundsWon || 0) + 1;
@@ -7871,8 +8105,16 @@
 
   /* ---------- Raund sonu ---------- */
 
+  /* denetim LG-02 — aynı raund sonu iki akıştan (puanlama sahnesi + otomatik kayıp vb.)
+     arka arkaya gelirse ikincisi yok sayılır: Game Over/ödül penceresi, ses ve
+     LStats.round bir kez. Anahtar aynı state + stage/raund/sonuç/tur/puan; birkaç saniye
+     içindeki tekrar sayılır (öğretici/trainer "raundu tekrarla" sonraki bitişi engellenmez). */
+  let lastRoundEnd = null;
   function showRoundEnd() {
     const s = Game.state;
+    const reKey = [s.stage, s.roundInStage, s.status, s.turn, s.score].join('|');
+    if (lastRoundEnd && lastRoundEnd.s === s && lastRoundEnd.key === reKey && Date.now() - lastRoundEnd.at < 4000) return;
+    lastRoundEnd = { s, key: reKey, at: Date.now() };
     const won = s.status === 'won';
     if (won) SFX.win(); else SFX.lose();
     /* P86 (kullanıcı 2026-10-08: "prototipi yalnız ben oynuyorum; trainer'da Lady Luck'ı
@@ -8903,7 +9145,8 @@
     /* GRUP R (P20) — İLK TEMEL RUN TAMAMLANDI: kilitler açılır.
        Trainer run'ı kayıt yazmaz, bu yüzden kilidi de açmaz. */
     let openedModes = [];
-    if (!Game.trainerMode) openedModes = Modes.complete('base');
+    /* denetim SY-07 — seed'li run kilit açmaz ("istatistiklere, keşiflere ve kilitlere sayılmaz") */
+    if (!Game.trainerMode && !Game.state.seeded) openedModes = Modes.complete('base');
     /* P71 — modun final boss'u yenildiyse ödül kalıcı açılır (Trainer hariç) */
     const finKey = Game.finalBeaten();
     const finNew = finKey && !Game.state.seeded ? Finals.unlock(finKey) : false;   // P114: seed'li run kilit açmaz
@@ -9748,9 +9991,10 @@
     if (s.fermanPending) rows.push([t('riFerman'), t('riFermanReady')]);
     else if ((s.fermanUsed || 0) > 0)
       rows.push([t('riFerman'), t('riFermanUsed', s.fermanUsed, FERMAN_MAX)]);
-    p.innerHTML = `<div class="ri-card"><h3>${t('riTitle')}</h3>` +
+    /* denetim UI-09 — pencere dilinde: pp-box (koyu panel + başlık plakası), kapatma = tema düğmesi */
+    p.innerHTML = `<div class="ri-card pp-box"><h3>${t('riTitle')}</h3>` +
       rows.map(([k, v]) => `<div class="ri-row"><span>${k}</span><b>${v}</b></div>`).join('') +
-      `<button class="btn ghost ri-close">${t('close')}</button></div>`;
+      `<button class="ep-btn ri-close">${t('close')}</button></div>`;
     p.classList.remove('hidden');
   }
   el.btnRunInfo.addEventListener('click', showRunInfo);
