@@ -2774,6 +2774,9 @@ body.menu-open #app {
   pointer-events: none;
   animation: fmBob 4.2s ease-in-out infinite;
 }
+/* dar ekranda maskot + eşyaları birlikte sola kayar (--fm-mx, ui.js fitMenuScale); translate özelliği
+   salınım animasyonunun transform'uyla birleşir */
+.fm-mascot, .fm-mascot-item { translate: var(--fm-mx, 0px) 0; }
 @keyframes fmBob {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-14px); }
@@ -11967,7 +11970,9 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 
 /* denetim3 #49 — nadirlik etiketi başlık şeridinin sağında (koyu plaka, nadirlik rengi yazı) */
 #jokerTip .tip-head.th-flex { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-#jokerTip .tip-head .th-name { flex: 1 1 auto; min-width: 0; }
+#jokerTip .tip-head.th-flex { flex-wrap: wrap; row-gap: 6px; }
+/* kullanıcı 2026-10-23: uzun etiket adı harf harf alt satıra itiyordu (CE/LL/AT) — ad hiç kırılmaz, sığmazsa etiket alta iner */
+#jokerTip .tip-head .th-name { flex: 1 0 auto; min-width: max-content; white-space: nowrap; }
 #jokerTip .tip-head .th-rar { flex: none; padding: 6px 9px 4px; border-radius: 5px; background: var(--tip-bg); color: var(--tip-accent); border: 2px solid var(--tip-bg);
   font: 700 14px/1 'Pixel Operator SC', 'Pixelify Sans', monospace; letter-spacing: 1.4px; text-transform: uppercase; white-space: nowrap; }
 
@@ -11999,7 +12004,7 @@ html .gm-stage #bossBanner.gm-boss-cond.bb-glow {
 .jk-terzi.bk-black  { --jk-art: url('assets/game/joker/bukalemun-siyah.svg'); }    /* 493:204 */
 .jk-terazi      { --jk-art: url('assets/game/joker/terazi.svg'); }            /* 497:18 */
 .jk-katalizor   { --jk-art: url('assets/game/joker/cadi-kazani.svg'); }       /* 497:2 Cadı Kazanı */
-.jk-dedikodu    { --jk-art: url('assets/game/joker/sihirbaz-sapkasi.svg'); }  /* 497:6 Sihirbaz Şapkası v2 */
+.jk-dedikodu    { --jk-art: url('assets/game/joker/sihirbaz-sapkasi.svg'); }  /* 520:543 Sihirbaz Şapkası (kullanıcı 2026-10-23: yeni çizim) */
 .jk-rulet       { --jk-art: url('assets/game/joker/rulet.svg'); }             /* 499:2 */
 .jk-martingale  { --jk-art: url('assets/game/joker/altin-jeton.svg'); }       /* 499:25 Altın Jeton */
 .jk-hileliZar   { --jk-art: url('assets/game/joker/hileli-zar.svg'); }        /* 501:8 */
@@ -12048,3 +12053,55 @@ html .gm-stage #bossBanner.gm-boss-cond.bb-glow {
 #zarOv .zar-btn .zh { font: 700 10px/1 var(--gm-font, inherit); color: #2E7D32; min-height: 10px; white-space: nowrap; letter-spacing: -.5px; }
 #zarOv .zar-btn.cur { border-color: #FEA727; }
 #zarOv .zar-btn:hover { transform: translateY(-2px); border-color: #FEA727; }
+
+
+/* ============ YENİLİKLER penceresi + ana menü düğmesi (kök yenilikler.js; prototip + beta ortak, kullanıcı 2026-10-23) ============ */
+.bn-ov { z-index: 3000; }
+.bn-box { text-align: center; }
+/* Yenilikler penceresi (2026-10-16): koyu panel + plaka başlık + etiketli bölümler + açık kartlar */
+.bn-box { width: min(820px, 94vw); max-width: 820px; text-align: left; }
+.bn-box > .pk-title { left: 50%; transform: translateX(-50%); }
+.bn-box > .pk-sub-title { text-align: center; font-size: 16px !important; margin: 0 0 14px; }
+.bn-body { max-height: min(560px, 62vh); overflow-y: auto; padding: 14px; border-radius: 8px;
+  background: rgba(0, 0, 0, .28); box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35); }
+.bn-date { font: 700 18px/1 var(--gm-font); color: var(--gm-turn-on); margin: 6px 0 10px; }
+.bn-sec { margin-bottom: 14px; }
+.bn-sec:last-child { margin-bottom: 0; }
+.bn-tag { display: inline-block; margin-bottom: 8px; padding: 9px 12px 5px; border-radius: 6px; color: #fff;
+  font: 700 15px/1 var(--gm-font); letter-spacing: 1px; box-shadow: 0 3px 0 rgba(0, 0, 0, .4); }
+.bn-yeni .bn-tag { background: #2FAE6B; }
+.bn-degisti .bn-tag { background: #E08A1E; }
+.bn-duzeldi .bn-tag { background: #3D86D6; }
+.bn-item { background: var(--gm-light); color: var(--gm-dark); border-radius: 8px; border-left: 7px solid;
+  padding: 9px 12px; margin-bottom: 8px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+.bn-yeni .bn-item { border-left-color: #2FAE6B; }
+.bn-degisti .bn-item { border-left-color: #E08A1E; }
+.bn-duzeldi .bn-item { border-left-color: #3D86D6; }
+.bn-h { display: block; font: 700 17px/1.15 var(--gm-font); margin-bottom: 3px; }
+.bn-d { display: block; font: 15px/1.4 system-ui, 'Segoe UI', sans-serif; }
+.bn-box .pk-foot .ep-btn { min-width: 320px; min-height: 58px; }
+@media (max-width: 600px) {
+  .bn-h { font-size: 15px; } .bn-d { font-size: 13px; }
+  .bn-box .pk-foot .ep-btn { min-width: 0; width: 100%; }
+}
+
+/* kullanıcı 2026-10-23 — Yenilikler kaydırma çubuğu oyunun dilinde: koyu oluk, krem tutamak, köşesiz piksel */
+/* Chrome'da scrollbar-color varken ::-webkit-scrollbar yok sayılır → standart özellik yalnız Firefox'ta */
+@supports not selector(::-webkit-scrollbar) { .bn-body { scrollbar-color: var(--gm-light) rgba(0, 0, 0, .35); } }
+.bn-body::-webkit-scrollbar { width: 14px; }
+.bn-body::-webkit-scrollbar-track { background: rgba(0, 0, 0, .35); border-radius: 0; }
+.bn-body::-webkit-scrollbar-thumb { background: var(--gm-light); border: 3px solid var(--gm-dark); border-radius: 0; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25); }
+.bn-body::-webkit-scrollbar-thumb:hover { background: var(--gm-turn-on); }
+.bn-body::-webkit-scrollbar-button { display: none; height: 0; }
+/* ana menü SAĞ ALT köşe kutusu (Yenilikler + betada Geri Bildirim; kullanıcı 2026-10-23). Ekranın köşesine
+   bağlı, menü tuvaliyle aynı ölçekte (--fm-scale) — tuval kırpılsa da hep görünür. Düğme görünümü .fm-btn'in aynısı. */
+#fmCorner { position: absolute; right: 0; bottom: 0; display: flex; gap: 20px; padding: 0 60px 56px 0;
+  transform: scale(var(--fm-scale)); transform-origin: 100% 100%; z-index: 4; pointer-events: none; }
+.fm-cbtn { pointer-events: auto; width: 368px; height: 76px; margin: 0; padding: 0 10px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden;
+  font: 700 26px/1 var(--gm-font); letter-spacing: -1px; color: var(--gm-dark); background: var(--gm-light);
+  border: 6px solid var(--gm-edge); border-radius: 12px; box-shadow: 0 8px 0 rgba(0, 0, 0, .45); cursor: pointer;
+  transition: transform .1s ease, filter .1s ease, box-shadow .1s ease; }
+.fm-cbtn:hover { transform: translateY(-3px); filter: brightness(1.06); }
+.fm-cbtn:active { transform: translateY(4px); box-shadow: 0 4px 0 rgba(0, 0, 0, .45); }
+.fm-cbtn:focus-visible { outline: 4px solid var(--gm-turn-on); outline-offset: 4px; }

@@ -491,13 +491,14 @@
       varSub_misunderstood: 'The Misunderstood · feda edince ya da süresi bitince uyanır',
       varSub_tuccar: 'Tüccar · yalnız görünüm değişir',
       varSub_otekiDunya: 'Öteki Dünya · yalnız görünüm değişir',
+      varSub_terzi: 'Bukalemun · seçtiğin rengin çizimine döner',
       varName_misu: 'Uyanış',
       varDesc_misu: () => `Uyandı: hedef artmaz, açılımların +${MISU_V2_MULT.toFixed(1)}x alır. Kazandığın her raund +${MISU_V2_GROW.toFixed(1)}x büyür; ${MISU_V2_ROUNDS} raund sürer.`,
       varName_tuccar: 'Teklif',
       varDesc_tuccar: 'Takas teklifi açıkken kart bu hâle geçer. Etkisi değişmez.',
       varName_oteki: 'Dolunay',
       varDesc_oteki: 'Ay Kuyusu dolup Dolunay gelince kart bu hâle geçer. Etkisi değişmez.',
-      varDesc_terzi: 'Bu rengi seçince kart bu çizime döner.', varName_damga: (n) => `${n}. damga`, varDesc_damga: 'Kart her damgalamada biraz daha damgalanmış görünür.',
+      varDesc_terzi: 'Bu rengi seçince kart bu çizime döner.',
       kahinCoin: 'coin',
       avMutedTag: 'SUSTURULDU',   // denetim — Avukat'ın susturduğu joker kartındaki plaka
       kahinPts: 'puan',
@@ -755,7 +756,7 @@
       discardPopupSub: 'Atılış sırasına göre (en yenisi sonda).',
       discardPopupEmpty: 'Henüz taş atılmadı.',
       /* tooltipler */
-      deckJokerTag: 'DESTE JOKERİ',
+      deckJokerTag: 'DESTE',   // kullanıcı 2026-10-23: 'EPIC · DESTE'
       fakeOkeyName: 'Sahte Okey', fakeOkeyTag: 'JOKER DEĞİL',
       fakeOkeyDesc: (o) => `Okey ${o} olduğu için bu taş yalnızca normal bir ${o} gibi oynanır — başka hiçbir taşın yerine geçemez. Gerçek ${o} taşları ise her taşın yerine geçen jokerdir.`,
       hipnoName: 'Transtaki Taş', hipnoTag: 'HİPNOTİZÖR — TOPLU HİPNOZ',
@@ -1051,7 +1052,7 @@
       inventoryEmpty: 'Envanter boş.',
       /* renkler */
       cRed: 'Kırmızı', cBlue: 'Mavi', cYellow: 'Sarı', cBlack: 'Siyah',
-      rarityEpic: 'Boss (Epic)',
+      rarityEpic: 'Epic',   // kullanıcı 2026-10-23: 'Boss (Epic)' değil yalnız Epic
       /* ---- TUTORIAL (oynanabilir Stage 1) ---- */
       tutSkip: 'Öğreticiyi Bitir',
       tutOk: 'İLERİ ▸',
@@ -1525,13 +1526,14 @@
       varSub_misunderstood: 'The Misunderstood · awakens when sacrificed or when it runs out',
       varSub_tuccar: 'Merchant · only the look changes',
       varSub_otekiDunya: 'Other World · only the look changes',
+      varSub_terzi: 'Chameleon · shows the colour you pick',
       varName_misu: 'Awakening',
       varDesc_misu: () => `Awakened: the target no longer rises, your melds get +${MISU_V2_MULT.toFixed(1)}x. Grows +${MISU_V2_GROW.toFixed(1)}x each round you win; lasts ${MISU_V2_ROUNDS} rounds.`,
       varName_tuccar: 'Offer',
       varDesc_tuccar: 'The card looks like this while a trade offer is open. Its effect stays the same.',
       varName_oteki: 'Full Moon',
       varDesc_oteki: 'The card looks like this when the Moon Well fills and the Full Moon comes. Its effect stays the same.',
-      varDesc_terzi: 'The card shows this art once you pick this color.', varName_damga: (n) => `Stamp ${n}`, varDesc_damga: 'The card looks a little more stamped after each use.',
+      varDesc_terzi: 'The card shows this art once you pick this color.',
       kahinCoin: 'coins',
       avMutedTag: 'SILENCED',   // denetim — Avukat'ın susturduğu joker kartındaki plaka
       kahinPts: 'pts',
@@ -1753,7 +1755,7 @@
       discardPopupTitle: (n) => `🗑 DISCARDED TILES — ${n}`,
       discardPopupSub: 'In discard order (newest last).',
       discardPopupEmpty: 'Nothing discarded yet.',
-      deckJokerTag: 'DECK JOKER',
+      deckJokerTag: 'DECK',
       fakeOkeyName: 'Fake Okey', fakeOkeyTag: 'NOT A JOKER',
       fakeOkeyDesc: (o) => `Since the okey is ${o}, this tile plays only as a normal ${o} — it cannot substitute for anything. The real ${o} tiles are the wild jokers.`,
       hipnoName: 'Tile in Trance', hipnoTag: 'HYPNOTIST — MASS HYPNOSIS',
@@ -2017,7 +2019,7 @@
       backupEmpty: 'Backup is empty.',
       inventoryEmpty: 'Inventory is empty.',
       cRed: 'Red', cBlue: 'Blue', cYellow: 'Yellow', cBlack: 'Black',
-      rarityEpic: 'Boss (Epic)',
+      rarityEpic: 'Epic',   // kullanıcı 2026-10-23: 'Boss (Epic)' değil yalnız Epic
       tutSkip: 'End Tutorial',
       tutOk: 'NEXT ▸',
       tutDoneHint: '✔ Great!',

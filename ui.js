@@ -149,6 +149,14 @@
   function fitMenuScale() {
     const k = Math.max(window.innerWidth / MENU_W, window.innerHeight / MENU_H);
     document.documentElement.style.setProperty('--fm-scale', String(k));
+    /* kullanıcı 2026-10-23 ("maskot mantıksız kesiliyor") — 16:9'dan dar ekranda tuval sağdan kırpılır;
+       maskot (ve eşyaları) görünen alana sığacak kadar SOLA kayar. En fazla plakanın sağına kadar
+       (1131 → 820): ~5:4'e kadar tam görünür, daha darında kalan kısım yine sağdan kırpılır. */
+    const visW = window.innerWidth / k;
+    const hearts = document.querySelector('.fm-item-hearts.on');
+    const right = hearts ? 1738 : 1611;   // maskot 1131+480 · Lady Luck kalpleri 1529+209
+    const shift = Math.max(0, Math.min(1131 - 820, right + 40 - visW));
+    document.documentElement.style.setProperty('--fm-mx', `${-Math.round(shift)}px`);
   }
   /* Oyun ekranı Figma sahnesi (2026-08-23) — 1920×1080 sabit tuval.
      Menüden farkı CONTAIN olması: oyun UI'ının hiçbir parçası kırpılamaz.
@@ -302,6 +310,7 @@
     let won = {};
     try { won = JSON.parse(localStorage.getItem('okeyFinals')) || {}; } catch (e) { /* bozuk kayıt: eşya yok */ }
     document.querySelectorAll('.fm-mascot-item').forEach((im) => im.classList.toggle('on', !!won[im.dataset.final]));
+    fitMenuScale();   // kalpler maskotun sağına taşar → kaydırma payı eşyaya göre
   }
 
   function showScreen(name) {
@@ -9733,9 +9742,8 @@
     misunderstood: { icon: '🎭', list: () => [{ art: 'jk-misunderstood misu-v2', name: t('varName_misu'), desc: t('varDesc_misu') }] },
     tuccar: { icon: '💼', list: () => [{ art: 'jk-tuccar tuccar-v2', name: t('varName_tuccar'), desc: t('varDesc_tuccar') }] },
     otekiDunya: { icon: '🌙', list: () => [{ art: 'jk-otekiDunya oteki-flip', name: t('varName_oteki'), desc: t('varDesc_oteki') }] },
-    /* denetim3 #50 — Bukalemun renkleri ve Damga'nın damga aşamaları koleksiyonda görünür */
+    /* denetim3 #50 — Bukalemun renkleri koleksiyonda görünür (Damga'nın aşamaları görünmez — kullanıcı 2026-10-23) */
     terzi: { icon: '🦎', list: () => ['red', 'blue', 'yellow', 'black'].map((c) => ({ art: 'jk-terzi bk-' + c, name: T.color(c), desc: t('varDesc_terzi') })) },
-    ayna: { icon: '🔖', list: () => [2, 3, 4, 5, 6, 7, 8, 9].map((n) => ({ art: 'jk-ayna dm-' + n, name: t('varName_damga', n - 1), desc: t('varDesc_damga') })) },
   };
   function showVariants(def) {
     const V = JOKER_VARIANTS[def.key];
