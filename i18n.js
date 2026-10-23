@@ -191,6 +191,7 @@
       betReward_riskli: 'Ödül: coin ×2 + kalıcı +0.5x + 3 jokerden 1’ini seç.',
       betReward_olumcul: 'Ödül: coin ×3 + kalıcı +1.0x + Legendary seçimi.',
       betKatlaHint: '🎲 Hedefi bir açılımla tutturursan KATLA hakkın var.',
+      deckPeekLbl: 'SIRADAKİ',
       katlaTitle: 'HEDEF TUTTU!',
       katlaBody: (sc, base, next, left) => `Puanın ${sc} / ${base}. ${left} tur daha var.`,
       katlaBossWarn: '⚠ Boss raundu: boss şartı da raund sonuna kadar geçerli — katlarsan raundu uzatırsın.',
@@ -252,22 +253,23 @@
       sideTitle: (st) => `YAN BAHİS — ${st} coin`, sideSub: 'Elini gördün: hangisini tutturursun? Raundu kazanır ve koşulu tutarsan oran kadar öder.',
       sidePass: 'Pas', sidePays: (n) => `Tutarsa +${n} coin`,
       sideChip: (nm, o) => `Yan bahis: ${nm} (${o}:1)`, ruletChip: (c) => `Rulet: ${c}`,
+      zarChip: (n, b) => `Zar ${n} · her ${n} taşı +${b}x`, zarCheatBtn: 'HİLE',
+      zarCheatTitle: 'Hileli Zar', zarCheatSub: (b, nb) => `Zarı istediğin sayıya çevir (raund başına 1 kez). Şu an taş başına +${b}x; hile yapınca kalıcı +${nb}x olur.`,
+      zarInHand: (k) => k ? `elde ${k}` : '', zarCheatToast: (n, b) => `🎲 Zar ${n} oldu · taş başına +${b}x`,
       hiloTitle: 'YÜKSEK Mİ ALÇAK MI?', hiloSub: 'Sıradaki taş daha yüksek mi, daha alçak mı? Eşitlik kasanın.',
       hiloOffer: (st, m, mx) => `Bu raundun kazancı <b>${st} coin</b>. Kumara basarsan her doğru tahmin ×${m} (en çok ×${mx}); bilemezsen ${st} coin yanar.`,
       hiloAccept: 'Oyna', hiloSkip: (st) => `Hayır, ${st} coin al`,
       hiloPot: (n) => `Pot: ${n} coin`, hiloHi: 'Yüksek', hiloLo: 'Alçak', hiloCash: (n) => `Çekil (${n})`,
-      hiloUndoAsk: '🎰 Hileli Zar: bu tahmini geri alabilirsin (stage başına 1 kez).',
-      hiloUndo: 'Geri al', hiloAcceptLoss: 'Kabul et',
       hiloWon: (n) => `Kazandın! +${n} coin`, hiloLost: (n) => `Yandı! −${n} coin`,
       hiloTieWin: '🎰 Eşitlik senin!', hiloRight: 'Bildin!',
       hiloWinLine: (st) => `Bu raundun kazancı: <b>🪙 ${st}</b>`,
       hiloHowTitle: 'Nasıl oynanır?',
       hiloHow1: 'Ortada açık bir taş var (1-13).',
       hiloHow2: 'Sıradaki taş ondan YÜKSEK mi ALÇAK mı, tahmin et.',
-      hiloHow3odds: (st) => `Kolay tahmin az, zor tahmin çok öder (ör. %85 → ×1.24, %46 → ×2.28, en çok ×5). İstediğin an çekil. Bilemezsen bu raundun ${st} coini yanar.`,
+      hiloHow3odds: (st) => `Kolay tahmin az, zor tahmin çok öder (ör. %92 → ×1.15, %50 → ×2.10, en çok ×5). İstediğin an çekil. Bilemezsen bu raundun ${st} coini yanar.`,
       hiloOpen: 'AÇIK TAŞ', hiloNext: 'SIRADAKİ', hiloPrev: 'ÖNCEKİ', hiloCame: 'GELEN',
       hiloNowCash: (n) => `Şimdi çekilirsen 🪙 ${n}`, hiloOddsLine: 'kolay tahmin az, zor tahmin çok öder',
-      hiloTieNote: 'Eşit gelirse kasa kazanır.', hiloCameN: (n) => `(${n} geldi)`,
+      hiloTieNote: 'Sıradaki taş açık taşla asla aynı gelmez.', hiloCameN: (n) => `(${n} geldi)`,
       colCasino: 'KUMARHANE JOKERLERİ', colCasinoNote: 'Yalnız Kumarhane Run’da çıkar',
       setTab_game: 'OYUN', setTab_look: 'GÖRÜNÜM', setTab_audio: 'SES', setTab_stats: 'İSTATİSTİK', setTab_extra: 'EKSTRA',
       setGo: 'GİT', setGoNone: '—',
@@ -297,12 +299,18 @@
       musicPreview: (n) => `${n} çalıyor — menüde ve oyunda bu çalacak`,
       rpMusic: (m) => `Müzik: ${m}`,
       hint_yanBahis: '<b>YAN BAHİS</b>: ana bahis kördü, bunu elini görerek oynarsın. 3 tekliften birine 5 coin yatır; raundu kazanır ve koşulu tutarsan oran kadar öder (3:1 → +20). İlk hamlende teklif kapanır.',
-      hint_hiLo: '<b>YÜKSEK Mİ ALÇAK MI</b>: bu raundun coin kazancıyla oynarsın. Sıradaki taş açık taştan yüksek mi alçak mı? Zor tahmin daha çok öder (en çok ×5), en çok 3 adım oynanır; düğmede ihtimal ve kazanacağın coin yazar. Eşit gelirse kasa kazanır, istediğin an çekilebilirsin.',
+      hint_hiLo: '<b>YÜKSEK Mİ ALÇAK MI</b>: bu raundun coin kazancıyla oynarsın. Sıradaki taş açık taştan yüksek mi alçak mı? Zor tahmin daha çok öder (en çok ×5), en çok 3 adım oynanır; düğmede ihtimal ve kazanacağın coin yazar. Sıradaki taş açık taşla asla aynı gelmez; istediğin an çekilebilirsin.',
       hint_store: 'Store raund sonunda açılır (Kumarhane Run’da yalnız stage sonunda). Bir ürünü ücretsiz <b>kilitleyebilirsin</b>: kilitli ürün yenilemede ve sonraki store’da kaybolmaz.',
       hint_jokerAge: 'Jokerlerin bir <b>süresi</b> var: her raund sonunda azalır, bitince kart yok olur. Kartın köşesindeki sayı kalan raundu gösterir.',
       hint_expired: 'Bir jokerinin süresi doldu. Tahtayı dolu tutmak sürekli harcama ister; ucuz kartlar da işe yarar, hepsi Legendary olmak zorunda değil.',
       hint_interest: '<b>FAİZ</b>: store açılırken cebinde tuttuğun her 5 coin sana +1 coin '
         + 'kazandırır (en çok +3). Yani 15 coin biriktirmenin somut bir ödülü var.',
+      /* denetim3 #12 — Kumarhane run'ının ilk girişindeki genel ipucu (bahis kuralları dahil) */
+      hint_kumarhaneRun: '<b>KUMARHANE RUN</b>: 4 stage + final, kurallar farklı:\n'
+        + '🎲 Her raunddan önce elini görmeden <b>KÖR BAHİS</b>: 🟢 Güvenli normal · 🟡 Riskli hedef ×1.5, ödül büyük · 🔴 Ölümcül hedef ×2, Legendary ödül.\n'
+        + '🏪 Store yalnız <b>stage sonunda</b> açılır (2 ürün fazlasıyla).\n'
+        + '🃏 Raund içinde yan bahis ve mini oyunlar çıkar. Raundu kaybetmek <b>Game Over</b>.\n'
+        + 'Önce başlangıç jokerlerin için çarklar dönecek. Bol şans!',
       hint_kumarhane: '<b>KUMARHANE</b>: her raunddan önce elini görmeden <b>KÖR BAHİS</b> koyarsın.\n'
         + '🟢 Güvenli — normal hedef, normal ödül.\n'
         + '🟡 Riskli — hedef ×1.5; ödül coin ×2 + kalıcı +0.5x + 3 jokerden 1’i.\n'
@@ -312,10 +320,11 @@
         + '💰 Kasada kal — ödülünü al, raund biter.\n'
         + '🎲 Katla — hedef ×2 olur; tutarsa bahis ödülü ×2, tutmazsa <b>GAME OVER</b>.\n'
         + 'Puanın hedefin çok üstündeyse ve önünde en az 2 tur varsa düşünmeye değer.',
-      hint_ayKuyusu: '<b>AY KUYUSU</b> (Öteki Dünya): her tur desteden kuyuya 2 taş düşer. Attığın taş da '
-        + 'buraya düşer ve <b>kalıcı</b> 🌙 Ay Taşı olur.\n'
-        + 'Kuyu dolduğu an 🌕 <b>DOLUNAY</b>: kuyu ıstakana akar ve o tur elindeki bütün Ay Taşları <b>OKEY</b> olur (attığın taşla dolarsa sonraki tur başında). '
-        + 'Ne kadar çok atarsan ay o kadar hızlı dolar.\nAçılımda kalıcı Ay Taşı +3.0x (Öteki Dünya gitse de), kuyudan gelen taş +1.5x.',
+      /* denetim3 #14 (kullanıcı: "çok uzun ve karışık") — kısa, madde madde */
+      hint_ayKuyusu: '<b>AY KUYUSU</b> 🌙\n'
+        + '• Attığın taşlar kuyuya düşer ve <b>Ay Taşı</b> olur (açılımda +3x).\n'
+        + '• Kuyu dolunca 🌕 <b>DOLUNAY</b>: elindeki Ay Taşları o tur <b>okey</b> olur.\n'
+        + '• Çok taş atarsan kuyu çabuk dolar.',
       hint_catchUp: 'ACİL RAF: paran azaldığı için en ucuz kart indirime girdi ve bu '
         + 'store’da yenileme bedava. Stage başına bir kez olur.',
       hint_tradeUp: 'TAKAS: bir jokerine tıklayıp farkı ödeyerek onu bir üst '
@@ -326,7 +335,8 @@
       modeDone: 'Tamamlandı ✓',
       modeUnlocked: (n) => `🔓 Yeni mod açıldı: ${n}`,
       stageFinal: 'FİNAL', mapFinal: 'FİNAL',
-      finalUnlocked: '💋 Lady Luck artık her run\'da seninle!',
+      /* denetim3 #26 — yenilen final boss'un adı (Orion'u yenince de "Lady Luck" yazıyordu) */
+      finalUnlocked: (n = 'Lady Luck', ic = '💋') => `${ic} ${n} artık her run'da seninle!`,
       finalStart: (n, u, i) => `${i || '💋'} ${n} seninle (${u} raund)`,
       finalLockedHint: 'Kumarhane finalinde Lady Luck\'ı yen',
       finalLockedHint_ladyLuck: 'Kumarhane finalinde Lady Luck\'ı yen',
@@ -487,6 +497,7 @@
       varDesc_tuccar: 'Takas teklifi açıkken kart bu hâle geçer. Etkisi değişmez.',
       varName_oteki: 'Dolunay',
       varDesc_oteki: 'Ay Kuyusu dolup Dolunay gelince kart bu hâle geçer. Etkisi değişmez.',
+      varDesc_terzi: 'Bu rengi seçince kart bu çizime döner.', varName_damga: (n) => `${n}. damga`, varDesc_damga: 'Kart her damgalamada biraz daha damgalanmış görünür.',
       kahinCoin: 'coin',
       avMutedTag: 'SUSTURULDU',   // denetim — Avukat'ın susturduğu joker kartındaki plaka
       kahinPts: 'puan',
@@ -546,6 +557,10 @@
       /* Playtest 10 · Grup B — turda 1-3 taş atılabilir */
       btnDiscardN: (n) => `${n} Taşı At`,
       discardMax: (n) => `Bir turda en fazla ${n} taş atabilirsin.`,
+      /* denetim3 #8 — kural ihlali balonu (1-2 kelime) */
+      nopeMix: 'Çift ile karışmaz', nopeInvalid: 'Geçersiz', nopeFit: 'Uymuyor', nopeMax: (n) => `En fazla ${n}`,
+      nopePairExt: 'Çift işlenmez', nopeJokerTile: 'Joker taş', nopeSewn: 'Dikili', nopeNoDiscard: 'Atılamaz',
+      nopeNotInPer: "Per'de olmaz", nopeMax3: 'En fazla 3',
       /* Grup J — son turda gereksiz discard yok */
       btnFinishWon: '✓ Raundu Bitir →', btnFinishLost: 'Raundu Bitir →',
       autoLoss: 'Hedefe ulaşmanın yolu kalmadı — raund kapanıyor…',
@@ -782,7 +797,7 @@
       tipNowDrain: (n) => `${n} emilen`,
       tipUsesRun: () => '⏳ Kalan süre: Run boyunca (∞)',
       tipUsesBelt: () => "★★★ Orion'un Kemeri: süresiz (∞)",
-      tipBackup: (n) => `❄ Backup'ta dondurulmuş — zorunlu geçişe ${n} raund`,
+      tipBackup: () => `❄ Backup'ta dondurulmuş — süresi azalmaz, ana slota sen taşırsın`,   // denetim3 — zorunlu geçiş kalktı
       godzillaOn: (n) => `Godzilla S${n} şarjlı — sonraki açılıma uygulanır`,
       godzillaOff: 'Godzilla şarjsız — açılımsız geçilen her tur +1 seviye',
       /* PLAYTEST 30 · GRUP F/G — Vasiyet rozeti ve mirası, İpotek düğmesi */
@@ -834,7 +849,7 @@
       stReroll: 'YENİLE', stNext: 'DEVAM',
       stRerollSub: (c, k) => `$${c} · ${k} hak`,
       stRerollUsed: 'hak bitti', stRerollFree: 'bedava', stRerollTrainer: 'sınırsız',
-      stBuy: (p) => `AL $${p}`, stOpen: (p) => `AÇ $${p}`,
+      stBuy: (p) => `AL <span class="st-cur">$</span>${p}`, stOpen: (p) => `AÇ <span class="st-cur">$</span>${p}`,   // denetim3 #10 — para kutusundaki $ glifi
       stDeckJokers: 'DESTE JOKERLERİ',
       discounted: 'İND.',
       newBadge: 'YENİ!',
@@ -891,6 +906,9 @@
         + `Liste fiyatı ${p} ${coin}; ödeyeceğin, satış değeri düşülmüş NET tutardır.`,
       swapNet: (net, coin, ref) => `${net} ${coin} <small>(iade +${ref})</small>`,
       swapAsk: 'HANGİ JOKERİNLE TAKAS?',
+      /* denetim3 #41 — bahis ödülü, raflar doluyken */
+      betSwapTitle: 'RAFLARIN DOLU', betSwapSub: (n) => `${n} için yer aç: vereceğin jokeri seç (satış değeri cüzdana) ya da ödülü coin'e çevir.`,
+      betSwapCoins: "Coin'e çevir", betSwapToast: (g, c, n) => `${g} satıldı (+${c}) — yerine ${n} geldi`,
       swapWant: (n, p, coin) => `Almak istediğin: ${n} (${p} ${coin})`,
       swapRule: 'Seçtiğin jokerin satılır, yerine bu gelir. Ödediğin = fiyat − sattığının iadesi.',
       swapPay: (net, coin) => `Ödersin: ${net} ${coin}`,
@@ -962,6 +980,10 @@
       tamElWin: 'TAM EL! RAUND KAZANILDI', bossWin: 'BOSS YENİLDİ!', roundWin: 'RAUND KAZANILDI!',
       gameOver: 'GAME OVER',
       kaptanSaved: '<b style="color:#E94560">Lanetli Kaptan seni kurtardı!</b> Raund sıyrıldı.',
+      /* denetim3 #38 — kurtaran jokerin adı fiş satırında (kısa, tek satır; eskiden Şanslı Zar
+         kurtarınca da "Lanetli Kaptan" yazıyordu ve uzun metin iki satıra taşıyordu) */
+      rwSaved: (n) => `<b style="color:#E94560">${n}</b> kurtardı`,
+      rwTargetSaved: (t) => `hedef ${t} · kurtarıldı`,
       coinBase: (t, boss) => `Temel coin (${t}. turda geçiş${boss ? ' · BOSS' : ''}):`,
       coinBonus: (p) => `Hedef üstü bonus (%${p}):`,
       /* MADDE C2 (2026-09-09): "tümü" uçurumu kalktı — ceza artık her zaman
@@ -1052,7 +1074,7 @@
         selectSirali: `Şimdi bir grup daha: <b>Kırmızı 9-10-11</b> art arda sayılar, aynı renk. Bu bir <b>Sıralı</b>. Üçünü seç ve <b>Aç</b>'a bas!`,
         multiGroup: `Aynı turda <b>iki grup</b> açtın: çarpan <b>2.0x</b>'ten <b>2.3x</b>'e çıktı. Bir turda ne kadar çok grup açarsan çarpan o kadar büyür (7 grupta 4.6x)!`,
         score: `Puanını aldın! Hedefe ulaşana kadar her tur açmaya devam et.`,
-        discardInfo: `Tur, taş atınca biter. Bir seferde <b>en fazla 3 taş</b> atabilirsin.<br>Dikkat: attığın <b>en büyük</b> taş <b>%20</b> ihtimalle <b>işleğe</b> düşer ve puan kaybettirir (boss raundunda <b>%30</b>). Büyük taş atmak risklidir!`,
+        discardInfo: `Tur, taş atınca biter. Bir seferde <b>en fazla 3 taş</b> atabilirsin.<br>Dikkat: attığın <b>en büyük</b> taş <b>%20</b> ihtimalle <b>işleğe</b> düşer ve puan kaybettirir (boss raundunda <b>%30</b>). Büyük taş atmak risklidir! İşleğe düşen taş, <b>değerinin 10 katı</b> puan götürür.`,
         discard1: `İşine yaramayan küçük bir taşı at: <b>Mavi 2</b>'yi seç ve <b>At</b>'a bas. Parlayan Sarı 5'i atma, o okey!`,
         discard2: `Bu tur da bir taş at. <b>İki Sarı 12</b>'yi sakla, sıradaki turda işine yarayacak!`,
         ciftTurn: `Aynı renk ve aynı sayıdan iki taş <b>Çift</b>'tir. Çift turunda yalnız çift açılır, çarpanı daha yüksek başlar (<b>2.2x</b>). İki <b>Sarı 12</b>'yi seç ve <b>Aç</b>'a bas!`,
@@ -1063,7 +1085,7 @@
         freeplay: `Artık sıra sende! Hedefe ulaşana kadar aç, işle, at.`,
         islekHit: `Eyvah! Attığın taş <b>işleğe</b> düştü ve puan kaybettin. Büyük taşları atarken dikkatli ol.`,
         store1: `Burası <b>STORE</b>. Coinlerinle joker alırsın, jokerler puanını büyütür. <b>Büyüteç</b>'i al!`,
-        store2: `Kartın köşesindeki sayı, jokerin kaç raund kalacağını gösterir. Hazırsan <b>Haritaya Dön</b>'e bas.`,
+        store2: `Kartın köşesindeki sayı, jokerin kaç raund kalacağını gösterir. Hazırsan <b>DEVAM</b>'a bas.`,
         jokerPreview: `Hesap çubuğu yalnız <b>grubun kendi değerini</b> gösterir. Jokerlerin bonusu <b>onayladıktan sonra</b> sırayla eklenir. <b>Onayla</b>'ya bas ve izle!`,
         jokerFire: `İşte böyle! Jokerin sırası gelince zıpladı ve bonusunu ekledi; toplam en sonda belli oldu.`,
         bossIntro: `Sırada <b>BOSS</b> var! Her boss'un özel bir kuralı vardır. Bu <b>Ahtapot</b>, puanının bir kısmını emer. <b>OYNA</b>'ya bas!`,
@@ -1240,6 +1262,7 @@
       betReward_riskli: 'Reward: coins ×2 + permanent +0.5x + pick 1 of 3 jokers.',
       betReward_olumcul: 'Reward: coins ×3 + permanent +1.0x + a Legendary pick.',
       betKatlaHint: '🎲 Hit the target with a meld and you may DOUBLE.',
+      deckPeekLbl: 'NEXT',
       katlaTitle: 'TARGET HIT!',
       katlaBody: (sc, base, next, left) => `Your score ${sc} / ${base}. ${left} more turns.`,
       katlaBossWarn: '⚠ Boss round: the boss condition also holds until the round ends — doubling makes the round longer.',
@@ -1296,22 +1319,23 @@
       sideTitle: (st) => `SIDE BET — ${st} coins`, sideSub: 'You have seen your hand: which one will you hit? Win the round and meet the condition to get paid.',
       sidePass: 'Pass', sidePays: (n) => `Pays +${n} coins`,
       sideChip: (nm, o) => `Side bet: ${nm} (${o}:1)`, ruletChip: (c) => `Roulette: ${c}`,
+      zarChip: (n, b) => `Die ${n} · each ${n} tile +${b}x`, zarCheatBtn: 'CHEAT',
+      zarCheatTitle: 'Loaded Dice', zarCheatSub: (b, nb) => `Turn the die to any number (once per round). Now +${b}x per tile; cheating makes it +${nb}x for good.`,
+      zarInHand: (k) => k ? `${k} in hand` : '', zarCheatToast: (n, b) => `🎲 Die set to ${n} · +${b}x per tile`,
       hiloTitle: 'HIGHER OR LOWER?', hiloSub: 'Is the next tile higher or lower? Ties go to the house.',
       hiloOffer: (st, m, mx) => `This round paid <b>${st} coins</b>. Gamble it: every right guess ×${m} (up to ×${mx}); a wrong one burns the ${st} coins.`,
       hiloAccept: 'Play', hiloSkip: (st) => `No, take ${st} coins`,
       hiloPot: (n) => `Pot: ${n} coins`, hiloHi: 'Higher', hiloLo: 'Lower', hiloCash: (n) => `Cash out (${n})`,
-      hiloUndoAsk: '🎰 Loaded Dice: you may take this guess back (once per stage).',
-      hiloUndo: 'Take back', hiloAcceptLoss: 'Accept',
       hiloWon: (n) => `You won! +${n} coins`, hiloLost: (n) => `Burned! −${n} coins`,
       hiloTieWin: '🎰 The tie is yours!', hiloRight: 'Right!',
       hiloWinLine: (st) => `This round paid: <b>🪙 ${st}</b>`,
       hiloHowTitle: 'How to play',
       hiloHow1: 'A tile is face up in the middle (1-13).',
       hiloHow2: 'Guess whether the next tile is HIGHER or LOWER.',
-      hiloHow3odds: (st) => `Easy guesses pay little, hard guesses pay a lot (e.g. 85% → ×1.24, 46% → ×2.28, up to ×5). Cash out any time. A wrong guess burns this round's ${st} coins.`,
+      hiloHow3odds: (st) => `Easy guesses pay little, hard guesses pay a lot (e.g. 92% → ×1.15, 50% → ×2.10, up to ×5). Cash out any time. A wrong guess burns this round's ${st} coins.`,
       hiloOpen: 'FACE UP', hiloNext: 'NEXT', hiloPrev: 'BEFORE', hiloCame: 'DRAWN',
       hiloNowCash: (n) => `Cash out now 🪙 ${n}`, hiloOddsLine: 'easy guesses pay little, hard ones pay a lot',
-      hiloTieNote: 'A tie goes to the house.', hiloCameN: (n) => `(${n} came)`,
+      hiloTieNote: 'The next tile is never the same as the face-up one.', hiloCameN: (n) => `(${n} came)`,
       colCasino: 'CASINO JOKERS', colCasinoNote: 'Only appear in Casino Run',
       setTab_game: 'GAME', setTab_look: 'LOOK', setTab_audio: 'AUDIO', setTab_stats: 'STATS', setTab_extra: 'EXTRAS',
       setGo: 'GO', setGoNone: '—',
@@ -1341,12 +1365,17 @@
       musicPreview: (n) => `Playing ${n} — this plays in the menu and in game`,
       rpMusic: (m) => `Music: ${m}`,
       hint_yanBahis: '<b>SIDE BET</b>: the main bet was blind, this one you place seeing your hand. Put 5 coins on one of 3 offers; win the round and meet the condition to get paid the odds (3:1 → +20). The offer closes on your first move.',
-      hint_hiLo: '<b>HIGHER OR LOWER</b>: you play with this round’s coin winnings. Will the next tile be higher or lower than the open one? Hard guesses pay more (up to ×5), at most 3 steps; each button shows the chance and the coins you’d get. Ties go to the house, and you can cash out any time.',
+      hint_hiLo: '<b>HIGHER OR LOWER</b>: you play with this round’s coin winnings. Will the next tile be higher or lower than the open one? Hard guesses pay more (up to ×5), at most 3 steps; each button shows the chance and the coins you’d get. The next tile is never the same as the open one; cash out any time.',
       hint_store: 'The shop opens after a round (in Casino Run only at the end of a stage). You can <b>lock</b> an item for free: locked items survive rerolls and carry to the next shop.',
       hint_jokerAge: 'Jokers have a <b>lifespan</b>: it drops every round and the card is gone when it runs out. The number in the card corner shows the rounds left.',
       hint_expired: 'One of your jokers expired. Keeping the board full costs money all the time; cheap cards are useful too, they don’t all need to be Legendary.',
       hint_interest: '<b>INTEREST</b>: every 5 coins you hold when the shop opens earns +1 coin '
         + '(max +3). Saving up to 15 has a concrete payoff.',
+      hint_kumarhaneRun: '<b>CASINO RUN</b>: 4 stages + a final, with different rules:\n'
+        + '🎲 Before every round you place a <b>BLIND BET</b>: 🟢 Safe normal · 🟡 Risky target ×1.5, bigger reward · 🔴 Deadly target ×2, Legendary reward.\n'
+        + '🏪 The shop opens only at the <b>end of a stage</b> (with 2 extra items).\n'
+        + '🃏 Side bets and mini games pop up during rounds. Losing a round is <b>Game Over</b>.\n'
+        + 'First, the reels spin for your starting jokers. Good luck!',
       hint_kumarhane: '<b>CASINO</b>: before every round you place a <b>BLIND BET</b> without seeing your hand.\n'
         + '🟢 Safe — normal target, normal reward.\n'
         + '🟡 Risky — target ×1.5; reward coins ×2 + permanent +0.5x + pick 1 of 3 jokers.\n'
@@ -1356,10 +1385,10 @@
         + '💰 Cash out — take your reward, the round ends.\n'
         + '🎲 Double — the target doubles; hit it and the bet reward is ×2, miss it and it is <b>GAME OVER</b>.\n'
         + 'Worth it when your score is far above the target and you have at least 2 turns left.',
-      hint_ayKuyusu: '<b>MOON WELL</b> (Other World): every turn 2 tiles fall from the deck into the well. '
-        + 'Your discard falls in too and becomes a <b>PERMANENT</b> 🌙 Moon Tile.\n'
-        + 'The moment the well is full: 🌕 <b>FULL MOON</b> — the well flows to your rack and every Moon Tile in your hand is an <b>OKEY</b> that turn (filled by your discard: at the start of next turn). '
-        + 'The more you discard, the faster the moon fills.\nIn a meld a permanent Moon Tile gives +3.0x (even after the Other World is gone), a tile from the well +1.5x.',
+      hint_ayKuyusu: '<b>MOON WELL</b> 🌙\n'
+        + '• Tiles you discard fall in and become <b>Moon Tiles</b> (+3x in melds).\n'
+        + '• When the well is full, 🌕 <b>FULL MOON</b>: your Moon Tiles are <b>okeys</b> that turn.\n'
+        + '• Discard more and the well fills faster.',
       hint_catchUp: 'RELIEF SHELF: you were low on coins, so the cheapest card is '
         + 'discounted and this shop\'s reroll is free. Once per stage.',
       hint_tradeUp: 'TRADE UP: click one of your jokers and pay the difference to swap it '
@@ -1369,7 +1398,7 @@
       modeDone: 'Completed ✓',
       modeUnlocked: (n) => `🔓 New mode unlocked: ${n}`,
       stageFinal: 'FINAL', mapFinal: 'FINAL',
-      finalUnlocked: '💋 Lady Luck now joins every run!',
+      finalUnlocked: (n = 'Lady Luck', ic = '💋') => `${ic} ${n} now joins every run!`,   // denetim3 #26
       finalStart: (n, u, i) => `${i || '💋'} ${n} is with you (${u} rounds)`,
       finalLockedHint: 'Beat Lady Luck in the Casino finale',
       finalLockedHint_ladyLuck: 'Beat Lady Luck in the Casino finale',
@@ -1502,6 +1531,7 @@
       varDesc_tuccar: 'The card looks like this while a trade offer is open. Its effect stays the same.',
       varName_oteki: 'Full Moon',
       varDesc_oteki: 'The card looks like this when the Moon Well fills and the Full Moon comes. Its effect stays the same.',
+      varDesc_terzi: 'The card shows this art once you pick this color.', varName_damga: (n) => `Stamp ${n}`, varDesc_damga: 'The card looks a little more stamped after each use.',
       kahinCoin: 'coins',
       avMutedTag: 'SILENCED',   // denetim — Avukat'ın susturduğu joker kartındaki plaka
       kahinPts: 'pts',
@@ -1554,6 +1584,9 @@
       pandoraOpened: 'THE BOX IS OPEN — click to continue',
       btnDiscardN: (n) => `Discard ${n} Tiles`,
       discardMax: (n) => `You can discard at most ${n} tiles per turn.`,
+      nopeMix: 'No mixing', nopeInvalid: 'Invalid', nopeFit: "Doesn't fit", nopeMax: (n) => `Max ${n}`,
+      nopePairExt: "Pairs can't extend", nopeJokerTile: 'Joker tile', nopeSewn: 'Sewn', nopeNoDiscard: "Can't discard",
+      nopeNotInPer: 'Not in Set', nopeMax3: 'Max 3',
       btnFinishWon: '✓ Finish Round →', btnFinishLost: 'Finish Round →',
       autoLoss: 'No way left to reach the target — closing the round…',
       okeySwapBtn: '🃏 Take the Okey',
@@ -1761,7 +1794,7 @@
       tipNowDrain: (n) => `${n} drained`,
       tipUsesRun: () => '⏳ Remaining: the whole run (∞)',
       tipUsesBelt: () => "★★★ Orion's Belt: permanent (∞)",
-      tipBackup: (n) => `❄ Frozen in backup — forced move in ${n} rounds`,
+      tipBackup: () => `❄ Frozen in backup — no aging; you move it to the main slots`,
       godzillaOn: (n) => `Godzilla charged S${n} — applies to next meld`,
       godzillaOff: 'Godzilla uncharged — +1 level per meldless turn',
       vasiyetBadge: (list) => `Last Will carries: ${list}`,
@@ -1806,7 +1839,7 @@
       stReroll: 'REROLL', stNext: 'NEXT',
       stRerollSub: (c, k) => `$${c} · ${k} left`,
       stRerollUsed: 'none left', stRerollFree: 'free', stRerollTrainer: 'unlimited',
-      stBuy: (p) => `BUY $${p}`, stOpen: (p) => `OPEN $${p}`,
+      stBuy: (p) => `BUY <span class="st-cur">$</span>${p}`, stOpen: (p) => `OPEN <span class="st-cur">$</span>${p}`,
       stDeckJokers: 'DECK JOKERS',
       discounted: 'SALE',
       newBadge: 'NEW!',
@@ -1856,6 +1889,8 @@
         + `List price ${p} ${coin}; you pay the NET amount after the sale value.`,
       swapNet: (net, coin, ref) => `${net} ${coin} <small>(refund +${ref})</small>`,
       swapAsk: 'SWAP FOR WHICH JOKER?',
+      betSwapTitle: 'YOUR SLOTS ARE FULL', betSwapSub: (n) => `Make room for ${n}: pick a joker to give up (its sell value is yours) or turn the reward into coins.`,
+      betSwapCoins: 'Take coins', betSwapToast: (g, c, n) => `${g} sold (+${c}) — ${n} took its place`,
       swapWant: (n, p, coin) => `You want: ${n} (${p} ${coin})`,
       swapRule: 'The joker you pick is sold and this one takes its place. You pay = price − refund.',
       swapPay: (net, coin) => `You pay: ${net} ${coin}`,
@@ -1920,6 +1955,8 @@
       tamElWin: 'FULL HAND! ROUND WON', bossWin: 'BOSS DEFEATED!', roundWin: 'ROUND WON!',
       gameOver: 'GAME OVER',
       kaptanSaved: '<b style="color:#E94560">The Cursed Captain saved you!</b> You scraped through.',
+      rwSaved: (n) => `<b style="color:#E94560">${n}</b> saved you`,   // denetim3 #38
+      rwTargetSaved: (t) => `target ${t} · saved`,
       coinBase: (t, boss) => `Base coins (cleared on turn ${t}${boss ? ' · BOSS' : ''}):`,
       coinBonus: (p) => `Overshoot bonus (${p}%):`,
       coinPenalty: (n) => `Penalty for ${n} meldless turns: <b style="color:#E94560">-${n}</b>`,
@@ -2002,7 +2039,7 @@
         selectSirali: `One more group: <b>Red 9-10-11</b> are consecutive numbers of one colour. That's a <b>Run</b>. Select all three and press <b>Open Hand</b>!`,
         multiGroup: `You opened <b>two groups</b> in one turn: the multiplier went from <b>2.0x</b> to <b>2.3x</b>. The more groups in one turn, the bigger the multiplier (4.6x with 7 groups)!`,
         score: `You scored! Keep opening every turn until you reach the target.`,
-        discardInfo: `A turn ends when you drop tiles. You can drop <b>up to 3 tiles</b> at once.<br>Careful: your <b>biggest</b> dropped tile has a <b>20%</b> chance to hit the <b>trap</b> and cost you points (<b>30%</b> in boss rounds). Dropping big tiles is risky!`,
+        discardInfo: `A turn ends when you drop tiles. You can drop <b>up to 3 tiles</b> at once.<br>Careful: your <b>biggest</b> dropped tile has a <b>20%</b> chance to hit the <b>trap</b> and cost you points (<b>30%</b> in boss rounds). Dropping big tiles is risky! A tile that hits the trap costs <b>10 times its value</b>.`,
         discard1: `Drop a small tile you don't need: select <b>Blue 2</b> and press <b>Drop</b>. Don't drop the glowing Yellow 5, it's the okey!`,
         discard2: `Drop a tile this turn too. Keep the <b>two Yellow 12s</b>, you'll need them next turn!`,
         ciftTurn: `Two tiles of the same colour and number make a <b>Pair</b>. In a Pair turn you can only open pairs, but the multiplier starts higher (<b>2.2x</b>). Select both <b>Yellow 12s</b> and press <b>Open Hand</b>!`,
@@ -2013,7 +2050,7 @@
         freeplay: `Your turn now! Open, extend and drop until you reach the target.`,
         islekHit: `Oops! Your tile landed on the <b>trap</b> and you lost points. Be careful when dropping big tiles.`,
         store1: `This is the <b>STORE</b>. Spend coins on jokers, and jokers boost your score. Buy the <b>Magnifying Glass</b>!`,
-        store2: `The number in the card's corner shows how many rounds the joker stays. When you're ready, press <b>Back to Map</b>.`,
+        store2: `The number in the card's corner shows how many rounds the joker stays. When you're ready, press <b>CONTINUE</b>.`,
         jokerPreview: `The score bar only shows <b>the group's own value</b>. Your jokers add their bonuses <b>after you confirm</b>, one by one. Press <b>Confirm</b> and watch!`,
         jokerFire: `That's it! Your joker jumped in turn and added its bonus; the total showed up at the end.`,
         bossIntro: `The <b>BOSS</b> is next! Every boss has a special rule. This is the <b>Octopus</b>, it drains part of your score. Press <b>PLAY</b>!`,
@@ -2036,10 +2073,10 @@
     /* P61 · Kumarhane (Casino) jokerleri */
     krupiye: { name: 'Croupier', desc: 'Won bets pay ×2 (×4 with Double); a won Safe bet also gives +0.35x permanent.' },
     sansliZar: { name: 'Lucky Die', desc: `When you’re about to lose the round a die is rolled: 5-6 and you scrape through (no bet reward). The card breaks either way.` },
-    kartSayici: { name: 'Card Counter', desc: '6 tiles of your hand are shown face up in the bet window.' },
+    kartSayici: { name: 'Card Counter', desc: 'You can see the next 2 tiles you will draw from the deck.' },
     fisUstasi: { name: 'Chip Tower', desc: '🟢 A won Safe bet gives a permanent +0.2x.' },
     rulet: { name: 'Roulette', desc: `Pick 🔴 or ⚫ at each round start: +0.3x per tile of that color in your meld, −1x if there are none.` },
-    hileliZar: { name: 'Loaded Dice', desc: `In Higher or Lower, ties count as yours and each right guess gives a permanent +0.08x. You get 1 take-back per stage.` },
+    hileliZar: { name: 'Loaded Dice', desc: `A die is rolled each turn (1-13): each tile of that number you meld gives +0.4x. Once per round you may turn the die to any number; each cheat permanently adds +0.05x per tile.` },   // denetim3 #29
     martingale: { name: 'Golden Chip', desc: `A lost side bet doubles the next payout (up to ×8). A win gives a permanent +0.2x per step.` },
     bereket: { name: 'Magnifying Glass', desc: '+1.5x on every meld.' },
     kosucu: { name: 'Staircase', desc: 'Meld a Run: +2.0x.' },
@@ -2074,7 +2111,7 @@
     tradeJokeri: { name: 'Bull Market', desc: 'If a meld scores more than the previous one, bank +1.0x (max +4x); if less, the bank halves.' },
     hipnotizor: { name: 'Hypnotist', desc: 'One number is picked each round: those tiles count double in melds.' },
     katalizor: { name: 'Witch\'s Cauldron', desc: 'Banks +0.02x for every tile left in your hand at turn end (max +2x). The bank is permanent.' },
-    terazi: { name: 'Scales', desc: `Once per turn you can sacrifice a tile: 8-13 lowers the target by 15x its value, 1-7 gives +0.8x for the round. If the trap hits you that turn, the bonus is lost.` },
+    terazi: { name: 'Scales', desc: `Once per turn you can put a tile on the scales: the target drops by 10 times its value.` },   // denetim3 #37
     sarmasik: { name: 'Ivy', desc: `At every round end your rarest joker keeps its duration (deck jokers included).` },
     yankee: { name: 'Fishbowl', desc: 'Hold at least 1 Pair at turn end to bank +1.0x (max +3.0x). Melding a Pair resets the bank.' },
     dedikodu: { name: 'Magic Hat', desc: '3 face-up tiles come out of the hat. Once a turn, swap one for a tile in your hand.' },
@@ -2105,7 +2142,7 @@
     karaDelik: { name: 'Void', desc: 'Swallows half your hand at round start: +40 pts and +0.15x permanent per tile eaten. Then you draw half that many new tiles.' },
     nostradamus: { name: 'Nostradamus', desc: 'Finish this round within 2 turns for a permanent +1.5x. Miss it and you get nothing.' },
     yasakElma: { name: 'Adam & Eve', desc: `An Apple reaches your hand at round start: it stands in for any tile, its meld ×1.5. Meld it and you draw 2 fewer tiles for the rest of the round, trap risk +20%.` },
-    kagit: { name: 'Paper', desc: `At every round start your lowest tile permanently becomes an okey (like the Okey Seal, each stage it becomes that stage’s okey).` },
+    kagit: { name: 'Paper', desc: `Your lowest tile becomes an okey PERMANENTLY: each stage it turns into that stage’s okey.` },   // denetim3 #47
     kirby: { name: 'Sir.by', desc: 'In hand, 2 of your tiles lose 1 value every turn (1s are deleted). Banks +0.6x per tile eaten.' },
     cellat: { name: 'Executioner', desc: 'In hand, executes your lowest tile after every meld: +80 pts. Later melds bank +50 pts each.' },
     dervish: { name: 'GLITCH', desc: `In hand, glitches 2 of your tiles every turn. One hides +100 pts, revealed when you meld it.` },
@@ -2399,7 +2436,7 @@
     [/^🕶 Hile bu tur fark edilmedi · risk %(\d+)$/, '🕶 Nobody noticed the cheat this turn · risk $1%'],
     /* P54 · Grup A/B — Üç Kağıtçı ve Öteki Dünya olayları */
     [/^🃏 Üç Kağıtçı: 3 taş kapalı geldi — birini seç \(biri okey\)$/, '🃏 Three-Card Monte: 3 tiles face down — pick one (one is the okey)'],
-    [/^🃏 Üç Kağıtçı: OKEY buldun! Bu tur geçerli, tur sonunda kaybolur$/, '🃏 Three-Card Monte: you found the OKEY! Valid this turn, gone at turn end'],
+    [/^🃏 Üç Kağıtçı: OKEY buldun! Raund sonuna kadar elinde$/, '🃏 Three-Card Monte: you found the OKEY! It stays until the round ends'],   // denetim3 #23
     [/^🃏 Üç Kağıtçı: (.+) çıktı — okey değildi$/, '🃏 Three-Card Monte: $1 — not the okey'],
     [/^🃏 Üç Kağıtçı: ıstaka dolu \((\d+)\) — bu tur masa kurulmadı$/, '🃏 Three-Card Monte: rack full ($1) — no table this turn'],
     [/^Önce Üç Kağıtçı'dan bir taş seç\.$/, 'Pick a tile from Three-Card Monte first.'],
@@ -2449,6 +2486,7 @@
     [/^📈 Altın Jeton: sonraki yan bahsin ödemesi ×(\d+)$/, '📈 Golden Chip: next side bet pays ×$1'],
     [/^📈 Altın Jeton: seri bitti → \+([\d.]+)x kalıcı$/, '📈 Golden Chip: streak cashed → +$1x permanent'],
     [/^🎡 (🔴|⚫) ×(\d+) taş \+([\d.]+)x$/, '🎡 $1 ×$2 tiles +$3x'],
+    [/^🎲 (\d+) ×(\d+) taş \+([\d.]+)x$/, '🎲 $1 ×$2 tiles +$3x'],   // denetim3 #29 · Hileli Zar
     [/^🎡 (🔴|⚫) tuttu \+([\d.]+)x$/, '🎡 $1 hit +$2x'],
     [/^🎡 (🔴|⚫) tutmadı −([\d.]+)x$/, '🎡 $1 missed −$2x'],
     [/^🎡 Rulet: (🔴|⚫) (Kırmızı|Siyah)$/, (m) => `🎡 Roulette: ${m[1]} ${m[2] === 'Kırmızı' ? 'Red' : 'Black'}`],
@@ -2594,14 +2632,14 @@
     [/^Önce elinden taş seç\.$/, 'Select tiles from your hand first.'],
     [/^Deste jokeri gruba giremez.*$/, 'Deck jokers can\'t join groups — they work from your hand; discard costs -100.'],
     [/^Geçersiz grup — Per, Sıralı veya Çift kurallarına uymuyor\.$/, 'Invalid group — doesn\'t match Set, Run or Pair rules.'],
-    [/^Bu turda Çift açılımı başlattın.*$/, 'You started Pairs this turn — can\'t mix with Sets/Runs (GDD 3.1).'],
-    [/^Bu turda Per\/Sıralı açılımı başlattın.*$/, 'You started Sets/Runs this turn — can\'t mix with Pairs (GDD 3.1).'],
+    [/^Bu turda Çift açılımı başlattın.*$/, 'You started Pairs this turn — can\'t mix with Sets/Runs.'],
+    [/^Bu turda Per\/Sıralı açılımı başlattın.*$/, 'You started Sets/Runs this turn — can\'t mix with Pairs.'],
     [/^Aynı turda en fazla 7 Çift açılabilir\.$/, 'At most 7 Pairs per turn.'],
     [/^İşlenecek grup bulunamadı\.$/, 'No group to extend.'],
     [/^Çift genişletilemez — işleme Per\/Sıralı içindir\.$/, 'Pairs can\'t be extended — extending is for Sets/Runs.'],
     [/^Deste jokeri işlemeye eklenemez\.$/, 'Deck jokers can\'t be used in extensions.'],
     [/^Bu grup en fazla (\d+) taşa çıkabilir\.$/, 'This group can grow to at most $1 tiles.'],
-    [/^Eklenen taşlar grubu geçerli tutmuyor \(GDD 3\.7\.6\)\.$/, 'The added tiles don\'t keep the group valid (GDD 3.7.6).'],
+    [/^Eklenen taşlar grubu geçerli tutmuyor\.$/, 'The added tiles don\'t keep the group valid.'],
     [/^Önce bekleyen açılımı\/işlemeyi onayla veya geri al\.$/, 'Confirm or undo the pending meld/extension first.'],
     [/^Atılacak taşı elinden seç\.$/, 'Select the tile to discard.'],
     [/^Bu taş dikili — discard edilemez \(Terzi'nin İğnesi\)\.$/, 'This tile is sewn — it can\'t be discarded (Tailor\'s Needle).'],
@@ -2722,7 +2760,7 @@
     [/^Yeni rengi seç\.$/, 'Pick the new color.'],
     [/^Taş zaten bu renkte — farklı bir renk seç\.$/, 'The tile is already this color — pick a different one.'],
     [/^Istaka dolu — elde en fazla (\d+) taş olabilir\.$/, 'Rack full — at most $1 tiles in hand.'],
-    [/^Çift ile Per\/Sıralı aynı turda açılamaz \(GDD 3\.1\) — seçimi ikiye böl\.$/, 'Pairs can\'t share a turn with Sets/Runs (GDD 3.1) — split your selection.'],
+    [/^Çift ile Per\/Sıralı aynı turda açılamaz — seçimi ikiye böl\.$/, 'Pairs can\'t share a turn with Sets/Runs — split your selection.'],
     [/^Sadece açılım aşamasında kullanılabilir\.$/, 'Only usable in the meld phase.'],
     /* Grup F — Dedikodu Masası hataları */
     [/^Sihirbaz Şapkası jokerin yok\.$/, "You don't have the Magic Hat joker."],

@@ -131,7 +131,7 @@ const BELT_TWO_AT = 3, BELT_FULL_AT = LADY_USES;  // yıldız için kemerde geç
 /* P71 — puanı _calcOpening'deki ÖZEL bloklardan gelen jokerler (effect()
    fonksiyonu olmayanlar). Yıldız adayı = effect() olan + bu liste. */
 const STAR_SCORE_KEYS = ['ankaKusu', 'ayna', 'ejderha', 'godzilla', 'katalizor', 'kirby', 'kumarbaz',
-  'medusa', 'misunderstood', 'otekiDunya', 'rulet', 'terazi', 'terziIgne', 'tradeJokeri', 'truva',
+  'medusa', 'misunderstood', 'otekiDunya', 'rulet', 'hileliZar', 'terazi', 'terziIgne', 'tradeJokeri', 'truva',
   'ucuncuTeker', 'vampir', 'yankee', 'yasakElma', 'zincir', 'ritim'];
 const RUN_MODES = {
   base: {
@@ -179,13 +179,17 @@ const RUN_MODES = {
        Güvenli %12 run bitirir. Nefes: 660<865 · 910<1190 · 1175<1505.
        Bahsin kendisi bu tablonun ÜSTÜNE çarpar (×1 / ×1.5 / ×2). */
     targets: [
-      [ 450,  650,  850],       // S1   (eski 540 · 810 · 1080 · P105 yuvarlak: 430 · 650 · 865)
+      /* denetim3 #48 (kullanıcı kararı 2026-10-23, "k6: daha sert") — "ilerledikçe kolaylaşıyor":
+         geç oyunda güç hızlı büyüdüğü için S2 sonrası hedefler %8-20 arttı, S1 boss 850 → 800.
+         Uzman bot (değnekli, 600 run): S1 boss %50→%60 · S2 %76→%69 · S3 %72→%63 · final %43→%39 ·
+         run kazanma %6 aynı. Önceki tablo: S1 850 · S2 750/950/1200 · S3 1100/1200/1500 · S4 1350/1500/1800. */
+      [ 450,  650,  800],       // S1   (eski 540 · 810 · 1080 · P105 yuvarlak: 430 · 650 · 865)
       /* denetim (kullanıcı kararı 2026-10-22) — Kozmik'teki R1 kuralı: yeni stage'in R1'i önceki
          stage'in R2'sinden yüksek, boss'undan düşük (eski R1: S2 650 · S3 900 · S4 1200). Bot:
          run kazanma %4.2 → %3.9 (4000 run, gürültü içinde), R1 geçişi S3 %98 → %95. */
-      [ 750,  950, 1200],       // S2   (eski 825 · 1160 · 1490 · P105: 660 · 930 · 1190)
-      [1100, 1200, 1500],       // S3   (eski 1140 · 1525 · 1880 · P105: 910 · 1220 · 1505)
-      [1350, 1500, 1800],       // S4   (eski 1470 · 1875 · 2230 · P105: 1175 · 1500 · 1785)
+      [ 750, 1000, 1300],       // S2   (eski 825 · 1160 · 1490 · P105: 660 · 930 · 1190)
+      [1250, 1500, 1700],       // S3   (eski 1140 · 1525 · 1880 · P105: 910 · 1220 · 1505)
+      [1650, 1900, 2150],       // S4   (eski 1470 · 1875 · 2230 · P105: 1175 · 1500 · 1785)
       [1200, 1500, FINAL_TARGET],   // S5 FİNAL — yalnız 3. sütun kullanılır (P71)
     ],
     /* P50 — kullanıcı: "coin kazancını arttırmayalım, normal run'daki gibi
@@ -296,8 +300,10 @@ const HILO_STEPS = 3;
    Örn. 2'de yüksek %85 → ×1.24 · 7'de yüksek %46 → ×2.28 · uç tahmin en çok ×5. */
 const HILO = { edge: 1.05, maxMult: 5 };
 function hiLoOdds(cur, dir) {
-  const win = dir === 'hi' ? 13 - cur : cur - 1;   // eşitlik hariç
-  const p = win / 13;
+  const win = dir === 'hi' ? 13 - cur : cur - 1;
+  /* denetim3 #28 — sıradaki taş açık taşla AYNI gelmez (kullanıcı: "12'den sonra 12 gelip
+     kaybettirmesin") → 12 olası sayı; çarpan aynı kuralla (edge ÷ gerçek ihtimal) hesaplanır */
+  const p = win / 12;
   const mult = p > 0 ? Math.min(HILO.maxMult, Math.round(100 * HILO.edge / p) / 100) : 0;
   return { p, mult };
 }
@@ -316,7 +322,10 @@ const KRUPIYE_MULT = 2;          // tutan bahsin ödülü ×2
 const KRUPIYE_SAFE_PERM = 0.35;  // Güvenli bahis tutunca da kalıcı çarpan
 const MARTINGALE_CAP = 3;        // ödeme en çok 2³ = ×8
 const MARTINGALE_PERM = 0.2;     // tutunca kalıcı +0.2x × katlanma (×1/×2/×4/×8)
-const HILELI_ZAR_PERM = 0.08;    // Hi-Lo'da her doğru tahmin kalıcı +0.08x
+/* denetim3 #29 (kullanıcı kararı) — Hileli Zar: her tur zar (1-13); açılımdaki o sayıdaki her taş
+   +HILELI_ZAR_BASE; raund başına 1 hile (zarı istediğin sayıya çevir), her hile taş başına bonusu
+   kalıcı +HILELI_ZAR_GROW büyütür. Hi-Lo bağı (doğru tahmin +0.08x, geri al) kalktı. */
+const HILELI_ZAR_BASE = 0.4, HILELI_ZAR_GROW = 0.05;
 const SANSLI_ZAR_MIN = 5;   // 5-6 kurtarır (1/3)
 
 /* PLAYTEST 26 · MADDE D — STAGE'İ 8'LİK EĞRİYE TAŞI.
@@ -989,7 +998,7 @@ const RARITY = {
      Satış fiyatları yarı fiyat kuralına göre birlikte güncellendi. */
   legendary: { tr: 'Legendary',   price: 14, sell: 7,  discount: 0.08, discPrice: 10, uses: 3 },
   mythic:    { tr: 'Mythic',      price: 20, sell: 10, discount: 0.04, discPrice: 15, uses: 1 },
-  epic:      { tr: 'Boss (Epic)', price: 0,  sell: 8,  discount: 0,    discPrice: 0,  uses: 3 },  // store'da satılmaz
+  epic:      { tr: 'Boss (Epic)', price: 0,  sell: 12, discount: 0,    discPrice: 0,  uses: 3 },  // store'da satılmaz · denetim3 #20 (kullanıcı): satış 8 → 12
   final:     { tr: 'Final',       price: 0,  sell: 7,  discount: 0,    discPrice: 0,  uses: 6 },  // P71 — yalnız final boss ödülü
 };
 
@@ -1185,7 +1194,9 @@ const KAGIT_TILES = 1;   // P31 · Grup J: Kağıt her raund en düşük 2 taş�
    yenmemiştir, bonus durur. */
 const TERAZI_HEAVY_MIN = 8;      // bu değer ve üstü "ağır taş" sayılır
 const TERAZI_LIGHT_MULT = 0.8;   // hafif taş: raundun kalanına eklenen çarpan
-const TERAZI_HEAVY_TARGET = 15;  // ağır taş: değerinin bu katı kadar hedef düşer
+const TERAZI_HEAVY_TARGET = 15;  // ağır taş: değerinin bu katı kadar hedef düşer (ESKİ — denetim3 #37'den beri kullanılmıyor)
+/* denetim3 #37 (kullanıcı kararı "tek etki: hedef düşer") — feda edilen HER taş hedefi değerinin 10 katı düşürür */
+const TERAZI_CUT = 10;
 
 /* PLAYTEST 18 · GRUP B — Altın Oran: gerçek tam sayı eklemesi.
    PLAYTEST 20 · GRUP M + P (kullanıcı kararı 2026-08-30) — RUN TAVANI
@@ -1453,9 +1464,13 @@ const ATES_DISCOUNT = 0.4;     // pazarlık tutunca indirim
 const ATES_STEAL_WIN = 0.5;    // 2. adım: ateşi çalma (bedava) şansı
 const ATES_STEAL_ISLEK = 0.10; // bedava alımın sonraki raunda işlek borcu
 const MAX_BACKUP = 2;   // GDD 7.4 — Backup Slot
+/* denetim3 (kullanıcı kararı 2026-10-23) — backup jokeri artık zorla ana slota geçmez (false). */
+const BACKUP_FORCED_MOVE = false;
 /* P51 · Grup B — Sigorta Poliçesi artık TAM değil %75 iade eder (al-sat döngüsü kârsız kalsın). */
 const SIGORTA_RATE = 0.75;
-function insuredSell(key, rarity) { return Math.round(jokerPrice(key, rarity) * SIGORTA_RATE); }
+/* denetim3 #20 (kullanıcı: "boss jokerini satınca çoğu zaman 0 coin") — Sigorta'da satış alış fiyatının %75'i;
+   boss/final jokerinin alış fiyatı 0 olduğu için 0 coin veriyordu. Satış hiçbir zaman normal satış değerinin altına inmez. */
+function insuredSell(key, rarity) { return Math.max(jokerSell(key, rarity), Math.round(jokerPrice(key, rarity) * SIGORTA_RATE)); }
 
 /* ---------- Tüketilebilirler v2 (Grup K, 2026-07-09) ----------
    ESKİ sistem (Tılsım/Çarpan Tozu/Ekstra Çekiş/Coin Kapsülü — tek turluk
@@ -1480,7 +1495,7 @@ function insuredSell(key, rarity) { return Math.round(jokerPrice(key, rarity) * 
    İkisi de `consumCap() >= CONSUM_SLOT_MAX` diye bakar, yani tavanı
    burada değiştirmek her iki kapıyı birden ayarlar. */
 const MAX_CONSUMABLES = 2;
-const CONSUM_SLOT_MAX = 4;     // Heybe / Geniş Kemer ile çıkılabilecek tavan
+const CONSUM_SLOT_MAX = 3;     // Heybe / Geniş Kemer ile çıkılabilecek tavan — denetim3 #36 (kullanıcı: "değnek slotu en çok 3"; 4 yuvada sol sütun kayıyordu)
 /* PLAYTEST 22 · GRUP C — DEĞNEK SATIŞ ORANI.
    Neden yarısı değil de %40: Anarşist "Kara Pazar"ı store fiyatlarını
    ×0.4'e kadar indirir. Satış oranı bunun üstünde olsaydı "ucuza al,
@@ -2175,7 +2190,7 @@ const JOKER_DEFS = {
      Feda edilen taş yok olur; yani her tur "hangi taşı gözden
      çıkarabilirim" kararı doğar. */
   terazi: { key: 'terazi', name: 'Terazi', rarity: 'rare', uses: 3,
-    desc: `Her tur bir taş feda edebilirsin: 8-13 ise hedef taşın 15 katı düşer, 1-7 ise raund boyunca +0.8x. O tur işlek yersen bonus gider.` },
+    desc: `Her tur bir taşını teraziye koyabilirsin: hedef, taşın 10 katı düşer.` },   // denetim3 #37
   sarmasik: { key: 'sarmasik', name: 'Sarmaşık', rarity: 'rare', uses: 3,
     desc: `Her raund sonunda en nadir jokerinin süresi azalmaz (deste jokerleri dahil).` },
   /* PLAYTEST 26 · GRUP I — Çift açmak birikimi SILMEZ, yarıya indirir.
@@ -2430,7 +2445,8 @@ const JOKER_DEFS = {
   otekiDunya: { key: 'otekiDunya', name: 'Öteki Dünya', rarity: 'mythic', uses: 1,
     desc: `Attığın taş Ay Kuyusu’na düşer ve açılımda +${AY.tileMult.toFixed(1)}x veren kalıcı 🌙 Ay Taşı olur. Kuyu dolunca Dolunay: taşlar o tur eline okey olarak gelir.` },
   kagit: { key: 'kagit', name: 'Kağıt', rarity: 'mythic', uses: 1,
-    desc: `Her raund başında elindeki en düşük taş kalıcı olarak okeye dönüşür (Okey Mührü gibi, her stage o stage’in okeyi olur).` },
+    /* denetim3 #47 (kullanıcı kararı) — Mythic 1 raund yaşar: metin "her raund" demesin */
+    desc: `Elindeki en düşük taş KALICI okey olur: her stage o stage’in okeyine döner.` },
 
   /* ===== P61 · KUMARHANE JOKERLERİ (kullanıcı kararı 2026-10-04) =====
      `casino: true` → YALNIZ Kumarhane Run'da çıkar (store, paket, bahis
@@ -2449,13 +2465,14 @@ const JOKER_DEFS = {
   sansliZar: { key: 'sansliZar', name: 'Şanslı Zar', rarity: 'rare', casino: true,
     desc: `Raundu kaybedeceğin anda zar atılır: 5-6 gelirse raundu kıl payı kazanırsın (bahis ödülü yok). Her iki durumda kart kırılır.` },
   kartSayici: { key: 'kartSayici', name: 'Kart Sayıcı', rarity: 'common', casino: true,
-    desc: 'Bahis penceresinde elinden 6 taş açık görünür.' },
+    desc: 'Desteden çekeceğin sıradaki 2 taşı görürsün.' },
   fisUstasi: { key: 'fisUstasi', name: 'Fiş Kulesi',   /* P105: eski ad Fiş Ustası (kullanıcı) */ rarity: 'common', casino: true,
     desc: '🟢 Güvenli bahis tutunca kalıcı +0.2x.' },
   rulet: { key: 'rulet', name: 'Rulet', rarity: 'rare', casino: true,
     desc: `Her raund başında 🔴 ya da ⚫ seç: açılımındaki o renkten her taş +0.3x, hiç yoksa −1x.` },
   hileliZar: { key: 'hileliZar', name: 'Hileli Zar', rarity: 'rare', casino: true,
-    desc: `Yüksek mi Alçak mı oyununda eşitlik senin sayılır, her doğru tahmin kalıcı +0.08x verir. Her stage’de 1 kez geri alabilirsin.` },
+    /* denetim3 #29 — yeni özellik (kullanıcı kararı): zarın sayısı + raund başına 1 hile, hile yaptıkça güçlenir */
+    desc: `Her tur zar atılır (1-13): açtığın o sayıdaki her taş +0.4x. Raund başına 1 kez zarı istediğin sayıya çevirebilirsin; her hile taş başına bonusu kalıcı +0.05x artırır.` },
   martingale: { key: 'martingale', name: 'Altın Jeton',   /* P105: eski ad Martingale (kullanıcı: anlamsız) */ rarity: 'rare', casino: true,
     desc: `Kaybettiğin yan bahis, sonrakinin ödemesini 2 katına çıkarır (en çok ×8). Tutunca kat başına kalıcı +0.2x.` },
 
@@ -4218,10 +4235,14 @@ const Game = {
     this._resolveBetPicks(s.roundStartNotes);     // P58 · Kumarhane güvenlik ağı
     this.hiLoClose();                             // P61 · yarım kalan Yüksek mi Alçak mı kapanır
 
-    // Backup slot bekleme (GDD 7.4) — süre dolunca zorla Ana Slot'a
+    /* denetim3 #21/#35/#43 (kullanıcı kararı 2026-10-23: "backup'ta beklesin") — ZORUNLU GEÇİŞ KALKTI.
+       Eskiden backup jokeri 3 raund (son hakkıysa 1) sonra zorla ana slota geçiyor, ana slot doluysa
+       en düşük nadirlikteki joker SESSİZCE satılıyordu (bildirimler kapalı → "jokerim yok oldu").
+       Artık backup'taki joker oyuncu taşıyana kadar donmuş bekler; hiçbir joker kendiliğinden satılmaz.
+       Aşağıdaki eski blok `waitLeft` hiç azalmadığı için çalışmaz (eski kayıtlar için yerinde). */
     for (const b of [...s.backup]) {
-      b.waitLeft--;
-      if (b.waitLeft <= 0) {
+      if (BACKUP_FORCED_MOVE) b.waitLeft--;
+      if (BACKUP_FORCED_MOVE && b.waitLeft <= 0) {
         s.backup = s.backup.filter(x => x !== b);
         if (s.jokers.length < this.slotCap()) {
           b.fresh = true;
@@ -4446,13 +4467,33 @@ const Game = {
     }
     return options.length ? { kind, options } : null;
   },
-  chooseBetPick(optIndex = 0) {
+  /* denetim3 #41 (kullanıcı: "slotlarım doluydu ve alamadım") — raflar doluyken joker ödülü
+     coin'e çevrilmeden önce oyuncuya sorulur: `swapId` verilirse o joker satılır (satış değeri
+     cüzdana) ve yerine ödül gelir; `swapId === 'coins'` eski davranış (ödül coin'e döner). */
+  chooseBetPick(optIndex = 0, swapId = null) {
     const s = this.state;
     const p = (s.betPicks || [])[0];
     if (!p) return { ok: false, error: 'Bekleyen bir seçim yok.' };
     const opt = p.options[optIndex];
     if (!opt) return { ok: false, error: 'Geçersiz seçim.' };
+    const full = opt.type === 'joker' && opt.key !== 'fuzyon'
+      && s.jokers.length >= this.slotCap() && s.backup.length >= MAX_BACKUP;
+    if (full && swapId == null) return { ok: false, needsSwap: true };
+    let gave = null;
+    if (full && swapId !== 'coins') {
+      const out = s.jokers.find(j => j.id === swapId) || s.backup.find(j => j.id === swapId);
+      if (!out) return { ok: false, error: 'Yerine konacak jokeri seç.' };
+      const lock = this.canSellJoker(out.id);
+      if (!lock.ok) return { ok: false, error: lock.error || 'Bu joker satılamaz.' };
+      const inMain = s.jokers.includes(out);
+      s.jokers = s.jokers.filter(j => j !== out);
+      s.backup = s.backup.filter(j => j !== out);
+      const coins = jokerSell(out.key, out.rarity);
+      gainCoins(s, coins);
+      gave = { name: out.name, coins, inMain };
+    }
     const got = this._grantPackOption(opt, 6);
+    if (got && gave) got.gave = gave;
     s.betPicks.shift();
     return { ok: true, got, left: s.betPicks.length };
   },
@@ -4493,10 +4534,21 @@ const Game = {
     return { ok: true, note: `🎲 Yan bahis: ${SIDE_BETS[key].name} (${s.sideBet.odds}:1)` };
   },
   skipSideBet() { this.state.sideOffer = null; return { ok: true }; },
-  _sideTrackMeld() {
+  /* denetim3 #39 — `partnerCombos`: eş Orion'un açılımları da yan bahsin "grup" koşullarını
+     (4'lü Per, 5'li Sıralı, Çift, aynı turda 5 grup) sağlar; okey koşulu yalnız oyuncunun taşlarına bakar. */
+  _sideTrackMeld(partnerCombos) {
     const s = this.state;
     if (!s.sideTrack) s.sideTrack = { per4: false, sirali5: false, maxCombos: 0, okeyUsed: false, cift: false };
     const T = s.sideTrack;
+    if (partnerCombos) {
+      for (const c of partnerCombos) {
+        if (c.type === 'per' && c.tiles.length >= 4) T.per4 = true;
+        if (c.type === 'sirali' && c.tiles.length >= 5) T.sirali5 = true;
+        if (c.type === 'cift') T.cift = true;
+      }
+      T.maxCombos = Math.max(T.maxCombos, partnerCombos.length);
+      return;
+    }
     for (const c of s.staged) {
       if (c.type === 'per' && c.tiles.length >= 4) T.per4 = true;
       if (c.type === 'sirali' && c.tiles.length >= 5) T.sirali5 = true;
@@ -4554,16 +4606,12 @@ const Game = {
     this.state.ruletColor = color;
     return { ok: true, note: `🎡 Rulet: ${color === 'red' ? '🔴 Kırmızı' : '⚫ Siyah'}` };
   },
-  betPeek() {
+  /* denetim3 #40 (kullanıcı kararı) — 🃏 Kart Sayıcı: destenin üstü açık,
+     çekeceğin sıradaki 2 taş görünür (eski: bahis penceresinde elden 6 taş). */
+  deckPeek() {
     const s = this.state;
-    if (!s || !this.hasActive('kartSayici')) return null;
-    if (!s.betPeekIds) {
-      const pool = s.hand.filter(t => !t.jokerTile);
-      const ids = [];
-      while (ids.length < 6 && pool.length) ids.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0].id);   // P69: 3 → 6
-      s.betPeekIds = ids;
-    }
-    return s.betPeekIds.map(id => s.hand.find(t => t.id === id)).filter(Boolean);
+    if (!s || !s.deck || !this.hasActive('kartSayici')) return null;
+    return s.deck.slice(0, 2);
   },
 
   /* ---------- P61 · 🎲 Şanslı Zar (kayıp zincirinde) ---------- */
@@ -4603,10 +4651,8 @@ const Game = {
     const h = this.state && this.state.hiLo;
     if (!h) return null;
     const odds = h.cur ? { hi: hiLoOdds(h.cur.number, 'hi'), lo: hiLoOdds(h.cur.number, 'lo') } : null;
-    if (odds && this.hasActive('hileliZar')) { odds.hi.p += 1 / 13; odds.lo.p += 1 / 13; }   // eşitlik senin
-    return { ...h, max: HILO_STEPS, canUndo: this._hiLoCanUndo(), odds };
+    return { ...h, max: HILO_STEPS, odds };
   },
-  _hiLoCanUndo() { const s = this.state; return this.hasActive('hileliZar') && s.hiLoUndoStage !== s.stage; },
   hiLoAccept() {
     const h = this.state.hiLo;
     if (!h || h.phase !== 'offer') return { ok: false };
@@ -4620,28 +4666,23 @@ const Game = {
     const odd = hiLoOdds(h.cur.number, dir);
     if (!odd.mult) return { ok: false, error: 'Bu yönde kazanma ihtimali yok.' };
     const next = this._hiLoTile();
-    const tie = next.number === h.cur.number;
-    const win = tie ? this.hasActive('hileliZar') : (dir === 'hi' ? next.number > h.cur.number : next.number < h.cur.number);
+    /* denetim3 #28 — eşitlik yok: aynı sayı gelirse kalan 12 sayıdan biri (tekdüze) */
+    if (next.number === h.cur.number) {
+      const n = 1 + Math.floor(this.rng() * 12);
+      next.number = n >= h.cur.number ? n + 1 : n;
+    }
+    const tie = false;
+    const win = dir === 'hi' ? next.number > h.cur.number : next.number < h.cur.number;
     h.last = next;
     if (!win) {
-      if (this._hiLoCanUndo()) { h.phase = 'undo'; return { ok: true, win: false, tie, next, canUndo: true }; }
       this._hiLoLose();
       return { ok: true, win: false, tie, next };
     }
     h.pot = Math.round(h.pot * odd.mult); h.step++; h.cur = next;
     h.lastMult = odd.mult;
-    if (this.hasActive('hileliZar')) s.permMult = round2(s.permMult + HILELI_ZAR_PERM);   // P69 · Hileli Zar
     if (h.step >= HILO_STEPS) { this.hiLoCashOut(); return { ok: true, win: true, tie, next, done: true }; }
     return { ok: true, win: true, tie, next };
   },
-  hiLoUndo() {
-    const s = this.state, h = s.hiLo;
-    if (!h || h.phase !== 'undo') return { ok: false };
-    s.hiLoUndoStage = s.stage;
-    h.phase = 'play';
-    return { ok: true, note: '🎰 Hileli Zar: tahmin geri alındı' };
-  },
-  hiLoAcceptLoss() { const h = this.state.hiLo; if (!h || h.phase !== 'undo') return { ok: false }; this._hiLoLose(); return { ok: true }; },
   _hiLoLose() {
     const s = this.state, h = s.hiLo;
     spendCoins(s, Math.min(h.stake, Math.max(0, s.coins)));
@@ -4664,7 +4705,6 @@ const Game = {
     const s = this.state, h = s.hiLo;
     if (!h) return;
     if (h.phase === 'play') this.hiLoCashOut();
-    else if (h.phase === 'undo') this._hiLoLose();
     s.hiLo = null;
   },
 
@@ -5303,7 +5343,7 @@ const Game = {
     s.sideBet = null;
     s.sideTrack = { per4: false, sirali5: false, maxCombos: 0, okeyUsed: false, cift: false };
     s.ruletColor = null;      // P61 · 🎡 Rulet — bu raundun rengi
-    s.betPeekIds = null;      // P61 · 🃏 Kart Sayıcı — bahiste açık 3 taş
+    s.zarCheatUsed = false;   // denetim3 #29 · 🎲 Hileli Zar — raund başına 1 hile
     s.hiLo = null;            // P61 · Yüksek mi Alçak mı (raund sonu)
     s.storeTilePick = null;   // P29 · Grup O — store seçimi raunda taşmaz
     s.deck = createDeck(s);
@@ -5842,6 +5882,7 @@ const Game = {
     this._setupGossipTable(s.roundStartNotes);
     this._onTurnStart(s.roundStartNotes);
     this._rollKumarbaz();
+    this._rollHileliZar();
     /* denetim BE-19 — Orion yarışının TABANI raund başındaki hedeftir (Derin Nefes, The World,
        Lanetli Kaptan, Kıyamet işlenmiş hâli); _orionTurn çıplak ORION_FLOOR'a dönmesin. */
     s.orionFloor = this._raceOn() ? s.target : null;
@@ -6354,7 +6395,8 @@ const Game = {
        yiyor demektir. İkisi birbirinin ürününe dokunmaz. */
     if (this.hasActive('frankenstein')) {
       const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey
-        && !t.stitched && !t.revived && !this.isOkeyTile(t) && !t.special);   /* Grup D: joker dönüşümü özel taşa dokunmaz */
+        && !t.stitched && !t.revived && !this.isOkeyTile(t) && !t.special   /* Grup D: joker dönüşümü özel taşa dokunmaz */
+        && !t.sewn && !t.bossSewn);   // denetim3 #15 (kullanıcı: "Terzinin İğnesi ile aynı taşa etki etmesin") — dikili taş ameliyata girmez
       if (cand.length >= 2) {
         cand.sort((a, b) => a.number - b.number);
         const [a, b] = [cand[0], cand[1]];
@@ -6493,7 +6535,8 @@ const Game = {
       for (const t of s.hand) if (t.sewn) { delete t.sewn; freed++; }
       if (freed) events.push(`🪡 İğne elinden çıktı — ${freed} taşın dikişi çözüldü`);
     } else {
-      const free = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !t.sewn);
+      /* denetim3 #15 — Frankenstein'ın dirilttiği / birleştirdiği taş dikilmez (iki dönüşüm aynı taşta çakışmasın) */
+      const free = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !t.sewn && !t.revived && !t.stitched);
       // softlock koruması: en az IGNE_FREE_MIN taş dikilmeden kalmalı
       const room = Math.max(0, free.length - IGNE_FREE_MIN);
       const sewn = [];
@@ -6588,6 +6631,29 @@ const Game = {
     s.kumarbazRoll = edge ? this.KUMARBAZ_EDGE_MULT
       : (r < this.KUMARBAZ_EDGE_P + (1 - this.KUMARBAZ_EDGE_P) / 2 ? 2 : 0.5);
     s.kumarbazFlip = { roll: s.kumarbazRoll, turn: s.turn, edge };
+  },
+
+  /* denetim3 #29 · 🎲 Hileli Zar — tur başı zarı (1-13). Kart yokken zar da yok. */
+  _rollHileliZar() {
+    const s = this.state;
+    s.zarFace = this.hasActive('hileliZar') ? 1 + Math.floor(this.rng() * 13) : null;
+  },
+  hileliZarBonus() {
+    const j = this.slotRecs().find(x => x.key === 'hileliZar');
+    return round2(HILELI_ZAR_BASE + HILELI_ZAR_GROW * ((j && j.cheats) || 0));
+  },
+  canZarCheat() {
+    const s = this.state;
+    return !!s && s.status === 'playing' && s.phase === 'meld' && !s.zarCheatUsed && this.hasActive('hileliZar');
+  },
+  zarCheat(n) {
+    const s = this.state;
+    n = Math.floor(Number(n));
+    if (!this.canZarCheat() || !(n >= 1 && n <= 13)) return { ok: false };
+    const j = this.slotRecs().find(x => x.key === 'hileliZar');
+    s.zarFace = n; s.zarCheatUsed = true;
+    if (j) j.cheats = (j.cheats || 0) + 1;
+    return { ok: true, face: n, bonus: this.hileliZarBonus(), note: `🎲 Hileli Zar: zar ${n} oldu (taş başına +${this.hileliZarBonus().toFixed(2)}x)` };
   },
 
   /* UI: bekleyen yazı-tura sonucunu BİR KEZ al (alınınca temizlenir). */
@@ -7180,6 +7246,16 @@ const Game = {
       if (hit) { const add = round2(RULET_PER * me); mult += add; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} ×${me} taş +${add.toFixed(1)}x` }); }
       else { mult -= RULET_MISS; triggered.push({ id: rj ? rj.id : 'rulet', name: 'Rulet', text: `🎡 ${ico} tutmadı −${RULET_MISS.toFixed(1)}x` }); }
     }
+    /* denetim3 #29 · 🎲 Hileli Zar — açılımdaki zarın sayısındaki her taş (okey/joker taşı sayılmaz) */
+    if (s.zarFace && this.hasActive('hileliZar') && ctx.tiles.length) {
+      const me = ctx.tiles.filter(t => !t.jokerTile && !this.isOkeyTile(t) && t.number === s.zarFace).length;
+      if (me) {
+        const add = round2(this.hileliZarBonus() * me);
+        const zj = this.slotRecs().find(j => j.key === 'hileliZar');
+        mult += add;
+        triggered.push({ id: zj ? zj.id : 'hileliZar', name: 'Hileli Zar', text: `🎲 ${s.zarFace} ×${me} taş +${add.toFixed(2)}x` });
+      }
+    }
     /* P59/P77 — açılımdaki her Ay Taşı +AY.tileMult. P106: Öteki Dünya şartı KALKTI — Ay Taşı
        kendi başına çalışan özel taş (Zümrüt gibi), joker satılınca / süresi bitince de değerli. */
     if (AY.tileMult > 0) {
@@ -7480,8 +7556,8 @@ const Game = {
       return {
         ok: false,
         error: s.turnMode === 'cift'
-          ? 'Bu turda Çift açılımı başlattın — Per/Sıralı ile karıştırılamaz (GDD 3.1).'
-          : 'Bu turda Per/Sıralı açılımı başlattın — Çift ile karıştırılamaz (GDD 3.1).',
+          ? 'Bu turda Çift açılımı başlattın — Per/Sıralı ile karıştırılamaz.'
+          : 'Bu turda Per/Sıralı açılımı başlattın — Çift ile karıştırılamaz.',
       };
 
     if (!s.turnMode) s.turnMode = mode;
@@ -7526,7 +7602,7 @@ const Game = {
     if (!groups) {
       // Seçim ancak Çift + Per/Sıralı KARIŞIK bölünebiliyorsa daha net hata ver
       if (!this.hasActive('ucuncuTeker') && this._partitionCombos(tiles, true))
-        return { ok: false, error: 'Çift ile Per/Sıralı aynı turda açılamaz (GDD 3.1) — seçimi ikiye böl.' };
+        return { ok: false, error: 'Çift ile Per/Sıralı aynı turda açılamaz — seçimi ikiye böl.' };
       return asOne; // parçalanamadı — orijinal hata gösterilsin
     }
     const before = s.staged.length;
@@ -7734,6 +7810,7 @@ const Game = {
       s.score += gain;
       events.push(`🎩 Orion (eşin) ${opened.length} açılım yaptı: +${gain} puan sana`);
     }
+    if (mode === 'partner' && opened.length && s.sideBet && !s.sideBet.resolved) this._sideTrackMeld(opened);   // denetim3 #39
     s.orionLast = { opened: opened.length, gain, took };
   },
   /* Finaldeki Orion'un kazancı: ham × kombinasyon çarpanı × tur çarpanı
@@ -8049,7 +8126,7 @@ const Game = {
     const res = resolveCombo(merged, (t) => this.isOkeyTile(t), this._freePerColors(),
       { forceStart: opts?.forceStart });
     if (!res || res.type !== combo.type)
-      return { ok: false, error: 'Eklenen taşlar grubu geçerli tutmuyor (GDD 3.7.6).' };
+      return { ok: false, error: 'Eklenen taşlar grubu geçerli tutmuyor.' };
 
     /* Grup A — işlemede de okeyin değerini oyuncu belirler. Istaka konumu
        burada anlam taşımadığından (grup tepside duruyor) birden fazla
@@ -8408,9 +8485,12 @@ const Game = {
           if (!this.isOkeyTile(okey)) continue;
           const need = this._okeyStandsFor(combo, okey);
           if (!need) continue;
+          /* denetim3 #42 — renk-serbest taş (Su Taşı, Heykel Taş, Bukalemun rengi) okeyin
+             yerine geçtiği taşın rengi ne olursa olsun takas edilebilir; eskiden renk birebir
+             aranıyordu ve Su Taşı 11 "okey-12-13"teki okeyi geri alamıyordu. */
           const match = s.hand.find(t => !t.jokerTile && !this.isOkeyTile(t)
             && t.number === need.number
-            && (need.colors ? need.colors.includes(t.color) : t.color === need.color));
+            && (need.colors ? need.colors.includes(t.color) : (t.color === need.color || isColorWild(t))));
           if (!match) continue;
           out.push({ comboIndex, where, okeyId: okey.id, tileId: match.id,
             label: `${COLOR_TR[match.color]} ${match.number}` });
@@ -8444,7 +8524,7 @@ const Game = {
     if (!real || real.jokerTile || this.isOkeyTile(real))
       return { ok: false, error: 'Geçerli bir gerçek taş seç.' };
     if (real.number !== need.number
-        || (need.colors ? !need.colors.includes(real.color) : real.color !== need.color))
+        || (need.colors ? !need.colors.includes(real.color) : (real.color !== need.color && !isColorWild(real))))   // denetim3 #42
       return { ok: false, error: `Bu okey ${need.colors ? need.number : COLOR_TR[need.color] + ' ' + need.number} yerine geçiyor — eşleşen taşı seçmelisin.` };
     if (real.bossSewn)
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur kullanılamaz.' };
@@ -8644,7 +8724,13 @@ const Game = {
     /* DAMGA — hak yalnız GERÇEKTEN 2 kat verdiğinde harcanır; basış
        ise her açılımdan sonra düşer, böylece puanlamayan bir açılım
        (0 puan, boss sıfırlaması) damgayı yakmaz, oyuncu tekrar basar. */
-    if (r.damgaBonus > 0) s.damgaUsed = true;
+    if (r.damgaBonus > 0) {
+      s.damgaUsed = true;
+      /* denetim3 #50 (kullanıcı: "Damga her kullanılınca varyasyonu değişsin, damgalanması artmış gibi olsun") —
+         kartın kendi damga sayacı; arayüz 1-9 arası çizimi buna göre seçer */
+      const dj = this.slotRecs().find(j => j.key === 'ayna');
+      if (dj) dj.stamps = (dj.stamps || 0) + 1;
+    }
     s.damgaArmed = false;
     const p100Ev = [];   // P100 — aşağıdaki olaylar `events` kurulunca ona katılır
     /* P100 — BAHŞİŞ KAVANOZU: kırılan kavanoz puanlanan açılımda boşalır. */
@@ -9006,6 +9092,21 @@ const Game = {
     s.prevOpen = s.opened;
     s.opened = [];
 
+    /* denetim3 #31 (kullanıcı: "Orion elimdeyken ben pas geçip o açılım yaparsa da çalışsınlar") —
+       EŞ Orion'un turu, tur sonu birikimlerinden (Zincir, Sisyphus, Bahşiş, art arda açılım) ÖNCE
+       oynanır; eşin açılımı o birikimler için "takım açılımı" sayılır. Yarış modu (final) eskisi gibi
+       aşağıda, birikimlerden sonra ve sayılmadan oynanır. */
+    s.partnerOpenedTurn = false;
+    if (this._partnerOn && this._partnerOn() && !this._raceOn() && !s.orionHandDone && !s.playerFinished) {
+      const sc0 = s.score;
+      this._orionTurn(events, 'partner', picks);
+      s.partnerOpenedTurn = (s.orionLast?.opened || 0) > 0;
+      /* eşin puanı eskisi gibi işlek cezasından SONRA yazılır (ceza eşin puanını silmesin) */
+      s.partnerPendingGain = s.score - sc0;
+      s.score = sc0;
+    }
+    const teamOpened = s.openedThisTurn || s.partnerOpenedTurn;
+
     if (!s.openedThisTurn) s.noMeldTurns++;
     /* PLAYTEST 9 · GRUP H (bug) — KAHİN'İN CEZA TARAFI.
        Kök neden: kehanet YALNIZ confirmMelds içinde denetleniyordu, yani
@@ -9037,7 +9138,7 @@ const Game = {
       this._bossCorpTurn(events, null, !s.openedThisTurn);
       if (s.status === 'lost') return { ok: true, roundOver: true, events };
     }
-    s.consecMeldTurns = s.openedThisTurn ? s.consecMeldTurns + 1 : 0;
+    s.consecMeldTurns = teamOpened ? s.consecMeldTurns + 1 : 0;   // denetim3 #31
     this._sisyphusTurnEnd();   // P48 — raundlar arası kaya
     s.skipStreak = s.openedThisTurn ? 0 : s.skipStreak + 1;
 
@@ -9176,7 +9277,7 @@ const Game = {
     /* P29 · Grup F — Kum Saati kaldırıldı, kristal birikimi de onunla
        gitti. `s.kristal` alanı eski kayıtlar için 0'da duruyor. */
     /* P100 — Bahşiş Kavanozu: açılım yapılan her tur kavanoza JAR_FILL coin düşer. */
-    if (!s.jokersDisabled && s.openedThisTurn) {
+    if (!s.jokersDisabled && teamOpened) {   // denetim3 #31 — eş Orion'un açılımı da sayılır
       const jj = this.slotRecs().find(j => j.key === 'rusvet');
       if (jj) {
         jj.jarCoins = (jj.jarCoins || 0) + JAR_FILL;
@@ -9204,7 +9305,7 @@ const Game = {
     /* denetim karar 3 — her Zincir kopyası kendi birikimini tutar */
     for (const zcJ of (s.jokersDisabled ? [] : this.slotRecs().filter(j => j.key === 'zincir'))) {
       const before = zcJ.zincirMult || 0;
-      if (s.openedThisTurn) {
+      if (teamOpened) {   // denetim3 #31 — eş Orion'un açılımı da zinciri uzatır
         zcJ.zincirMult = Math.min(ZINCIR_CAP,
           before === 0 ? ZINCIR_START : round2(before + ZINCIR_STEP));
         if (zcJ.zincirMult !== before)
@@ -9260,8 +9361,10 @@ const Game = {
 
     /* P90 — sıradaki oyuncu Orion (yarış ya da eş). Oyuncu elini bitirdiyse
        (s.orionHandDone ya da playerFinished) Orion oynamaz — el kapanmıştır. */
-    if ((this._raceOn() || (this._partnerOn && this._partnerOn())) && !s.orionHandDone && !s.playerFinished)
-      this._orionTurn(events, this._raceOn() ? 'race' : 'partner', picks);
+    /* denetim3 #31 — eş modu yukarıda (birikimlerden önce) oynandı; burada yalnız yarış */
+    if (this._raceOn() && !s.orionHandDone && !s.playerFinished)
+      this._orionTurn(events, 'race', picks);
+    if (s.partnerPendingGain) { s.score += s.partnerPendingGain; s.partnerPendingGain = 0; }
     // puan hedefi discard bonuslarıyla aşılmış olabilir (P90: yarışta raund SONUNDA karar)
     if (s.score >= s.target && !this._raceOn()) {
       s.wonOnTurn = s.turn;
@@ -9540,6 +9643,7 @@ const Game = {
     this._onTurnStart(events); // deste jokeri aktivasyonu + tur başı efektleri
     s.lastResult = null;
     this._rollKumarbaz();
+    this._rollHileliZar();
     // Grup D (2026-07-09): tur başı efektleri (Bungie Gum ödemesi, The
     // Cheating, Freedom Fighters…) skoru hedefin üzerine taşıyabilir —
     // hedef kontrolü bir sonraki açılıma ERTELENMEZ, hemen burada yapılır.
@@ -9851,7 +9955,7 @@ const Game = {
       return;
     }
     const v = s.sisyphusRock || 0;
-    s.sisyphusRock = s.openedThisTurn ? this._sisyphusRise(v) : Math.max(0, round2(v - SISYPHUS_SLIP));
+    s.sisyphusRock = (s.openedThisTurn || s.partnerOpenedTurn) ? this._sisyphusRise(v) : Math.max(0, round2(v - SISYPHUS_SLIP));   // denetim3 #31
   },
   /* P100 — kaya kademeleri: yükselirken bulunduğu yerin bir ÜSTÜNDEKİ kademeye çıkar
      (0 → 2, 2 → 4, 4 → 8, 6 → 8, 8 → 8); yeni raundda bir ALTTAKİ kademeye iner. */
@@ -10151,7 +10255,8 @@ const Game = {
       /* GRUP I (P20) — tavana vurmuş ya da anlamsız kalan seçenek çarka
          hiç girmez; oyuncuya "hiçbir şey yapmayan" bir ödül düşemez. */
       if (u.key === 'bileme' && (s.permComboBonus || 0) >= 1) return false;
-      if (u.key === 'uzunSoluk' && (s.permTurns || 0) >= 2) return false;
+      /* denetim3 #22 (kullanıcı: "run boyunca 1 kez çıkmalı") — eski tavan +2 turdu (GDD 22 "+2 tura ulaşınca") */
+      if (u.key === 'uzunSoluk' && (s.permTurns || 0) >= 1) return false;
       if (u.key === 'sigorta' && s.sellFull) return false;
       /* GRUP E (P22) — İkinci Şans iki ek kapıdan geçer:
          · run boyunca bir kez teklif edilir (`secondChanceTaken`);
@@ -10339,8 +10444,10 @@ const Game = {
   _generateStore(locks) {
     const s = this.state;
     const items = [];
-    const slotCount = this.shopJokerSlots()   // 2 taban, tavan 3 (Eskici Rafı) — P51
-      + (runModeOf(s).storeBonus || 0);   // P58 · Kumarhane: tek, büyük store
+    /* denetim3 #30 (kullanıcı: "joker rafı en çok 4 olabilir, 5-6'ya çıkıp taşıyor") — Kumarhane'nin
+       stage sonu bonusu (+2) ve Eskici Rafı ile birlikte de raf SHOP_JOKER_MAX'ı (4) geçmez */
+    const slotCount = Math.min(SHOP_JOKER_MAX, this.shopJokerSlots()   // 2 taban, tavan 3 (Eskici Rafı) — P51
+      + (runModeOf(s).storeBonus || 0));   // P58 · Kumarhane: tek, büyük store
     let pool = this.jokerPool(d => d.rarity !== 'epic');
     // Trainer: opsiyonel store filtresi — yalnız seçilen jokerler çıkabilir
     if (this.trainerMode && s.trainerStoreFilter?.length) {
@@ -11625,13 +11732,9 @@ const Game = {
     if (!s) return null;
     const t = (s.hand || []).find(x => x.id === tileId);
     if (!t) return null;
-    const heavy = t.number >= TERAZI_HEAVY_MIN;
-    /* Hedef 1'in altına inmez; indirim o yüzden kırpılır ve ÖNİZLEME de
-       kırpılmış sayıyı yazar (motorla aynı sayı kuralı). */
-    return heavy
-      ? { heavy: true, tile: t,
-          cut: Math.min(Math.max(0, s.target - 1), t.number * TERAZI_HEAVY_TARGET) }
-      : { heavy: false, tile: t, mult: TERAZI_LIGHT_MULT };
+    /* denetim3 #37 — tek kural: hedef, taşın değerinin TERAZI_CUT katı düşer (ağır/hafif ayrımı kalktı).
+       Hedef 1'in altına inmez; indirim o yüzden kırpılır ve ÖNİZLEME de kırpılmış sayıyı yazar. */
+    return { heavy: true, tile: t, cut: Math.min(Math.max(0, s.target - 1), t.number * TERAZI_CUT) };
   },
 
   /* ===== PARATONER (P29 · Grup F) — YEM SEÇİMİ =====
@@ -11696,10 +11799,13 @@ const Game = {
     s.ucKagit = null;
     const events = [];
     if (face && face.okey) {
+      /* denetim3 #23 (kullanıcı kararı 2026-10-23: "raund sonuna kadar kalsın") — okey artık hayalet
+         değil: normal okey görünümünde, raund boyunca elde kalır (pas geçince kaybolmaz). Destede
+         karşılığı olmadığı (copied) için raund sonunda el yeniden kurulunca kendiliğinden gider. */
       const t = { id: nextTileId(s), color: s.okey.color, number: s.okey.number,
-        isOkeyReal: true, copied: true, ghost: true, ghostTurns: 1, origin: 'ucKagit' };
+        isOkeyReal: true, copied: true, origin: 'ucKagit' };
       s.hand.push(t);
-      events.push('🃏 Üç Kağıtçı: OKEY buldun! Bu tur geçerli, tur sonunda kaybolur');
+      events.push('🃏 Üç Kağıtçı: OKEY buldun! Raund sonuna kadar elinde');
       return { ok: true, okey: true, took: t.id, events };
     }
     const k = face ? s.deck.findIndex(x => x.id === face.id) : -1;
@@ -11886,6 +11992,7 @@ const Game = {
     this._onTurnStart(events);
     s.lastResult = null;
     this._rollKumarbaz();
+    this._rollHileliZar();
     events.push('👻 Hayalet tur: çekiş yok — bu tur açtığın taşlar desteden kalıcı silinir');
     this._handAudit(events);
     return { ok: true, ghostTurn: true, drawn: [], events };
@@ -11970,18 +12077,13 @@ const Game = {
     s.teraziUsed = true;
     /* P29 · Grup J — kazanılan bonus bu turluk kaydedilir; o turda işlek
        cezası yenirse discard içindeki iptal bloğu buradan geri sarar. */
-    if (pv.heavy) {
-      s.target = Math.max(1, s.target - pv.cut);
-      s.teraziTurnGain = { heavy: true, amount: pv.cut };
-      return { ok: true, heavy: true, cut: pv.cut,
-        note: `⚖ Terazi: ${COLOR_TR[t.color]} ${t.number} feda edildi → `
-          + `hedef ${pv.cut} puan düştü (yeni hedef ${s.target})` };
-    }
-    s.teraziRoundMult = round2((s.teraziRoundMult || 0) + TERAZI_LIGHT_MULT);
-    s.teraziTurnGain = { heavy: false, amount: TERAZI_LIGHT_MULT };
-    return { ok: true, heavy: false, gain: TERAZI_LIGHT_MULT,
+    /* denetim3 #37 (kullanıcı: tek etki) — her taş hedefi değerinin 10 katı düşürür; hafif kol
+       (+0.8x) ve işlek iptali kalktı. */
+    s.target = Math.max(1, s.target - pv.cut);
+    s.teraziTurnGain = null;
+    return { ok: true, heavy: true, cut: pv.cut,
       note: `⚖ Terazi: ${COLOR_TR[t.color]} ${t.number} feda edildi → `
-        + `+${TERAZI_LIGHT_MULT.toFixed(1)}x (raundun kalanına, toplam +${s.teraziRoundMult.toFixed(1)}x)` };
+        + `hedef ${pv.cut} puan düştü (yeni hedef ${s.target})` };
   },
 
   /* ============================================================
@@ -13283,7 +13385,7 @@ if (typeof window !== 'undefined') {
     ZINCIR_START, ZINCIR_STEP, ZINCIR_DECAY, ZINCIR_CAP, VAMPIR_MULT,
     PARATONER_MULT, KATALIZOR_STEP, KATALIZOR_CAP, BUNGIE_SNAP, STORE_TILE_PICKS,
     SISYPHUS_SLIP, JAR_FILL, JAR_MULT, BOGA_STEP, BOGA_CAP, PER_TILE_SIZE_MULT, BRUSH_TILE_MULT, DOMINO_STEP, EMPTY_GLASS_LIMIT, EMPTY_GLASS_MULT,   // P100
-    TERAZI_HEAVY_MIN, TERAZI_LIGHT_MULT, TERAZI_HEAVY_TARGET,
+    TERAZI_HEAVY_MIN, TERAZI_LIGHT_MULT, TERAZI_HEAVY_TARGET, TERAZI_CUT,
   });
 }
 
@@ -13434,7 +13536,7 @@ if (typeof module !== 'undefined') {
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, hiLoOdds, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_PERM, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, hiLoOdds, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,
@@ -13462,7 +13564,7 @@ if (typeof module !== 'undefined') {
     ZINCIR_START, ZINCIR_STEP, ZINCIR_DECAY, ZINCIR_CAP, VAMPIR_MULT,
     PARATONER_MULT, KATALIZOR_STEP, KATALIZOR_CAP, BUNGIE_SNAP, STORE_TILE_PICKS,
     SISYPHUS_SLIP, JAR_FILL, JAR_MULT, BOGA_STEP, BOGA_CAP, PER_TILE_SIZE_MULT, BRUSH_TILE_MULT, DOMINO_STEP, EMPTY_GLASS_LIMIT, EMPTY_GLASS_MULT,   // P100
-    TERAZI_HEAVY_MIN, TERAZI_LIGHT_MULT, TERAZI_HEAVY_TARGET,
+    TERAZI_HEAVY_MIN, TERAZI_LIGHT_MULT, TERAZI_HEAVY_TARGET, TERAZI_CUT,
     /* PLAYTEST 25 — ekonomi revizyonu (E1/E2/E4-a/E6/E9) */
     START_COINS, INTEREST_PER, INTEREST_CAP, 
     /* PLAYTEST 26 — MADDE C: takas ekranı backup tavanını okur */

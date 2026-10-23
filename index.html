@@ -8,7 +8,7 @@
      Oyun kendi temalarını çizer; renklerine dokunulmasın. -->
 <meta name="color-scheme" content="only light">
 <title>OKEY Roguelike — Prototip</title>
-<link rel="stylesheet" href="style.css?v=8ee7323">
+<link rel="stylesheet" href="style.css?v=9297bd3">
 <script>
 /* RENK TEMASI — İLK BOYAMADAN ÖNCE UYGULANIR.
    Tema `html[data-theme]` ile sürülüyor. Bu satır ui.js'e bırakılsaydı
@@ -151,6 +151,8 @@
           <div class="st-sh-tab"><span id="mapConsumTitle">Değnek</span><span id="mapConsumCount" class="gm-sh-count">0/3</span></div>
           <div class="st-sh-body"><div id="mapConsumRow"></div></div>
         </div>
+        <!-- denetim3 #45 — deste jokerleri haritada da görünür ve sağ tıkla satılır (store'daki şeridin aynısı) -->
+        <div id="mapDeckRow"></div>
       </div>
       <div id="mapBackupShoulder" class="st-shoulder st-inv">
         <div class="st-sh-tab"><span id="mapBackupTitle">backup</span><span id="mapBackupCount" class="gm-sh-count">0/2</span></div>
@@ -362,6 +364,7 @@
            sayacı ve boş atılan slotu. -->
       <div id="pileCol">
         <div class="deck-pile"></div>
+        <div id="deckPeek" class="hidden"></div>
         <div id="deckCount" class="gm-deck-count"></div>
         <div id="discardSlot" class="discard-slot"></div>
       </div>
@@ -512,8 +515,8 @@
   </div>
 
 </div>
-<script src="engine.js?v=8ee7323"></script>
-<script src="i18n.js?v=8ee7323"></script>
-<script src="ui.js?v=8ee7323"></script>
+<script src="engine.js?v=9297bd3"></script>
+<script src="i18n.js?v=9297bd3"></script>
+<script src="ui.js?v=9297bd3"></script>
 </body>
 </html>

@@ -11667,9 +11667,11 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .gm-stage #bossBanner.gm-boss-cond.bb-glow {
   border-color: transparent;
   background: linear-gradient(var(--gm-dark), var(--gm-dark)) padding-box,
-    conic-gradient(from var(--bb-a), #F2C94C 0 66%, #FFC83A 74%, #FFFFFF 80%, #FFC83A 86%, #F2C94C 94%) border-box;
-  box-shadow: 0 0 14px rgba(255, 214, 102, .45);
-  animation: bbSpin 1.3s linear 3;
+    conic-gradient(from var(--bb-a), #F2C94C 0 58%, #FFC83A 68%, #FFFFFF 75%, #FFC83A 82%, #F2C94C 92%) border-box;
+  box-shadow: 0 0 16px rgba(255, 214, 102, .55);
+  /* denetim3 #16 (kullanıcı: "çerçevesi parıltılı dönsün ki dikkat çeksin") — boss raundu boyunca SÜREKLİ döner
+     (yalnız conic-gradient kenarı; filter/drop-shadow yok — P84 kuralı) */
+  animation: bbSpin 2.2s linear infinite;
 }
 @keyframes bbSpin { from { --bb-a: 0deg; } to { --bb-a: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .gm-stage #bossBanner.gm-boss-cond.bb-glow { animation: none; } }
@@ -11918,3 +11920,131 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 .joker-tile .av-badge b { font: 700 7px/1.2 var(--gm-font); color: var(--gm-light); letter-spacing: -.6px; white-space: nowrap; padding-block: .45em .3em; margin-block: -.45em -.3em; }
 /* denetim UI-13 — Koleksiyon › Müzikler: "Store · Musi…" — ad iki satıra kadar */
 .col-mus .cm-txt b { white-space: normal; text-overflow: clip; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; padding-block: .45em .3em; margin-block: -.45em -.3em; }
+
+/* denetim3 #41 — bahis ödülünde dolu raf: takas penceresiyle (#buySwap) aynı kart dili */
+#betSwap { position: fixed; inset: 0; z-index: 1700; display: flex; align-items: center; justify-content: center; }
+#betSwap .pk-sub-title { text-align: center; }
+#betSwap .sw-want { font: 700 16px/1.35 var(--gm-font); color: var(--gm-turn-on); max-width: 640px; margin: 0 auto; text-align: center; }
+#betSwap .pk-body.sw-list { flex-wrap: wrap; justify-content: center; max-height: 50vh; overflow-y: auto; align-items: stretch; }
+#betSwap .sw-row { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 150px; padding: 10px 8px; text-align: center; cursor: pointer; font: inherit;
+  background: var(--gm-light); color: var(--gm-dark); border: 4px solid var(--gm-edge); border-top-width: 7px; border-radius: 8px; box-shadow: 0 4px 0 rgba(0, 0, 0, .4); }
+#betSwap .sw-row .col-jk-art { flex: none; }
+#betSwap .sw-art-name { width: 110px; min-height: 150px; display: flex; align-items: center; justify-content: center; text-align: center; font: 700 14px/1.2 var(--gm-font); color: var(--gm-dark); }
+#betSwap .sw-where { font: 700 12px/1 var(--gm-font); color: var(--gm-dark); opacity: .7; text-transform: uppercase; letter-spacing: 1px; }
+#betSwap .sw-ref { font: 700 12px/1 var(--gm-font); color: var(--gm-dark); opacity: .65; }
+#betSwap .sw-why { font: 700 12px/1.3 var(--gm-font); color: #B03030; }
+#betSwap .sw-row.locked { opacity: .5; cursor: not-allowed; }
+#betSwap .sw-row:not(.locked):hover { filter: brightness(1.06); }
+#betSwap #bsCoins, #betSwap #bsCancel { margin: 0 6px; }
+#betSwap .sw-row.r-rare { border-top-color: #4A90D9; } #betSwap .sw-row.r-legendary { border-top-color: #F5A623; } #betSwap .sw-row.r-mythic { border-top-color: #FF3CAC; } #betSwap .sw-row.r-epic { border-top-color: #9B59B6; }
+/* denetim3 #46 — bahis ödül kartında joker çizimi */
+.pk-card .bp-art { flex: none; margin: 0 auto 6px; }
+
+/* denetim3 #8 — kural ihlali: taş kısa titrer + düğmenin üstünde küçük balon (drop-shadow yok, p84) */
+.tile.nope-shake { animation: nopeShake .42s ease-in-out; }
+@keyframes nopeShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+.nope-pop { position: absolute; z-index: 1400; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap;
+  padding: 7px 12px 5px; border-radius: 8px; border: 3px solid var(--gm-dark); background: #E5484D; color: #FFFFFF;
+  font: 700 22px/1 var(--gm-font, monospace); box-shadow: 0 4px 0 rgba(0, 0, 0, .4); animation: nopePop 1.6s ease-out forwards; }
+@keyframes nopePop { 0% { opacity: 0; transform: translate(-50%, -70%) scale(.7); } 15% { opacity: 1; transform: translate(-50%, -105%) scale(1.05); }
+  25% { transform: translate(-50%, -100%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -120%); } }
+
+/* denetim3 #10 — store düğmelerinde para kutusunun $ glifi (Edit Undo BRK) */
+.st-cur { font: 400 1.3em/1 'Edit Undo BRK', var(--gm-font); position: relative; top: -1px; margin-right: 1px; }
+
+/* denetim3 #27 (kullanıcı: "bahis pop-up'ı çok yer kaplıyor, diğer öğelerin üstüne geliyor") — yan bahis / Rulet kutusu
+   içeriği kadar geniş, ortada; kart metni sığar */
+.pk-ov.dock-ov .pk-box { width: fit-content; max-width: 720px; }
+.pk-ov.dock-ov .pk-sub-title { max-width: 560px; margin-left: auto; margin-right: auto; }
+.dock-ov .pk-card.side-card { width: 168px; }
+.dock-ov .pk-card.side-card .pk-name { font-size: 13px; line-height: 1.2; overflow-wrap: normal; }
+/* denetim3 #18 (kullanıcı: "Tüccar teklifi okunmuyor") — teklif kartı açık zemin + koyu yazı (tema ink'i açık renge
+   dönüyordu: açık kart üstünde açık yazı) */
+.offer-pop .offer-box .offer-opt, .offer-pop .offer-box.boss-box .offer-opt { background: var(--gm-light); border-color: var(--gm-edge); }
+.offer-pop .offer-box .offer-opt .oo-text { color: var(--gm-dark); font-size: 14px; }
+.offer-pop .offer-box.boss-box .offer-opt.aimed { outline: 3px solid #E5484D; outline-offset: -3px; }
+
+/* denetim3 #49 — nadirlik etiketi başlık şeridinin sağında (koyu plaka, nadirlik rengi yazı) */
+#jokerTip .tip-head.th-flex { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#jokerTip .tip-head .th-name { flex: 1 1 auto; min-width: 0; }
+#jokerTip .tip-head .th-rar { flex: none; padding: 6px 9px 4px; border-radius: 5px; background: var(--tip-bg); color: var(--tip-accent); border: 2px solid var(--tip-bg);
+  font: 700 14px/1 'Pixel Operator SC', 'Pixelify Sans', monospace; letter-spacing: 1.4px; text-transform: uppercase; white-space: nowrap; }
+
+/* denetim3 #45 — haritada deste jokerleri şeridi (store'daki #storeDeckRow ile aynı görünüm) */
+#mapScreen #mapLeftInv { display: flex; flex-direction: column; gap: 14px; }
+#mapScreen #mapDeckRow:empty { display: none; }
+#mapScreen #mapDeckRow { position: relative; width: 100%; background: var(--gm-dark); border: 4px solid var(--gm-edge); border-radius: 8px;
+  padding: 8px 10px 10px; box-sizing: border-box; }
+#mapScreen #mapDeckRow .panel-title { font: 700 14px/1 var(--gm-font); color: var(--gm-light); text-align: left; margin: 0 0 8px; letter-spacing: 1px; text-transform: uppercase; }
+#mapScreen #mapDeckRow .sd-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; }
+#mapScreen #mapDeckRow .joker-tile { width: 54px; height: 73px; flex: 0 0 54px; }
+html[data-theme="kumarhane"] #mapScreen #mapDeckRow { background: var(--gm-dark); }
+
+/* denetim3 #16 — boss raundunun temalı stili (data-theme=boss) arka planı ve kenarı eziyordu: ışık hiç görünmüyordu */
+html .gm-stage #bossBanner.gm-boss-cond.bb-glow {
+  border-color: transparent !important;
+  background: linear-gradient(var(--gm-dark), var(--gm-dark)) padding-box,
+    conic-gradient(from var(--bb-a), #F2C94C 0 58%, #FFC83A 68%, #FFFFFF 75%, #FFC83A 82%, #F2C94C 92%) border-box !important;
+  box-shadow: 0 0 16px rgba(255, 214, 102, .55) !important;
+}
+
+/* denetim3 #50 · Figma RARE-JOKERLER 468:256 — kalan Rare çizimleri */
+.jk-hipnotizor  { --jk-art: url('assets/game/joker/hipnotizor.svg'); }        /* 491:33 */
+.jk-tradeJokeri { --jk-art: url('assets/game/joker/boga.svg'); }              /* 491:23 Boğa */
+.jk-terzi       { --jk-art: url('assets/game/joker/bukalemun.svg'); }         /* 493:120 Bukalemun */
+.jk-terzi.bk-blue   { --jk-art: url('assets/game/joker/bukalemun-mavi.svg'); }     /* 493:141 */
+.jk-terzi.bk-red    { --jk-art: url('assets/game/joker/bukalemun-kirmizi.svg'); }  /* 493:162 */
+.jk-terzi.bk-yellow { --jk-art: url('assets/game/joker/bukalemun-sari.svg'); }     /* 493:183 */
+.jk-terzi.bk-black  { --jk-art: url('assets/game/joker/bukalemun-siyah.svg'); }    /* 493:204 */
+.jk-terazi      { --jk-art: url('assets/game/joker/terazi.svg'); }            /* 497:18 */
+.jk-katalizor   { --jk-art: url('assets/game/joker/cadi-kazani.svg'); }       /* 497:2 Cadı Kazanı */
+.jk-dedikodu    { --jk-art: url('assets/game/joker/sihirbaz-sapkasi.svg'); }  /* 497:6 Sihirbaz Şapkası v2 */
+.jk-rulet       { --jk-art: url('assets/game/joker/rulet.svg'); }             /* 499:2 */
+.jk-martingale  { --jk-art: url('assets/game/joker/altin-jeton.svg'); }       /* 499:25 Altın Jeton */
+.jk-hileliZar   { --jk-art: url('assets/game/joker/hileli-zar.svg'); }        /* 501:8 */
+.jk-sansliZar   { --jk-art: url('assets/game/joker/sansli-zar.svg'); }        /* 503:22 */
+.jk-yanki       { --jk-art: url('assets/game/joker/hayalet.svg'); }           /* 504:9 Hayalet */
+.jk-zincir      { --jk-art: url('assets/game/joker/zincir.svg'); }            /* 505:9 */
+.jk-kumarbaz    { --jk-art: url('assets/game/joker/kumarbaz.svg'); }          /* 512:2 */
+.jk-bitki       { --jk-art: url('assets/game/joker/kis-uykusu.svg'); }        /* 512:21 Kış Uykusu */
+.jk-yankee      { --jk-art: url('assets/game/joker/balik-kavanozu.svg'); }    /* 512:44 Balık Kavanozu */
+.jk-ayna { --jk-art: url('assets/game/joker/damga-1.svg'); }   /* 512:36 Damga v1 */
+.jk-ayna.dm-2 { --jk-art: url('assets/game/joker/damga-2.svg'); }
+.jk-ayna.dm-3 { --jk-art: url('assets/game/joker/damga-3.svg'); }
+.jk-ayna.dm-4 { --jk-art: url('assets/game/joker/damga-4.svg'); }
+.jk-ayna.dm-5 { --jk-art: url('assets/game/joker/damga-5.svg'); }
+.jk-ayna.dm-6 { --jk-art: url('assets/game/joker/damga-6.svg'); }
+.jk-ayna.dm-7 { --jk-art: url('assets/game/joker/damga-7.svg'); }
+.jk-ayna.dm-8 { --jk-art: url('assets/game/joker/damga-8.svg'); }
+.jk-ayna.dm-9 { --jk-art: url('assets/game/joker/damga-9.svg'); }             /* 512:156 Damga v9 */
+
+/* denetim3 #40 — 🃏 Kart Sayıcı: destenin üstünde sıradaki 2 taş */
+.gm-stage #deckPeek {
+  position: absolute; bottom: calc(100% + 14px); left: 45px; transform: translateX(-50%);
+  display: grid; grid-template-columns: auto auto; justify-items: center; gap: 6px;
+  padding: 8px 8px 10px; border-radius: 12px;
+  background: rgba(10, 8, 30, .72); border: 2px solid rgba(255, 214, 102, .55);
+}
+.gm-stage #deckPeek.hidden { display: none; }
+.gm-stage #deckPeek .dp-lbl { grid-column: 1 / -1; font: 700 13px/1 var(--gm-font); color: #FFD666; letter-spacing: -.5px; white-space: nowrap; }
+.gm-stage #deckPeek .tile.dp-tile { width: 54px; height: 74px; cursor: default; pointer-events: none; }
+.gm-stage #deckPeek .tile.dp-tile .num { font-size: 24px; letter-spacing: -1px; }
+
+/* denetim3 #29 — 🎲 Hileli Zar: üst kutuda HİLE düğmesi + 1-13 seçici */
+.gm-stage #kahinChip .kc-cheat {
+  font: 700 15px/1 var(--gm-font); letter-spacing: -.5px; text-transform: uppercase;
+  padding: 5px 12px; border: 2px solid var(--gm-turn-on); background: var(--gm-turn-on); color: var(--gm-dark);
+  cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, .25);
+}
+.gm-stage #kahinChip .kc-cheat:hover { filter: brightness(1.08); transform: translateY(-1px); }
+#zarOv .zar-grid { display: grid; grid-template-columns: repeat(7, 64px); gap: 10px; justify-content: center; }
+#zarOv .zar-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  height: 74px; border-radius: 10px; border: 3px solid #E8D9B5; background: #FFF8E6; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .2); color: #3A2A1A;
+}
+#zarOv .zar-btn .zn { font: 700 28px/1 var(--gm-font, inherit); }
+#zarOv .zar-btn .zh { font: 700 10px/1 var(--gm-font, inherit); color: #2E7D32; min-height: 10px; white-space: nowrap; letter-spacing: -.5px; }
+#zarOv .zar-btn.cur { border-color: #FEA727; }
+#zarOv .zar-btn:hover { transform: translateY(-2px); border-color: #FEA727; }
