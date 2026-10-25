@@ -1541,6 +1541,12 @@
     if (x + tw > window.innerWidth - 8) x = leftEdge - tw - 10;
     x = Math.max(8, x);
     let y = r.top + r.height / 2 - th / 2;
+    /* kullanıcı 2026-10-25 — üst rozetlerin açıklaması rozet sırasının HEMEN ALTINDA, sağa yaslı */
+    if (opts.belowOf) {
+      const row = opts.belowOf.getBoundingClientRect();
+      x = Math.max(8, Math.min(row.right - tw, window.innerWidth - tw - 8));
+      y = row.bottom + 14;
+    }
     y = Math.max(8, Math.min(y, window.innerHeight - th - 8));
     tip.style.left = x + 'px';
     tip.style.top = y + 'px';
@@ -1916,9 +1922,7 @@
     btn.classList.toggle('hidden', !st || !st.canUse);
     btn.innerHTML = `${t('ccStop')}<small>${t('ccOnce')}</small>`;
     btn.title = t('ccStopTip');
-    const k = document.getElementById('kahinChip');
-    const under = k && !k.classList.contains('hidden') && k.offsetHeight > 0;
-    box.style.top = under ? `${k.offsetTop + k.offsetHeight + 10}px` : '';
+    box.style.top = '';   // kullanıcı 2026-10-25 — bilgiler sağ üstte rozet; saat üst ortada kendi yerinde
   }
   document.querySelector('#chessClock .cc-btn')?.addEventListener('click', (e) => { e.stopPropagation(); SFX.tap?.(); useClockCard(); });
 
@@ -1969,6 +1973,7 @@
       if (has('terazi') && Game.canTeraziSacrifice && Game.canTeraziSacrifice()) add('terazi', t('abUse'), doTerazi);
       if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
         add('paratoner', t(s.paratonerBait != null ? 'abUndo' : 'abUse'), doParatoner);
+      if (has('hileliZar') && Game.canZarCheat && Game.canZarCheat()) add('hileliZar', t('zarCheatBtn'), showZarCheat);   // kullanıcı 2026-10-25 — hile karttan
       if (list.length === 1) left = { lbl: list[0].lbl, fn: list[0].fn };
       else if (list.length > 1) left = { lbl: t('abChoose'), fn: () => showUseChooser(j, list) };
     }
@@ -3538,7 +3543,43 @@
     queue.forEach((f, i) => setTimeout(() => showCheatFlash(f), i * 900));
   }
 
+  /* kullanıcı 2026-10-25 — Lady Luck çaldığı taşı yazıyla değil, göz önünde alır: taş ıstakadaki
+     yerinde pembe parlar, havalanır, Lady Luck'ın dudaklarına uçup küçülür; orada bir öpücük patlar. */
+  const LADY_LIPS = { x: 987, y: 263 };   // boss arka planındaki dudaklar (1920×1080 sahne koordinatı)
+  function ladyStealAnim(f) {
+    const stage = document.querySelector('#gameScreen .gm-stage');
+    if (!stage) return;
+    const st = stage.getBoundingClientRect();
+    const k = st.width / 1920 || 1;
+    const cell = f.slot != null ? document.querySelector(`#gameScreen .rack [data-slot="${f.slot}"], #rackArea [data-slot="${f.slot}"]`) : null;
+    const src = (cell || document.getElementById('rackArea') || stage).getBoundingClientRect();
+    const sx = (src.left + src.width / 2 - st.left) / k, sy = (src.top + src.height / 2 - st.top) / k;
+    const fly = tileEl({ id: -77, color: f.color, number: f.number }, false);
+    fly.classList.add('ll-fly');
+    fly.style.left = `${sx - 40}px`; fly.style.top = `${sy - 55}px`;
+    stage.appendChild(fly);
+    const dx = LADY_LIPS.x - sx, dy = LADY_LIPS.y - sy;
+    const anim = fly.animate([
+      { transform: 'translate(0, 0) scale(1) rotate(0deg)', opacity: 1, offset: 0 },
+      { transform: 'translate(0, -46px) scale(1.18) rotate(-4deg)', opacity: 1, offset: 0.28 },
+      { transform: `translate(${dx * 0.55}px, ${dy * 0.55 - 70}px) scale(.8) rotate(10deg)`, opacity: 1, offset: 0.62 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.16) rotate(24deg)`, opacity: 0.2, offset: 1 },
+    ], { duration: 1500, easing: 'cubic-bezier(.45,.05,.4,1)', fill: 'forwards' });
+    SFX.tick?.();
+    anim.onfinish = () => {
+      fly.remove();
+      const kiss = document.createElement('div');
+      kiss.className = 'll-kiss';
+      kiss.textContent = '💋';
+      kiss.style.left = `${LADY_LIPS.x}px`; kiss.style.top = `${LADY_LIPS.y}px`;
+      stage.appendChild(kiss);
+      SFX.crack();
+      setTimeout(() => kiss.remove(), 1100);
+    };
+  }
+
   function showCheatFlash(f) {
+    if (f.kind === 'ladySteal') { ladyStealAnim(f); return; }
     const bad = f.side === 'boss' ? f.kind !== 'exposed' : f.kind === 'caught';
     let title, body;
     /* PLAYTEST 20 · GRUP G — bildirimler artık SOMUT olayı yazar:
@@ -4447,32 +4488,60 @@
     return c;
   }
 
+  /* kullanıcı 2026-10-25 — ÜST SİMGE ROZETLERİ (#kahinChip kabı; kimlik testler için aynı). Her rozet:
+     simge + köşede mark + gizli yazı (ipucu). Yazı/mark değişince ya da rozet yeni gelince kısa parıltı. */
+  const kbSeen = new Map();
+  function renderInfoBadges(items) {
+    const box = el.kahinChip;
+    box.classList.toggle('hidden', !items.length);
+    box.classList.remove('done');
+    box.innerHTML = '';
+    const keep = new Set();
+    for (const it of items) {
+      const k = it.k || it.ico;
+      keep.add(k);
+      const sig = `${it.ico}|${it.mark ?? ''}|${it.txt}`;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `kb kb-${k}` + (it.mark === '✓' ? ' ok' : it.mark === '✗' ? ' fail' : '') + (it.cheat ? ' kb-act' : '');
+      b.dataset.k = k;
+      b.innerHTML = `<span class="kb-ico">${it.ico}</span>`
+        + (it.mark !== undefined && it.mark !== '' ? `<span class="kb-mark">${it.mark}</span>` : '')
+        + `<span class="kb-txt">${it.txt}</span>`;
+      if (kbSeen.get(k) !== sig) { b.classList.add('kb-pulse'); kbSeen.set(k, sig); }
+      const tip = { name: it.title || '', desc: it.txt, accent: 'rare' };
+      attachTip(b, tip, { belowOf: box });
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (k === 'zar' && Game.canZarCheat()) { hideTip(); showZarCheat(); return; }
+        showTip(b, tip, { belowOf: box });   // dokunmatik ekranda üstüne gelme yok: dokununca ipucu
+      });
+      box.appendChild(b);
+    }
+    for (const k of [...kbSeen.keys()]) if (!keep.has(k)) kbSeen.delete(k);
+  }
+
+  /* kullanıcı 2026-10-25 — boss'un tur tur değişen bilgileri artık ÜST ROZETLER (renderInfoBadges).
+     Her not { k, ico, txt, mark }: simge rozette, yazı ipucunda, mark (sayı / ✓ / ✗) rozetin köşesinde.
+     Avukat'ın susturduğu joker kartında SUSTURULDU plakasıyla, Lady Luck'ın büyüsü kartta ve çaldığı
+     taş animasyonla görünür — tekrar yazılmaz. */
   function bossTurnNotes(s) {
     if (!s || !s.boss || s.bossVoided || !(Game.bossOn && Game.bossOn())) return [];
     const n = [];
     const k = s.boss.key;
-    if (k === 'kelebek' && s.bossBan) n.push(t('bossBanExtra', T.typeName(s.bossBan)));
-    if (k === 'avukat' && s.bossMutedJoker) {
-      const mj = Game._allSlotRecs().find(j => j.key === s.bossMutedJoker);   // denetim BE-01 — susturulan joker slotRecs'te görünmez
-      n.push(t('bossMutedExtra', mj ? T.name(mj) : s.bossMutedJoker));
-    }
-    /* P71 — Lady Luck: bildirim kartları kapalı olduğundan lanet BURADA görünür */
-    if (k === 'ladyLuck') {
-      const cj = s.bossCharmId != null ? s.jokers.find(j => j.id === s.bossCharmId) : null;
-      if (cj || s.bossStolenFace) n.push(t('bossLadyExtra', cj ? T.name(cj) : '', s.bossStolenTile ? T.color(s.bossStolenTile.color) + ' ' + s.bossStolenTile.number : (s.bossStolenFace || '')));
-    }
-    if (k === 'aynaKral' && (s.bossMirrorDebt || 0) > 0) n.push(t('bossMirrorExtra', s.bossMirrorDebt));
+    if (k === 'kelebek' && s.bossBan) n.push({ k: 'kelebek', ico: '🦋', txt: t('bossBanExtra', T.typeName(s.bossBan)) });
+    if (k === 'aynaKral' && (s.bossMirrorDebt || 0) > 0) n.push({ k: 'ayna', ico: '🪞', txt: t('bossMirrorExtra', s.bossMirrorDebt), mark: s.bossMirrorDebt });
     if (k === 'corporates' && s.corpTask)
       /* P81 — canlı ilerleme: "en iyi tur 1/3 · toplam 2/6" */
-      n.push(`${T.ev(s.corpTask.name)}: ${T.ev(s.corpTask.text)}${s.corpTask.failed ? ' — ' + t('bossTaskFailed')
-        : (s.corpTask.boss && Game.corpProgress ? ' · ' + T.ev(Game.corpProgress()) : '')}`);
+      n.push({ k: 'corpBoss', ico: '🏢', mark: s.corpTask.failed ? '✗' : (s.corpTask.done ? '✓' : ''),
+        txt: `${T.ev(s.corpTask.name)}: ${T.ev(s.corpTask.text)}${s.corpTask.failed ? ' — ' + t('bossTaskFailed')
+          : (s.corpTask.boss && Game.corpProgress ? ' · ' + T.ev(Game.corpProgress()) : '')}` });
     if (k === 'freedom' && (s.bossFreedomMarks || []).length) {
       const owed = [...s.hand, ...s.discardPile].filter(x => x.ffMarkedTile && !x.ffUsedInMeld).length;
-      n.push(t('bossFreedomExtra', s.bossFreedomMarks.map(m => `${T.color(m.color)} ${m.number}`).join(', '), owed));
+      n.push({ k: 'freedom', ico: '🗽', mark: owed, txt: t('bossFreedomExtra', s.bossFreedomMarks.map(m => `${T.color(m.color)} ${m.number}`).join(', '), owed) });
     }
-    /* Grup H — Sinsi Bulaşma: hangi taşların uzaylı olduğu GİZLİ, kaç tane
-       olduğu canlı görünür (sürpriz taşın kimliğinde, sayısında değil). */
-    if (k === 'uzayli') n.push(t('bossAlienExtra', s.hand.filter(x => x.hiddenAlien).length));
+    /* Grup H — Sinsi Bulaşma: hangi taşların uzaylı olduğu GİZLİ, kaç tane olduğu canlı görünür */
+    if (k === 'uzayli') { const c = s.hand.filter(x => x.hiddenAlien).length; n.push({ k: 'uzayli', ico: '👽', mark: c, txt: t('bossAlienExtra', c) }); }
     return n;
   }
 
@@ -4933,7 +5002,7 @@
        ayrıca boss banner'ında yazıyordu; iki ayrı yerde iki ayrı biçimde
        görünüyordu). Çip kompakttır, tam açıklama tooltip'te durur. */
     {
-      const show = !!s.fatalityLimit && meldPhase && s.status === 'playing';
+      const show = false;   // kullanıcı 2026-10-25 — Fatality sınırı artık üst rozet (renderInfoBadges)
       el.fatalityChip.classList.toggle('hidden', !show);
       el.fatalityChip.classList.toggle('hit', !!s.fatalityHit);
       if (show) {
@@ -4963,68 +5032,43 @@
       const cj = s.corpTask && !s.corpTask.boss && s.status === 'playing'
         ? Game.slotRecs().find(r => r.key === 'corporates') : null;
       const corpLine = cj ? s.corpTask : null;
-      const bs = s.status === 'playing' && Game.betState ? Game.betState() : null;
-      /* P58 — Bungie Gum'ın durumu (sakızda bekleyen taş / bu tur koptu) */
-      let gumLine = null;
-      if (s.status === 'playing' && Game.slotRecs().some(r => r.key === 'bungieGum')) {
-        const n = (s.bungiePending || []).length;
-        if (n) gumLine = t('bungieChipPending', n);
-        else if (s.bungieSnap && s.bungieSnap.turn === s.turn) gumLine = t('bungieChipSnap', s.bungieSnap.n);
-      }
-      const betLine = bs && bs.bet ? bs : null;   // P58 · Kumarhane
       /* P61 — yan bahis ve Rulet rengi de bahis satırının altında */
       const sideLine = s.status === 'playing' && s.sideBet ? s.sideBet : null;
       const ruletLine = s.status === 'playing' && s.ruletColor && Game.hasActive('rulet') ? s.ruletColor : null;
-      /* denetim3 #29 · 🎲 Hileli Zar — bu turun zarı + raund başına 1 hile düğmesi */
-      const zarLine = s.status === 'playing' && s.zarFace && Game.hasActive('hileliZar') ? s.zarFace : null;
       if (!s.sideOffer) document.getElementById('sideOv')?.remove();
       if (s.status !== 'playing' || (s.ruletColor && document.getElementById('ruletOv'))) document.getElementById('ruletOv')?.remove();
-      const show = s.status === 'playing' && !!(g || bo || notes.length || corpLine || betLine || gumLine || sideLine || ruletLine || zarLine);
-      el.kahinChip.classList.toggle('hidden', !show);
-      if (show) {
-        const lines = [];
-        let done = false;
-        if (g || bo) {
-          done = g ? !!g.done : !!bo.met;
-          const reward = g ? ` → +${g.amount} ${g.reward === 'coin' ? t('kahinCoin') : t('kahinPts')}` : '';
-          const txt = t('kahinChip', T.goal(g ? g.text : bo.text) + reward);   // denetim UI-07 — EN çevirisi
-          lines.push(`<div class="kc-line"><span class="kc-ico">🔮</span><span class="kc-val">${txt}</span>`
-            + (done ? '<span class="kc-ok">✓</span>' : '') + '</div>');
-        }
-        if (gumLine) lines.push(`<div class="kc-line kc-gum"><span class="kc-val">${gumLine}</span></div>`);
-        if (betLine) {
-          lines.push(`<div class="kc-line kc-bet"><span class="kc-ico">🎰</span><span class="kc-val">`
-            + t('betChip', T.ev(betLine.name), betLine.target)
-            + (betLine.katla ? ' · ' + t(betLine.katla.burned ? 'betChipBurned' : 'betChipKatla', betLine.katla.base) : '')
-            + `</span></div>`);
-        }
-        if (sideLine) lines.push(`<div class="kc-line kc-side"><span class="kc-ico">🎲</span><span class="kc-val">`
-          + t('sideChip', T.ev(SIDE_NAME(sideLine.key)), sideLine.odds) + `</span></div>`);
-        if (ruletLine) lines.push(`<div class="kc-line kc-rulet"><span class="kc-ico">🎡</span><span class="kc-val">`
-          + t('ruletChip', ruletLine === 'red' ? '🔴 ' + t('cRed') : '⚫ ' + t('cBlack')) + `</span></div>`);
-        if (zarLine) lines.push(`<div class="kc-line kc-zar"><span class="kc-ico">🎲</span><span class="kc-val">`
-          + t('zarChip', zarLine, Game.hileliZarBonus().toFixed(2)) + `</span>`
-          + (Game.canZarCheat() ? `<button class="kc-cheat" type="button">${t('zarCheatBtn')}</button>` : '') + `</div>`);
-        if (corpLine) {
-          const mark = corpLine.done ? '<span class="kc-ok">✓</span>' : corpLine.failed ? '<span class="kc-ok kc-fail">✗</span>' : '';
-          lines.push(`<div class="kc-line kc-corp"><span class="kc-ico">🏢</span><span class="kc-val">`
-            + t('corpChip', T.ev(corpLine.name), T.ev(corpLine.text), T.ev(corpLine.rewardText)) + `</span>${mark}</div>`);
-        }
-        for (const x of notes) lines.push(`<div class="kc-line kc-boss"><span class="kc-val">${x}</span></div>`);
-        el.kahinChip.classList.toggle('done', done);
-        el.kahinChip.innerHTML = lines.join('');
-        el.kahinChip.querySelector('.kc-cheat')?.addEventListener('click', (e) => { e.stopPropagation(); showZarCheat(); });
-        el.kahinChip.title = el.kahinChip.textContent;
+      /* kullanıcı 2026-10-25 ("tepedeki bildiriler boss tasarımını kaplıyor") — üst ortadaki yazı kutusu
+         yerine TUR kutularının altında küçük SİMGE ROZETLERİ: yazı üstüne gelince / dokununca ipucunda.
+         Bahis satırı kalktı (hedef Raund Puan'da yazıyor, bahsi oyuncu seçti). Durum değişince rozet parlar. */
+      const items = [];
+      if (g || bo) {
+        const done = g ? !!g.done : !!bo.met;
+        const reward = g ? ` → +${g.amount} ${g.reward === 'coin' ? t('kahinCoin') : t('kahinPts')}` : '';
+        items.push({ k: 'kahin', ico: '🔮', title: t('kbKahin'), mark: done ? '✓' : '',
+          txt: t('kahinChip', T.goal(g ? g.text : bo.text) + reward) });   // denetim UI-07 — EN çevirisi
       }
-      renderChessClock();   // P110 — saat boss notunun yüksekliğine göre yeniden konumlanır
-      /* P58 (kullanıcı raporu 2026-10-02) — ÜST KUTU ÇAKIŞMASI. Kutu üst
-         ortada 640…1280 aralığını kaplıyor; Trade Jokeri'nin borsa çipi
-         (x 470→) ve Fatality çipi (x 1040) aynı şeritte (top 41) durduğu için
-         kutunun altında kalıyordu. Kutu görünürken iki çip kutunun HEMEN
-         ALTINA iner; kutu yokken CSS'teki yerlerine döner. */
-      const below = show ? `${el.kahinChip.offsetTop + el.kahinChip.offsetHeight + 10}px` : '';
-      el.borsaChip.style.top = below;
-      el.fatalityChip.style.top = below;
+      /* Bungie Gum: sakızda bekleyen taş sayısı / bu tur koptu (kart temiz kalsın diye üst rozet — kullanıcı 2026-10-25) */
+      if (s.status === 'playing' && Game.slotRecs().some(r => r.key === 'bungieGum')) {
+        const n = (s.bungiePending || []).length;
+        const snap = !n && s.bungieSnap && s.bungieSnap.turn === s.turn;
+        if (n || snap) items.push({ k: 'gum', ico: '🍬', title: T.name({ key: 'bungieGum', name: JOKER_DEFS.bungieGum.name }),
+          mark: n || '✗', txt: n ? t('bungieChipPending', n) : t('bungieChipSnap', s.bungieSnap.n) });
+      }
+      if (sideLine) items.push({ k: 'side', ico: '🎟', title: t('kbSide'), txt: t('sideChip', T.ev(SIDE_NAME(sideLine.key)), sideLine.odds) });
+      if (ruletLine) items.push({ k: 'rulet', ico: ruletLine === 'red' ? '🔴' : '⚫', title: T.name({ key: 'rulet', name: JOKER_DEFS.rulet.name }),
+        txt: t('ruletChip', ruletLine === 'red' ? '🔴 ' + t('cRed') : '⚫ ' + t('cBlack')) });
+      /* Hileli Zar: köşede bu turun zarı; hile hakkı varken rozet parlar, tıklayınca seçici (karta sol tık da olur) */
+      if (s.status === 'playing' && s.zarFace && Game.hasActive('hileliZar'))
+        items.push({ k: 'zar', ico: '🎲', title: T.name({ key: 'hileliZar', name: JOKER_DEFS.hileliZar.name }), mark: s.zarFace,
+          cheat: Game.canZarCheat(), txt: t('zarChip', s.zarFace, Game.hileliZarBonus().toFixed(2)) + (Game.canZarCheat() ? '<br>' + t('kbZarCheat') : '') });
+      if (corpLine) items.push({ k: 'corp', ico: '🏢', title: T.name({ key: 'corporates', name: JOKER_DEFS.corporates.name }),
+        mark: corpLine.done ? '✓' : corpLine.failed ? '✗' : '', txt: t('corpChip', T.ev(corpLine.name), T.ev(corpLine.text), T.ev(corpLine.rewardText)) });
+      if (s.fatalityLimit && meldPhase && s.status === 'playing')
+        items.push({ k: 'fatality', ico: '☠', title: T.bossName('fatality', 'Fatality'), mark: s.fatalityHit ? '✓' : '',
+          txt: t('fatalityTip', s.fatalityLimit) + '<br>' + t('fatalityChip', s.fatalityLimit) });
+      for (const x of notes) items.push({ title: s.boss ? T.bossName(s.boss.key, s.boss.name) : '', ...x });
+      renderInfoBadges(s.status === 'playing' ? items : []);
+      renderChessClock();
     }
     if (s.tuccarOffer && meldPhase) {
       const b = document.createElement('button');
@@ -7078,7 +7122,7 @@
      öğreticide, harita/store'da ve başka bir pencere açıkken çıkmaz.
      Yeni bir elle kullanılan joker eklenince yalnız MANUAL_JOKERS'a yazılır.
      ============================================================ */
-  const MANUAL_JOKERS = ['ayna', 'satrancSaati', 'rusvet', 'terazi', 'paratoner', 'fuzyon', 'orion'];
+  const MANUAL_JOKERS = ['ayna', 'satrancSaati', 'rusvet', 'terazi', 'paratoner', 'fuzyon', 'orion', 'hileliZar'];
   const HINT_BLOCKERS = '#hintOv, .pk-ov, .ep-ov, .belt-ov, #fuzyonMenu, #fuzyonPick, #pandoraOv, #useChooser, '
     + '#ritimOv, #kumarOv, #terziPick, #okeySlotPick, #tutResume, #dolunayFx';
   function maybeManualHint() {

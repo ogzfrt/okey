@@ -15,6 +15,15 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama] */
   const NOTLAR = [
     {
+      id: '2026-10-25', date: { tr: '25 Ekim', en: 'October 25' },
+      items: [
+        ['degisti', 'Üstteki bildiriler', 'Boss çizimini kaplayan yazı kutusu kalktı. Yan bahis, kehanet, görev, zar gibi bilgiler TUR kutularının altında küçük simgeler; üstüne gelince ya da dokununca açıklaması açılır.',
+          'Top notices', 'The text box covering the boss art is gone. Side bets, prophecies, tasks, the die and so on are small icons under the TURN boxes; hover or tap for details.'],
+        ['yeni', 'Lady Luck taşını gözünün önünde çalar', 'Çaldığı taş ıstakandan dudaklarına uçar; büyülediği jokerin kartında öpücük izi kalır.',
+          'Lady Luck steals in plain sight', 'The tile she steals flies from your rack to her lips; the joker she charms carries a kiss mark.'],
+      ],
+    },
+    {
       id: '2026-10-23c', date: { tr: '23 Ekim', en: 'October 23' },
       items: [
         ['yeni', 'Yenilikler düğmesi', 'Ana menünün sağ altındaki Yenilikler düğmesiyle bütün güncelleme notlarını istediğin zaman okuyabilirsin.',

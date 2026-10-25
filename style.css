@@ -12105,3 +12105,49 @@ html .gm-stage #bossBanner.gm-boss-cond.bb-glow {
 .fm-cbtn:hover { transform: translateY(-3px); filter: brightness(1.06); }
 .fm-cbtn:active { transform: translateY(4px); box-shadow: 0 4px 0 rgba(0, 0, 0, .45); }
 .fm-cbtn:focus-visible { outline: 4px solid var(--gm-turn-on); outline-offset: 4px; }
+
+/* ============ ÜST SİMGE ROZETLERİ (kullanıcı 2026-10-25: "tepedeki bildiriler boss tasarımını kaplıyor") ============
+   Eski üst orta yazı kutusu (#kahinChip, kimlik aynı) → TUR kutularının ALTINDA sağa yaslı küçük kareler.
+   Yazı ipucunda; köşede sayı / ✓ / ✗; durum değişince kb-pulse parıltısı. */
+.gm-stage #kahinChip.gm-kahin {
+  left: auto; right: 362px; top: 96px; width: auto; margin: 0; padding: 0;
+  flex-direction: row; justify-content: flex-end; align-items: center; gap: 10px;
+  background: none; border: 0; box-shadow: none; cursor: default;
+}
+.gm-stage #kahinChip .kb {
+  position: relative; width: 54px; height: 54px; padding: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--gm-dark); border: 3px solid var(--gm-turn-on); border-radius: 10px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .35); cursor: pointer;
+}
+.gm-stage #kahinChip .kb:hover { transform: translateY(-2px); }
+.gm-stage #kahinChip .kb-ico { font-family: "Segoe UI Emoji", "Segoe UI Symbol", sans-serif; font-size: 26px; line-height: 1; color: var(--gm-turn-on); }
+.gm-stage #kahinChip .kb-txt { display: none; }
+.gm-stage #kahinChip .kb-mark {
+  position: absolute; right: -9px; bottom: -9px; min-width: 24px; height: 24px; padding: 0 5px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; border-radius: 12px;
+  background: var(--gm-turn-on); color: var(--gm-dark); border: 2px solid var(--gm-dark);
+  font: 700 14px/1 var(--gm-font); letter-spacing: -.5px;
+}
+.gm-stage #kahinChip .kb.ok { border-color: #3FBF6E; }
+.gm-stage #kahinChip .kb.ok .kb-mark { background: #3FBF6E; color: #fff; }
+.gm-stage #kahinChip .kb.fail { border-color: #E5484D; }
+.gm-stage #kahinChip .kb.fail .kb-mark { background: #E5484D; color: #fff; }
+.gm-stage #kahinChip .kb.kb-act { animation: kbAct 1.6s ease-in-out infinite; }
+@keyframes kbAct { 0%, 100% { box-shadow: 0 4px 0 rgba(0, 0, 0, .35); } 50% { box-shadow: 0 4px 0 rgba(0, 0, 0, .35), 0 0 0 4px rgba(255, 214, 102, .55); } }
+.gm-stage #kahinChip .kb.kb-pulse { animation: kbPulse .9s ease-out 1; }
+@keyframes kbPulse {
+  0% { transform: scale(.6); box-shadow: 0 0 0 0 rgba(255, 214, 102, .9); }
+  45% { transform: scale(1.18); box-shadow: 0 0 0 10px rgba(255, 214, 102, .35); }
+  100% { transform: scale(1); box-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+}
+@media (prefers-reduced-motion: reduce) { .gm-stage #kahinChip .kb { animation: none !important; } }
+
+/* kullanıcı 2026-10-25 — Lady Luck taş çalma animasyonu (ladyStealAnim) */
+.gm-stage .tile.ll-fly { position: absolute; width: 81px; height: 110px; z-index: 60; pointer-events: none;
+  box-shadow: 0 0 0 4px #FF4FA3, 0 0 26px 8px rgba(255, 79, 163, .65); }
+.gm-stage .ll-kiss { position: absolute; z-index: 61; pointer-events: none; font-size: 64px; line-height: 1;
+  font-family: "Segoe UI Emoji", "Segoe UI Symbol", sans-serif; transform: translate(-50%, -50%);
+  animation: llKiss 1.1s ease-out forwards; }
+@keyframes llKiss { 0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; } 30% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+  100% { transform: translate(-50%, -90%) scale(1); opacity: 0; } }
+

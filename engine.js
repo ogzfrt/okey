@@ -6061,11 +6061,13 @@ const Game = {
       if (cand.length) {
         const top = Math.max(...cand.map(t => t.number));
         const hi = cand.filter(t => t.number === top);
-        const t = this._takeTile(hi[Math.floor(this.rng() * hi.length)], 'lady-luck');
+        const pick = hi[Math.floor(this.rng() * hi.length)];
+        const slot = pick.slot;   // UI: taş ıstakadaki yerinden uçarak çalınır (kullanıcı 2026-10-25)
+        const t = this._takeTile(pick, 'lady-luck');
         s.bossStolenFace = `${COLOR_TR[t.color]} ${t.number}`;
         s.bossStolenTile = { color: t.color, number: t.number };   // UI yerelleştirmesi için
         // UI'ın ortadaki büyük bildirimi (cheatFlash kuyruğu) çalınan taşı duyurur
-        if (Array.isArray(s.cheatFlash)) s.cheatFlash.push({ side: 'boss', kind: 'ladySteal', color: t.color, number: t.number });
+        if (Array.isArray(s.cheatFlash)) s.cheatFlash.push({ side: 'boss', kind: 'ladySteal', color: t.color, number: t.number, slot });
         events.push(`💋 Lady Luck kalbini çaldı: ${COLOR_TR[t.color]} ${t.number}`);
       }
     }
