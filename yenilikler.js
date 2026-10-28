@@ -15,6 +15,15 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-10-28c', date: { tr: '28 Ekim', en: 'October 28' },
+      items: [
+        ['yeni', 'Lanetli Boyut’un kendi dünyası', 'Mor-siyah paneller ve zehir yeşili ışık; arka planda boşlukta süzülen kırık bir çocuk odası. Stage ilerledikçe oda çürür, panellerin köşeleri kopar, kenarlardan yeşil sızar.',
+          'The Cursed Dimension’s own world', 'Purple-black panels and toxic green light; a broken child’s room floats in the void. As stages pass the room decays, panel corners break off and green seeps from the edges.', 'proto'],
+        ['yeni', 'Lanetli Boyut müzikleri', 'Kırık bir müzik kutusu ninnisi, store’da lanetli bir şapel orgu. Boss’lar kendi müziklerini çalar. Hepsi Koleksiyon › Müzikler’de.',
+          'Cursed Dimension music', 'A broken music-box lullaby, and a cursed chapel organ in the store. Bosses play their own themes. All in Collection › Music.', 'proto'],
+      ],
+    },
+    {
       id: '2026-10-28b', date: { tr: '28 Ekim', en: 'October 28' },
       items: [
         ['yeni', 'Lanetli Boyut Run', 'Üçüncü run modu: 6 stage, her raund store, Lanet Seviyesi. Harita ekranı bir Yol Haritası: her stage sonunda Güvenli ya da Lanetli yolu haritada seçersin.',

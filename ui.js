@@ -1255,6 +1255,7 @@
     document.getElementById('trainerMapBar')?.remove();
     if (Game.trainerMode) el.mapCards.parentElement.appendChild(trainerMapBar());
     renderPathMap();
+    setTimeout(lbRot, 30);
   }
 
   /* LANETLİ BOYUT — YOL HARİTASI (kullanıcı 2026-10-28: "direkt harita olsun, Slay the Spire gibi").
@@ -3003,6 +3004,9 @@
       saw:    { type: 'sawtooth', vol: .05, a: .002, dec: .08, sus: .55, rel: .03, cut: 3400 },         // ritim oyunu lead
       /* P74 — Rat Pack lounge: vibrafon (yumuşak vuruş, uzun sönüm, hafif titreşim) */
       vibes:  { type: 'sine', vol: .075, a: .003, dec: .9, sus: .12, rel: .9, vib: 5.5, vd: .004, uni: 3 },
+      /* Lanetli Boyut — kırık müzik kutusu: çok kısa vuruş, uzun çınlama, yavaş bant çarpılması (0.6 Hz)
+         ve akortsuz ikinci tarak (uni 16 cent) → "yay boşalırken" sarkan ses */
+      mbox:   { type: 'sine', vol: .085, a: .001, dec: .8, sus: .04, rel: 1, vib: .6, vd: .014, uni: 16 },
     };
     const HICAZ = { D: ['D3', 'F#3', 'A3'], G: ['G3', 'Bb3', 'D4'], C: ['C3', 'Eb3', 'G3'], Eb: ['Eb3', 'G3', 'Bb3'] };
     const MAJ = { G: ['G3', 'B3', 'D4'], D: ['D3', 'F#3', 'A3'], C: ['C3', 'E3', 'G3'], E: ['E3', 'G3', 'B3'], A: ['A3', 'C4', 'E4'] };
@@ -3051,6 +3055,15 @@
     const COS_H = { D: ['A4', 'D5', 'F#5'], G: ['B4', 'D5', 'F#5'], B: ['F#4', 'B4', 'D5'], A: ['E4', 'A4', 'C#5'] };
     const COS_R = ['D', 'D', 'G', 'G', 'B', 'B', 'A', 'A', 'D', 'D', 'G', 'G', 'B', 'A', 'G', 'A'];
     const COS_S = ['D', 'G', 'B', 'A', 'D', 'G', 'B', 'A'];
+    /* Lanetli Boyut — A minör ninni (Bb = Napoliten "yanlış" akor), D minör lanetli org, G minör kemik dansı (boss) */
+    const LBN = { A: ['A3', 'C4', 'E4'], E: ['G#3', 'B3', 'E4'], D: ['D3', 'F3', 'A3'], F: ['F3', 'A3', 'C4'], Bb: ['Bb2', 'D3', 'F3'] };
+    const LBN_H = { A: ['A5', 'C6', 'E6'], E: ['G#5', 'B5', 'E6'], D: ['D5', 'F5', 'A5'], F: ['F5', 'A5', 'C6'], Bb: ['Bb5', 'D6', 'F6'] };
+    const LBN_R = ['A', 'E', 'A', 'E', 'A', 'D', 'Bb', 'E', 'A', 'E', 'A', 'E', 'F', 'D', 'E', 'A'];
+    const LBS = { D: ['D3', 'F3', 'A3', 'D4'], Bb: ['Bb2', 'D3', 'F3', 'Bb3'], G: ['G2', 'Bb2', 'D3', 'G3'], A: ['A2', 'C#3', 'E3', 'A3'], F: ['F2', 'A2', 'C3', 'F3'] };
+    const LBS_R = ['D', 'Bb', 'G', 'A', 'D', 'F', 'G', 'A'];
+    const LBX = { G: ['G3', 'Bb3', 'D4'], Eb: ['Eb3', 'G3', 'Bb3'], D: ['D3', 'F#3', 'A3'], C: ['C3', 'Eb3', 'G3'] };
+    const LBX_H = { G: ['G5', 'Bb5', 'D6'], Eb: ['Eb5', 'G5', 'Bb5'], D: ['D5', 'F#5', 'A5'], C: ['C5', 'Eb5', 'G5'] };
+    const LBX_R = ['G', 'G', 'Eb', 'D', 'G', 'C', 'D', 'D', 'G', 'G', 'Eb', 'D', 'C', 'G', 'D', 'G'];
 
     const TRACKS = {
       /* P67e (kullanıcı: "Müzik 3'ü beğendim, diğer ikisini kaldır, bunun gibi
@@ -3152,6 +3165,42 @@
         { i: 'theremin', s: gen('. . . . . . . . . . . . . . . .', COS_S, COS_H) },
         { i: 'sub', s: gen('R - - - - - - - - - - - - - - -', COS_S, COS) },
       ], drums: 'K...............' },
+      /* LANETLİ BOYUT (rapor: "kırık müzik kutusu ninnisi") — harita + normal raund. A minör 3/4 ninni, 72 bpm;
+         müzik kutusu yay boşalırken sarkıyor (mbox), 7. ve 15. ölçüde "yanlış" nota (Bb, Eb), altında karanlık
+         uğultu (drone) ve sub bas, tik-tak gibi seyrek saat tıkı. Kozmik/Kumarhane gibi kendi dünyası. */
+      lanetli: { bpm: 72, div: 2, dv: .4, gain: .62, parts: [
+        { i: 'mbox', s: 'E6 - - D6 C6 - | B5 - - A5 - - | C6 - - B5 A5 - | G#5 - - - . . | ' +
+                        'A5 - - C6 E6 - | F6 - - E6 D6 - | E6 - - Bb5 A5 - | A5 - - - . . | ' +
+                        'E6 - - D6 C6 - | B5 - - A5 - B5 | C6 - - E6 A6 - | G#6 - - - . . | ' +
+                        'A6 - - F6 E6 - | D6 - - C6 B5 - | C6 - - B5 Eb6 - | A5 - - - - .' },
+        { i: 'mbox', s: gen('. . A . . C', LBN_R, LBN_H) },
+        { i: 'drone', s: gen('P - - - - -', LBN_R, LBN) },
+        { i: 'sub', s: gen('R - - - - -', LBN_R, LBN) },
+      ], drums: 'K..H..' },
+      /* Store + Adak Sunağı — lanetli şapel orgu: D minör, yavaş (60), org akorları, koro, tek tük müzik kutusu */
+      lanetliStore: { bpm: 60, div: 2, dv: .35, gain: .58, parts: [
+        { i: 'organ', s: 'A4 - - - F4 - G4 - | F4 - - - D4 - - - | G4 - - - Bb4 - A4 - | A4 - - - C#4 - - - | ' +
+                         'D5 - - - C5 - A4 - | C5 - - - A4 - F4 - | G4 - Bb4 - A4 - G4 - | E4 - - - - - . .' },
+        { i: 'organ', s: gen('P - - - - - - -', LBS_R, LBS) },
+        { i: 'choir', s: gen('P - - - - - - -', LBS_R, LBS) },
+        { i: 'mbox', s: '. . . . . . A6 - | . . . . . . F6 - | . . . . . . D6 - | . . . . . . E6 - | . . . . . . A6 - | . . . . . . C6 - | . . . . . . Bb5 - | . . . . . . C#6 -' },
+        { i: 'sub', s: gen('R - - - - - - -', LBS_R, LBS) },
+      ], drums: '........' },
+      /* Lanetli Boyut boss parçası (yalnız kendi müziği olmayan boss'un yedeği). Kullanıcı ilk sürümü "run'ın tema
+         müziğine çok benziyor" diye beğenmedi (müzik kutusu motifi + aynı karanlık uğultu) → baştan: KEMİK DANSI.
+         G minör 6/8, 138 bpm; keman lanetli tritonla (A+Eb) açılır, ksilofon gibi tıkırdayan kemikler (needle),
+         pizzicato bas, çello, ölçü sonu bakır vuruşları, boss davul seti. Müzik kutusu ve drone YOK. */
+      lanetliBoss: { bpm: 138, div: 3, dv: .75, gain: .6, parts: [
+        { i: 'violin', s: 'A4+Eb5 - - A4+Eb5 - - | G4 - Bb4 D5 - C5 | Bb4 - G4 Eb5 - D5 | F#4 - - A4 - - | ' +
+                          'G4 - Bb4 D5 - G5 | F5 - Eb5 C5 - Eb5 | D5 - - F#5 - A5 | D5 - - . . . | ' +
+                          'A4+Eb5 - - A4+Eb5 - - | G5 - F#5 G5 - D5 | Eb5 - D5 C5 - Bb4 | A4 - - F#4 - - | ' +
+                          'C5 - Eb5 G5 - Eb5 | D5 - Bb4 G4 - Bb4 | A4 - C5 F#5 - A5 | G5 - - . . .' },
+        { i: 'needle', s: gen('A . C B . A', LBX_R, LBX_H) },
+        { i: 'pizz', s: gen('R . . F . .', LBX_R, LBX) },
+        { i: 'cello', s: gen('O - - - - -', LBX_R, LBX) },
+        { i: 'tbrass', s: per(['. . . . . .', '. . . P - .', '. . . . . .', 'P - . P - -'], LBX_R, LBX) },
+        { i: 'sub', s: gen('L - - - - -', LBX_R, LBX) },
+      ], drums: 'K.HS.H' },
       /* Boss · genel — müziği olmayan (yeni) bir boss için yedek. P71c: eskiden
          D Hicaz + ney'di (menünün tıpkısı) → G minör yaylı ostinato + bakır, kick/trampet */
       bossGenel: { bpm: 104, div: 4, dv: .7, gain: .55, parts: [
@@ -3590,8 +3639,21 @@
       if (preview && document.getElementById('settingsOv')) return preview;
       preview = null;
       /* P72c — Kumarhane run'ı (menü dışı) kendi tema + store müziğini çalar */
-      let kumar = false, kozmik = false;
+      let kumar = false, kozmik = false, lanet = false;
       try { kumar = curScreen() !== 'menu' && !!Game.state && !!Game.kumarhaneOn && Game.kumarhaneOn(); } catch (e) { /* yok */ }
+      /* Lanetli Boyut — kendi ninnisi, store/Sunak orgu ve normal boss parçası */
+      try { lanet = !kumar && curScreen() !== 'menu' && !!Game.state && !!Game.lanetliOn && Game.lanetliOn(); } catch (e) { /* yok */ }
+      if (lanet) {
+        if (storeOpen() || upgradeOpen()) return 'lanetliStore';
+        /* kullanıcı: "boss'lar kendi parçasını çalsın" — lanetliBoss yalnız parçası olmayan boss'un yedeği */
+        try {
+          if (curScreen() === 'game' && Game.isBossRound()) {
+            const own = Game.state.boss && 'b_' + Game.state.boss.key;
+            return hasTrack(own) ? own : 'lanetliBoss';
+          }
+        } catch (e) { /* yok */ }
+        return 'lanetli';
+      }
       /* P104 — Kozmik run (Temel) kendi müziğini çalar; menü her zaman seçili tema */
       try { kozmik = !kumar && baseRunActive(); } catch (e) { /* yok */ }
       const theme = kumar ? 'kumarhane' : kozmik ? 'kozmik' : 'tema' + set;
@@ -3682,7 +3744,7 @@
       get levelNow() { return level(); },   // denetim S-2 — test kancası (duraklatta yarıya iner)
       /* P71c — çevrimdışı ölçüm: parçayı OfflineAudioContext'e çizip RMS / tepe
          döndürür (ses seviyesi dengesi testi). Canlı çalımla aynı playStep. */
-      async analyze(name, secs = 12) {
+      async analyze(name, secs = 12, raw = false) {   // raw: önizleme kaydı için örnekler de döner
         const T = TRACKS[name];
         const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
         if (!T || !OAC) return null;
@@ -3703,7 +3765,7 @@
         const d = buf.getChannelData(0);
         let sum = 0, peak = 0;
         for (let i = 0; i < d.length; i++) { sum += d[i] * d[i]; peak = Math.max(peak, Math.abs(d[i])); }
-        return { rms: Math.sqrt(sum / d.length), peak };
+        return { rms: Math.sqrt(sum / d.length), peak, data: raw ? Array.from(d) : undefined };
       },
       force(name) { force = hasTrack(name) ? name : null; unlock(); sync(); },   // denetim SA-12: dosyalı parça da
       get forced() { return force; },
@@ -4819,7 +4881,50 @@
     document.body.appendChild(ov);
   }
 
+  /* LANETLİ BOYUT — ÇÜRÜYEN ÇERÇEVELER (taslak; kullanıcı 2026-10-28: "kenarlar, çerçeveler de bozulsa").
+     Yalnız KENARLAR bozulur, içerik (yazı, taş, kart, sayı) hiç örtülmez. S1-2 temiz; S3-4 her panelde bir kopmuş
+     köşe; S5-6 iki köşe + kenar yırtığı ve sızıntı. Önceden çizilmiş piksel sprite'lar (build_lanetli_rot.py),
+     filtre yok (P84). Kısa glitch titremesi yalnız bu katmanda (CSS lbJit; hareket azaltmada kapalı). */
+  const LB_ROT_SEL = ['.gm-left > *', '#pathMap', '#pathSide', '#mapCards .map-card.pm-focus', '.gm-jokers', '.gm-coin',
+    '.st-shoulder', '#storeScene', '#actionBar'];
+  function lbRot() {
+    const root = document.documentElement;
+    const dc = root.dataset.run === 'lanetli' ? +(root.dataset.lbDecay || 1) : 0;
+    if (dc < 2) { document.querySelectorAll('.lb-rot').forEach((x) => x.remove()); return; }
+    const scope = curScreen() === 'game' ? '#gameScreen' : '#mapScreen';
+    const els = [];
+    for (const sel of LB_ROT_SEL) {
+      for (const sc of [scope, '#storeOverlay:not(.hidden)']) document.querySelectorAll(sc + ' ' + sel).forEach((e) => els.push(e));
+    }
+    els.forEach((e, i) => {
+      const old = e.querySelector(':scope > .lb-rot');
+      if (old && +old.dataset.dc === dc) return;
+      old?.remove();
+      if (getComputedStyle(e).position === 'static') e.style.position = 'relative';
+      const h = (i * 7 + (e.id || e.className).length * 13) % 4;   // yerleşim her panel için sabit (yeniden çizimde zıplamaz)
+      const o = document.createElement('div');
+      o.className = 'lb-rot' + (e.offsetHeight < 140 || e.offsetWidth < 300 ? ' sm' : '');
+      o.dataset.dc = dc;
+      o.style.animationDelay = (-(h * 1.7 + i * .9)) + 's';
+      /* kullanıcı: "daha belirgin olsun" → S3-4 bir köşe + bir yırtık, S5-6 üç köşe + iki yırtık.
+         Küçük kutularda (etiket solda) yalnız SAĞ köşeler ve sağ yarıda kısa yırtık → yazı örtülmez. */
+      /* üst köşeler başlık/sayaç taşır (DEĞNEK 0/2, LANET 5/10…) → yalnız ALT köşeler bozulur */
+      const sm = e.offsetHeight < 140 || e.offsetWidth < 300;
+      const cs = [2 + (h % 2), 3 - (h % 2)];
+      let html = `<i class="rc rc-${cs[0]} v${(h + i) % 3 + 1}"></i>`;
+      /* yırtıklar YAN kenarlarda (üst kenarda başlık/sayaç var) */
+      if (!sm) html += `<i class="rt v${i % 2 + 1} ${h % 2 ? 'r' : 'l'}" style="top:${30 + (h * 17 + i * 11) % 30}%"></i>`;
+      if (dc >= 3) {
+        html += `<i class="rc rc-${cs[1]} v${(h + i + 1) % 3 + 1}"></i>`;
+        if (!sm) html += `<i class="rt v${(i + 1) % 2 + 1} ${h % 2 ? 'l' : 'r'}" style="top:${20 + (h * 13 + i * 7) % 40}%"></i>`;
+      }
+      o.innerHTML = html;
+      e.appendChild(o);
+    });
+  }
+
   function render() {
+    setTimeout(lbRot, 30);
     renderCurse();
     /* Yol seçimi artık harita şeridinde (renderPathMap); bekleyen seçim varken oyun ekranı haritaya döner */
     if (Game.needsPath && Game.needsPath() && curScreen() === 'game' && !document.querySelector('.pk-ov')) setTimeout(() => showScreen('map'), 0);
@@ -8169,8 +8274,18 @@
     if (key === 'yesil') { if (root.dataset.theme) delete root.dataset.theme; }
     else if (root.dataset.theme !== key) root.dataset.theme = key;
     const lanet = key === 'kozmik' && !!(Game.lanetliOn && Game.lanetliOn());
-    if (lanet) { if (root.dataset.run !== 'lanetli') root.dataset.run = 'lanetli'; }
-    else if (root.dataset.run) delete root.dataset.run;
+    if (lanet) {
+      if (root.dataset.run !== 'lanetli') root.dataset.run = 'lanetli';
+      /* sürreal zemin stage'le çürür: S1-2 → 1, S3-4 → 2, S5-6 → 3 */
+      const dc = String(Math.min(3, Math.ceil(Math.max(1, (Game.state && Game.state.stage) || 1) / 2)));
+      if (root.dataset.lbDecay !== dc) root.dataset.lbDecay = dc;
+      const sc = curScreen();
+      if (root.dataset.lbScreen !== sc) root.dataset.lbScreen = sc;
+    } else {
+      if (root.dataset.run) delete root.dataset.run;
+      if (root.dataset.lbDecay) delete root.dataset.lbDecay;
+      if (root.dataset.lbScreen) delete root.dataset.lbScreen;
+    }
     if (key === 'kozmik' && !lanet) {
       const st = Math.max(1, (Game.state && Game.state.stage) || 1);
       /* denetim3 #25 — eskiden (st-1) % 8: Stage 9 (Orion finali) ve Sonsuz Mod S1'in moruna
@@ -9131,6 +9246,7 @@
   function renderStore() {
     const s = Game.state;
     if (!s.store) return;
+    setTimeout(lbRot, 30);
     hideTip();
     /* P65 — haritanın sol sütunu, $ kutusu, joker paneli ve destesiyle
        BİREBİR aynı içerik (bkz. renderMap). Kalıcı çarpan satırı haritada
@@ -10125,6 +10241,10 @@
     out.push({ key: 'kumarhaneStore', rarity: 'store', name: 'Store · ' + t('musKumarhane'), desc: t('mus_kumarhaneStore') });
     out.push({ key: 'kozmik', rarity: 'tema', name: t('musKozmik'), desc: t('mus_kozmik') });            // P104
     out.push({ key: 'kozmikStore', rarity: 'store', name: 'Store · ' + t('musKozmik'), desc: t('mus_kozmikStore') });
+    if (!BETA) {   // Lanetli Boyut yalnız prototipte
+      out.push({ key: 'lanetli', rarity: 'tema', name: t('musLanetli'), desc: t('mus_lanetli') });
+      out.push({ key: 'lanetliStore', rarity: 'store', name: t('musLanetliStore'), desc: t('mus_lanetliStore') });
+    }
     for (const b of BOSSES) if (Music.TRACKS['b_' + b.key]) {
       out.push({ key: 'b_' + b.key, rarity: 'boss', boss: b.key, name: T.bossName(b.key, b.name), desc: t('mus_b_' + b.key) });
     }
@@ -10133,6 +10253,7 @@
       out.push({ key: 'b_' + fb.key, rarity: 'boss', boss: fb.key, name: T.bossName(fb.key, fb.name), desc: t('mus_b_' + fb.key) });
     }
     out.push({ key: 'bossGenel', rarity: 'boss', name: t('musBossGenel'), desc: t('mus_bossGenel') });
+    if (!BETA) out.push({ key: 'lanetliBoss', rarity: 'boss', name: t('musLanetliBoss'), desc: t('mus_lanetliBoss') });   // Lanetli Boyut yedek boss parçası
     return out;
   }
   function colMusicSync() {

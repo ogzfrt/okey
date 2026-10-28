@@ -12171,17 +12171,73 @@ html .gm-stage #bossBanner.gm-boss-cond.bb-glow {
 .bj-val.ok { color: #3FBF6E; } .bj-val.bad { color: #E5484D; }
 .bj-bet { font: 700 15px/1 var(--gm-font); color: var(--gm-turn-on); }
 
-/* ============ LANETLİ BOYUT (Aşama 1) — Kozmik iskeleti üstüne mor + zehir yeşili; arka plan onaylanana kadar geçici zemin ============ */
+/* ============ LANETLİ BOYUT TEMASI (taslak, onay bekliyor) — Kozmik iskeleti üstüne kendi eşya paleti
+   (lanetli mor-siyah #24102F · kemik yeşili #DDF5E0 · lanet moru #5E2E85, tools/theme/build_lanetli_assets.py)
+   + zehir yeşili neon + sürreal "kırık oyuncak odası" zemini (build_lanetli_bg.py; stage'le çürür: bg1 S1-2, bg2 S3-4, bg3 S5-6) ============ */
 html[data-theme="kozmik"][data-run="lanetli"] {
-  --gm-dark: #1E0F2E; --gm-light: #E4F7E6; --gm-panel: #5B2A86;
+  --gm-dark: #24102F; --gm-light: #DDF5E0; --gm-panel: #5E2E85;
   --kz-neon: #5CFF9D; --kz-neon-soft: rgba(92, 255, 157, .42);
+  --lb-bg: url('assets/game/lanetli/bg1.png');
+  --img-action-bar: url('assets/game/lanetli/action-bar.svg');
+  --img-btn-info: url('assets/game/lanetli/btn-info.svg');
+  --img-btn-open: url('assets/game/lanetli/btn-open.svg');
+  --img-btn-pause: url('assets/game/lanetli/btn-pause.svg');
+  --img-btn-small: url('assets/game/lanetli/btn-small.svg');
+  --img-chip-round: url('assets/game/lanetli/chip-round.svg');
+  --img-meld-row: url('assets/game/lanetli/meld-row.svg');
+  --img-map-card: url('assets/game/lanetli/map-card.svg');
+  --img-map-okeybox: url('assets/game/lanetli/map-okeybox.svg');
+  --img-map-pill: url('assets/game/lanetli/map-pill.svg');
+  --img-map-select: url('assets/game/lanetli/map-select.svg');
+  --img-map-target: url('assets/game/lanetli/map-target.svg');
+  --img-map-title: url('assets/game/lanetli/map-title.svg');
+  --img-panel-jokers: url('assets/game/lanetli/panel-jokers.svg');
+  --img-panel-okey: url('assets/game/lanetli/panel-okey.svg');
+  --img-panel-score: url('assets/game/lanetli/panel-score.svg');
+  --img-panel-small: url('assets/game/lanetli/panel-small.svg');
+  --img-preview-box: url('assets/game/lanetli/preview-box.svg');
+  --img-rack-cell: url('assets/game/lanetli/rack-cell.svg');
+  --img-rack-outer1: url('assets/game/lanetli/rack-outer1.svg');
+  --img-rack-row: url('assets/game/lanetli/rack-row.svg');
+  --img-shoulder: url('assets/game/lanetli/shoulder.svg');
+  --img-tray-3: url('assets/game/lanetli/tray-3.svg');
+  --img-tile-back: url('assets/game/lanetli/tile-back.png');
+  --img-panel-coin: url('assets/game/lanetli/panel-coin.svg');
 }
+html[data-theme="kozmik"][data-run="lanetli"] { --lb-bg-map: url('assets/game/lanetli/bg-map1.png'); --lb-bg-store: url('assets/game/lanetli/bg-store1.png'); }
+html[data-theme="kozmik"][data-run="lanetli"][data-lb-decay="2"] { --lb-bg: url('assets/game/lanetli/bg2.png'); --lb-bg-map: url('assets/game/lanetli/bg-map2.png'); --lb-bg-store: url('assets/game/lanetli/bg-store2.png'); }
+html[data-theme="kozmik"][data-run="lanetli"][data-lb-decay="3"] { --lb-bg: url('assets/game/lanetli/bg3.png'); --lb-bg-map: url('assets/game/lanetli/bg-map3.png'); --lb-bg-store: url('assets/game/lanetli/bg-store3.png'); }
+/* harita ve store ortayı kapladığı için kendi yerleşimleri (sahne açık kalan köşelerde) */
+html[data-theme="kozmik"][data-run="lanetli"][data-lb-screen="map"] { --lb-bg: var(--lb-bg-map); }
+html[data-theme="kozmik"][data-run="lanetli"] body.game-open { background: #08050E; }
 html[data-theme="kozmik"][data-run="lanetli"] body.game-open #cosmos {
-  filter: none; animation: none;
-  background: radial-gradient(circle at 25% 30%, rgba(92, 255, 157, .10), transparent 45%),
-              radial-gradient(circle at 75% 70%, rgba(150, 70, 220, .22), transparent 50%), #0A0612;
+  filter: none; background: var(--lb-bg) center / cover no-repeat #08050E; image-rendering: pixelated;
+  animation: lbFloat 70s ease-in-out infinite alternate;
 }
-html[data-theme="kozmik"][data-run="lanetli"] #storeOverlay::before { filter: none; background: radial-gradient(circle at 50% 40%, rgba(150, 70, 220, .25), transparent 60%), #0A0612; }
+@keyframes lbFloat { from { transform: translate(-.6%, .8%) scale(1.03); } to { transform: translate(.6%, -.8%) scale(1.05); } }
+/* çürüyen çerçeveler (lbRot): kenar sprite'ları + seyrek glitch titremesi */
+.lb-rot { position: absolute; inset: 0; pointer-events: none; z-index: 6; animation: lbJit 6s steps(1) infinite; }
+html[data-lb-decay="3"] .lb-rot { animation-duration: 3.2s; }
+.lb-rot i { position: absolute; display: block; background: no-repeat center / 100% 100%; image-rendering: pixelated; }
+.lb-rot .rc { width: 90px; height: 90px; }
+.lb-rot .rc.v1 { background-image: url('assets/game/lanetli/rot-corner-1.png'); }
+.lb-rot .rc.v2 { background-image: url('assets/game/lanetli/rot-corner-2.png'); }
+.lb-rot .rc.v3 { background-image: url('assets/game/lanetli/rot-corner-3.png'); }
+.lb-rot .rc-0 { left: 0; top: 0; }
+.lb-rot .rc-1 { right: 0; top: 0; transform: rotate(90deg); }
+.lb-rot .rc-2 { right: 0; bottom: 0; transform: rotate(180deg); }
+.lb-rot .rc-3 { left: 0; bottom: 0; transform: rotate(270deg); }
+.lb-rot .rt { width: 120px; height: 48px; }
+.lb-rot.sm .rc { width: 54px; height: 54px; }
+.lb-rot.sm .rt { width: 70px; height: 18px; }
+.lb-rot .rt.v1 { background-image: url('assets/game/lanetli/rot-tear-1.png'); }
+.lb-rot .rt.v2 { background-image: url('assets/game/lanetli/rot-tear-2.png'); }
+.lb-rot .rt.r { left: 100%; transform-origin: 0 0; transform: rotate(90deg); }
+.lb-rot .rt.l { left: 0; margin-top: 120px; transform-origin: 0 0; transform: rotate(-90deg); }
+.lb-rot .rt.bot { bottom: 0; transform: scaleY(-1); }
+@keyframes lbJit { 0%, 92% { transform: none; } 92.6% { transform: translate(4px, 0); } 93.4% { transform: translate(-3px, 1px); } 94.2% { transform: translate(2px, -1px); } 95% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .lb-rot { animation: none; } }
+html[data-theme="kozmik"][data-run="lanetli"] #storeOverlay::before { filter: none; background: var(--lb-bg-store) center / cover no-repeat; image-rendering: pixelated; }
 html[data-theme="kozmik"][data-run="lanetli"] .gm-stage #rack::after { filter: hue-rotate(-150deg); }
 /* Lanet göstergesi */
 .gm-stage .gm-left .curse-meter { width: 350px; box-sizing: border-box; padding: 8px 12px 10px; background: var(--gm-dark); border: 3px solid var(--kz-neon, #8E5BD6); border-radius: 10px; cursor: help; }
