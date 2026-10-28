@@ -261,10 +261,8 @@ const BET_PICK_CHOICES = 3;
      SIDE_STAKE coin yatırılır. Raund kazanılır VE koşul tutarsa
      stake × (oran + 1) geri ödenir. Oranlar bot ölçümüyle (her koşulun
      kazanılan raundlardaki gerçek sıklığı) hafif oyuncu lehine seçildi.
-   · YÜKSEK Mİ ALÇAK MI: kazanılan raundun sonunda isteğe bağlı; ortaya
-     YALNIZ o raundun coin kazancı (coinReport.net) konur. 1-13 rastgele
-     taş, eşitlik kasaya, en çok HILO_STEPS adım, çekil serbest. P69: adım
-     çarpanı İHTİMALE GÖRE (bkz. HILO).
+   · BLACKJACK (2026-10-28, Yüksek mi Alçak mı'nın yerine): kazanılan raundun
+     sonunda isteğe bağlı; ortaya YALNIZ o raundun coin kazancı konur (bkz. BJ).
    ========================================================================== */
 const SIDE_STAKE = 5;
 const SIDE_OFFERS = 3;
@@ -287,25 +285,29 @@ const SIDE_BETS = {
   cift:    { key: 'cift',    name: 'Çift açarak kazanırım',              odds: 3 },
 };
 const SIDE_KEYS = Object.keys(SIDE_BETS);
-const HILO_STEPS = 3;
-/* ADIM ÇARPANI (kullanıcı kararı 2026-10-04): ×2 fazla cömertti — çekil hakkı
-   olduğu için oyuncu yalnız lehine olan tahmini oynar (optimal beklenti ×2.66,
-   bot run başına +115-130 coin). ×1.5'te yalnız uç taşlar (1-4 / 10-13) kârlı,
-   5-9 gerçek karar; bot +21 coin/run, run bitirme aynı (±2). */
-/* P69 (kullanıcı kararı 2026-10-05) — İHTİMALE GÖRE ÖDEME. Sabit ×1.5'te kolay
-   taraf (2'de "yüksek" %85) zor tarafla aynı ödüyordu: oyuncu hep kolayı oynayıp
-   risksiz kazanıyor, zor tahmin anlamsızdı. Artık adım çarpanı = edge / p
-   (p = kazanma ihtimali; eşitlik kasaya, Hileli Zar'ın eşitlik avantajı hesaba
-   KATILMAZ → jokerin artısı). edge 1.05: yan bahisler gibi hafif oyuncu lehine.
-   Örn. 2'de yüksek %85 → ×1.24 · 7'de yüksek %46 → ×2.28 · uç tahmin en çok ×5. */
-const HILO = { edge: 1.05, maxMult: 5 };
-function hiLoOdds(cur, dir) {
-  const win = dir === 'hi' ? 13 - cur : cur - 1;
-  /* denetim3 #28 — sıradaki taş açık taşla AYNI gelmez (kullanıcı: "12'den sonra 12 gelip
-     kaybettirmesin") → 12 olası sayı; çarpan aynı kuralla (edge ÷ gerçek ihtimal) hesaplanır */
-  const p = win / 12;
-  const mult = p > 0 ? Math.min(HILO.maxMult, Math.round(100 * HILO.edge / p) / 100) : 0;
-  return { p, mult };
+/* BLACKJACK (kullanıcı kararı 2026-10-28 — Yüksek mi Alçak mı'nın yerine): kazanılan raundun sonunda
+   isteğe bağlı; bahis = o raundun coin kazancı (coinReport.net). Taş değerleri: 2-10 kendi sayısı,
+   11-13 = 10, 1 = 1 ya da 11 (as), okey eli 21'e en çok yaklaştıran değer. Oyuncuya 2 açık taş,
+   Kasa'ya 1 açık 1 kapalı. Taş Çek / Dur / Katla (yalnız ilk iki taşta: bahis ×2, tek taş, durur).
+   Kasa 17'ye kadar çeker (17'de durur). Ödeme: kazanç +bahis, Blackjack (ilk iki taş 21) +1.5×bahis,
+   eşitlik 0, kayıp −bahis. Taşlar 106'lık okey destesinden (2 sahte değil gerçek okey ≈ %1.9). */
+/* Kasa 17'de durur (kullanıcı kararı 2026-10-28, klasik kural). Ölçüm (bj_sim, 200k el, temel strateji):
+   17'de dur → oyuncu −%3.8/el (Kasa da okey çekebildiği için klasikten sert); 19'a kadar çeksin önerisi (+%5.1) reddedildi. */
+const BJ = { dealerStand: 17, bjPay: 1.5, okeyP: 2 / 106 };
+function bjValue(tiles) {
+  let sum = 0, aces = 0, okeys = 0;
+  for (const t of tiles) {
+    if (t.okey) { okeys++; continue; }
+    if (t.number === 1) { aces++; sum += 1; } else sum += Math.min(10, t.number);
+  }
+  let soft = false;
+  if (aces && sum + 10 <= 21) { sum += 10; soft = true; }
+  for (let i = 0; i < okeys; i++) {
+    const room = 21 - sum - (okeys - 1 - i);   // kalan okeylere en az 1'er bırak
+    const v = Math.max(1, Math.min(11, room));
+    sum += v;
+  }
+  return { total: sum, soft: soft || okeys > 0 };
 }
 const FIS_USTASI_MULT = 0.2;
 /* P69 — Rulet artık taş başına: açılımdaki seçilen renk taşı başına +RULET_PER;
@@ -4234,7 +4236,7 @@ const Game = {
     s.roundStartNotes = [];
     this._resolvePendingPacks(s.roundStartNotes); // Grup F güvenlik ağı
     this._resolveBetPicks(s.roundStartNotes);     // P58 · Kumarhane güvenlik ağı
-    this.hiLoClose();                             // P61 · yarım kalan Yüksek mi Alçak mı kapanır
+    this.bjClose();                               // yarım kalan Blackjack eli kapanır (oyuncu durmuş sayılır)
 
     /* denetim3 #21/#35/#43 (kullanıcı kararı 2026-10-23: "backup'ta beklesin") — ZORUNLU GEÇİŞ KALKTI.
        Eskiden backup jokeri 3 raund (son hakkıysa 1) sonra zorla ana slota geçiyor, ana slot doluysa
@@ -4638,75 +4640,81 @@ const Game = {
     return false;
   },
 
-  /* ---------- P61 · YÜKSEK Mİ ALÇAK MI ---------- */
-  _hiLoTile() {
+  /* ---------- BLACKJACK (Yüksek mi Alçak mı'nın yerine — kullanıcı 2026-10-28) ---------- */
+  _bjTile() {
+    if (this.rng() < BJ.okeyP) return { number: 0, color: 'okey', okey: true };
     return { number: 1 + Math.floor(this.rng() * 13), color: COLORS[Math.floor(this.rng() * COLORS.length)] };
   },
-  _hiLoOffer() {
+  _bjOffer() {
     const s = this.state;
     const net = s.coinReport && !s.coinReport.survived ? (s.coinReport.net || 0) : 0;
-    if (!this.kumarhaneOn() || s.status !== 'won' || s.runFinished || net <= 0) { s.hiLo = null; return; }
-    s.hiLo = { stake: net, pot: net, step: 0, cur: this._hiLoTile(), last: null, phase: 'offer' };
+    if (!this.kumarhaneOn() || s.status !== 'won' || s.runFinished || net <= 0) { s.bj = null; return; }
+    s.bj = { stake: net, bet: net, phase: 'offer', player: [], dealer: [], result: null, net: 0, doubled: false };
   },
-  hiLoState() {
-    const h = this.state && this.state.hiLo;
+  bjState() {
+    const h = this.state && this.state.bj;
     if (!h) return null;
-    const odds = h.cur ? { hi: hiLoOdds(h.cur.number, 'hi'), lo: hiLoOdds(h.cur.number, 'lo') } : null;
-    return { ...h, max: HILO_STEPS, odds };
+    const open = h.phase !== 'play';   // oyun sürerken Kasa'nın ikinci taşı kapalı
+    const dealerShown = open ? h.dealer : h.dealer.slice(0, 1);
+    return { ...h, pv: bjValue(h.player).total, dv: bjValue(dealerShown).total, dealerShown, holeHidden: !open && h.dealer.length > 1,
+      canDouble: h.phase === 'play' && h.player.length === 2 && !h.doubled };
   },
-  hiLoAccept() {
-    const h = this.state.hiLo;
+  bjAccept() {
+    const h = this.state.bj;
     if (!h || h.phase !== 'offer') return { ok: false };
+    h.player = [this._bjTile(), this._bjTile()];
+    h.dealer = [this._bjTile(), this._bjTile()];
     h.phase = 'play';
+    const pBJ = bjValue(h.player).total === 21, dBJ = bjValue(h.dealer).total === 21;
+    if (pBJ || dBJ) this._bjSettle(pBJ && dBJ ? 'push' : pBJ ? 'bj' : 'lose');
     return { ok: true };
   },
-  hiLoSkip() { const h = this.state.hiLo; if (h && h.phase === 'offer') this.state.hiLo = null; return { ok: true }; },
-  hiLoGuess(dir) {
-    const s = this.state, h = s.hiLo;
-    if (!h || h.phase !== 'play' || (dir !== 'hi' && dir !== 'lo')) return { ok: false };
-    const odd = hiLoOdds(h.cur.number, dir);
-    if (!odd.mult) return { ok: false, error: 'Bu yönde kazanma ihtimali yok.' };
-    const next = this._hiLoTile();
-    /* denetim3 #28 — eşitlik yok: aynı sayı gelirse kalan 12 sayıdan biri (tekdüze) */
-    if (next.number === h.cur.number) {
-      const n = 1 + Math.floor(this.rng() * 12);
-      next.number = n >= h.cur.number ? n + 1 : n;
-    }
-    const tie = false;
-    const win = dir === 'hi' ? next.number > h.cur.number : next.number < h.cur.number;
-    h.last = next;
-    if (!win) {
-      this._hiLoLose();
-      return { ok: true, win: false, tie, next };
-    }
-    h.pot = Math.round(h.pot * odd.mult); h.step++; h.cur = next;
-    h.lastMult = odd.mult;
-    if (h.step >= HILO_STEPS) { this.hiLoCashOut(); return { ok: true, win: true, tie, next, done: true }; }
-    return { ok: true, win: true, tie, next };
-  },
-  _hiLoLose() {
-    const s = this.state, h = s.hiLo;
-    spendCoins(s, Math.min(h.stake, Math.max(0, s.coins)));
-    h.phase = 'lost';
-    if (this._logHiLo) this._logHiLo(h, -h.stake);
-    s.statHiLo = s.statHiLo || { won: 0, lost: 0, net: 0 };
-    s.statHiLo.lost++; s.statHiLo.net -= h.stake;
-  },
-  hiLoCashOut() {
-    const s = this.state, h = s.hiLo;
+  bjSkip() { const h = this.state.bj; if (h && h.phase === 'offer') this.state.bj = null; return { ok: true }; },
+  bjHit() {
+    const h = this.state.bj;
     if (!h || h.phase !== 'play') return { ok: false };
-    gainCoins(s, h.pot - h.stake);
-    h.phase = 'done';
-    if (this._logHiLo && h.step > 0) this._logHiLo(h, h.pot - h.stake);
-    s.statHiLo = s.statHiLo || { won: 0, lost: 0, net: 0 };
-    if (h.step > 0) { s.statHiLo.won++; s.statHiLo.net += h.pot - h.stake; }
-    return { ok: true, pot: h.pot };
+    const t = this._bjTile();
+    h.player.push(t);
+    const v = bjValue(h.player).total;
+    if (v > 21) this._bjSettle('bust');
+    else if (v === 21) this.bjStand();
+    return { ok: true, tile: t };
   },
-  hiLoClose() {
-    const s = this.state, h = s.hiLo;
+  bjDouble() {
+    const s = this.state, h = s.bj;
+    if (!h || h.phase !== 'play' || h.player.length !== 2 || h.doubled) return { ok: false };
+    h.bet = h.stake * 2; h.doubled = true;
+    const t = this._bjTile();
+    h.player.push(t);
+    if (bjValue(h.player).total > 21) this._bjSettle('bust');
+    else this.bjStand();
+    return { ok: true, tile: t };
+  },
+  bjStand() {
+    const h = this.state.bj;
+    if (!h || h.phase !== 'play') return { ok: false };
+    while (bjValue(h.dealer).total < BJ.dealerStand) h.dealer.push(this._bjTile());
+    const pv = bjValue(h.player).total, dv = bjValue(h.dealer).total;
+    this._bjSettle(dv > 21 || pv > dv ? 'win' : pv === dv ? 'push' : 'lose');
+    return { ok: true };
+  },
+  _bjSettle(result) {
+    const s = this.state, h = s.bj;
+    h.result = result;
+    h.phase = 'done';
+    h.net = result === 'win' ? h.bet : result === 'bj' ? Math.round(h.bet * BJ.bjPay) : result === 'push' ? 0 : -h.bet;
+    if (h.net > 0) gainCoins(s, h.net);
+    else if (h.net < 0) spendCoins(s, Math.min(-h.net, Math.max(0, s.coins)));
+    if (this._logBj) this._logBj(h);
+    s.statBj = s.statBj || { won: 0, lost: 0, push: 0, net: 0 };
+    if (h.net > 0) s.statBj.won++; else if (h.net < 0) s.statBj.lost++; else s.statBj.push++;
+    s.statBj.net += h.net;
+  },
+  bjClose() {
+    const s = this.state, h = s.bj;
     if (!h) return;
-    if (h.phase === 'play') this.hiLoCashOut();
-    s.hiLo = null;
+    if (h.phase === 'play') this.bjStand();   // yarım el: oyuncu durmuş sayılır
+    s.bj = null;
   },
 
   /* Güvenlik ağı: seçilmeden geçilen ödül boşa gitmesin — ilk seçenek verilir */
@@ -5345,7 +5353,7 @@ const Game = {
     s.sideTrack = { per4: false, sirali5: false, maxCombos: 0, okeyUsed: false, cift: false };
     s.ruletColor = null;      // P61 · 🎡 Rulet — bu raundun rengi
     s.zarCheatUsed = false;   // denetim3 #29 · 🎲 Hileli Zar — raund başına 1 hile
-    s.hiLo = null;            // P61 · Yüksek mi Alçak mı (raund sonu)
+    s.bj = null;              // Blackjack (raund sonu; Yüksek mi Alçak mı'nın yerine)
     s.storeTilePick = null;   // P29 · Grup O — store seçimi raunda taşmaz
     s.deck = createDeck(s);
     // Sahte okeyler bu stage'in okeyinin normal kopyaları olur:
@@ -13461,11 +13469,11 @@ Game._logRoundEnd = function () {
   if (s.sideBet) e.side = { key: s.sideBet.key, odds: s.sideBet.odds, stake: s.sideBet.stake,
     hit: s.sideBet.resolved ? !!s.sideBet.hit : null, paid: s.sideBet.paid || 0 };
 };
-/* Yüksek mi Alçak mı raund kapandıktan SONRA oynanır → son kayda işlenir */
-Game._logHiLo = function (h, net) {
+/* Blackjack raund kapandıktan SONRA oynanır → son kayda işlenir */
+Game._logBj = function (h) {
   const s = this.state; if (!s || !s.runLog) return;
   const e = s.runLog.rounds[s.runLog.rounds.length - 1];
-  if (e) e.hl = { step: h.step, net };
+  if (e) e.bj = { result: h.result, net: h.net, doubled: h.doubled };
 };
 {
   const orig = Game._startRound;
@@ -13512,7 +13520,7 @@ Game.runLog = function () { return this.state ? runLogOf(this.state) : null; };
     if (s && s.status === 'won' && this.kumarhaneOn()) {
       const notes = (s.coinReport && s.coinReport.extraNotes) || [];
       this._sideBetResolve(notes, false);
-      this._hiLoOffer();
+      this._bjOffer();
       if (this._logRoundEnd) this._logRoundEnd();   // yan bahis sonucu rapora girsin
     }
     return r;
@@ -13523,7 +13531,7 @@ Game.runLog = function () { return this.state ? runLogOf(this.state) : null; };
     const s = this.state;
     if (s && this.kumarhaneOn()) {
       this._sideBetResolve((s.coinReport && s.coinReport.extraNotes) || [], true);
-      s.hiLo = null;
+      s.bj = null;
       if (this._logRoundEnd) this._logRoundEnd();
     }
     return r;
@@ -13539,7 +13547,7 @@ if (typeof module !== 'undefined') {
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, HILO_STEPS, HILO, hiLoOdds, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

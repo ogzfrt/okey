@@ -12154,3 +12154,19 @@ html .gm-stage #bossBanner.gm-boss-cond.bb-glow {
 /* kullanıcı 2026-10-28 — BULUNAMADI kartı (kilit yalnız modu kapalı kartlarda) + moda özel kartların mod rengi */
 .col-nf-art { width: 110px; height: 150px; background: url('assets/game/joker/bulunamadi.svg') no-repeat center / 100% 100%; image-rendering: pixelated; }
 /* moda özel kartlar renklenmez (kullanıcı 2026-10-28): hangi modda çıktığı ipucunda yazar */
+
+/* BLACKJACK penceresi (kullanıcı 2026-10-28, Hi-Lo'nun yerine) — hl-* parçalarını paylaşır */
+.bj-ov .pk-box { width: min(640px, calc(100vw - 32px)); box-sizing: border-box; }
+.bj-ov .pk-title { font-size: 20px; white-space: nowrap; }
+.bj-rules { font: 700 12px/1.4 var(--gm-font); color: var(--gm-light); opacity: .85; text-align: center; }
+.bj-table { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; box-sizing: border-box;
+  background: rgba(0, 0, 0, .28); border-radius: 8px; padding: 12px 14px; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35); }
+.bj-hand { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; width: 100%; }
+.bj-hand + .bj-hand { border-top: 2px dashed rgba(255, 214, 102, .3); padding-top: 12px; }
+.bj-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.hl-body .bj-row .bj-tile { transform: none; margin: 0; width: 54px; height: 74px; }
+.hl-body .bj-row .bj-tile .num { font-size: 26px; }
+.bj-row .hl-back { display: flex; align-items: center; justify-content: center; font: 700 28px/1 var(--gm-font); }
+.bj-val { font: 700 22px/1 var(--gm-font); color: var(--gm-light); min-width: 48px; text-align: center; padding: 4px 10px; border-radius: 6px; background: rgba(0, 0, 0, .3); }
+.bj-val.ok { color: #3FBF6E; } .bj-val.bad { color: #E5484D; }
+.bj-bet { font: 700 15px/1 var(--gm-font); color: var(--gm-turn-on); }

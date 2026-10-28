@@ -5786,7 +5786,7 @@
      · showJackpot: Riskli/Ölümcül/Katla kazancında beyaz kutu yerine
      · kumarStartPanels: raund başı (el GÖRÜLEREK) Rulet rengi + yan bahis;
        ıstaka görünsün diye arkaplanı karartmayan "dock" pencereler
-     · showHiLo: raund sonu Yüksek mi Alçak mı
+     · showBj: raund sonu Blackjack (Yüksek mi Alçak mı'nın yerine)
      ============================================================ */
   function betClosedScene(key, fromEl) {
     const r = fromEl.getBoundingClientRect();
@@ -5954,89 +5954,69 @@
     Hints.show('yanBahis');
   }
 
-  /* Yüksek mi Alçak mı — raund sonu; `done` akışı sürdürür.
-     P64 (kullanıcı: "ilk karşıma çıktığında anlayamadım") — daha anlaşılır:
-     teklifte 3 adımlık "nasıl oynanır" kartı + coin MERDİVENİ (gerçek
-     miktarlar), oyunda AÇIK TAŞ yanında kapalı "SIRADAKİ" taş, düğmelerde
-     tutma ihtimali yüzde olarak, "şimdi çekilirsen / bilirsen" satırı. */
-  function showHiLo(done) {
+  /* BLACKJACK — raund sonu (kullanıcı kararı 2026-10-28, Yüksek mi Alçak mı'nın yerine); `done` akışı sürdürür.
+     Teklifte kısa "nasıl oynanır"; masada solda SEN, sağda KASA (ikinci taşı kapalı), altta Taş Çek / Dur / Katla. */
+  function showBj(done) {
     const ov = document.createElement('div');
-    ov.id = 'hiloOv';
-    ov.className = 'pk-ov tone-gold hilo-ov';
+    ov.id = 'bjOv';
+    ov.className = 'pk-ov tone-gold bj-ov';
     document.body.appendChild(ov);
-    const hiTile = (tl, cls = '') => {
-      const te = tileEl({ id: 'hl-' + Math.random(), color: tl.color, number: tl.number }, false);
-      te.classList.add('hl-tile'); if (cls) te.classList.add(cls);
+    const bjTile = (tl, cls = '') => {
+      const s = Game.state;
+      const te = tl.okey
+        ? tileEl({ id: 'bj-' + Math.random(), color: s.okey.color, number: s.okey.number, isOkeyReal: true }, false)
+        : tileEl({ id: 'bj-' + Math.random(), color: tl.color, number: tl.number }, false);
+      te.classList.add('hl-tile', 'bj-tile'); if (cls) te.classList.add(cls);
       return te.outerHTML;
     };
-    /* P69 — ihtimale göre ödeme: adım çarpanı tahmine göre değiştiği için merdiven
-       artık önceden hesaplanmış tutarlar değil, ADIMLAR: geçilenler kazanılan pot,
-       sıradaki ?, kalanlar boş. */
-    const ladderHtml = (h) => {
-      const out = [`<span class="hl-rung${h.step === 0 ? ' on' : ' past'}">🪙 ${h.stake}</span>`];
-      for (let k = 1; k <= h.max; k++) {
-        const reached = k <= h.step;
-        out.push(`<span class="hl-rung${reached ? (k === h.step ? ' on' : ' past') : ''}">${reached && k === h.step ? '🪙 ' + h.pot : (reached ? '✓' : k + '/' + h.max)}</span>`);
-      }
-      return out.join('<i class="hl-arr">→</i>');
-    };
-    const oddBtn = (h, dir) => {
-      const o = h.odds[dir], pct = Math.round(100 * o.p);
-      if (!o.mult) return `<button class="btn primary hl-${dir}" disabled>${dir === 'hi' ? '⬆ ' + t('hiloHi') : '⬇ ' + t('hiloLo')}<small>%0</small></button>`;
-      return `<button class="btn primary hl-${dir}" data-a="${dir}">${dir === 'hi' ? '⬆ ' + t('hiloHi') : '⬇ ' + t('hiloLo')}`
-        + `<small>%${pct} · ×${o.mult.toFixed(2)} → 🪙 ${Math.round(h.pot * o.mult)}</small></button>`;
-    };
-    const finish = () => { Game.hiLoClose(); ov.remove(); render(); done(); };
-    const draw = (flash) => {
-      const h = Game.hiLoState();
+    const hand = (lbl, tiles, val, hidden) => `<div class="bj-hand"><div class="hl-lbl">${lbl}</div>`
+      + `<div class="bj-row">${tiles.map((x) => bjTile(x)).join('')}${hidden ? '<div class="tile hl-tile hl-back bj-tile">?</div>' : ''}</div>`
+      + `<div class="bj-val${val > 21 ? ' bad' : val === 21 ? ' ok' : ''}">${val}</div></div>`;
+    const finish = () => { Game.bjClose(); ov.remove(); render(); done(); };
+    const draw = () => {
+      const h = Game.bjState();
       if (!h) { finish(); return; }
       let body = '', foot = '';
       if (h.phase === 'offer') {
-        body = `<div class="hl-win">${t('hiloWinLine', h.stake)}</div>`
-          + `<div class="hl-how"><div class="hl-how-t">${t('hiloHowTitle')}</div>`
-          + `<ol><li>${t('hiloHow1')}</li><li>${t('hiloHow2')}</li><li>${t('hiloHow3odds', h.stake)}</li></ol></div>`
-          + `<div class="hl-ladder">${ladderHtml(h)}</div>`;
-        foot = `<button class="btn primary" data-a="accept">🎲 ${t('hiloAccept')}</button>`
-          + `<button class="btn ghost" data-a="skip">${t('hiloSkip', h.stake)}</button>`;
-      } else if (h.phase === 'play') {
-        body = `<div class="hl-table">`
-          + (flash && flash.prev ? `<div class="hl-slot hl-old"><div class="hl-lbl">${t('hiloPrev')}</div>${hiTile(flash.prev, 'hl-prev')}</div>` : '')
-          + `<div class="hl-slot"><div class="hl-lbl">${t('hiloOpen')}</div>${hiTile(h.cur)}</div>`
-          + `<div class="hl-slot"><div class="hl-lbl">${t('hiloNext')}</div><div class="tile hl-tile hl-back">?</div></div>`
-          + `</div>`
-          + (flash ? `<div class="hl-flash ${flash.cls}">${flash.text}</div>` : '')
-          + `<div class="hl-ladder">${ladderHtml(h)}</div>`
-          + `<div class="hl-now">${h.step > 0 ? t('hiloNowCash', h.pot) + ' · ' : ''}${t('hiloOddsLine')}</div>`;
-        foot = oddBtn(h, 'hi') + oddBtn(h, 'lo')
-          + (h.step > 0 ? `<button class="btn ghost" data-a="cash">💰 ${t('hiloCash', h.pot)}</button>` : '')
-          + `<div class="hl-tie">${t('hiloTieNote')}</div>`;
+        body = `<div class="hl-win">${t('bjWinLine', h.stake)}</div>`
+          + `<div class="hl-how"><div class="hl-how-t">${t('bjHowTitle')}</div>`
+          + `<ol><li>${t('bjHow1')}</li><li>${t('bjHow2')}</li><li>${t('bjHow3', h.stake)}</li></ol></div>`
+          + `<div class="bj-rules">${t('bjRules')}</div>`;
+        foot = `<button class="btn primary" data-a="accept">🃏 ${t('bjAccept')}</button>`
+          + `<button class="btn ghost" data-a="skip">${t('bjSkip', h.stake)}</button>`;
       } else {
-        const won = h.phase === 'done';
-        body = `<div class="hl-table"><div class="hl-slot">${h.last ? hiTile(h.last, won ? '' : 'hl-bad') : hiTile(h.cur)}</div></div>`
-          + `<div class="hl-ladder">${ladderHtml(h)}</div>`
-          + `<div class="hl-result ${won ? 'ok' : 'bad'}">${won ? t('hiloWon', h.pot - h.stake) : t('hiloLost', h.stake)}</div>`;
-        foot = `<button class="btn primary" data-a="close">${t('okBtn')}</button>`;
+        /* kullanıcı: Kasa üstte, sen altta (yan yana karışıyordu) */
+        body = `<div class="bj-table">${hand(t('bjDealer'), h.dealerShown, h.dv, h.holeHidden)}${hand(t('bjYou'), h.player, h.pv)}</div>`
+          + `<div class="bj-bet">${t('bjBet', h.bet)}</div>`;
+        if (h.phase === 'play') {
+          foot = `<button class="btn primary" data-a="hit">${t('bjHit')}</button>`
+            + `<button class="btn primary" data-a="stand">${t('bjStand')}</button>`
+            + (h.canDouble ? `<button class="btn ghost" data-a="double">${t('bjDouble', h.stake * 2)}</button>` : '');
+        } else {
+          const good = h.net > 0, even = h.net === 0;
+          body += `<div class="hl-result ${good ? 'ok' : even ? '' : 'bad'}">${t('bjRes_' + h.result, Math.abs(h.net))}</div>`;
+          foot = `<button class="btn primary" data-a="close">${t('okBtn')}</button>`;
+        }
       }
-      ov.innerHTML = `<div class="pk-box"><div class="pk-title">🃏 ${t('hiloTitle')}</div>`
+      ov.innerHTML = `<div class="pk-box"><div class="pk-title">🃏 ${t('bjTitle')}</div>`
         + `<div class="hl-body">${body}</div><div class="pk-foot hl-foot">${foot}</div></div>`;
-      ov.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => act(b.dataset.a)));
+      ov.querySelectorAll('[data-a]').forEach(bt => bt.addEventListener('click', () => act(bt.dataset.a)));
+    };
+    const after = () => {
+      const h = Game.bjState();
+      if (h && h.phase === 'done') { if (h.net > 0) { SFX.coin(); if (h.result === 'bj') SFX.jackpot(); } else if (h.net < 0) SFX.lose(); }
+      draw();
     };
     const act = (a) => {
-      if (a === 'accept') { Game.hiLoAccept(); SFX.chips(); draw(); return; }
-      if (a === 'skip') { Game.hiLoSkip(); finish(); return; }
-      if (a === 'cash') { Game.hiLoCashOut(); SFX.coin(); draw(); return; }
+      if (a === 'accept') { Game.bjAccept(); SFX.chips(); after(); return; }
+      if (a === 'skip') { Game.bjSkip(); finish(); return; }
+      if (a === 'hit') { Game.bjHit(); SFX.tick?.(); after(); return; }
+      if (a === 'stand') { Game.bjStand(); after(); return; }
+      if (a === 'double') { Game.bjDouble(); SFX.chips(); after(); return; }
       if (a === 'close') { finish(); return; }
-      if (a === 'hi' || a === 'lo') {
-        const prev = { ...Game.hiLoState().cur };
-        const r = Game.hiLoGuess(a);
-        if (!r.ok) return;
-        if (r.win) { SFX.coin(); if (r.done) SFX.jackpot(); }
-        else SFX.lose();
-        draw(r.win && !r.done ? { cls: 'ok', prev, text: (r.tie ? t('hiloTieWin') : t('hiloRight')) + ' ' + t('hiloCameN', r.next.number) } : null);
-      }
     };
     draw();
-    Hints.show('hiLo');
+    Hints.show('bj');
   }
 
   function showBetPicks(done) {
@@ -8532,13 +8512,13 @@
         openStore();
       };
       /* P58 · Kumarhane — bahis ödülü (3 jokerden 1'i) önce alınır */
-      const afterHiLo = () => {
+      const afterBj = () => {
         if ((s.betPicks || []).length) { showBetPicks(after); return; }
         after();
       };
       /* P61 — raund coini için Yüksek mi Alçak mı (isteğe bağlı) */
-      if (s.hiLo && s.hiLo.phase === 'offer' && !TUT.active) { showHiLo(afterHiLo); return; }
-      afterHiLo();
+      if (s.bj && s.bj.phase === 'offer' && !TUT.active) { showBj(afterBj); return; }
+      afterBj();
     } else if (s.status === 'runComplete') {
       clearSave();
       showScreen('menu');
@@ -9340,7 +9320,7 @@
       if (e.rulet) parts.push(t('rpRulet', e.rulet === 'red' ? '🔴' : '⚫'));
       if (e.side) parts.push(t('rpSide', String(T.ev(SIDE_NAME(e.side.key))), e.side.odds,
         e.side.hit == null ? '…' : e.side.hit ? `✔ +${e.side.paid}` : `✘ −${e.side.stake}`));
-      if (e.hl) parts.push(t('rpHiLo', e.hl.step, e.hl.net >= 0 ? `+${e.hl.net}` : `${e.hl.net}`));
+      if (e.bj) parts.push(t('rpBj', t('bjRes_' + e.bj.result, Math.abs(e.bj.net)), e.bj.net >= 0 ? `+${e.bj.net}` : `${e.bj.net}`));
       if (e.fail) parts.push(`${t('rpFail')} ${String(T.ev(e.fail)).replace(/<[^>]+>/g, '')}`);
       if (e.add && e.add.length) parts.push('+' + e.add.map(jn).join(', +'));
       if (e.rem && e.rem.length) parts.push('−' + e.rem.map(jn).join(', −'));
@@ -11067,6 +11047,6 @@
     Hints, runReport, showGameOver, showBetPicker, showKatlaOffer, renderWell,
     // P61 — Kumarhane hissi
     Music, applyRunTheme,
-    showHiLo, showSideBet, showRuletPick, showZarCheat, showBetPicks, kumarStartPanels, showJackpot, pickRunMode, showSettings, showRunPick,
+    showBj, showSideBet, showRuletPick, showZarCheat, showBetPicks, kumarStartPanels, showJackpot, pickRunMode, showSettings, showRunPick,
     collectionView: (v) => showCollection(v), showRitim, ritimPattern, ritimJudge };
 })();

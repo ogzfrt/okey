@@ -17,6 +17,8 @@
     {
       id: '2026-10-28', date: { tr: '28 Ekim', en: 'October 28' },
       items: [
+        ['yeni', 'Blackjack', 'Kumarhane’de raund sonu kumarı artık Blackjack: raundun coiniyle Kasa’ya karşı oyna. Taş Çek, Dur ya da Katla. Yüksek mi Alçak mı kalktı.',
+          'Blackjack', 'The Casino end-of-round gamble is now Blackjack: play this round’s coins against the House. Hit, Stand or Double. Higher or Lower is gone.'],
         ['degisti', 'Koleksiyon', 'Bulmadığın kartlar artık soru işaretli kart olarak görünür; kilit yalnız henüz açılmamış bir modun kartlarında. Üstüne gelince hangi modda bulunduğunu söyler.',
           'Collection', 'Cards you have not found now show as question-mark cards; the lock is only on cards of a mode you have not unlocked. Hover to see where they are found.'],
         ['degisti', 'Yeni joker adları', 'Merdiven artık Ok, Yürüyen Merdiven artık Sadak. Etkileri aynı.',
