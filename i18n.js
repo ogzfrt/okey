@@ -529,7 +529,8 @@
       ghostPassDesc: 'Raund kaybedilir.',
       colF_casino: 'Kumarhane',
       /* P101 — keşfedilmemiş koleksiyon kartları + test seçicisi */
-      undiscTitle: 'Keşfedilmedi', lockedTitle: 'Kilitli',
+      undiscTitle: 'Bulunamadı', lockedTitle: 'Kilitli',
+      modeShort_hizli: 'Kumarhane Run', colModeLocked: (m) => `${m}'ın kilidini açınca bulunur`, colModeFind: (m) => `${m}'da çıkar — henüz bulmadın`,
       undiscDesc_joker: 'Ne yaptığını öğrenmek için bir run\'da bu jokeri satın al ya da eline geçir',
       undiscDesc_boss: 'Ne yaptığını öğrenmek için bu boss\'u yen ve jokerini al',
       undiscDesc_consum: 'Ne yaptığını öğrenmek için bir run\'da bu değneği satın al ya da eline geçir',
@@ -1562,7 +1563,8 @@
       ghostPassDesc: 'The round is lost.',
       colF_casino: 'Casino',
       /* P101 — undiscovered collection cards + test picker */
-      undiscTitle: 'Not Discovered', lockedTitle: 'Locked',
+      undiscTitle: 'Not Found', lockedTitle: 'Locked',
+      modeShort_hizli: 'Casino Run', colModeLocked: (m) => `Unlock ${m} to find it`, colModeFind: (m) => `Found in ${m} — not discovered yet`,
       undiscDesc_joker: 'Buy or obtain this joker in a run to learn what it does',
       undiscDesc_boss: 'Beat this boss and take its joker to learn what it does',
       undiscDesc_consum: 'Buy or obtain this wand in a run to learn what it does',
@@ -2083,10 +2085,10 @@
     hileliZar: { name: 'Loaded Dice', desc: `A die is rolled each turn (1-13): each tile of that number you meld gives +0.4x. Once per round you may turn the die to any number; each cheat permanently adds +0.05x per tile.` },   // denetim3 #29
     martingale: { name: 'Golden Chip', desc: `A lost side bet doubles the next payout (up to ×8). A win gives a permanent +0.2x per step.` },
     bereket: { name: 'Magnifying Glass', desc: '+1.5x on every meld.' },
-    kosucu: { name: 'Staircase', desc: 'Meld a Run: +2.0x.' },
+    kosucu: { name: 'Arrow', desc: 'Meld a Run: +2.0x.' },
     ikizler: { name: 'Twin Cherries', desc: 'Meld a Pair: +2.0x.' },
     takim: { name: 'Marbles', desc: 'Meld a Set: +2.0x.' },
-    uzunKosu: { name: 'Escalator', desc: 'Meld 3 Runs in one turn: +3.5x.' },
+    uzunKosu: { name: 'Quiver', desc: 'Meld 3 Runs in one turn: +3.5x.' },
     ciftFirtina: { name: 'Cherry Basket', desc: 'Meld 3 Pairs in one turn: +3.5x.' },
     kalabalikPer: { name: 'Marble Bag', desc: 'Meld 3 Sets in one turn: +3.5x.' },
     renkUstasi: { name: 'Painter\'s Palette', desc: 'All four colors in your meld: +2.0x.' },

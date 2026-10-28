@@ -12151,3 +12151,6 @@ html .gm-stage #bossBanner.gm-boss-cond.bb-glow {
 @keyframes llKiss { 0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; } 30% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
   100% { transform: translate(-50%, -90%) scale(1); opacity: 0; } }
 
+/* kullanıcı 2026-10-28 — BULUNAMADI kartı (kilit yalnız modu kapalı kartlarda) + moda özel kartların mod rengi */
+.col-nf-art { width: 110px; height: 150px; background: url('assets/game/joker/bulunamadi.svg') no-repeat center / 100% 100%; image-rendering: pixelated; }
+/* moda özel kartlar renklenmez (kullanıcı 2026-10-28): hangi modda çıktığı ipucunda yazar */

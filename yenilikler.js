@@ -15,6 +15,15 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama] */
   const NOTLAR = [
     {
+      id: '2026-10-28', date: { tr: '28 Ekim', en: 'October 28' },
+      items: [
+        ['degisti', 'Koleksiyon', 'Bulmadığın kartlar artık soru işaretli kart olarak görünür; kilit yalnız henüz açılmamış bir modun kartlarında. Üstüne gelince hangi modda bulunduğunu söyler.',
+          'Collection', 'Cards you have not found now show as question-mark cards; the lock is only on cards of a mode you have not unlocked. Hover to see where they are found.'],
+        ['degisti', 'Yeni joker adları', 'Merdiven artık Ok, Yürüyen Merdiven artık Sadak. Etkileri aynı.',
+          'New joker names', 'Staircase is now Arrow and Escalator is now Quiver. Same effects.'],
+      ],
+    },
+    {
       id: '2026-10-25', date: { tr: '25 Ekim', en: 'October 25' },
       items: [
         ['degisti', 'Üstteki bildiriler', 'Boss çizimini kaplayan yazı kutusu kalktı. Yan bahis, kehanet, görev, zar gibi bilgiler TUR kutularının altında küçük simgeler; üstüne gelince ya da dokununca açıklaması açılır.',

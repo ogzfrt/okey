@@ -1961,7 +1961,8 @@ const JOKER_DEFS = {
      düşürür (bkz. "Silinen joker göçü"). */
   bereket: { key: 'bereket', name: 'Büyüteç', rarity: 'common',
     desc: 'Her açılıma +1.5x.', effect: () => ({ mult: 1.5, flat: 0 }) },
-  kosucu: { key: 'kosucu', name: 'Merdiven', rarity: 'common',
+  /* kullanıcı 2026-10-28 — ad Merdiven → Ok (Yürüyen Merdiven → Sadak); anahtar aynı */
+  kosucu: { key: 'kosucu', name: 'Ok', rarity: 'common',
     desc: 'Sıralı açarsan +2.0x.',
     effect: (c) => c.hasSirali ? { mult: 2.0, flat: 0 } : null },
   ikizler: { key: 'ikizler', name: 'Çift Kiraz', rarity: 'common',
@@ -1971,7 +1972,7 @@ const JOKER_DEFS = {
   takim: { key: 'takim', name: 'Bilye', rarity: 'common',
     desc: 'Per açarsan +2.0x.',
     effect: (c) => c.hasPer ? { mult: 2.0, flat: 0 } : null },
-  uzunKosu: { key: 'uzunKosu', name: 'Yürüyen Merdiven', rarity: 'common',
+  uzunKosu: { key: 'uzunKosu', name: 'Sadak', rarity: 'common',
     desc: 'Bir turda 3 Sıralı açarsan +3.5x.',
     effect: (c) => c.siraliCount >= 3 ? { mult: 3.5, flat: 0 } : null },
   ciftFirtina: { key: 'ciftFirtina', name: 'Kiraz Sepeti', rarity: 'common',

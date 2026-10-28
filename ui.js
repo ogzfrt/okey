@@ -9919,13 +9919,24 @@
      asma kilit). Adı/nadirliği/etkisi gizli; ipucu Balatro'daki gibi yalnız
      nasıl keşfedileceğini söyler. Final boss jokeri "Kilitli" başlığı ve
      kendi açılma koşuluyla. */
+  /* kullanıcı 2026-10-28 — iki ayrı durum:
+     · KİLİTLİ (asma kilit): kartın ait olduğu mod henüz açılmamış — ipucu hangi modun kilidini açmak gerektiğini söyler.
+     · BULUNAMADI (bulunamadi.svg): kart elde edilebilir ama henüz bulunmadı.
+     Moda özel kartlar (Kumarhane …) iki durumda da o modun renginde soluk görünür (cm-mode-<mod>). */
+  const cardModeOf = (d) => (d.casino ? 'hizli' : d.mode || null);
   function colLockedCard(catKey, d) {
     const c = document.createElement('div');
-    c.className = 'col-lock-card';
-    c.innerHTML = '<div class="col-lock-art"></div>';
     const fin = d.rarity === 'final';
-    attachTip(c, { name: t(fin ? 'lockedTitle' : 'undiscTitle'),
-      desc: fin ? (t('finalLockedHint_' + d.key) || t('finalLockedHint')) : t('undiscDesc_' + (d.rarity === 'epic' ? 'boss' : catKey)) }, {});
+    const mode = cardModeOf(d);
+    const modeLocked = !!mode && !Modes.unlocked(mode);
+    const locked = fin || modeLocked;
+    c.className = 'col-lock-card' + (mode ? ' cm-mode-' + mode : '');
+    c.innerHTML = `<div class="${locked ? 'col-lock-art' : 'col-nf-art'}"></div>`;
+    const desc = fin ? (t('finalLockedHint_' + d.key) || t('finalLockedHint'))
+      : modeLocked ? t('colModeLocked', t('modeShort_' + mode))
+      : mode ? t('colModeFind', t('modeShort_' + mode))
+      : t('undiscDesc_' + (d.rarity === 'epic' ? 'boss' : catKey));
+    attachTip(c, { name: t(locked ? 'lockedTitle' : 'undiscTitle'), desc }, {});
     return c;
   }
   function colFinalCard(d) {
@@ -9936,9 +9947,10 @@
   const COL_CATS = [
     /* P100 (kullanıcı isteği 2026-10-14) — kumarhane jokerleri Jokerler bölümünün İÇİNDE;
        üstteki "Kumarhane" çipi yalnız onları süzer (ayrı bölüm kalktı). */
-    { key: 'jokers', ico: '🃏', big: true, disc: 'joker', filters: ['all', 'common', 'rare', 'legendary', 'mythic', 'casino'],
-      filterLabel: (f) => (f === 'casino' ? t('colF_casino') : f === 'all' ? t('colAll') : T.rarity(f)),
-      filterFn: (d, f) => (f === 'casino' ? !!d.casino : d.rarity === f),
+    /* kullanıcı 2026-10-28 — Kumarhane filtresi kalktı; moda özel kartlar kendi nadirliklerinde, mod renginde */
+    { key: 'jokers', ico: '🃏', big: true, disc: 'joker', filters: ['all', 'common', 'rare', 'legendary', 'mythic'],
+      filterLabel: (f) => (f === 'all' ? t('colAll') : T.rarity(f)),
+      filterFn: (d, f) => d.rarity === f,
       items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.rarity !== 'epic' && d.rarity !== 'final')), card: (d) => colJokerCard(d) },
     /* P71b (kullanıcı: "final boss jokerleri ayrı bölüm olmasın") — Boss Jokerleri
        artık iki nadirliği birlikte taşır: Hepsi / Boss / Final Boss çipleri, diğer
