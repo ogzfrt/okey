@@ -15,6 +15,15 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-10-28d', date: { tr: '28 Ekim', en: 'October 28' },
+      items: [
+        ['yeni', 'Çürük Taş', 'Lanetli Boyut’ta her raund 4 çürük taş gelir. Elinde bekledikçe olgunlaşır ve açılımda daha çok çarpan verir; ama çürüdüğünde sağındaki taşa bulaşır, sonra Çöp olur.',
+          'Rotten Tiles', 'In the Cursed Dimension 4 rotten tiles arrive each round. They ripen in your hand and give more mult when opened, but once rotten they infect the tile to their right and then turn to Waste.', 'proto'],
+        ['yeni', 'Sessiz Raund', 'Lanetin yüksekken bazı raundlar Sessiz olur: hedef yarı. İlk turda bitirirsen lanetin azalır.',
+          'Silent Round', 'When your curse is high some rounds go Silent: half target. Finish on the first turn and your curse drops.', 'proto'],
+      ],
+    },
+    {
       id: '2026-10-28c', date: { tr: '28 Ekim', en: 'October 28' },
       items: [
         ['yeni', 'Lanetli Boyut’un kendi dünyası', 'Mor-siyah paneller ve zehir yeşili ışık; arka planda boşlukta süzülen kırık bir çocuk odası. Stage ilerledikçe oda çürür, panellerin köşeleri kopar, kenarlardan yeşil sızar.',

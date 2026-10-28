@@ -12216,7 +12216,7 @@ html[data-theme="kozmik"][data-run="lanetli"] body.game-open #cosmos {
 }
 @keyframes lbFloat { from { transform: translate(-.6%, .8%) scale(1.03); } to { transform: translate(.6%, -.8%) scale(1.05); } }
 /* çürüyen çerçeveler (lbRot): kenar sprite'ları + seyrek glitch titremesi */
-.lb-rot { position: absolute; inset: 0; pointer-events: none; z-index: 6; animation: lbJit 6s steps(1) infinite; }
+.lb-rot { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 6; animation: lbJit 6s steps(1) infinite; }
 html[data-lb-decay="3"] .lb-rot { animation-duration: 3.2s; }
 .lb-rot i { position: absolute; display: block; background: no-repeat center / 100% 100%; image-rendering: pixelated; }
 .lb-rot .rc { width: 90px; height: 90px; }
@@ -12309,6 +12309,23 @@ html[data-theme="kozmik"][data-run="lanetli"] .gm-stage #rack::after { filter: h
 .path-map .pm-skip { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; border-radius: 8px; background: #12081D; border: 2px solid #9FE8FF;
   display: flex; align-items: center; justify-content: center; }
 .gm-stage .map-card.has-skip:not(.boss) .mc-art { top: 176px; }
+/* ÇÜRÜK TAŞ — aşamaya göre koyu yeşil-siyah aura (box-shadow; filtre yok, P84) + köşede küf işareti */
+.tile.rot { position: relative; }
+/* yüzeye yayılan küf: aşama büyüdükçe leke büyür ve koyulaşır (sert kenarlı → piksel hissi) */
+.gm-stage .tile.rot { outline: 3px solid #185C3A; outline-offset: -1px; }
+.gm-stage .tile.rot-1 { background-image: radial-gradient(circle at 92% 96%, rgba(24, 92, 58, .4) 0 20%, transparent 21%), linear-gradient(160deg, #fff 0%, var(--tile-face) 55%, #e6ddc7 100%); }
+.gm-stage .tile.rot-2 { background-image: radial-gradient(circle at 95% 100%, rgba(24, 92, 58, .55) 0 30%, transparent 31%), radial-gradient(circle at 0% 92%, rgba(24, 92, 58, .4) 0 22%, transparent 23%), linear-gradient(160deg, #f4fff7 0%, #dfeedd 60%, #c9dcc6 100%);
+  box-shadow: 0 0 10px rgba(92, 255, 157, .55); }
+.gm-stage .tile.rot-3 { outline-color: #0F3A25; background-image: radial-gradient(circle at 100% 100%, rgba(15, 58, 37, .75) 0 38%, transparent 39%), radial-gradient(circle at 0% 100%, rgba(24, 92, 58, .65) 0 34%, transparent 35%), linear-gradient(160deg, #e2f3e4 0%, #bcd8bf 60%, #9fc3a5 100%);
+  box-shadow: 0 0 14px rgba(92, 255, 157, .85); }
+.gm-stage .tile.rot-4 { outline-color: #3A3340; background-image: linear-gradient(160deg, #8b8392 0%, #6d6574 100%); box-shadow: none; }
+.gm-stage .tile.rot-4 .num, .gm-stage .tile.rot-4 .dot { opacity: .35; }
+.tile .tile-mark.rotm { position: absolute; right: 3px; top: 3px; left: auto; bottom: auto; display: flex; pointer-events: none; }
+/* SESSİZ RAUND — harita kartında mor şerit, yol haritasında düğüm işareti */
+.gm-stage .map-card .mc-silent { position: absolute; left: 50%; top: -18px; transform: translateX(-50%); padding: 6px 14px; border-radius: 8px;
+  background: #3B1660; border: 3px solid #C9A6FF; color: #E9D5FF; font: 700 18px/1 var(--gm-font); letter-spacing: 2px; white-space: nowrap; cursor: help; z-index: 2; }
+.path-map .pm-silent { position: absolute; right: -13px; bottom: -13px; width: 24px; height: 24px; border-radius: 7px; background: #12081D; border: 2px solid #C9A6FF;
+  display: flex; align-items: center; justify-content: center; }
 .gm-stage .map-card .mc-skip { position: absolute; left: 18px; right: 18px; top: 376px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .map-card .mc-skip .mcs-rw { display: flex; align-items: center; gap: 12px; font: 700 16px/1.3 var(--gm-font); color: #9FE8FF; text-transform: uppercase; text-align: left; }
 .map-card .mc-skip .mcs-rw svg { flex: none; }

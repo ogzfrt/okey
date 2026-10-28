@@ -992,6 +992,16 @@
           ? t('retunedTileDesc', T.originName(tile.origin))
           : t(srcMark.k + 'Desc') }, {});
     }
+    /* LANETLİ BOYUT — Çürük Taş: aşamaya göre aura + köşede küf işareti; ipucu ne olacağını söyler (sayı yok) */
+    const rotSt = Game.rotStage ? Game.rotStage(tile) : 0;
+    if (rotSt) {
+      d.classList.add('rot', 'rot-' + rotSt);
+      const m = document.createElement('span');
+      m.className = 'tile-mark rotm';
+      m.innerHTML = pixIcon('rot' + rotSt, 3);
+      d.appendChild(m);
+      attachTip(d, { name: t('rotName' + rotSt), rarityText: t('rotTag'), desc: t('rotDesc' + rotSt) }, {});
+    }
     /* MIKNATIS (P28 · Grup H) — mıknatıslı taş ıstakada işaretlenir.
        Şart: oyuncu hangi taşa 10 coin verdiğini GÖREBİLMELİ, yoksa kartın
        her raund çalıştığına dair tek kanıt raund başı bildirimi olur ve o
@@ -1175,6 +1185,14 @@
       }
       card.appendChild(btn);
 
+      if (Game.isSilent && Game.isSilent(s.stage, ric)) {
+        card.classList.add('silent');
+        const sr = document.createElement('div');
+        sr.className = 'mc-silent';
+        sr.textContent = t('silentName');
+        attachTip(sr, { name: t('silentName'), desc: t('silentDesc') }, {});
+        card.appendChild(sr);
+      }
       const pill = document.createElement('div');
       pill.className = 'mc-pill';
       pill.textContent = boss ? T.bossName(s.boss.key, s.boss.name) : names[ric - 1];
@@ -1334,7 +1352,8 @@
         : `<span class="pm-ico">${pixIcon('masa', 3)}</span>`;
       const ev = boss && cur.ev ? `<span class="pm-ev">${pixIcon(cur.ev, 2)}</span>` : '';
       const sk = !boss && st !== 'done' && Game.skipRewardFor(ric);
-      const skb = sk ? `<span class="pm-skip" title="${t('skipRw_' + sk)}">${pixIcon(sk, 2)}</span>` : '';
+      const skb = (sk ? `<span class="pm-skip" title="${t('skipRw_' + sk)}">${pixIcon(sk, 2)}</span>` : '')
+        + (!boss && Game.isSilent(s.stage, ric) && !pm.pending ? `<span class="pm-silent">${pixIcon('sessiz', 2)}</span>` : '');
       html += `<button type="button" class="pm-node pm-round t-${cur.type}${boss ? ' r-boss' : ''} s-${st}" data-ric="${ric}" style="left:${x}px;top:${y}px">${inner}${ev}${skb}</button>`
         + `<div class="pm-round-lbl s-${st}" style="left:${x + (boss ? 48 : 38)}px;top:${y}px">${boss ? t('pmBoss') : t('pmRound', ric)}</div>`;
     }
@@ -1454,6 +1473,12 @@
     arinma: [['#9FE8FF', '#E4F7E6', '#FFFFFF'], ['000010000', '000010000', '000121000', '001222100', '112232211', '001222100', '000121000', '000010000', '000010000']],
     degnek: [['#C9A46A', '#FFD666'], ['000000202', '000000020', '000000202', '000001000', '000010000', '000100000', '001000000', '010000000', '100000000']],
     fis: [['#FF8BD0', '#FFE3F2', '#B03A7A'], ['111111111', '122222221', '123232321', '022222220', '123232321', '122222221', '111111111']],
+    /* çürüme aşamaları: filiz → küf lekesi → damlayan küf → çatlak (taşın sağ üst köşesinde) */
+    rot1: [['#185C3A', '#5CFF9D'], ['00200', '02120', '00100', '00100', '01110']],
+    rot2: [['#185C3A', '#5CFF9D', '#0F3A25'], ['0011100', '0122210', '1222221', '1223221', '0122210', '0011100']],
+    rot3: [['#0F3A25', '#5CFF9D', '#185C3A'], ['0111110', '1222221', '1223321', '1222221', '0131310', '0010100', '0010000']],
+    rot4: [['#24102F', '#6B6070'], ['1000001', '0100010', '0011100', '0110110', '1100011']],
+    sessiz: [['#C9A6FF', '#24102F'], ['0011100', '0111110', '0112110', '0111110', '1111111', '0001000', '1000001']],
     masa: [['#8F8574', '#FFF7E8', '#C9A46A', '#6B4FA0'], ['1111111', '1222221', '1233321', '1234321', '1233321', '1222221', '1222221', '1111111']],
   };
   function pixIcon(name, px) {
@@ -5429,6 +5454,8 @@
         items.push({ k: 'fatality', ico: '☠', title: T.bossName('fatality', 'Fatality'), mark: s.fatalityHit ? '✓' : '',
           txt: t('fatalityTip', s.fatalityLimit) + '<br>' + t('fatalityChip', s.fatalityLimit) });
       for (const x of notes) items.push({ title: s.boss ? T.bossName(s.boss.key, s.boss.name) : '', ...x });
+      if (Game.isSilent && Game.isSilent(s.stage, s.roundInStage))
+        items.push({ k: 'silent', ico: '🔕', title: t('silentName'), mark: s.turn === 1 ? '' : '✗', txt: t('silentDesc') });
       renderInfoBadges(s.status === 'playing' ? items : []);
       renderChessClock();
     }

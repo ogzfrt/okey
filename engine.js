@@ -252,6 +252,16 @@ const CURSE = { max: 10, targetPer: 0.08, cursedPathMult: 1.3, safeCoin: 8, lege
    kese = coin · arinma = lanet azalır · degnek = rastgele Rare+ değnek (yer yoksa coin) · fis = sonraki store'da bir joker bedava.
    Ölçüm 1 (300 run): kese 12 / arınma 1 / herhangi değnek → akıllı atlayan bot bitirme %6 → %3 (bir raundun coin'i + store ≈ 25 coin).
    Ölçüm 2 (400 run, bot S2'den itibaren R1'i ödüle göre atlar): Güvenli yol ort. stage 2.95 → 2.94, akıllı yol 2.42 → 2.51 — denk seçim. */
+/* ÇÜRÜK TAŞ — Çürüme Saati (rapor, Aşama 2): elde geçen tura göre Taze +0.3x → Olgun +0.6x → Çürük +1.2x (açılımda
+   taş başına); Çürük olduğu tur başında ıstakada SAĞINDAKİ taşa bulaşır (o taş Taze Çürük olur, kendi saati işler);
+   4. tur Çöp: hiçbir gruba giremez, yer kaplar, atılabilir. Okey / deste jokeri / özel taş çürümez, bulaşma atlar.
+   Raund başına 4 tane — hepsi raund içinde ele gelsin diye 1'i açılış elinde, 3'ü destenin ilk çekişlerinde. */
+/* Rapor 0.5/1.0/2.0 diyordu; bot (400 run) Güvenli yolda ort. stage 2.90 → 3.40 (bitirme %4 → %7) ölçtü — çürüğü planlamayan
+   bot bile kolaylaşıyordu. 0.3/0.6/1.2 → 2.98 (akıllı yol 2.28 → 2.54): planlayan oyuncu kazanır, mod kolaylaşmaz. */
+const ROT = { perRound: 4, inHand: 1, drawZone: 12, mult: [0.3, 0.6, 1.2], cols: 17 };
+/* SESSİZ RAUND — lanet 4+ iken boss olmayan raundun %20'si: hedef yarı; ilk turda bitirirsen birikmiş lanet −1,
+   geç bitirirsen rastgele bir lanetli eşyan bir sonraki raund susar (eşyalar Aşama 4'te). */
+const SILENT = { minCurse: 4, chance: 0.2 };
 const SKIP_REWARDS = { kese: { coin: 25 }, arinma: { curse: 2 }, degnek: { fallbackCoin: 10 }, fis: {} };
 function runModeOf(s) {
   return RUN_MODES[s?.runMode] || RUN_MODES.base;
@@ -4012,8 +4022,63 @@ const Game = {
     const up = this.state?.permTargetUp || 0;
     /* LANETLİ BOYUT — her lanet seviyesi +%8, Lanetli yoldan oynanan stage ×1.3 */
     const cm = this.curseTargetMult();
-    if (cm !== 1) return niceUp(base, base * (1 + up) * cm);
-    return up ? niceUp(base, base * (1 + up)) : niceTarget(base);
+    const v = cm !== 1 ? niceUp(base, base * (1 + up) * cm) : up ? niceUp(base, base * (1 + up)) : niceTarget(base);
+    return this.isSilent(stage, ric) ? niceTarget(v / 2) : v;
+  },
+  /* Sessiz Raund mu? Zar stage başında (yol seçilince) atılır; haritada önceden görünür. */
+  isSilent(stage, ric) {
+    const s = this.state;
+    return !!(s && s.silent && s.silent.stage === stage && s.silent.rics.includes(ric));
+  },
+  _rollSilent() {
+    const s = this.state;
+    s.silent = { stage: s.stage, rics: [] };
+    if (!this.lanetliOn() || this.isFinalStage() || this.curseLevel() < SILENT.minCurse) return;
+    for (const ric of [1, 2]) if (this.rng() < SILENT.chance) s.silent.rics.push(ric);
+  },
+  /* ── ÇÜRÜK TAŞ ── 0 = çürük değil, 1 Taze, 2 Olgun, 3 Çürük, 4 Çöp */
+  rotStage(t) {
+    const s = this.state;
+    if (!t || !t.rot || t.rotBorn == null || !s) return 0;
+    return Math.max(1, Math.min(4, s.turn - t.rotBorn + 1));
+  },
+  _rotOk(t) {
+    return !!t && !t.jokerTile && !t.fakeOkey && !t.special && !t.hidra && !this.isOkeyTile(t);
+  },
+  _rotSeed() {
+    const s = this.state;
+    for (const t of [...s.hand, ...s.deck]) { delete t.rot; delete t.rotBorn; delete t.rotSpread; }
+    if (!this.lanetliOn()) return;
+    const pick = (arr, n) => {
+      const pool = arr.filter((t) => this._rotOk(t) && !t.rot);
+      for (let k = 0; k < n && pool.length; k++) pool.splice(Math.floor(this.rng() * pool.length), 1)[0].rot = true;
+    };
+    pick(s.hand, ROT.inHand);
+    pick(s.deck.slice(0, ROT.drawZone), ROT.perRound - ROT.inHand);
+    for (const t of s.hand) if (t.rot) t.rotBorn = s.turn;
+  },
+  /* tur başı: yeni gelen çürüklerin saati başlar; Çürük aşamasına giren taş sağındakine bulaşır.
+     Sağ = aynı ıstaka satırında bir sonraki hücre (UI t.slot yazar; yoksa — bot — el sırası). */
+  _rotTurnStart(events) {
+    const s = this.state;
+    if (!this.lanetliOn()) return;
+    for (const t of s.hand) if (t.rot && t.rotBorn == null) t.rotBorn = s.turn;
+    const hasSlots = s.hand.every((t) => Number.isInteger(t.slot));
+    for (const t of [...s.hand]) {
+      if (!t.rot || t.rotSpread || this.rotStage(t) !== 3) continue;
+      t.rotSpread = true;
+      let n;
+      if (hasSlots) n = (t.slot % ROT.cols) === ROT.cols - 1 ? null : s.hand.find((x) => x.slot === t.slot + 1);
+      else n = s.hand[s.hand.indexOf(t) + 1];
+      if (!n || n.rot || !this._rotOk(n)) { events.push(`🦠 Çürük ${COLOR_TR[t.color]} ${t.number} çürüdü; sağında bulaşacak taş yok`); continue; }
+      n.rot = true; n.rotBorn = s.turn;
+      events.push(`🦠 Çürük ${COLOR_TR[t.color]} ${t.number} sağındaki ${COLOR_TR[n.color]} ${n.number} taşına bulaştı`);
+    }
+  },
+  rotMultOf(tiles) {
+    let m = 0, n = 0;
+    for (const t of tiles || []) { const st = this.rotStage(t); if (st >= 1 && st <= 3) { m += ROT.mult[st - 1]; n++; } }
+    return { m, n };
   },
   lanetliOn() { return !!runModeOf(this.state).lanetli; },
   stageStoreOn() { return !!runModeOf(this.state).stageStore; },
@@ -4162,6 +4227,7 @@ const Game = {
     s.pathPending = false;
     s.stagePath = kind;
     this._curseAdd(kind === 'cursed' ? 1 : -1);
+    this._rollSilent();   // Sessiz Raund — yol (lanet) belli olduktan sonra
     s.target = this.targetFor(s.stage, s.roundInStage);
     return { ok: true, kind, ev: nextRow[idx].ev, curse: this.curseLevel(), target: s.target };
   },
@@ -5640,6 +5706,7 @@ const Game = {
     this._integrityWatch(s.roundStartNotes, 'raund başı');
     s.karaKediMax = null; // Kara Kedi boss eşiği her raund yeniden ölçülür
     s.turn = 1;
+    this._rotSeed();   // LANETLİ BOYUT — Çürük Taş (diğer modlarda yalnız eski bayrakları temizler)
     // Uzun Soluk yükseltmesi her raunda kalıcı +1 tur ekler
     s.maxTurns = 4 + (s.permTurns || 0);
     s.score = 0;
@@ -6380,6 +6447,7 @@ const Game = {
   /* Tur başı efektleri — raund başında ve her çekişten sonra çalışır */
   _onTurnStart(events) {
     const s = this.state;
+    this._rotTurnStart(events);   // LANETLİ BOYUT — Çürüme Saati
     s.ladyStarId = null;   // P71 — yıldız _bossTurnStart'tan SONRA seçilir (aşağıda)
     /* ÜÇ KAĞITÇI (BOSS) — ters gelen taş BİR tur ters kalır: bu turda çekilenler
        (`faceDownFresh`) bekler, bir önceki turun ters taşları şimdi açılır. */
@@ -7232,6 +7300,12 @@ const Game = {
         triggered.push({ id: mdj.id, name: mdj.name,
           text: `+${MEDUSA_MULT.toFixed(1)}x +${MEDUSA_FLAT} puan (heykel taş)` });
       }
+      // LANETLİ BOYUT — Çürük Taş: Taze / Olgun / Çürük çarpanı (ROT.mult, taş başına)
+      const rot = this.rotMultOf(ctx.tiles);
+      if (rot.n) {
+        mult += rot.m;
+        triggered.push({ id: 'rot', name: 'Çürük Taş', text: `+${rot.m.toFixed(1)}x (${rot.n} çürük taş)` });
+      }
       // Anka Kuşu — Yükselen Alev (P33 · Grup A): son raundunda alev büyür
       const ankj = this.slotRecs().find(j => j.key === 'ankaKusu');
       if (ankj) {
@@ -7755,6 +7829,8 @@ const Game = {
     // Terzi'nin İğnesi BOSS Koşulu (Grup F): dikili taş bu tur açılıma giremez
     if (tiles.some(t => t.bossSewn))
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur açılımda kullanılamaz (tur bitince serbest kalır).' };
+    if (tiles.some(t => this.rotStage(t) === 4))
+      return { ok: false, error: '🦠 Çöp Taş hiçbir gruba giremez — atabilirsin.' };
 
     /* P55 · Grup A (bug) — TERS TAŞ DENEMEDE AÇILIYORDU. Eskiden yüz burada,
        grup DENETLENMEDEN önce açılıyordu: geçersiz bir deneme
@@ -10199,6 +10275,15 @@ const Game = {
     s.winStreak++;
     if (s.wonOnTurn == null) s.wonOnTurn = s.turn;
     const boss = this.isBossRound();
+    if (this.isSilent(s.stage, s.roundInStage)) {
+      if (s.wonOnTurn === 1) { this._curseAdd(-1); s.silentResult = 'cleansed'; }
+      else {
+        /* geç bitti: rastgele bir lanetli eşya bir sonraki raund susar (lanetli eşyalar Aşama 4'te gelir) */
+        const items = [...s.jokers, ...s.backup].filter((j) => JOKER_DEFS[j.key]?.cursed);
+        if (items.length) s.silencedNext = items[Math.floor(this.rng() * items.length)].id;
+        s.silentResult = items.length ? 'silenced' : 'late';
+      }
+    }
     // Grup M — zafer ekranının istatistik özeti için kümülatif sayaçlar
     s.roundsWon = (s.roundsWon || 0) + 1;
     s.totalScore = (s.totalScore || 0) + s.score;
@@ -13764,7 +13849,7 @@ if (typeof module !== 'undefined') {
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, ROT, SILENT, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,
