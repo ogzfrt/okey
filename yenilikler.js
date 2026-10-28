@@ -12,8 +12,17 @@
     tr: { title: 'YENİLİKLER', sub: (d) => `${d} güncellemesi`, subAll: 'Tüm güncellemeler', ok: 'Tamam, oynayalım!', close: 'Kapat', btn: 'Yenilikler' },
     en: { title: "WHAT'S NEW", sub: (d) => `${d} update`, subAll: 'All updates', ok: "OK, let's play!", close: 'Close', btn: "What's New" },
   };
-  /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama] */
-  const NOTLAR = [
+  /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
+  const TUM_NOTLAR = [
+    {
+      id: '2026-10-28b', date: { tr: '28 Ekim', en: 'October 28' },
+      items: [
+        ['yeni', 'Lanetli Boyut Run', 'Üçüncü run modu: 6 stage, her raund store, Lanet Seviyesi. Harita ekranı bir Yol Haritası: her stage sonunda Güvenli ya da Lanetli yolu haritada seçersin.',
+          'Cursed Dimension Run', 'A third run mode: 6 stages, a store every round, Curse Level. The map screen is a Path Map: at each stage end you pick a Safe or Cursed path on the map.', 'proto'],
+        ['yeni', 'Raund atlama', 'Lanetli Boyut’ta Raund 1 ve 2’yi atlayıp ödülünü alabilirsin (coin, arınma, değnek ya da bedava joker). Atlarsan o raundun coin’i ve store’u gelmez.',
+          'Skipping rounds', 'In the Cursed Dimension you can skip Round 1 and 2 for a reward (coins, cleansing, a wand or a free joker). Skipping costs that round’s coins and store.', 'proto'],
+      ],
+    },
     {
       id: '2026-10-28', date: { tr: '28 Ekim', en: 'October 28' },
       items: [
@@ -122,6 +131,9 @@
       ],
     },
   ];
+  /* betada henüz açılmamış modların notları ('proto') gösterilmez; boş kalan kayıt düşer */
+  const NOTLAR = TUM_NOTLAR.map((n) => ({ ...n, items: n.items.filter((it) => !(it[5] === 'proto' && window.LUSORIA_BETA)) }))
+    .filter((n) => n.items.length);
   const lang = () => ((window.T && window.T.lang) === 'en' ? 'en' : 'tr');
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 

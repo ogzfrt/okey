@@ -1254,6 +1254,213 @@
     // Trainer modu: rozet + boss seçici + store filtresi (Grup H)
     document.getElementById('trainerMapBar')?.remove();
     if (Game.trainerMode) el.mapCards.parentElement.appendChild(trainerMapBar());
+    renderPathMap();
+  }
+
+  /* LANETLİ BOYUT — YOL HARİTASI (kullanıcı 2026-10-28: "direkt harita olsun, Slay the Spire gibi").
+     Lanetli Boyut'ta harita ekranının kendisi yol haritasıdır: aşağıdan yukarı S1 … S6 → FİNAL.
+     İçinde bulunulan stage haritada üç raund düğümüne açılır (Raund 1 → Raund 2 → Boss); sağdaki tek kart
+     odaktaki raundu gösterir (aktif raund; düğümün üstüne gelince o raund). Stage bitince ulaşılabilen
+     yol düğümleri parlar: üstüne gelince sağdaki kart o yolu anlatır, tıklayınca (ya da kartın SEÇ'i) seçilir. */
+  let pmFocus = null;   // { kind: 'round', ric } | { kind: 'path', i } — sağdaki kartta gösterilen
+  function renderPathMap() {
+    const host = el.mapCards.parentElement;
+    let box = $('pathMap'), side = $('pathSide');
+    const pm = Game.pathMapState && Game.pathMapState();
+    el.mapCards.classList.toggle('lanetli-map', !!pm);
+    $('lblMapTitle2').textContent = t(pm && pm.pending ? 'mapTitlePath' : 'mapTitleL2');
+    if (!pm) { box?.remove(); side?.remove(); return; }
+    const s = Game.state;
+    if (!box) { box = document.createElement('div'); box.id = 'pathMap'; box.className = 'path-map'; host.appendChild(box); }
+    if (!side) { side = document.createElement('div'); side.id = 'pathSide'; side.className = 'path-side'; host.appendChild(side); }
+
+    /* ── yerleşim: satır = stage; içinde bulunulan stage (er) üç seviye kaplar ── */
+    const rows = pm.rows, last = rows.length - 1, er = pm.row, idx = pm.idx;
+    const lvOf = [];
+    let n = 0;
+    rows.forEach((_, r) => { lvOf[r] = r === er ? [n, n + 1, n + 2] : [n]; n += lvOf[r].length; });
+    const W = 600, H = 1005, PT = 92, PB = 62;
+    const ly = (l) => H - PB - l * (H - PB - PT) / (n - 1);
+    const LANES = { 1: [0.5], 2: [0.25, 0.75], 3: [0, 0.5, 1] };
+    const lx = (r, i) => 160 + LANES[rows[r].length][i] * 330;
+    const pos = (r, i) => (r === er && i !== idx ? [lx(r, i), ly(lvOf[r][1])] : [lx(r, i), ly(lvOf[r][0])]);
+    const rpos = (ric) => [lx(er, idx), ly(lvOf[er][ric - 1])];   // raund düğümleri
+    const key = (r, i) => r + ':' + i;
+    const walked = new Set(pm.walked.map(([r, i]) => key(r, i)));
+    const reach = new Set(pm.reach.map((j) => key(er + 1, j)));
+    const open = new Set([key(er, idx)]);
+    for (let r = er; r < last; r++)
+      for (const [e, a, b] of pm.edges) if (e === r && open.has(key(r, a))) open.add(key(r + 1, b));
+    /* raund durumu: stage bittiyse (seçim bekliyor) üçü de geçilmiş */
+    const rState = (ric) => (pm.pending || ric < s.roundInStage ? 'done' : ric === s.roundInStage ? 'here' : 'open');
+    const stageBoss = (() => { const o = s.bossOrder || []; return o.length ? o[er % o.length] : s.boss; })();
+
+    /* ── çizgiler ── */
+    const ln = (a, b, cls) => `<line class="${cls}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
+    let svg = '';
+    for (const [r, a, b] of pm.edges) {
+      if ((r === er && a !== idx) || (r + 1 === er && b !== idx)) continue;   // seçilmemiş kardeşler gizli
+      const ka = key(r, a), kb = key(r + 1, b);
+      const from = r === er && a === idx ? rpos(3) : pos(r, a);
+      const to = r + 1 === er && b === idx ? rpos(1) : pos(r + 1, b);
+      const cls = walked.has(ka) && walked.has(kb) ? 'walked' : (pm.pending && r === er && a === idx && reach.has(kb)) ? 'live'
+        : (open.has(ka) && open.has(kb)) ? 'open' : 'dead';
+      svg += ln(from, to, cls);
+    }
+    svg += ln(rpos(1), rpos(2), rState(2) === 'open' ? 'open' : 'walked') + ln(rpos(2), rpos(3), rState(3) === 'open' ? 'open' : 'walked');
+
+    let html = `<div class="pm-plate">${t('pmTitle')}</div>`
+      + `<svg class="pm-lines" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${svg}</svg>`;
+    rows.forEach((row, r) => {
+      const ys = lvOf[r].map(ly);
+      html += `<div class="pm-row-lbl${r === er ? ' cur' : ''}" style="top:${(ys[0] + ys[ys.length - 1]) / 2}px">${r === last ? t('pmFinal') : 'S' + (r + 1)}</div>`;
+      row.forEach((nd, i) => {
+        if (r === er) return;   // seçilen düğümün yerini raund düğümleri alır; seçilmeyen kardeşler gizli
+        const k = key(r, i);
+        const st = walked.has(k) ? 'done' : reach.has(k) ? 'next' : open.has(k) ? 'open' : 'closed';
+        const [x, y] = pos(r, i);
+        const ico = pixIcon(nd.type === 'final' ? 'eye' : nd.type === 'cursed' ? 'skull' : 'shield', nd.type === 'final' ? 4 : 3);
+        const ev = nd.ev ? `<span class="pm-ev">${pixIcon(nd.ev, 2)}</span>` : '';
+        html += `<button type="button" class="pm-node t-${nd.type} s-${st}" data-r="${r}" data-i="${i}" style="left:${x}px;top:${y}px">`
+          + `<span class="pm-ico">${ico}</span>${ev}</button>`;
+      });
+    });
+    const cur = rows[er][idx];
+    for (let ric = 1; ric <= 3; ric++) {
+      const [x, y] = rpos(ric), st = rState(ric), boss = ric === 3;
+      const inner = boss
+        ? (stageBoss && JOKER_ART.has(stageBoss.key) ? `<span class="pm-boss-art jk-${stageBoss.key}"></span>` : `<span class="pm-ico">${pixIcon('skull', 4)}</span>`)
+        : `<span class="pm-ico">${pixIcon('masa', 3)}</span>`;
+      const ev = boss && cur.ev ? `<span class="pm-ev">${pixIcon(cur.ev, 2)}</span>` : '';
+      const sk = !boss && st !== 'done' && Game.skipRewardFor(ric);
+      const skb = sk ? `<span class="pm-skip" title="${t('skipRw_' + sk)}">${pixIcon(sk, 2)}</span>` : '';
+      html += `<button type="button" class="pm-node pm-round t-${cur.type}${boss ? ' r-boss' : ''} s-${st}" data-ric="${ric}" style="left:${x}px;top:${y}px">${inner}${ev}${skb}</button>`
+        + `<div class="pm-round-lbl s-${st}" style="left:${x + (boss ? 48 : 38)}px;top:${y}px">${boss ? t('pmBoss') : t('pmRound', ric)}</div>`;
+    }
+    box.innerHTML = html;
+
+    /* ── sağ üst: lanet + açıklama ── */
+    const lv = Game.curseLevel();
+    let pips = '';
+    for (let i = 0; i < CURSE.max; i++) pips += `<i class="${i < lv ? 'on' : ''}"></i>`;
+    side.innerHTML = `<div class="ps-curse"><span>${t('curseLbl')}</span><b>${lv}/${CURSE.max}</b><div class="cm-pips">${pips}</div></div>`
+      + `<div class="ps-leg"><span>${pixIcon('shield', 3)}</span>${t('pathSafe')}</div>`
+      + `<div class="ps-leg"><span>${pixIcon('skull', 3)}</span>${t('pathCursed')}</div>`
+      + `<div class="ps-leg ev"><span>${pixIcon('takas', 2)}</span><span>${pixIcon('fal', 2)}</span><span>${pixIcon('sunak', 2)}</span><em>${t('pmEvLeg')}</em></div>`;
+    attachTip(side.querySelector('.ps-curse'), { name: t('curseLbl') + ' ' + lv,
+      desc: t('curseTip', Math.round(lv * CURSE.targetPer * 100), s.curseStored || 0, Game.curseCarried()) }, {});
+
+    /* ── sağdaki kart: odaktaki raund ya da (seçim beklerken) odaktaki yol ── */
+    el.mapCards.querySelectorAll('.map-card').forEach((c) => c.classList.remove('collapsed'));
+    $('pmInfo')?.remove();
+    if (!pm.pending && pmFocus?.kind === 'path') pmFocus = null;
+    if (pm.pending && pmFocus?.kind !== 'path') pmFocus = { kind: 'path', i: pm.reach[0] };
+    const pathCard = (i) => {
+      const nd = rows[er + 1][i], cursed = nd.type === 'cursed';
+      const tgt = Game.pathPreview(nd.type);
+      const c = document.createElement('div');
+      c.id = 'pmInfo';
+      c.className = 'map-card mc-3 active pm-focus pm-info' + (cursed ? ' pi-cursed' : '');
+      c.innerHTML = `<button class="mc-select">${t('mcSelect')}</button>`
+        + `<div class="mc-pill">${cursed ? t('pathCursed') : t('pathSafe')} · S${er + 2}</div>`
+        + `<div class="mc-art pi-art">${pixIcon(cursed ? 'skull' : 'shield', 9)}</div>`
+        + `<div class="mc-cond">${cursed ? t('pathCursedDesc') : t('pathSafeDesc', CURSE.safeCoin)}`
+        + (nd.ev ? `<span class="pi-ev">${pixIcon(nd.ev, 3)} ${t('pmEv_' + nd.ev)}</span>` : '') + `</div>`
+        + `<div class="mc-target"><div class="mc-t-lbl">${t('pmFirstTarget')}</div><div class="mc-t-val">${tgt} <span class="mc-unit">${t('mcPts')}</span></div></div>`;
+      c.querySelector('.mc-select').addEventListener('click', () => pickPath(i));
+      el.mapCards.appendChild(c);
+      fitText(c.querySelector('.mc-pill'), 24, 13);
+    };
+    const showFocus = () => {
+      el.mapCards.querySelectorAll('.map-card').forEach((c) => c.classList.remove('pm-focus'));
+      box.querySelectorAll('.pm-node').forEach((b) => b.classList.remove('focus'));
+      $('pmInfo')?.remove();
+      if (pmFocus?.kind === 'path') {
+        pathCard(pmFocus.i);
+        box.querySelector(`.pm-node[data-r="${er + 1}"][data-i="${pmFocus.i}"]`)?.classList.add('focus');
+      } else {
+        const ric = pmFocus?.ric || s.roundInStage;
+        el.mapCards.querySelector('.mc-' + ric)?.classList.add('pm-focus');
+        box.querySelector(`.pm-round[data-ric="${ric}"]`)?.classList.add('focus');
+      }
+    };
+    const pickPath = (i) => {
+      const res = Game.choosePath(i);
+      if (!res.ok) return;
+      (res.kind === 'cursed' ? SFX.crack : SFX.chips)();
+      hideTip();
+      pmFocus = null;
+      render(); renderMap();
+    };
+    /* RAUND ATLAMA — aktif (atlanabilir) raundun kartında: ödül + ATLA (coin ve store gelmez) */
+    const act = el.mapCards.querySelector('.map-card.active:not(.pm-info)');
+    if (act && !pm.pending && Game.canSkipRound && Game.canSkipRound()) {
+      const sk = Game.skipRewardFor(s.roundInStage);
+      const blk = document.createElement('div');
+      blk.className = 'mc-skip';
+      blk.innerHTML = `<div class="mcs-rw">${pixIcon(sk, 3)}<span>${t('skipRw_' + sk)}</span></div>`
+        + `<button type="button" class="mcs-btn">${t('skipBtn')}</button><div class="mcs-note">${t('skipNote')}</div>`;
+      blk.querySelector('.mcs-btn').addEventListener('click', () => {
+        const r = Game.skipLanetRound();
+        if (!r.ok) { toast(r.error, false); return; }
+        SFX.chips();
+        toast(t('skipDone', t('skipRw_' + r.key)), true);
+        pmFocus = null;
+        render(); renderMap();
+      });
+      act.appendChild(blk);
+      act.classList.add('has-skip');
+    }
+    showFocus();
+
+    /* ── düğüm etkileşimi ── */
+    box.querySelectorAll('.pm-round').forEach((b) => {
+      const ric = +b.dataset.ric;
+      if (pm.pending) return;
+      b.addEventListener('mouseenter', () => { pmFocus = { kind: 'round', ric }; showFocus(); });
+      b.addEventListener('mouseleave', () => { pmFocus = null; showFocus(); });
+      if (ric === s.roundInStage) b.addEventListener('click', () => el.mapCards.querySelector('.map-card.active .mc-play')?.click());
+    });
+    box.querySelectorAll('.pm-node:not(.pm-round)').forEach((b) => {
+      const r = +b.dataset.r, i = +b.dataset.i, nd = rows[r][i];
+      if (b.classList.contains('s-next')) {
+        b.addEventListener('mouseenter', () => { pmFocus = { kind: 'path', i }; showFocus(); });
+        b.addEventListener('click', () => pickPath(i));
+        return;
+      }
+      let name, desc;
+      if (nd.type === 'final') { name = t('pmFinal'); desc = t('pmFinalDesc'); }
+      else {
+        name = (nd.type === 'cursed' ? t('pathCursed') : t('pathSafe')) + ' · S' + (r + 1);
+        desc = nd.type === 'cursed' ? t('pathCursedDesc') : t('pathSafeDesc', CURSE.safeCoin);
+      }
+      if (nd.ev) desc += ' ' + t('pmEv_' + nd.ev) + ' ' + t('pmEvSoon');
+      const st = [...b.classList].find((c) => c.startsWith('s-')).slice(2);
+      desc += ' ' + t(st === 'done' ? 'pmDone' : st === 'closed' ? 'pmClosed' : 'pmOpen');
+      attachTip(b, { name, desc }, {});
+    });
+  }
+  /* Yol Haritası piksel simgeleri (oyunun piksel dili; emoji her sistemde aynı çizilmiyor).
+     Harita satırı: 0 boş, 1-4 paletteki renk. */
+  const PIX = {
+    shield: [['#2D7A4F', '#7FE0A4', '#E4F7E6'], ['111111111', '122222221', '122332221', '122332221', '122222221', '012222210', '012222210', '001222100', '000121000', '000010000']],
+    skull: [['#E9D5FF', '#1E0F2E', '#B46CFF'], ['001111100', '011111110', '111111111', '122111221', '122111221', '111131111', '011111110', '001010100', '003030300']],
+    eye: [['#FF4FA3', '#FFD0E6', '#5CFF9D', '#12081D'], ['00011111000', '01122222110', '12223332221', '12233433221', '12223332221', '01122222110', '00011111000']],
+    takas: [['#FFD666', '#8A5A12', '#1E0F2E'], ['011111110', '122222221', '111131111', '122232221', '122222221', '111111111']],
+    fal: [['#F3EBD8', '#8F8574'], ['110000011', '121000121', '012101210', '001212100', '000121000', '001212100', '012101210', '121000121', '110000011']],
+    sunak: [['#FFD666', '#E4F7E6', '#FF8A3D'], ['0003000', '0033300', '0003000', '0022200', '0022200', '0022200', '0022200', '1111111']],
+    kese: [['#8A5A12', '#FFD666', '#FFF3B0'], ['000111000', '000010000', '001111100', '011222110', '112232211', '112333211', '112232211', '011222110', '001111100']],
+    arinma: [['#9FE8FF', '#E4F7E6', '#FFFFFF'], ['000010000', '000010000', '000121000', '001222100', '112232211', '001222100', '000121000', '000010000', '000010000']],
+    degnek: [['#C9A46A', '#FFD666'], ['000000202', '000000020', '000000202', '000001000', '000010000', '000100000', '001000000', '010000000', '100000000']],
+    fis: [['#FF8BD0', '#FFE3F2', '#B03A7A'], ['111111111', '122222221', '123232321', '022222220', '123232321', '122222221', '111111111']],
+    masa: [['#8F8574', '#FFF7E8', '#C9A46A', '#6B4FA0'], ['1111111', '1222221', '1233321', '1234321', '1233321', '1222221', '1222221', '1111111']],
+  };
+  function pixIcon(name, px) {
+    const [pal, rows] = PIX[name];
+    let r = '';
+    rows.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '0') r += `<rect x="${x}" y="${y}" width="1" height="1" fill="${pal[c - 1]}"/>`; }));
+    const w = rows[0].length, h = rows.length;
+    return `<svg class="pix" width="${w * px}" height="${h * px}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">${r}</svg>`;
   }
 
   /* Trainer barı (yalnız trainer modunda; geliştirme aracıdır ve normal
@@ -4565,7 +4772,57 @@
     if (s.staged.length || s.islemeler.length) render();
   }, 1000);
 
+  /* LANETLİ BOYUT — Lanet Seviyesi göstergesi (sol sütun, STAGE/RAUND altında) */
+  function renderCurse() {
+    const on = !!(Game.lanetliOn && Game.lanetliOn() && Game.state);
+    for (const sel of ['#gameScreen .gm-left']) {
+      const col = document.querySelector(sel);
+      if (!col) continue;
+      let m = col.querySelector('.curse-meter');
+      if (!on) { m?.remove(); continue; }
+      if (!m) { m = document.createElement('div'); m.className = 'curse-meter'; col.appendChild(m); }
+      const s = Game.state, lv = Game.curseLevel(), carried = Game.curseCarried(), stored = s.curseStored || 0;
+      const sig = `${lv}|${s.stagePath}`;
+      if (m.dataset.sig === sig) continue;
+      m.dataset.sig = sig;
+      let pips = '';
+      for (let i = 0; i < CURSE.max; i++) pips += `<i class="${i < lv ? 'on' : ''}"></i>`;
+      m.innerHTML = `<div class="cm-head"><span>${t('curseLbl')}</span><b>${lv}/${CURSE.max}</b></div><div class="cm-pips">${pips}</div>`
+        + (s.stagePath === 'cursed' ? `<div class="cm-path">${t('cursePathOn')}</div>` : '');
+      attachTip(m, { name: t('curseLbl') + ' ' + lv, desc: t('curseTip', Math.round(lv * CURSE.targetPer * 100), stored, carried) }, {});
+    }
+  }
+  /* LANETLİ BOYUT — stage başında Güvenli / Lanetli yol (S2'den itibaren) */
+  function showPathPick() {
+    if (!Game.needsPath || !Game.needsPath() || document.getElementById('pathOv')) return;
+    const s = Game.state, lv = Game.curseLevel();
+    const raw = RUN_MODES.lanetli.targets[s.stage - 1][0];   // lanet ve yol etkisi olmadan R1 hedefi
+    const tSafe = Game.pathPreview('safe'), tCursed = Game.pathPreview('cursed');
+    const pct = (v) => Math.round((v / raw - 1) * 100);
+    const ov = document.createElement('div');
+    ov.id = 'pathOv';
+    ov.className = 'pk-ov tone-violet path-ov';
+    ov.innerHTML = `<div class="pk-box"><div class="pk-title">🜏 ${t('pathTitle', s.stage)}</div>`
+      + `<div class="pk-sub-title">${t('pathSub', lv)}</div><div class="pk-body pk-choice">`
+      + `<button class="pk-card path-card path-safe" data-p="safe"><div class="pk-ico">🛡</div><div class="pk-name">${t('pathSafe')}</div>`
+      + `<div class="pk-desc">${t('pathSafeDesc', CURSE.safeCoin)}</div><div class="path-t">${t('pathTarget', tSafe, pct(tSafe))}</div></button>`
+      + `<button class="pk-card path-card path-cursed" data-p="cursed"><div class="pk-ico">🜏</div><div class="pk-name">${t('pathCursed')}</div>`
+      + `<div class="pk-desc">${t('pathCursedDesc')}</div><div class="path-t">${t('pathTarget', tCursed, pct(tCursed))}</div></button>`
+      + `</div></div>`;
+    ov.querySelectorAll('.path-card').forEach((c) => c.addEventListener('click', () => {
+      const r = Game.choosePath(c.dataset.p);
+      if (!r.ok) return;
+      (c.dataset.p === 'cursed' ? SFX.crack : SFX.chips)();
+      ov.remove();
+      render();
+    }));
+    document.body.appendChild(ov);
+  }
+
   function render() {
+    renderCurse();
+    /* Yol seçimi artık harita şeridinde (renderPathMap); bekleyen seçim varken oyun ekranı haritaya döner */
+    if (Game.needsPath && Game.needsPath() && curScreen() === 'game' && !document.querySelector('.pk-ov')) setTimeout(() => showScreen('map'), 0);
     if (Game.state && Game.state.ghostOffer && !document.getElementById('ghostOv'))
       setTimeout(showGhostOffer, 0);   // P100 — kayıttan dönülünce bekleyen Hayalet tur teklifi
     applyRunTheme();   // P78 — boss raundu arayüzü (raund ekran değişmeden başlayıp bitebilir)
@@ -7200,7 +7457,9 @@
        gömebilir → `.rp-art-img.mode-<key>` (style.css). */
     { key: 'base', ico: '🀄', img: true },
     { key: 'hizli', ico: '🎰', img: true },
-    { key: 'soon3', soon: true }, { key: 'soon4', soon: true },
+    /* LANETLİ BOYUT (kullanıcı onayı 2026-10-28) — yalnız prototipte; beta'da "yakında" kalır */
+    BETA ? { key: 'soon3', soon: true } : { key: 'lanetli', ico: '🜏' },
+    { key: 'soon4', soon: true },
     { key: 'soon5', soon: true }, { key: 'soon6', soon: true },
   ];
   let runPickIdx = 0;
@@ -7670,6 +7929,9 @@
        Gelecekte kilitli bir mod eklenecekse örnek:
          { key: 'endless', btn: 'btnEndless', requires: 'base' } */
     { key: 'hizli', requires: BETA ? 'base' : null },   // beta: Orion yenilince açılır
+    /* LANETLİ BOYUT — kullanıcı: "Kumarhane Run'dan sonra kilidi açılacak"; prototipte her şey açık
+       (oyun-modlari-yol-haritasi), beta'da mod zaten gizli */
+    { key: 'lanetli', requires: BETA ? 'hizli' : null },
   ];
 
   const Modes = {
@@ -7906,7 +8168,10 @@
     syncBossFx(boss);
     if (key === 'yesil') { if (root.dataset.theme) delete root.dataset.theme; }
     else if (root.dataset.theme !== key) root.dataset.theme = key;
-    if (key === 'kozmik') {
+    const lanet = key === 'kozmik' && !!(Game.lanetliOn && Game.lanetliOn());
+    if (lanet) { if (root.dataset.run !== 'lanetli') root.dataset.run = 'lanetli'; }
+    else if (root.dataset.run) delete root.dataset.run;
+    if (key === 'kozmik' && !lanet) {
       const st = Math.max(1, (Game.state && Game.state.stage) || 1);
       /* denetim3 #25 — eskiden (st-1) % 8: Stage 9 (Orion finali) ve Sonsuz Mod S1'in moruna
          geri dönüyordu, yolculuk bozuluyordu. Son durak (S8 altın) korunur. */
@@ -8508,7 +8773,7 @@
         // Grup H: boss geçildiyse zafer ekranından SONRA ayrı güçlendirme adımı
         if (s.upgradeOffer) { showUpgradeScene(); return; }
         /* P58 · Kumarhane — raund arası store yok: doğrudan haritaya */
-        if (!s.store && Game.kumarhaneOn && Game.kumarhaneOn()) { goNextRound(); return; }
+        if (!s.store && Game.stageStoreOn && Game.stageStoreOn()) { goNextRound(); return; }   // Kumarhane + Lanetli Boyut
         openStore();
       };
       /* P58 · Kumarhane — bahis ödülü (3 jokerden 1'i) önce alınır */

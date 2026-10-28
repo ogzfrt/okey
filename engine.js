@@ -211,13 +211,48 @@ const RUN_MODES = {
        +0.5x → +1.0x; el +2 ve 3 açılış jokeri aynen. Bkz. BETS. */
     startPermMult: 1.0,
     kumarhane: true,
+    stageStore: true,       // store yalnız stage sonunda (raund arası store yok) — Lanetli Boyut da kullanır
     storeBonus: 2,          // P58 — stage sonu store'unda +2 joker rafı (raund arası store yok)
     finalBoss: 'ladyLuck',  // P71 — 4 stage'in ÜSTÜNE eklenen tek raundluk FİNAL (stages 4 kalır: eğri onu okur)
     curveStretch: true,
     openJokers: 2,                                              // P61: 3 → 2
     openRarity: { common: 0.35, rare: 0.50, legendary: 0.15 },  // P61: eskisi %20 / %45 / %35
   },
+  /* LANETLİ BOYUT RUN (kullanıcı onayı 2026-10-28, rapor "Lanetli Boyut Run — Tasarım Raporu").
+     Aşama 1: 6 stage, store her raund (Kozmik gibi), Adak Sunağı (Aşama 3) stage sonunda, Lanet Seviyesi, Güvenli /
+     Lanetli yol. Final (Lanetli Çocuk) Aşama 6'da eklenir; o zamana kadar run S6 boss'unda biter.
+     Hedefler Kozmik eğrisinin 6 stage'e sıkıştırılmış hâli (S1 aynı, S6 boss = Kozmik S8 boss 4900,
+     boss adımı ≈ ×1.44); R1 kuralı: R1(n) önceki stage'in R2'si ile boss'u arasında. Botla kesinleşir. */
+  lanetli: {
+    key: 'lanetli',
+    stages: 6,
+    targets: [
+      [ 300,  550,  800],
+      [ 700,  950, 1150],
+      [1050, 1350, 1650],
+      [1500, 1950, 2350],
+      [2150, 2800, 3400],
+      [3100, 4000, 4900],
+    ],
+    coinMult: 1,
+    priceMult: 1,
+    handBonus: 0,
+    startPermMult: 0,
+    curveStretch: true,     // 6 stage, 8 stage'lik el/nadirlik eğrisine eşlenir
+    /* kullanıcı 2026-10-28: store HER RAUND sonunda (Kozmik gibi), Adak Sunağı yalnız stage sonunda.
+       İlk ölçüm (store yalnız stage sonu): S1 boss geçişi %2 — oyuncu ilk boss'a jokersiz giriyordu. */
+    stageStore: false,
+    lanetli: true,
+    finalBoss: null,        // Aşama 6: 'lanetliCocuk'
+  },
 };
+/* LANETLİ BOYUT — Lanet Seviyesi ve yollar (rapor §Lanet Seviyesi, §Yollar). */
+const CURSE = { max: 10, targetPer: 0.08, cursedPathMult: 1.3, safeCoin: 8, legendaryChance: 0.2 };
+/* Raund atlama ödülleri (kullanıcı 2026-10-28, Balatro'daki blind atlama gibi): Lanetli Boyut, Raund 1-2.
+   kese = coin · arinma = lanet azalır · degnek = rastgele Rare+ değnek (yer yoksa coin) · fis = sonraki store'da bir joker bedava.
+   Ölçüm 1 (300 run): kese 12 / arınma 1 / herhangi değnek → akıllı atlayan bot bitirme %6 → %3 (bir raundun coin'i + store ≈ 25 coin).
+   Ölçüm 2 (400 run, bot S2'den itibaren R1'i ödüle göre atlar): Güvenli yol ort. stage 2.95 → 2.94, akıllı yol 2.42 → 2.51 — denk seçim. */
+const SKIP_REWARDS = { kese: { coin: 25 }, arinma: { curse: 2 }, degnek: { fallbackCoin: 10 }, fis: {} };
 function runModeOf(s) {
   return RUN_MODES[s?.runMode] || RUN_MODES.base;
 }
@@ -3975,7 +4010,175 @@ const Game = {
     /* The World (P31 · Grup A) — tetiklendiği andan run sonuna kadar tüm
        hedefler kalıcı +%10. Bir kerelik değil, çarpan gibi her hedefe. */
     const up = this.state?.permTargetUp || 0;
+    /* LANETLİ BOYUT — her lanet seviyesi +%8, Lanetli yoldan oynanan stage ×1.3 */
+    const cm = this.curseTargetMult();
+    if (cm !== 1) return niceUp(base, base * (1 + up) * cm);
     return up ? niceUp(base, base * (1 + up)) : niceTarget(base);
+  },
+  lanetliOn() { return !!runModeOf(this.state).lanetli; },
+  stageStoreOn() { return !!runModeOf(this.state).stageStore; },
+  /* Lanet = birikmiş (yol / sunak / değnek; yalnız arınma düşürür) + taşınan (lanetli eşyalar, Aşama 4). */
+  curseCarried() {
+    const s = this.state;
+    if (!s) return 0;
+    let n = 0;
+    for (const j of [...(s.jokers || []), ...(s.backup || [])]) if (JOKER_DEFS[j.key]?.cursed) n++;
+    return n + (s.totems || []).length;
+  },
+  curseLevel() {
+    const s = this.state;
+    if (!s || !this.lanetliOn()) return 0;
+    return Math.min(CURSE.max, (s.curseStored || 0) + this.curseCarried());
+  },
+  curseTargetMult(stage) {
+    const s = this.state;
+    if (!s || !this.lanetliOn()) return 1;
+    const path = (stage == null || stage === s.stage) && s.stagePath === 'cursed' ? CURSE.cursedPathMult : 1;
+    return (1 + CURSE.targetPer * this.curseLevel()) * path;
+  },
+  _curseAdd(n) {
+    const s = this.state;
+    s.curseStored = Math.max(0, Math.min(CURSE.max, (s.curseStored || 0) + n));
+  },
+  /* RAUND ATLAMA — atlanan raund oynanmaz: ödül hemen alınır, raundun coin'i gelmez, arkasından store
+     açılmaz. Boss ve final atlanamaz; raunda girildikten sonra (puan / tur ilerledi) atlanamaz.
+     Ödüller stage başında iki raund için bir kez çekilir (haritada önceden görünür). */
+  skipRewardFor(ric) {
+    const s = this.state;
+    if (!s || !this.lanetliOn() || ric > 2 || this.isFinalStage()) return null;
+    if (!s.skipRw || s.skipRw.stage !== s.stage) {
+      const keys = Object.keys(SKIP_REWARDS).filter((k) => k !== 'arinma' || (s.curseStored || 0) > 0);
+      s.skipRw = { stage: s.stage, r: [0, 1].map(() => keys[Math.floor(this.rng() * keys.length)]) };
+    }
+    return s.skipRw.r[ric - 1];
+  },
+  canSkipRound() {
+    const s = this.state;
+    return !!s && this.lanetliOn() && s.status === 'playing' && s.roundInStage < 3 && !this.needsPath()
+      && !this.isFinalStage() && (s.score || 0) === 0 && (s.turn || 1) <= 1;
+  },
+  skipLanetRound() {
+    if (!this.canSkipRound()) return { ok: false, error: 'Bu raund atlanamaz.' };
+    const s = this.state, from = s.roundInStage, key = this.skipRewardFor(from);
+    const got = this._skipReward(key);
+    s.skipCount = (s.skipCount || 0) + 1;
+    s.store = null;
+    this.nextRound();
+    return { ok: true, key, got, from, round: s.roundInStage };
+  },
+  _skipReward(key) {
+    const s = this.state;
+    if (key === 'kese') { gainCoins(s, SKIP_REWARDS.kese.coin); return { coin: SKIP_REWARDS.kese.coin }; }
+    if (key === 'arinma') { this._curseAdd(-SKIP_REWARDS.arinma.curse); return { curse: this.curseLevel() }; }
+    if (key === 'fis') { s.freeJokerTickets = (s.freeJokerTickets || 0) + 1; return { ticket: s.freeJokerTickets }; }
+    if (key === 'degnek') {
+      const pool = Object.values(CONSUMABLES).filter((d) => (d.rarity === 'rare' || d.rarity === 'legendary') && this._consumOfferable(d.key));
+      if (pool.length && s.consumables.length < this.consumCap()) {
+        const d = pool[Math.floor(this.rng() * pool.length)];
+        s.consumables.push(d.key);
+        return { wand: d.key };
+      }
+      gainCoins(s, SKIP_REWARDS.degnek.fallbackCoin);
+      return { coin: SKIP_REWARDS.degnek.fallbackCoin };
+    }
+    return {};
+  },
+  /* YOL HARİTASI (kullanıcı 2026-10-28, Slay the Spire benzeri) — run başında üretilir: satır = stage
+     (S1 tek Güvenli düğüm, S2-S6 2-3 düğüm, en sonda final). Her düğüm Güvenli/Lanetli + isteğe bağlı
+     stage sonu olayı (takas / fal / sunak — mini oyunlar onaylanana kadar yalnız simge). Kenarlar bir
+     sonraki satırda en yakın 1-2 düğüme gider, kesişmez; her düğüme en az bir yol girer. */
+  _genPathMap() {
+    const s = this.state, rng = () => this.rng();
+    const n = runModeOf(s).stages;
+    const rows = [[{ type: 'safe', ev: null }]];
+    const EV = ['takas', 'fal', 'sunak'];
+    for (let r = 1; r < n; r++) {
+      const cnt = rng() < 0.55 ? 3 : 2;
+      const row = [];
+      for (let i = 0; i < cnt; i++) row.push({ type: rng() < 0.5 ? 'safe' : 'cursed', ev: rng() < 0.6 ? EV[Math.floor(rng() * EV.length)] : null });
+      if (!row.some((x) => x.type === 'safe')) row[Math.floor(rng() * cnt)].type = 'safe';
+      if (!row.some((x) => x.type === 'cursed')) row[Math.floor(rng() * cnt)].type = 'cursed';
+      rows.push(row);
+    }
+    rows.push([{ type: 'final', ev: null }]);
+    const edges = [];
+    const at = (k, len) => (len === 1 ? 0.5 : k / (len - 1));
+    for (let r = 0; r < rows.length - 1; r++) {
+      /* soldan sağa: her düğümün hedefleri bir öncekinin son hedefinden başlar → çizgiler kesişmez */
+      const a = rows[r], c = rows[r + 1], tg = a.map(() => []);
+      let prev = 0;
+      a.forEach((_, i) => {
+        const j = Math.max(prev, Math.round(at(i, a.length) * (c.length - 1)));
+        tg[i].push(j);
+        if (j + 1 < c.length && rng() < 0.5) tg[i].push(j + 1);
+        prev = tg[i][tg[i].length - 1];
+      });
+      /* yolu olmayan düğüm, hedefleri ondan küçük kalan son düğüme bağlanır (yine kesişmez) */
+      c.forEach((_, j) => {
+        if (tg.some((t) => t.includes(j))) return;
+        let i = 0;
+        tg.forEach((t, k) => { if (Math.max(...t) < j) i = k; });
+        tg[i].push(j);
+      });
+      tg.forEach((t, i) => t.forEach((j) => edges.push([r, i, j])));
+    }
+    s.pathMap = { rows, edges, row: 0, idx: 0, walked: [[0, 0]] };
+  },
+  pathMapState() {
+    const s = this.state;
+    if (!s || !this.lanetliOn()) return null;
+    if (!s.pathMap) this._genPathMap();
+    const pm = s.pathMap;
+    const reach = this.needsPath()
+      ? pm.edges.filter((e) => e[0] === pm.row && e[1] === pm.idx).map((e) => e[2]) : [];
+    return { ...pm, reach, pending: this.needsPath(), finalOn: !!runModeOf(s).finalBoss };
+  },
+  /* Yol seçimi — S2'den itibaren her stage başında (S1 her zaman Güvenli). */
+  needsPath() {
+    const s = this.state;
+    return !!s && this.lanetliOn() && !!s.pathPending && s.status === 'playing';
+  },
+  /* Yol kartında gösterilen 1. raund hedefi: seçilseydi tam olarak ne olurdu (durum geri alınır) */
+  pathPreview(kind) {
+    const s = this.state;
+    const keep = [s.curseStored, s.stagePath];
+    this._curseAdd(kind === 'cursed' ? 1 : -1);
+    s.stagePath = kind;
+    const v = this.targetFor(s.stage, 1);
+    [s.curseStored, s.stagePath] = keep;
+    return v;
+  },
+  /* arg: düğüm indeksi (harita) ya da 'safe'/'cursed' (bot / eski çağrılar: o türden ulaşılabilen ilk düğüm) */
+  choosePath(arg) {
+    const s = this.state;
+    if (!this.needsPath()) return { ok: false };
+    const pm = this.pathMapState();
+    const nextRow = pm.rows[pm.row + 1];
+    let idx = typeof arg === 'number' ? arg : pm.reach.find((j) => nextRow[j].type === arg);
+    if (idx == null && typeof arg === 'string') idx = pm.reach[0];
+    if (idx == null || !pm.reach.includes(idx)) return { ok: false, error: 'Bu düğüme yol yok.' };
+    const kind = nextRow[idx].type === 'cursed' ? 'cursed' : 'safe';
+    s.pathMap.row++; s.pathMap.idx = idx; s.pathMap.walked.push([s.pathMap.row, idx]);
+    s.pathPending = false;
+    s.stagePath = kind;
+    this._curseAdd(kind === 'cursed' ? 1 : -1);
+    s.target = this.targetFor(s.stage, s.roundInStage);
+    return { ok: true, kind, ev: nextRow[idx].ev, curse: this.curseLevel(), target: s.target };
+  },
+  /* Stage sonu (boss kazanılınca): Güvenli → coin; Lanetli → 3 seçenekten 1 (en az Rare; Aşama 4'te
+     lanetli eşyalar gelene kadar normal havuzdan). */
+  _lanetStageEnd(notes) {
+    const s = this.state;
+    if (!this.lanetliOn()) return;
+    if (s.stagePath === 'cursed') {
+      if (!Array.isArray(s.betPicks)) s.betPicks = [];
+      const p = this._rollBetPick(this.rng() < CURSE.legendaryChance ? 'legendary' : 'rare', new Set());
+      if (p) { p.source = 'cursedPath'; s.betPicks.push(p); }
+      notes.push('🜏 Lanetli yol ödülü: 3 karttan birini seç');
+    } else {
+      gainCoins(s, CURSE.safeCoin);
+      notes.push(`🛡 Güvenli yol: +${CURSE.safeCoin} coin`);
+    }
   },
 
   /* Tüketilebilir envanter kapasitesi — taban GDD 6.5b'deki 3, Heybe ile
@@ -4283,6 +4486,8 @@ const Game = {
       s.okey = this._rollOkey();
       s.roundStartNotes.push(
         `Stage ${s.stage} — yeni okey ilan edildi: ${COLOR_TR[s.okey.color]} ${s.okey.number}`);
+      /* LANETLİ BOYUT — S2'den itibaren stage başında Güvenli / Lanetli yol seçilir */
+      if (this.lanetliOn() && !this.isFinalStage()) { s.pathPending = true; s.stagePath = null; }
       // Grup H — el büyümesi otomatik ve koşulsuz bir sistemdir; oyuncuya duyurulur
       if (handSizeFor(s.stage) > handSizeFor(s.stage - 1))
         s.roundStartNotes.push(
@@ -10110,8 +10315,9 @@ const Game = {
     s.coinReport.interest = interestFor(s.coins);
     gainCoins(s, s.coinReport.interest);
     if (kumar) s.coinReport.bet = kumar;
+    if (boss) this._lanetStageEnd(extraNotes);   // LANETLİ BOYUT — yol ödülü
     /* P58 · Kumarhane — raund arası store YOK; yalnız stage sonu (boss) */
-    if (runModeOf(s).kumarhane && !boss) s.store = null;
+    if (runModeOf(s).stageStore && !boss) s.store = null;
     else { s.store = this._generateStore(s.pendingLocks); s.pendingLocks = null; }
 
     // Boss ödülü: Epic joker + stage geçiş yükseltmesi (GDD 5.3, 13.3)
@@ -10227,7 +10433,7 @@ const Game = {
        cezalandırılan bir raund, birikimi de cezalandırmamalı. */
     s.coinReport.interest = interestFor(s.coins);
     gainCoins(s, s.coinReport.interest);
-    if (runModeOf(s).kumarhane && !this.isBossRound()) s.store = null;   // P58
+    if (runModeOf(s).stageStore && !this.isBossRound()) s.store = null;   // P58 · Lanetli Boyut da
     else { s.store = this._generateStore(s.pendingLocks); s.pendingLocks = null; }
     if (this.isBossRound()) {
       /* PLAYTEST 26 · GRUP D — sıyrılarak geçilen boss da Epic ödülünü ALIR.
@@ -10582,6 +10788,10 @@ const Game = {
     const store = { items, consumable, specialTile, packs, rerollUsed: false,
       rerollCount: 0, freeReroll: false, anarchist };
     this._applyCatchUp(store);
+    if ((s.freeJokerTickets || 0) > 0 && items.length) {
+      const top = items.reduce((a, c) => (c.price > a.price ? c : a));
+      top.free = true; top.basePrice = top.basePrice || top.price; top.price = 0;   // eski fiyat üstü çizili görünür
+    }
     return store;
   },
 
@@ -12164,7 +12374,14 @@ const Game = {
   /* dest: 'main' | 'backup' | undefined (otomatik: önce Ana, sonra Backup).
      Kullanıcı isteği (2026-07): Ana Slot boş olsa bile joker doğrudan
      Backup'a atanabilir — satın alma anında hedef seçtirilir. */
+  /* Tacir Fişi bileti yalnız bedava joker gerçekten satın alınınca harcanır */
   buyJoker(index, dest) {
+    const item = this.state.store?.items[index];
+    const r = this._buyJoker(index, dest);
+    if (r.ok && item && item.free) { item.free = false; this.state.freeJokerTickets = Math.max(0, (this.state.freeJokerTickets || 0) - 1); }
+    return r;
+  },
+  _buyJoker(index, dest) {
     const s = this.state;
     const item = s.store?.items[index];
     if (!item || item.sold) return { ok: false, error: 'Ürün mevcut değil.' };
@@ -13547,7 +13764,7 @@ if (typeof module !== 'undefined') {
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,
