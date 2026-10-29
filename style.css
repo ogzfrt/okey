@@ -10483,6 +10483,42 @@ html[data-theme="boss"][data-boss-ui="orion"] {
   --st-edge: #0E1E26; --st-edge-soft: rgba(14, 30, 38, .38); --st-bg: #E8F4EC;
   --st-head: #0E1E26; --st-rule: rgba(14, 30, 38, .35); --st-glow: rgba(255, 90, 80, .25);
 }
+html[data-theme="boss"][data-boss-ui="lanetliCocuk"] {
+  --gm-dark: #1E0A2E; --gm-light: #ECF8EE; --gm-panel: #8E5CC0; --gm-bg: #1E0A2E;
+  --gm-coin-ink: #1E0A2E; --boss-glow: #5CFF9D; --boss-glow-soft: rgba(92, 255, 157, .45);
+  --boss-bg: url('assets/game/boss/lanetli-cocuk/bg.png');
+  --img-action-bar: url('assets/game/boss/lanetli-cocuk/action-bar.svg');
+  --img-btn-info: url('assets/game/boss/lanetli-cocuk/btn-info.svg');
+  --img-btn-open: url('assets/game/boss/lanetli-cocuk/btn-open.svg');
+  --img-btn-pause: url('assets/game/boss/lanetli-cocuk/btn-pause.svg');
+  --img-btn-small: url('assets/game/boss/lanetli-cocuk/btn-small.svg');
+  --img-chip-round: url('assets/game/boss/lanetli-cocuk/chip-round.svg');
+  --img-map-card: url('assets/game/boss/lanetli-cocuk/map-card.svg');
+  --img-map-okeybox: url('assets/game/boss/lanetli-cocuk/map-okeybox.svg');
+  --img-map-pill: url('assets/game/boss/lanetli-cocuk/map-pill.svg');
+  --img-map-select: url('assets/game/boss/lanetli-cocuk/map-select.svg');
+  --img-map-target: url('assets/game/boss/lanetli-cocuk/map-target.svg');
+  --img-map-title: url('assets/game/boss/lanetli-cocuk/map-title.svg');
+  --img-meld-row: url('assets/game/boss/lanetli-cocuk/meld-row.svg');
+  --img-panel-coin: url('assets/game/boss/lanetli-cocuk/panel-coin.svg');
+  --img-panel-jokers: url('assets/game/boss/lanetli-cocuk/panel-jokers.svg');
+  --img-panel-okey: url('assets/game/boss/lanetli-cocuk/panel-okey.svg');
+  --img-panel-score: url('assets/game/boss/lanetli-cocuk/panel-score.svg');
+  --img-panel-small: url('assets/game/boss/lanetli-cocuk/panel-small.svg');
+  --img-preview-box: url('assets/game/boss/lanetli-cocuk/preview-box.svg');
+  --img-rack-cell: url('assets/game/boss/lanetli-cocuk/rack-cell.svg');
+  --img-rack-cells: url('assets/game/boss/lanetli-cocuk/rack-cells.svg');
+  --img-rack-outer1: url('assets/game/boss/lanetli-cocuk/rack-outer1.svg');
+  --img-rack-outer2: url('assets/game/boss/lanetli-cocuk/rack-outer2.svg');
+  --img-rack-row: url('assets/game/boss/lanetli-cocuk/rack-row.svg');
+  --img-shoulder: url('assets/game/boss/lanetli-cocuk/shoulder.svg');
+  --img-tray-3: url('assets/game/boss/lanetli-cocuk/tray-3.svg');
+  --img-tray-4: url('assets/game/boss/lanetli-cocuk/tray-4.svg');
+  --img-tile-back: url('assets/game/boss/lanetli-cocuk/tile-back.png');
+  --img-rack-glow: url('assets/game/boss/lanetli-cocuk/rack-glow.png');
+  --st-edge: #1E0A2E; --st-edge-soft: rgba(30, 10, 46, .38); --st-bg: #ECF8EE;
+  --st-head: #1E0A2E; --st-rule: rgba(30, 10, 46, .35); --st-glow: rgba(92, 255, 157, .25);
+}
 /* @@BOSS-UI-END */
 
 /* P71 — FİNAL nadirlik (Lady Luck): kırmızı-altın */
@@ -10952,9 +10988,11 @@ html[data-theme="boss"] .gm-stage .gm-meld-h { color: var(--boss-ink, var(--gm-l
 html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
 
 /* P90d — Ayarlar › Ekstra: final kilitleri test kutuları (kart içinde 2 sütun) */
-#settingsOv .set-fw-card { flex-direction: column; align-items: stretch; gap: 10px; }
-#settingsOv .set-fw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#settingsOv .set-fw-card { flex-direction: column; align-items: stretch; gap: 6px; }
+#settingsOv .set-fw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; gap: 10px; }   /* finaller tek sırada (Lanetli Çocuk ile 3) */
 #settingsOv .set-fw-grid .set-chk { width: 100%; margin: 0; }
+#settingsOv .set-fw-grid .set-chk { min-width: 0; padding-left: 10px; padding-right: 10px; gap: 6px; box-sizing: border-box; }
+#settingsOv .set-fw-grid .set-label { font-size: 13px; line-height: 1.05; min-width: 0; }
 @media (max-width: 760px) { #settingsOv .set-fw-grid { grid-template-columns: 1fr; } }
 
 /* P90e — kemer bu raund bağlandı: diğer kartlar pasif, üstte kilit notu */
@@ -12421,3 +12459,39 @@ html[data-theme="kozmik"][data-run="lanetli"] .gm-stage #rack::after { filter: h
 .map-card .mc-skip .mcs-note { font: 700 13px/1.2 var(--gm-font); color: rgba(228, 247, 230, .6); text-transform: uppercase; }
 .gm-stage .map-card.pm-info .pi-ev { display: flex; align-items: center; justify-content: center; gap: 10px; color: #FFD666; }
 .path-ov .path-cursed { box-shadow: 0 0 0 3px #5CFF9D, 0 0 18px rgba(180, 108, 255, .65), 0 6px 0 rgba(0, 0, 0, .4); }
+
+/* ============================================================
+   LANETLİ BOYUT — Aşama 6: Lanetli Çocuk (final) + Oyuncak Kutusu
+   ============================================================ */
+/* Faz 1 — İllüzyon Gözlükleri: ıstakada sayı gizli, renk kalır (rengin ipucu olsun diye taş yüzü kararmaz) */
+body.cocuk-fog #rack .tile:not(.deck-joker) .num { visibility: hidden; }
+body.cocuk-fog #rack .tile:not(.deck-joker)::after { content: '?'; position: absolute; left: 0; right: 0; top: 14%; text-align: center;
+  font: 700 calc(var(--tw, 66px) * .5)/1 var(--gm-font); color: rgba(60, 20, 80, .35); pointer-events: none; }
+/* Faz 2 — Dokunaç Kilidi: mor-yeşil sarmal bant + soluk yüz */
+.tile.cocuk-lock { position: relative; filter: saturate(.6) brightness(.85); }
+.tile.cocuk-lock .cl-vine { position: absolute; inset: -3px; border-radius: 8px; pointer-events: none; z-index: 2;
+  background: repeating-linear-gradient(135deg, rgba(92, 255, 157, .0) 0 12px, rgba(92, 255, 157, .6) 12px 15px, rgba(122, 46, 168, .7) 15px 19px, rgba(92, 255, 157, .0) 19px 34px);
+  box-shadow: inset 0 0 0 3px #7A2EA8, 0 0 10px rgba(122, 46, 168, .8); }
+/* faz yazısı */
+#cocukFx { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; pointer-events: auto;
+  background: radial-gradient(ellipse at center, rgba(30, 6, 46, .92) 0%, rgba(10, 0, 20, .55) 75%); animation: ckIn .35s ease-out; }
+#cocukFx.out { opacity: 0; transition: opacity .4s; }
+#cocukFx .ck-text { display: flex; flex-direction: column; align-items: center; gap: 10px; font-family: var(--gm-font); text-align: center; }
+#cocukFx .ck-text b { font-size: 64px; color: #5CFF9D; text-shadow: 4px 4px 0 #3A0F55, 0 0 24px rgba(92, 255, 157, .6); letter-spacing: 2px; }
+#cocukFx .ck-text span { font-size: 22px; color: #E9D5FF; }
+@keyframes ckIn { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: none; } }
+/* Faz 3 — Nihai Feda penceresi */
+.feda-ov .pk-box { max-width: 560px; }
+.feda-ov .fd-lost { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 14px auto 6px; padding: 14px 24px;
+  border: 3px dashed #FF8BD0; border-radius: 12px; width: fit-content; animation: fdShake .5s steps(2) 2; }
+.feda-ov .fd-ico { font: 46px/1 "Segoe UI Emoji", sans-serif; filter: grayscale(.4); }
+.feda-ov .fd-name { font: 700 18px/1.2 var(--gm-font); color: #F3E8FF; text-decoration: line-through; text-decoration-color: #FF8BD0; text-decoration-thickness: 3px; }
+.feda-ov .fd-broke { font: 700 14px/1 var(--gm-font); color: #FF8BD0; letter-spacing: 2px; }
+.feda-ov .fd-target { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; font: 700 20px/1 var(--gm-font); color: #E9D5FF; }
+.feda-ov .fd-old { color: #9C8AAE; text-decoration: line-through; }
+.feda-ov .fd-new { color: #5CFF9D; font-size: 28px; }
+.feda-ov .fd-extra { text-align: center; margin-top: 10px; font: 700 15px/1.2 var(--gm-font); color: #FFD666; }
+@keyframes fdShake { 0% { transform: translateX(-3px); } 100% { transform: translateX(3px); } }
+/* Oyuncak Kutusu paneli (Ay Kuyusu kalıbı) */
+.gm-stage .gm-well.toy-well .aw-slots { --tw: 36px; gap: 6px; }
+.gm-stage .gm-well.toy-well .aw-count { color: #FFD666; }

@@ -120,6 +120,19 @@ let PARTNER_SHARE = +((typeof process !== 'undefined' && process.env && process.
 let PARTNER_MODE = (typeof process !== 'undefined' && process.env && process.env.PARTNER_MODE) || 'full';   // eş Orion puanlama ('belt' = eski kural, ölçüm kolu)
 const LADY_REFILL_TO = 21;   // P71 — tur başı çekişte el bu sayıya tamamlanır
 const LADY_STAR_MULT = 2;    // P71 — Sahnenin Yıldızı: seçilen jokerin katkısı ×2 (denge kolu)
+/* LANETLİ BOYUT — final boss Lanetli Çocuk (rapor §Final boss, Aşama 6). Tek raundluk S7.
+   Faz 1 İllüzyon Gözlükleri: tek turlarda taş sayıları tur başında 2 sn görünür, sonra yalnız renk kalır; o tur en çok 2
+          geçersiz deneme (sonra o tur açılım yok).
+   Faz 2 Dokunaç Kilidi: puan hedefin yarısını geçince elin en yüksek 3 taşı 2 tur ne açılır ne atılır.
+   Faz 3 Nihai Feda: hedefi geçen açılımda (bir kez) en yüksek nadirlikteki değnek/totem kırılır (yoksa en değerli joker),
+          puan kalır, hedef %20 artar, son turdaysa +1 tur. Hedef botla (COCUK.target). */
+const COCUK = { target: (typeof process !== 'undefined' && process.env && +process.env.COCUK_T) || 5600, fogTries: 2, fogShowMs: 2000, lockAt: 0.5, lockTiles: 3, lockTurns: 2, fedaMult: 1.2 };
+/* Final jokeri OYUNCAK KUTUSU: atılan taşlar işlek yerine kutuya (en çok 6, dolunca en eskisi düşer); kutuda Per/Sıralı
+   oluşunca sonraki açılıma eklenir, katkısı kutu çarpanıyla (×3'ten başlar, her grupta +1, run boyu kartta) büyür.
+   Kutu raundlar arası korunur (yeni destedeki aynı yüzler kutuya alınır). Ölçüm (300 run, Kozmik, FORCE_JOKER): raporun ×2'si
+   + raundluk kutu = dead kart (2.50, taban 2.98); kutu korununca ×2 3.44, ×3 3.94 (Lady Luck 3.87) — kutuya bilerek atan bot;
+   gelişigüzel atan 2.92. */
+const OYUNCAK = { cap: 6, multStart: (typeof process !== 'undefined' && process.env && +process.env.TOY_START) || 3, multStep: (typeof process !== 'undefined' && process.env && +process.env.TOY_STEP) || 1 };
 const LADY_USES = 6;         // P71 — boss jokerlerinin (2–4) belirgin şekilde üstü
 /* P90 — TEMEL RUN FİNALİ · ORION (spec 2026-10-11). Değerler uzman botla
    kalibre edilir (S8'i geçenlerin ≈%50'si finali geçmeli). */
@@ -236,6 +249,7 @@ const RUN_MODES = {
       [1500, 1950, 2350],
       [2150, 2800, 3400],
       [3100, 4000, 4900],
+      [4900, 4900, COCUK.target],   // S7 FİNAL — yalnız 3. sütun (Lanetli Çocuk)
     ],
     coinMult: 1,
     priceMult: 1,
@@ -246,7 +260,7 @@ const RUN_MODES = {
        İlk ölçüm (store yalnız stage sonu): S1 boss geçişi %2 — oyuncu ilk boss'a jokersiz giriyordu. */
     stageStore: false,
     lanetli: true,
-    finalBoss: null,        // Aşama 6: 'lanetliCocuk'
+    finalBoss: 'lanetliCocuk',   // Aşama 6 (2026-10-29)
   },
 };
 /* LANETLİ BOYUT — Lanet Seviyesi ve yollar (rapor §Lanet Seviyesi, §Yollar). */
@@ -1001,6 +1015,9 @@ const FINAL_BOSSES = {
   /* P90 — Temel Run finali ORION (Gökyüzünün Avcısı; şapkalı, pardösülü,
      kemerli maskeli savaşçı — çizim bitince eklenecek). `target` = taban;
      asıl hedef raund sonunda max(taban, Orion'un puanı). */
+  /* LANETLİ BOYUT finali (Aşama 6) — çizim gelene kadar modun mor-yeşil temasıyla */
+  lanetliCocuk: { key: 'lanetliCocuk', name: 'Lanetli Çocuk', final: true, reward: 'oyuncakKutusu', mascotItem: 'item-lanetli-cocuk', icon: '🧸',
+    desc: 'Tek turlarda sayılar gizlenir. Hedefin yarısında 3 taşın kilitlenir. Hedefi geçince değneğin kırılır, hedef +%20.' },
   orion: { key: 'orion', name: 'Orion', final: true, reward: 'orion', mascotItem: 'item-orion', icon: '🎩', target: ORION_FLOOR,
     desc: 'Seninle yarışır: raund sonunda onu ve tabanı geç. En güçlü jokerini kemerine takar.' },   // P90g: sol sütuna sığsın diye kısa
 };
@@ -2709,6 +2726,9 @@ const JOKER_DEFS = {
      Istakası; mekanik motorun Orion bölümünde (setBelt, _partnerOn). */
   orion: { key: 'orion', name: 'Orion', rarity: 'final', uses: LADY_USES, icon: '🎩',
     desc: 'Bir jokerini kemerine bağlar (×1.5 → ×2 → ×4). Eşin olarak 21 taşla açar.' },
+  /* LANETLİ BOYUT — Lanetli Çocuk'u yenince açılır (mode: betada kategori/kart gizli) */
+  oyuncakKutusu: { key: 'oyuncakKutusu', name: 'Oyuncak Kutusu', rarity: 'final', uses: LADY_USES, icon: '🧸', mode: 'lanetli',
+    desc: 'Attığın taşlar işlek yerine oyuncak kutusuna düşer (en çok 6). Kutu raundlar arası korunur; içinde grup oluşunca açılımına eklenir. Kutu çarpanı ×3\'ten başlar, her grupta +1 büyür.' },
 };
 
 /* Tüccar (GDD 10) — her raund başında sunulan takas havuzu.
@@ -4598,6 +4618,127 @@ const Game = {
     s.altarPaid = (s.altarPaid || 0) + 1;
     return { ok: true, curse: this.curseLevel() };
   },
+  /* ── LANETLİ ÇOCUK (final) ── */
+  _cocukOn() {
+    const s = this.state;
+    return !!(s && s.boss && s.boss.key === 'lanetliCocuk' && this.bossOn());
+  },
+  cocukFog() {
+    const s = this.state;
+    return this._cocukOn() && s.status === 'playing' && s.turn % 2 === 1;
+  },
+  cocukState() {
+    if (!this._cocukOn()) return null;
+    const s = this.state, c = s.cocuk || {};
+    return { phase: c.feda ? 3 : c.lock ? 2 : 1, fog: this.cocukFog(), triesLeft: Math.max(0, COCUK.fogTries - (c.tries || 0)),
+      tries: COCUK.fogTries, showMs: COCUK.fogShowMs, locked: s.hand.filter((t) => t.cocukLock).length, feda: c.feda || null,
+      lockAt: Math.round(s.target * COCUK.lockAt) };
+  },
+  _cocukTurnStart(events) {
+    const s = this.state;
+    if (!this._cocukOn()) return;
+    if (!s.cocuk || s.cocuk.serial !== s.roundSerial) s.cocuk = { serial: s.roundSerial };
+    s.cocuk.tries = 0;
+    for (const t of s.hand) if (t.cocukLock && s.turn > t.cocukLock) { delete t.cocukLock; events.push(`🧸 Dokunaç ${COLOR_TR[t.color]} ${t.number} taşını bıraktı`); }
+    if (this.cocukFog()) events.push(`🧸 İllüzyon Gözlükleri: sayılar ${COCUK.fogShowMs / 1000} sn görünür, sonra kaybolur`);
+  },
+  _cocukGate(tiles) {
+    const s = this.state;
+    if (!this._cocukOn()) return null;
+    if ((tiles || []).some((t) => t.cocukLock)) return { ok: false, error: '🧸 Dokunaç bu taşı sardı — kilit bitene kadar açılamaz.' };
+    if (this.cocukFog() && ((s.cocuk && s.cocuk.tries) || 0) >= COCUK.fogTries)
+      return { ok: false, error: '🧸 Sis: bu tur deneme hakkın bitti.' };
+    return null;
+  },
+  /* açılım puanı yazıldıktan sonra: Faz 2 kilidi ve Faz 3 Nihai Feda */
+  _cocukAfterMeld(result) {
+    const s = this.state;
+    if (!this._cocukOn()) return;
+    const c = s.cocuk || (s.cocuk = { serial: s.roundSerial });
+    if (!c.lock && s.score >= s.target * COCUK.lockAt && s.score < s.target) {
+      const cand = s.hand.filter((t) => !t.jokerTile && !this.isOkeyTile(t) && !t.special)
+        .sort((a, b) => b.number - a.number).slice(0, COCUK.lockTiles);
+      for (const t of cand) t.cocukLock = s.turn + COCUK.lockTurns;
+      c.lock = { tiles: cand.map((t) => t.id), until: s.turn + COCUK.lockTurns };
+      result.bonuses.push(`🧸 Dokunaç Kilidi: ${cand.map((t) => COLOR_TR[t.color] + ' ' + t.number).join(', ')} ${COCUK.lockTurns} tur kilitli`);
+      result.cocukLock = c.lock;
+    }
+    if (!c.feda && s.score >= s.target) {
+      const RANK = { common: 1, rare: 2, epic: 3, legendary: 4, mythic: 5 };
+      const items = [
+        ...(s.consumables || []).map((k, i) => ({ kind: 'consum', i, key: k, icon: (CONSUMABLES[k] || {}).icon, name: (CONSUMABLES[k] || {}).name || k, r: RANK[(CONSUMABLES[k] || {}).rarity] || 1 })),
+        ...(s.totems || []).map((x, i) => ({ kind: 'totem', i, key: x.key, icon: (TOTEM_DEFS[x.key] || {}).icon, name: (TOTEM_DEFS[x.key] || {}).name || x.key, r: RANK[(TOTEM_DEFS[x.key] || {}).rarity] || 1 })),
+      ];
+      let lost = null;
+      if (items.length) {
+        lost = items.reduce((a, x) => (x.r > a.r ? x : a), items[0]);
+        if (lost.kind === 'consum') s.consumables.splice(lost.i, 1); else s.totems.splice(lost.i, 1);
+      } else {
+        const js = s.jokers.filter((j) => j.rarity !== 'final');
+        if (js.length) {
+          const j = js.reduce((a, x) => ((RANK[x.rarity] || 0) > (RANK[a.rarity] || 0) ? x : a), js[0]);
+          s.jokers = s.jokers.filter((x) => x !== j);
+          lost = { kind: 'joker', key: j.key, name: j.name, icon: (JOKER_DEFS[j.key] || {}).icon };
+        }
+      }
+      const old = s.target;
+      s.target = niceUp(s.target, s.target * COCUK.fedaMult);
+      const extra = s.turn >= s.maxTurns;
+      if (extra) s.maxTurns++;
+      c.feda = { lost, old, target: s.target, extra };
+      result.bonuses.push(`🧸 Nihai Feda: ${lost ? lost.name + ' kırıldı, ' : ''}hedef ${old} → ${s.target}${extra ? ', +1 tur' : ''}`);
+      result.cocukFeda = c.feda;
+    }
+  },
+  /* ── OYUNCAK KUTUSU (final jokeri) ── */
+  _toyOn() {
+    const s = this.state;
+    return !s.jokersDisabled && this.hasActive('oyuncakKutusu');
+  },
+  _toyMult() {
+    const j = this._recOf('oyuncakKutusu');
+    return (j && j.toyMult) || OYUNCAK.multStart;
+  },
+  toyState() {
+    const s = this.state;
+    if (!this._toyOn()) return null;
+    return { box: (s.toyBox || []).slice(), ready: s.toyReady || null, cap: OYUNCAK.cap, mult: this._toyMult() };
+  },
+  _toyCheck(events) {
+    const s = this.state, box = s.toyBox || [];
+    if (s.toyReady || box.length < 3) return;
+    const free = this._freePerColors();
+    let best = null;
+    for (let m = 1; m < (1 << box.length); m++) {
+      const g = box.filter((_, i) => m & (1 << i));
+      if (g.length < 3 || (best && g.length <= best.tiles.length)) continue;
+      const r = resolveCombo(g, (t) => this.isOkeyTile(t), free, null);
+      if (r && (r.type === 'per' || r.type === 'sirali'))
+        best = { type: r.type, tiles: orderComboTiles(r.type, g, r.values, (t) => this.isOkeyTile(t)), values: r.values, usedOkey: r.usedOkey };
+    }
+    if (!best) return;
+    s.toyBox = box.filter((t) => !best.tiles.includes(t));
+    s.toyReady = best;
+    events.push(`🧸 Oyuncak Kutusu: Çocuk bir ${best.type === 'per' ? 'Per' : 'Sıralı'} kurdu — sonraki açılımına eklenecek`);
+  },
+  /* bekleyen kutu grubu bu açılıma eklenir: katkısı (grupla – grupsuz) × kutu çarpanı */
+  _toyApply(r) {
+    const s = this.state;
+    if (!s.toyReady || !this._toyOn()) return;
+    const keep = s.staged;
+    let withToy;
+    s.staged = [...keep, s.toyReady];
+    try { withToy = this._calcOpening().final; } finally { s.staged = keep; }
+    const mult = this._toyMult();
+    const add = Math.max(0, Math.round((withToy - r.final) * mult));
+    r.final += add;
+    r.triggered = [...(r.triggered || []), { id: 'oyuncakKutusu', name: 'Oyuncak Kutusu', text: `kutu grubu ×${mult}: +${add} puan` }];
+    const j = this._recOf('oyuncakKutusu');
+    if (j) j.toyMult = mult + OYUNCAK.multStep;
+    s.discardPile.push(...s.toyReady.tiles);
+    s.toyReady = null;
+    s.toyPlayed = (s.toyPlayed || 0) + 1;
+  },
   /* bu stage'in Yol Haritası düğümündeki olay ('takas' | 'fal' | 'sunak' | null) */
   stageEvent() {
     const s = this.state;
@@ -5042,6 +5183,9 @@ const Game = {
         `Stage ${s.stage} — yeni okey ilan edildi: ${COLOR_TR[s.okey.color]} ${s.okey.number}`);
       /* LANETLİ BOYUT — S2'den itibaren stage başında Güvenli / Lanetli yol seçilir */
       if (this.lanetliOn() && !this.isFinalStage()) { s.pathPending = true; s.stagePath = null; }
+      else if (this.lanetliOn() && s.pathMap) {   // Aşama 6 — finale gelindi: haritada FİNAL düğümü
+        s.pathMap.row = s.pathMap.rows.length - 1; s.pathMap.idx = 0; s.pathMap.walked.push([s.pathMap.row, 0]); s.stagePath = null;
+      }
       s.altar = null;   // Adak Sunağı yalnız stage sonu store'unda; kaçan teklif gider
       // Grup H — el büyümesi otomatik ve koşulsuz bir sistemdir; oyuncuya duyurulur
       if (handSizeFor(s.stage) > handSizeFor(s.stage - 1))
@@ -5800,6 +5944,8 @@ const Game = {
       oteki: s.otekiHand || [],                // P54 · Grup B — Öteki Dünya'nın eli
       orion: s.orionHand || [],                  // P90 — Orion'un eli (rakip ya da eş)
       orionDrop: s.orionDrop ? [s.orionDrop] : [], // P90 — Orion'un attığı açık taş
+      toyBox: s.toyBox || [],                    // Oyuncak Kutusu
+      toyReady: (s.toyReady && s.toyReady.tiles) || [],
     };
     const spread = (name, list) => {
       (list || []).forEach((c, i) => { z[`${name}${i}`] = c.tiles || []; });
@@ -6089,6 +6235,9 @@ const Game = {
        Taşlar aslında sağlamdı (ekrandaki 91/106 = 106 − 15 el, tam
        tutuyor). Masa artık yeni deste kurulmadan ÖNCE toplanır: hem
        alarm gerçeği söyler hem de yeni raund gerçekten temiz başlar. */
+    /* Oyuncak Kutusu raundlar arası korunur: eski taşlar YÜZ olarak saklanır, yeni desteden aynı yüzler kutuya alınır (taş kimliği) */
+    s.toyCarry = [...(s.toyBox || []), ...((s.toyReady && s.toyReady.tiles) || [])].map((t) => ({ color: t.color, number: t.number }));
+    s.toyBox = []; s.toyReady = null;
     s.discardPile = [];
     s.staged = [];
     s.opened = [];
@@ -6208,6 +6357,15 @@ const Game = {
     const kalpCut = 0;   // denge turu 1: Lanet Kalbi'nin tur bedeli kalktı (her stage lanet +1 oldu)
     s.maxTurns = Math.max(pactCut.turns || kalpCut ? ALTAR.minTurns : 0, 4 + (s.permTurns || 0) - pactCut.turns - kalpCut);
     s.roundOpenDone = false;   // Ebedi Alev: raundun ilk açılımı
+    s.toyBox = [];
+    if (this._toyOn() && (s.toyCarry || []).length) {   // Oyuncak Kutusu — önceki raundun kutusu yeni destedeki aynı yüzlerle
+      for (const f of s.toyCarry) {
+        const t = s.deck.find((x) => x.color === f.color && x.number === f.number && !x.special && !x.fakeOkey && !this.isOkeyTile(x));
+        if (t) { s.deck = s.deck.filter((x) => x !== t); s.toyBox.push(t); }
+      }
+      this._toyCheck([]);
+    }
+    s.toyCarry = null;
     if (s.tefeciDebt) { s.maxTurns = Math.max(ALTAR.minTurns, s.maxTurns - s.tefeciDebt); s.tefeciDebt = 0; }   // Zaman Tefecisi borcu
     s.score = 0;
     s.scoreDebt = 0;     // Grup D: Tüccar puan borcu raundu aşmaz
@@ -6949,6 +7107,7 @@ const Game = {
     const s = this.state;
     this._rotTurnStart(events);   // LANETLİ BOYUT — Çürüme Saati
     this._cursedTurnStart(events);
+    this._cocukTurnStart(events);   // LANETLİ ÇOCUK — sis / kilit çözülmesi
     s.ladyStarId = null;   // P71 — yıldız _bossTurnStart'tan SONRA seçilir (aşağıda)
     /* ÜÇ KAĞITÇI (BOSS) — ters gelen taş BİR tur ters kalır: bu turda çekilenler
        (`faceDownFresh`) bekler, bir önceki turun ters taşları şimdi açılır. */
@@ -8397,6 +8556,7 @@ const Game = {
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur açılımda kullanılamaz (tur bitince serbest kalır).' };
     if (tiles.some(t => this.rotStage(t) === 4))
       return { ok: false, error: '🦠 Çöp Taş hiçbir gruba giremez — atabilirsin.' };
+    { const g = this._cocukGate(tiles); if (g) return g; }
 
     /* P55 · Grup A (bug) — TERS TAŞ DENEMEDE AÇILIYORDU. Eskiden yüz burada,
        grup DENETLENMEDEN önce açılıyordu: geçersiz bir deneme
@@ -8458,6 +8618,17 @@ const Game = {
   /* Çoklu seçim açma: seçim tek kombinasyon değilse otomatik parçalara
      ayırıp hepsini sahneler (tek tıkla çoklu açılım — kullanıcı isteği) */
   stageSelection(ids) {
+    const r = this._stageSelection(ids);
+    const s = this.state;
+    if (!r.ok && this.cocukFog() && /^Geçersiz grup|aynı turda açılamaz/.test(r.error || '')) {
+      s.cocuk.tries = (s.cocuk.tries || 0) + 1;
+      const left = Math.max(0, COCUK.fogTries - s.cocuk.tries);
+      r.error = `🧸 Sis: grup tutmadı — ${left ? left + ' deneme kaldı' : 'bu tur deneme hakkın bitti'}.`;
+      r.fogTry = true;
+    }
+    return r;
+  },
+  _stageSelection(ids) {
     const s = this.state;
     const asOne = this.stageCombo(ids); // önce bütün olarak dene (okey çözümü dahil)
     if (asOne.ok) return { ok: true, count: 1 };
@@ -9534,6 +9705,7 @@ const Game = {
        artık geçersizdir */
     const preBase = this.previewBase();
     const r = this._calcOpening();
+    this._toyApply(r);   // Oyuncak Kutusu — bekleyen kutu grubu bu açılıma eklenir
     /* GRUP F — boss koşullarının açılım anındaki etkileri. Puan EKLENMEDEN
        önce uygulanır ki "puan sıfırlanır" / "yansıma düşülür" kuralları
        kazanma kontrolünü doğru tetiklesin. */
@@ -9866,6 +10038,7 @@ const Game = {
       s.score *= 2; s.playerFinished = true; s.maxTurns = s.turn;
       result.bonuses.push(`ELİNİ BİTİRDİN! Raund toplamı ×2 (${s.score})`);
     }
+    this._cocukAfterMeld(result);   // LANETLİ ÇOCUK — Faz 2 kilidi / Faz 3 Nihai Feda (kazanma denetiminden ÖNCE)
     if (this._raceOn()) { s.phase = 'discard'; return { ok: true, ...result }; }
     if (!result.tamEl && s.score >= s.target && this._katlaEligible()) {
       /* P58 · Kumarhane — KATLA teklifi: raund henüz bitmez; oyuncu
@@ -9933,6 +10106,7 @@ const Game = {
     if (picks.some(t => t.sewn))
       return { ok: false, error: 'Bu taş dikili — discard edilemez (Terzi\'nin İğnesi).' };
     if (picks.some(t => t.fossil)) return { ok: false, error: '🦴 Fosil atılamaz — açınca tükenir.' };
+    if (picks.some(t => t.cocukLock)) return { ok: false, error: '🧸 Dokunaç bu taşı sardı — kilit bitene kadar atılamaz.' };
     // Terzi'nin İğnesi BOSS Koşulu (Grup F): dikili taş bu tur atılamaz da
     if (picks.some(t => t.bossSewn))
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur atılamaz (tur bitince serbest kalır).' };
@@ -9941,11 +10115,16 @@ const Game = {
     s.statDiscarded = (s.statDiscarded || 0) + picks.length;   // P59 — oyun sonu istatistiği
     const events = [];
     const toOteki = this._otekiOpen();   // P57 — discard öteki dünyaya düşer
+    const toToy = this._toyOn();          // Oyuncak Kutusu — sıradan taşlar kutuya düşer, işlek yok
     for (const t of picks) {
       s.hand = s.hand.filter(x => x !== t);
-      if (toOteki && s.otekiHand.length < MAX_HAND) this._otekiFall(t, events);
+      if (toToy && !t.jokerTile && !this.isOkeyTile(t)) {
+        (s.toyBox = s.toyBox || []).push(t); t.toyFell = true;
+        while (s.toyBox.length > OYUNCAK.cap) s.discardPile.push(s.toyBox.shift());
+      } else if (toOteki && s.otekiHand.length < MAX_HAND) this._otekiFall(t, events);
       else s.discardPile.push(t);
     }
+    if (toToy && picks.some(t => t.toyFell)) this._toyCheck(events);
     if (toOteki && picks.length) events.push(this._moonLine());   // P77 — ay ne kadar doldu
     const tile = picks[0] || null;   // tekli yollar için geriye dönük kısayol
     if (picks.length > 1)
@@ -10076,7 +10255,8 @@ const Game = {
        katıdır. Muaf taşlar (okey, deste jokeri, taşlaşmış, Kara Delik) aday
        listesine hiç girmez. */
     const islekCands = picks.filter(t => !t.jokerTile && !this.isOkeyTile(t)
-      && !t.stoned && t.special !== 'karaDelikTasi');
+      && !t.stoned && t.special !== 'karaDelikTasi' && !t.toyFell);
+    for (const t of picks) delete t.toyFell;
     if (islekCands.length) {
       const top = islekCands.reduce((a, b) => (b.number > a.number ? b : a));
       let rate = this.bossOn() ? (s.openedThisTurn ? 0.20 : 0.30) : 0.20;
@@ -14558,7 +14738,7 @@ if (typeof module !== 'undefined') {
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, ROT, SILENT, ALTAR, CURSED, CURSED2, TOTEM_DEFS, TAKAS, FAL, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, ROT, SILENT, ALTAR, CURSED, CURSED2, TOTEM_DEFS, TAKAS, FAL, COCUK, OYUNCAK, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

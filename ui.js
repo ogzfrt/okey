@@ -1010,6 +1010,13 @@
       d.appendChild(m);
       attachTip(d, { name, rarityText: t('cursedTag'), desc }, {});
     };
+    if (tile.cocukLock) {   // LANETLİ ÇOCUK — Faz 2: dokunaç sarar (açılmaz, atılmaz)
+      d.classList.add('cocuk-lock');
+      const v = document.createElement('span');
+      v.className = 'cl-vine';
+      d.appendChild(v);
+      attachTip(d, { name: t('cocukLockName'), rarityText: t('bossMarkTag'), desc: t('cocukLockDesc', Math.max(1, tile.cocukLock - Game.state.turn + 1)) }, {});
+    }
     if (tile.fossil) cMark('fossil-tile', '🦴', t('fossilName'), t('fossilDesc', Game.state.fossil ? Game.state.fossil.age : 1));
     else if (tile.kabus) cMark('kabus-tile', '👁', t('kabusName'), t('kabusDesc'));
     else if (tile.anomAlt != null) cMark('anom-tile', '👾', t('anomName'), t('anomDesc', tile.number, tile.anomAlt));
@@ -1321,13 +1328,14 @@
     const rows = pm.rows, last = rows.length - 1, er = pm.row, idx = pm.idx;
     const lvOf = [];
     let n = 0;
-    rows.forEach((_, r) => { lvOf[r] = r === er ? [n, n + 1, n + 2] : [n]; n += lvOf[r].length; });
+    const fin = er === last;   // Aşama 6 — final tek raund: yalnız boss düğümü
+    rows.forEach((_, r) => { lvOf[r] = r === er && !fin ? [n, n + 1, n + 2] : [n]; n += lvOf[r].length; });
     const W = 600, H = 1005, PT = 92, PB = 62;
     const ly = (l) => H - PB - l * (H - PB - PT) / (n - 1);
     const LANES = { 1: [0.5], 2: [0.25, 0.75], 3: [0, 0.5, 1] };
     const lx = (r, i) => 160 + LANES[rows[r].length][i] * 330;
     const pos = (r, i) => (r === er && i !== idx ? [lx(r, i), ly(lvOf[r][1])] : [lx(r, i), ly(lvOf[r][0])]);
-    const rpos = (ric) => [lx(er, idx), ly(lvOf[er][ric - 1])];   // raund düğümleri
+    const rpos = (ric) => [lx(er, idx), ly(lvOf[er][fin ? 0 : ric - 1])];   // raund düğümleri
     const key = (r, i) => r + ':' + i;
     const walked = new Set(pm.walked.map(([r, i]) => key(r, i)));
     const reach = new Set(pm.reach.map((j) => key(er + 1, j)));
@@ -1350,7 +1358,7 @@
         : (open.has(ka) && open.has(kb)) ? 'open' : 'dead';
       svg += ln(from, to, cls);
     }
-    svg += ln(rpos(1), rpos(2), rState(2) === 'open' ? 'open' : 'walked') + ln(rpos(2), rpos(3), rState(3) === 'open' ? 'open' : 'walked');
+    if (!fin) svg += ln(rpos(1), rpos(2), rState(2) === 'open' ? 'open' : 'walked') + ln(rpos(2), rpos(3), rState(3) === 'open' ? 'open' : 'walked');
 
     let html = `<div class="pm-plate">${t('pmTitle')}</div>`
       + `<svg class="pm-lines" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${svg}</svg>`;
@@ -1369,10 +1377,10 @@
       });
     });
     const cur = rows[er][idx];
-    for (let ric = 1; ric <= 3; ric++) {
+    for (let ric = fin ? 3 : 1; ric <= 3; ric++) {
       const [x, y] = rpos(ric), st = rState(ric), boss = ric === 3;
       const inner = boss
-        ? (stageBoss && JOKER_ART.has(stageBoss.key) ? `<span class="pm-boss-art jk-${stageBoss.key}"></span>` : `<span class="pm-ico">${pixIcon('skull', 4)}</span>`)
+        ? (stageBoss && JOKER_ART.has(stageBoss.key) ? `<span class="pm-boss-art jk-${stageBoss.key}"></span>` : `<span class="pm-ico">${pixIcon(fin ? 'eye' : 'skull', 4)}</span>`)
         : `<span class="pm-ico">${pixIcon('masa', 3)}</span>`;
       const ev = boss && cur.ev ? `<span class="pm-ev">${pixIcon(cur.ev, 2)}</span>` : '';
       const sk = !boss && st !== 'done' && Game.skipRewardFor(ric);
@@ -2415,6 +2423,75 @@
     };
     for (const c of ['fit1', 'fit2', 'fit3']) { if (!over()) break; col.classList.add(c); }
   }
+  /* OYUNCAK KUTUSU (Lanetli Çocuk'un final jokeri) — atılan taşlar burada; Ay Kuyusu kalıbı */
+  function renderToyWell() {
+    const box = document.getElementById('toyWell');
+    if (!box) return;
+    const s = Game.state;
+    const o = s && s.status === 'playing' && Game.toyState ? Game.toyState() : null;
+    box.classList.toggle('hidden', !o);
+    if (!o) return;
+    box.classList.toggle('aw-full', !!o.ready);
+    box.innerHTML = `<div class="aw-head"><span class="aw-title">${t('toyTitle')}</span><span class="aw-count">×${o.mult}</span></div>`
+      + `<div class="aw-row"><div class="aw-slots"></div></div>`
+      + `<div class="aw-status">${o.ready ? t('toyReady', T.typeName(o.ready.type)) : t('toyIdle', o.box.length, o.cap)}</div>`;
+    const slots = box.querySelector('.aw-slots');
+    const list = o.ready ? o.ready.tiles : o.box;
+    for (let i = 0; i < o.cap; i++) {
+      const tl = list[i];
+      if (!tl) { const e = document.createElement('div'); e.className = 'aw-empty'; slots.appendChild(e); continue; }
+      const te = tileEl(tl, false);
+      te.classList.add('aw-tile');
+      slots.appendChild(te);
+    }
+    attachTip(box, { name: t('toyTitle'), accent: 'final', desc: t('toyTip', o.mult) }, {});
+  }
+  /* LANETLİ ÇOCUK — Faz 1 sisi: tek turda sayılar tur başında 2 sn görünür, sonra ıstakada yalnız renk kalır */
+  let cocukFogKey = null, cocukFogTimer = null;
+  function renderCocukFog() {
+    const st = Game.cocukState ? Game.cocukState() : null;
+    const s = Game.state;
+    Music.setLayer(st ? st.phase : 1);   // final müziği fazlarla katman ekler
+    const on = !!(st && st.fog && s.phase === 'meld' || st && st.fog && s.phase === 'discard');
+    if (!on) { document.body.classList.remove('cocuk-fog'); cocukFogKey = null; clearTimeout(cocukFogTimer); return; }
+    const key = `${s.roundSerial}-${s.turn}`;
+    if (cocukFogKey === key) return;
+    cocukFogKey = key;
+    document.body.classList.remove('cocuk-fog');
+    clearTimeout(cocukFogTimer);
+    cocukFogTimer = setTimeout(() => { if (cocukFogKey === key) { document.body.classList.add('cocuk-fog'); SFX.crack(); } }, st.showMs);
+  }
+  /* Faz geçiş yazısı (Dolunay sahnesi kalıbı) */
+  function showCocukBanner(title, sub) {
+    document.getElementById('cocukFx')?.remove();
+    const fx = document.createElement('div');
+    fx.id = 'cocukFx';
+    fx.innerHTML = `<div class="ck-text"><b>${title}</b><span>${sub}</span></div>`;
+    document.body.appendChild(fx);
+    try { SFX.crack(); } catch (e) { /* sessiz */ }
+    const close = () => { fx.classList.add('out'); setTimeout(() => fx.remove(), 450); };
+    fx.addEventListener('pointerdown', close);
+    setTimeout(close, 2400);
+  }
+  /* Faz 3 — NİHAİ FEDA: zaman durur; seçim yok, yalnız sonuç (kullanıcı kararı 2026-10-28) */
+  function showFeda(f) {
+    document.getElementById('fedaOv')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'fedaOv';
+    ov.className = 'pk-ov tone-violet altar-ov mg-ov feda-ov';
+    const lost = f.lost ? `<div class="fd-lost"><span class="fd-ico">${f.lost.icon || (f.lost.kind === 'joker' ? '🃏' : '🪄')}</span>`
+      + `<span class="fd-name">${f.lost.kind === 'consum' ? T.consumName(f.lost.key, f.lost.name) : f.lost.kind === 'joker' ? T.name({ key: f.lost.key, name: f.lost.name }) : f.lost.name}</span>`
+      + `<span class="fd-broke">${t('fedaBroke')}</span></div>` : '';
+    ov.innerHTML = `<div class="pk-box"><div class="pk-title">🧸 ${t('fedaTitle')}</div>`
+      + `<div class="pk-sub-title">${t('fedaSub')}</div>${lost}`
+      + `<div class="fd-target"><span>${t('fedaTarget')}</span><b class="fd-old">${f.old}</b><b class="fd-arrow">→</b><b class="fd-new">${f.target}</b></div>`
+      + (f.extra ? `<div class="fd-extra">${t('fedaExtra')}</div>` : '')
+      + `<div class="pk-foot"><button class="ep-btn ep-blue">${t('takasGo')}</button></div></div>`;
+    document.body.appendChild(ov);
+    try { SFX.crack(); setTimeout(() => SFX.crack(), 260); } catch (e) { /* sessiz */ }
+    Music.freeze(true);   // zaman durdu: müzik kesilir, tek müzik kutusu notası
+    ov.querySelector('.ep-btn').addEventListener('click', () => { ov.remove(); Music.freeze(false); render(); });
+  }
   function renderWell() {
     const box = document.getElementById('ayWell');
     if (!box) return;
@@ -2956,7 +3033,8 @@
     let master = null, noise = null, unlocked = false, cur = null;
     let duckK = 1;   // P71c — Ritim mini oyunu açıkken müzik kısılır (çubuk müziğe kilitli değil)
     let pauseK = 1;  // denetim S-2 — duraklat menüsü açıkken 0.5
-    const level = () => (on ? Math.pow(Math.max(0, Math.min(100, vol)) / 100, 1.5) * 0.6 * duckK * pauseK : 0);   // denetim S-2: pauseK
+    let freezeK = 1; // Lanetli Çocuk — Nihai Feda anında 0
+    const level = () => (on ? Math.pow(Math.max(0, Math.min(100, vol)) / 100, 1.5) * 0.6 * duckK * pauseK * freezeK : 0);   // denetim S-2: pauseK
 
     /* ── nota yazımı: "D5 - C5 . | A4" → olaylar. "-" önceki notayı uzatır,
        "." sus, "|" yalnız okunurluk için ölçü çizgisi, "D3+F#3" akor,
@@ -3420,6 +3498,26 @@
          blue note'larla (D7'de Eb), boşluklarında kısık trompet cevapları,
          yürüyen kontrbas, 2 ve 4'te parmak şıklatma, ride. 16 ölçü (≈38 sn).
          Final haritasında da çalar. */
+      /* LANETLİ ÇOCUK (Lanetli Boyut finali, rapor §Müzik) — ninni TAMAMEN bozulur: modun A minör müzik kutusu ninnisi
+         6/8'e, 112 bpm'e çekilmiş; melodide tritonlar ve yarım ses kümeleri (A5+Bb5), saat çarkı tıkırtısı (needle), koro.
+         Fazlarla katman ekler (part.l): Faz 2 dokunaç altı bas (sub + çello ostinatosu), Faz 3 tritonla çığlık atan
+         keman ve bakır vuruşları. Nihai Feda anında müzik kesilir, tek müzik kutusu notası çalar (Music.freeze).
+         Boss davul seti (darbuka/ney yok — BOSS ≠ MENÜ). */
+      lanetliCocuk: { bpm: 112, div: 3, dv: .5, gain: 1.05, parts: [
+        { i: 'mbox', s: 'E6 - - D6 C6 - | B5 - - A5 - - | C6 - - B5 Bb5 - | G#5 - - - . . | ' +
+                        'A5 - - C6 Eb6 - | F6 - - E6 D6 - | E6 - - Bb5 A5 - | A5+Bb5 - - - . . | ' +
+                        'E6 - - D6 C6 - | B5 - - A5 - B5 | C6 - - Eb6 A6 - | G#6 - - - . . | ' +
+                        'A6 - - F6 E6 - | D6 - - C6 B5 - | C6 - - B5 Eb6 - | A5+Eb6 - - - - .' },
+        { i: 'needle', s: gen('A . . C . B', LBN_R, LBN_H) },
+        { i: 'choir', s: gen('P - - - - -', LBN_R, LBN) },
+        { i: 'sub', l: 2, v: .22, s: gen('R - - - - -', LBN_R, LBN) },
+        { i: 'cello', l: 2, v: .35, s: gen('R . R O . R', LBN_R, LBN) },
+        { i: 'violin', l: 3, v: .4, s: 'A4+Eb5 - - - - - | . . . . . . | A4+Eb5 - - G#4+D5 - - | . . . . . . | ' +
+                                'C5+F#5 - - - - - | . . . . . . | Bb4+E5 - - A4+Eb5 - - | . . . . . . | ' +
+                                'A4+Eb5 - - - - - | . . . . . . | C5+F#5 - - B4+F5 - - | . . . . . . | ' +
+                                'D5+G#5 - - - - - | . . . . . . | Bb4+E5 - - A4+Eb5 - - | A4+Eb5 - - - - -' },
+        { i: 'tbrass', l: 3, v: .4, s: per(['. . . . . .', 'P - . . . .', '. . . . . .', 'P - . P - .'], LBN_R, LBN) },
+      ], drums: 'K..C.KK..C..' },
       ladyLuck: { bpm: 100, div: 3, dv: .5, gain: .8, parts: [
         { i: 'vox', s: 'D5 - - - - - Bb4 - C5 D5 - - | F5 - - D5 - Bb4 - - - . . . | ' +
                        'Eb5 - - - - - C5 - D5 Eb5 - - | G5 - - F5 - Eb5 - - - . . . | ' +
@@ -3623,10 +3721,12 @@
        dokunmadan tonalite değiştirme). */
     function prep(T) {
       return { T, stepDur: 60 / T.bpm / T.div, k: Math.pow(2, (T.tp || 0) / 12),
-        parts: T.parts.map(p => ({ o: INST[p.i], q: seq(p.s) })) };
+        parts: T.parts.map(p => ({ o: p.v ? { ...INST[p.i], vol: INST[p.i].vol * p.v } : INST[p.i], q: seq(p.s), l: p.l || 1 })) };   // p.v: parça başı ses
     }
+    let layer = 1;   // Lanetli Çocuk — faz katmanı (part.l); diğer parçalarda hep 1
     function playStep(P, out, step, at) {
       P.parts.forEach(p => {
+        if (p.l > layer) return;
         const e = p.q.at[step % p.q.len];
         if (e) e[1].forEach(f => f && tone(out, at, f * P.k, e[2] * P.stepDur * .92, p.o));
       });
@@ -3791,6 +3891,23 @@
       FILES: MUSIC_FILES,   // denetim SA-12 — test kancası (dosyalı parça yolunu test sırasında yazmak için)
       /* P71c — Ritim mini oyunu: müziği kıs / geri aç */
       duck(onDuck) { duckK = onDuck ? .35 : 1; applyLevel(); },
+      /* Lanetli Çocuk — faz katmanı (1-3) */
+      setLayer(n) { layer = Math.max(1, Math.min(3, n | 0 || 1)); },
+      get layer() { return layer; },
+      /* Nihai Feda — zaman durur: müzik kesilir, tek müzik kutusu notası; freeze(false) geri açar */
+      freeze(onF) {
+        freezeK = onF ? 0 : 1; applyLevel();
+        if (!onF || !on || !actx) return;
+        try {
+          const g = actx.createGain();
+          g.gain.value = Math.pow(Math.max(0, Math.min(100, vol)) / 100, 1.5) * 0.6;
+          g.connect(actx.destination);
+          tone(g, actx.currentTime + .05, hz('A5'), 2.4, INST.mbox);
+          tone(g, actx.currentTime + .05, hz('Bb5'), 2.4, INST.mbox);
+          setTimeout(() => g.disconnect(), 3200);
+        } catch (e) { /* ses yok */ }
+      },
+      get frozen() { return freezeK === 0; },
       get ducked() { return duckK < 1; },
       get levelNow() { return level(); },   // denetim S-2 — test kancası (duraklatta yarıya iner)
       /* P71c — çevrimdışı ölçüm: parçayı OfflineAudioContext'e çizip RMS / tepe
@@ -4948,6 +5065,13 @@
     }
     /* Grup H — Sinsi Bulaşma: hangi taşların uzaylı olduğu GİZLİ, kaç tane olduğu canlı görünür */
     if (k === 'uzayli') { const c = s.hand.filter(x => x.hiddenAlien).length; n.push({ k: 'uzayli', ico: '👽', mark: c, txt: t('bossAlienExtra', c) }); }
+    if (k === 'lanetliCocuk' && Game.cocukState) {
+      const c = Game.cocukState();
+      if (c) {
+        n.push({ k: 'cocukFaz', ico: '🧸', mark: c.phase, title: t('cocukPhaseTitle', c.phase), txt: t('cocukPhase' + c.phase, c.lockAt) });
+        if (c.fog) n.push({ k: 'cocukFog', ico: '👓', mark: c.triesLeft, title: t('cocukFogTitle'), txt: t('cocukFogTxt', c.triesLeft) });
+      }
+    }
     return n;
   }
 
@@ -5278,6 +5402,8 @@
        birebir korunur. */
     el.rack.classList.toggle('rack-free', freeRack());
     renderWell();   // P59 · Öteki Dünya — Ay Kuyusu
+    renderToyWell();   // Oyuncak Kutusu
+    renderCocukFog();   // Lanetli Çocuk — Faz 1 sisi
     renderOrionPanel();   // P90 · Orion (final rakibi / eş)
     fitLeftColumn();      // P106 · sol sütun ıstaka sekmesine taşmasın
     maybeBeltPrompt();    // P90 · kemer boşsa sor
@@ -5931,6 +6057,8 @@
          3 taş açtı; seçim penceresi burada belirir. */
       if (Game.state.yildizPick) setTimeout(showYildizPick, 520);
       if (res.katlaOffer) setTimeout(showKatlaOffer, 650);   // P58 · Kumarhane
+      if (res.cocukFeda) setTimeout(() => showFeda(res.cocukFeda), 650);   // Lanetli Çocuk — Faz 3
+      else if (res.cocukLock) setTimeout(() => showCocukBanner(t('cocukLockBanner'), t('cocukLockSub')), 650);   // Faz 2
       if (Game.state.status !== 'playing') setTimeout(showRoundEnd, 900);
     };
     const oldScore = score0;
@@ -8368,7 +8496,7 @@
      kalır. Ayarlar → BOSS ARAYÜZÜ ile kapatılabilir (varsayılan açık).
      Boss karakter çizimleri Figma'dan gelince arka planlar onlara göre yenilenecek. */
   const BOSS_UI_KEY = 'okeyBossUi';
-  const BOSS_UI_KEYS = new Set(['godzilla', 'karaKedi', 'kirby', 'cellat', 'misunderstood', 'kelebek', 'ahtapot', 'fatality', 'zombie', 'freedom', 'uzayli', 'ucKagitci', 'dervish', 'terziIgne', 'avukat', 'ritim', 'kahin', 'tuccar', 'corporates', 'aynaKral', 'ladyLuck', 'orion']);
+  const BOSS_UI_KEYS = new Set(['godzilla', 'karaKedi', 'kirby', 'cellat', 'misunderstood', 'kelebek', 'ahtapot', 'fatality', 'zombie', 'freedom', 'uzayli', 'ucKagitci', 'dervish', 'terziIgne', 'avukat', 'ritim', 'kahin', 'tuccar', 'corporates', 'aynaKral', 'ladyLuck', 'orion', 'lanetliCocuk']);
   let bossUiOn = (() => { try { return localStorage.getItem(BOSS_UI_KEY) !== '0'; } catch (e) { return true; } })();
   function bossUiActive() {
     try {
@@ -8544,7 +8672,7 @@
     const bossBeat = Object.keys(o.bossKeys || {}).filter((k) => BOSSES.some((b) => b.key === k)).length;
     const modeKeys = Game.runModeKeys ? Game.runModeKeys() : ['base'];
     const modeDone = modeKeys.filter((k) => Modes.done(k) || (o.modes && o.modes[k] && o.modes[k].won)).length;
-    const finTotal = Object.keys(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).length;
+    const finTotal = Object.keys(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).filter((k) => !(BETA && k === 'lanetliCocuk')).length;   // betada Lanetli Boyut yok
     const finDone = Finals.list().length;
     const prog = Math.round((pct(jokOwned, jokTotal) + pct(bossBeat, bossTotal) + pct(modeDone, modeKeys.length) + pct(finDone, finTotal)) / 4);
     const since = o.since ? new Date(o.since).toLocaleDateString(T.lang === 'en' ? 'en-GB' : 'tr-TR') : '—';
@@ -8656,7 +8784,7 @@
            "yenildi" tik kutusu (kilit + maskot eşyası + run başı final jokeri) */
         `<div class="set-card set-fw-card"><span class="go-txt"><span class="set-label">${t('finalWinHead')}</span>`
         + `<small>${t('finalWinDesc')}</small></span><div class="set-fw-grid">`
-        + Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).map((fb) =>
+        + Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).filter((fb) => !(BETA && fb.key === 'lanetliCocuk')).map((fb) =>
           chk(`set-finalwin fw-${fb.key}`, t('finalWinLabel', fb.name), Finals.has(fb.key), fb.icon || '🏆')).join('')
         + `</div></div>` +
         go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn),
@@ -10636,7 +10764,7 @@
       out.push({ key: 'b_' + b.key, rarity: 'boss', boss: b.key, name: T.bossName(b.key, b.name), desc: t('mus_b_' + b.key) });
     }
     /* P71c — modların sabit final boss'ları (Lady Luck) da listede */
-    for (const fb of Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {})) if (Music.TRACKS['b_' + fb.key]) {
+    for (const fb of Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {})) if (Music.TRACKS['b_' + fb.key] && !(BETA && fb.key === 'lanetliCocuk')) {
       out.push({ key: 'b_' + fb.key, rarity: 'boss', boss: fb.key, name: T.bossName(fb.key, fb.name), desc: t('mus_b_' + fb.key) });
     }
     out.push({ key: 'bossGenel', rarity: 'boss', name: t('musBossGenel'), desc: t('mus_bossGenel') });
@@ -10711,7 +10839,7 @@
        jokerleri önde; açılmamışsa gri/kilitli (colFinalCard). */
     { key: 'boss', ico: '👹', disc: 'joker', filters: ['all', 'epic', 'final'],
       filterLabel: (f) => (f === 'epic' ? t('colF_boss') : t('colF_finalBoss')),
-      items: () => [...Object.values(JOKER_DEFS).filter(d => d.rarity === 'final'),
+      items: () => [...Object.values(JOKER_DEFS).filter(d => d.rarity === 'final' && !(BETA && d.mode === 'lanetli')),   // Oyuncak Kutusu betada yok
         ...Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic')],
       card: (d) => (d.rarity === 'final' && !Disc.known('joker', d) ? colFinalCard(d) : colJokerCard(d)) },
     { key: 'consum', ico: '🪄', disc: 'consum', items: () => byRarity(Object.values(CONSUMABLES).filter(d => !d.cursed)), card: (d) => colConsumCard(d) },
@@ -11307,7 +11435,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'tr-grid-wrap';
     for (const r of RARITY_ORDER) {
-      const defs = Object.values(JOKER_DEFS).filter(d => d.rarity === r);
+      const defs = Object.values(JOKER_DEFS).filter(d => d.rarity === r && !(BETA && (d.cursed || d.mode === 'lanetli')));   // betada Lanetli Boyut yok
       if (!defs.length) continue;
       const h = document.createElement('div');
       h.className = `tr-rar tr-${r}`;
@@ -11381,7 +11509,7 @@
     bossSec.className = 'tr-sec tr-boss-only';
     const bh = document.createElement('h3');
     bossSec.appendChild(bh);
-    const allBosses = BOSSES.concat(Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}));
+    const allBosses = BOSSES.concat(Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).filter((fb) => !(BETA && fb.key === 'lanetliCocuk')));
     if (!trPrefs.boss || !allBosses.some(b => b.key === trPrefs.boss)) trPrefs.boss = allBosses[0].key;
     const tierOf = (b) => (b.final ? 4 : (BOSS_TIER[b.key] || 2));
     const bossBtns = [];
@@ -11440,7 +11568,7 @@
     csec.appendChild(ch);
     const cg = document.createElement('div');
     cg.className = 'tr-grid col-grid col-cs-row';
-    for (const d of Object.values(CONSUMABLES)) {
+    for (const d of Object.values(CONSUMABLES).filter((x) => !(BETA && x.cursed))) {   // betada lanetli değnek yok
       const b = trPickCard(colConsumCard(d), T.consumName(d.key, d.name), selC.has(d.key), () => {
         if (selC.has(d.key)) selC.delete(d.key);
         else if (selC.size < cMax) selC.add(d.key);
@@ -11846,6 +11974,7 @@
     disc: Disc, pickBuyDest, fuzyonMenu, showUseChooser, render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     pickOkeySlot,   // okey yerleşim penceresi (görsel test)
+    showFeda, showCocukBanner,   // Lanetli Çocuk (görsel test)
     // Playtest 17 — Grup A/F doğrulaması için
     notify, showCoinFlip, pickFuzyon, flushRoundStart,
     // Playtest 19 — Grup E: Füzyon kullanım menüsü

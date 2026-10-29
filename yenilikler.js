@@ -17,6 +17,8 @@
     {
       id: '2026-10-29', date: { tr: '29 Ekim', en: 'October 29' },
       items: [
+        ['yeni', 'Final: Lanetli Çocuk', 'Lanetli Boyut artık bir finalle bitiyor. Lanetli Çocuk sayıları gizliyor, taşlarını dokunaçla kilitliyor ve son açılımında senden bir bedel alıyor. Yenersen Oyuncak Kutusu jokeri açılıyor.',
+          'Finale: The Cursed Child', 'The Cursed Dimension now ends with a finale. The Cursed Child hides your numbers, locks your tiles with tentacles and takes one last price at your winning meld. Beat it to unlock the Toy Box joker.', 'proto'],
         ['yeni', 'Mini oyunlar', 'Lanetli Boyut’ta haritadaki olay rozetleri artık bir şey yapıyor: Karanlık Takas’ta fısıldayan üç kutudan birini seç, Kemik Falı’nda taşları ezberle ve boss’a hazır bir grupla gir, Ekstra Sunak’ta üç teklif arasından seç.',
           'Mini games', 'Event badges on the Cursed Dimension map now do something: pick one of three whispering boxes in the Dark Trade, memorise tiles in the Bone Reading to start the boss with a ready set, and choose from three offers at the Extra Altar.', 'proto'],
         ['yeni', 'Adak Sunağı ve lanetli eşyalar', 'Lanetli Boyut’ta boss’u yenince Adak Sunağı açılır: bir bedel öde, bir lanetli eşya al. 11 lanetli joker, 8 lanetli değnek ve slot kaplamayan 6 totem geldi.',
