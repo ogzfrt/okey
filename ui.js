@@ -882,6 +882,9 @@
     if (tile.apple) d.classList.add('apple-tile');        // P31 · Grup I — Yasak Elma
     if (tile.pinkyOkey) d.classList.add('pinky-okey');    // P31 · Grup C — Pinky Warrior
     if (tile.special) d.classList.add('sp-' + tile.special);
+    /* 2026-10-29 (kullanıcı) — Ay Taşı iki görünüm: KALICI Ay Taşı (special 'ayTasi') Figma V1 "AY_TAŞLAR",
+       Öteki Dünya kuyusundan gelen raund içi taş (moonTemp) Figma V2 "AY_V2_TAŞLAR" (dolunay). Mekanik aynı. */
+    else if (tile.moonTemp) d.classList.add('sp-ayTasiTam');
     /* P59/P77 — Ay Taşı (kalıcı ya da raund içi) ay simgesini taşır; Dolunay turunda OKEY parlar */
     if (Game.isMoonTile && Game.isMoonTile(tile)) {
       d.classList.add('moon-tile');
@@ -10580,11 +10583,14 @@
     'krupiye',
     /* denetim3 #50 · Figma RARE-JOKERLER 468:256 — kalan Rare çizimleri (Rare 24/24) */
     'hipnotizor', 'tradeJokeri', 'terzi', 'terazi', 'katalizor', 'dedikodu', 'rulet', 'martingale',
-    'hileliZar', 'sansliZar', 'yanki', 'zincir', 'kumarbaz', 'bitki', 'yankee', 'ayna']);   // P105 · Figma 488:85 Krupiye (kumarhane Legendary)   // P105 · Figma 485:2 Bungee_gum / 485:35 Renk_körü / 485:21 Two_face
+    'hileliZar', 'sansliZar', 'yanki', 'zincir', 'kumarbaz', 'bitki', 'yankee', 'ayna',
+    /* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — Common çizimleri (17 kart) */
+    'sayiTapinagi', 'anarsist', 'bereket', 'copcu', 'ikizler', 'islemeci', 'kucukTas', 'takim', 'kalabalikPer', 'ciftFirtina', 'renkUstasi', 'uzunKosu', 'kosucu',
+    'ciftVurus', 'sunger', 'fisUstasi', 'fisilti']);   // Common 17: Boks Eldiveni + Kumarhane Fiş Kulesi + Lanetli Sünger / Fısıltı   // P105 · Figma 488:85 Krupiye (kumarhane Legendary)   // P105 · Figma 485:2 Bungee_gum / 485:35 Renk_körü / 485:21 Two_face
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
-    'yankiTasi']);
+    'yankiTasi', 'ayTasi']);   // ayTasi: 2026-10-29 · Figma 540:4163 (V1)
 
   /* DEĞNEK GÖRSELLERİ (2026-09-09) — Figma OKEY-101 node 295:176 "TOTEMLER"
      (9 çizim, 81 × 110). `SPECIAL_ART` / `JOKER_ART` ile birebir aynı desen:

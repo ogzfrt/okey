@@ -6999,6 +6999,10 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .sp-zamanTasi     { --sp-art: url('assets/game/special/zaman.svg'); }
 .sp-ates          { --sp-art: url('assets/game/special/ates.svg'); }
 .sp-yankiTasi     { --sp-art: url('assets/game/special/su.svg'); }
+/* 2026-10-29 · Ay Taşı iki görünüm (Figma ÖZEL_TAŞLAR_ASSET 267:2946):
+   V1 "Ay_taşı 13" 540:4163 → kalıcı Ay Taşı · V2 "Ay_taşı_tam 1" 540:4174 → kuyudan gelen raund içi taş */
+.sp-ayTasi        { --sp-art: url('assets/game/special/ay-tasi.svg'); }
+.sp-ayTasiTam     { --sp-art: url('assets/game/special/ay-tasi-tam.svg'); }
 
 
 /* ==========================================================================
@@ -7121,6 +7125,24 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-vasiyet      { --jk-art: url('assets/game/joker/vasiyet.svg'); }        /* 464:243 */
 .jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P85 · Figma 455:6178 (yeniden çizim; eski 444:2) */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
+/* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — 17 Common kart */
+.jk-sayiTapinagi { --jk-art: url('assets/game/joker/yin-yang.svg'); }   /* 520:7 Ying_yang */
+.jk-anarsist     { --jk-art: url('assets/game/joker/indirim-kuponu.svg'); }   /* 520:2 İndirim_kuponu */
+.jk-bereket      { --jk-art: url('assets/game/joker/buyutec.svg'); }   /* 533:36 Büyüteç */
+.jk-copcu        { --jk-art: url('assets/game/joker/kuzgun.svg'); }   /* 533:30 Kuzgun */
+.jk-ikizler      { --jk-art: url('assets/game/joker/cift-kiraz.svg'); }   /* 533:2 Çift_kiraz */
+.jk-islemeci     { --jk-art: url('assets/game/joker/yapboz-parcasi.svg'); }   /* 536:45 Yapboz_parçası */
+.jk-kucukTas     { --jk-art: url('assets/game/joker/bezelye.svg'); }   /* 536:61 Bezelye */
+.jk-takim        { --jk-art: url('assets/game/joker/bilye.svg'); }   /* 542:12 Bilye */
+.jk-kalabalikPer { --jk-art: url('assets/game/joker/bilye-torbasi.svg'); }   /* 542:2 Bilye_torbası */
+.jk-ciftFirtina  { --jk-art: url('assets/game/joker/kiraz-sepeti.svg'); }   /* 542:26 Kiraz_sepeti */
+.jk-renkUstasi   { --jk-art: url('assets/game/joker/palet.svg'); }   /* 542:42 Palet */
+.jk-uzunKosu     { --jk-art: url('assets/game/joker/sadak.svg'); }   /* 542:72 Sadak */
+.jk-kosucu       { --jk-art: url('assets/game/joker/ok.svg'); }   /* 542:87 Ok */
+.jk-ciftVurus    { --jk-art: url('assets/game/joker/boks-eldiveni.svg'); }   /* 543:98 Boks_eldiveni */
+.jk-sunger       { --jk-art: url('assets/game/joker/sunger.svg'); }   /* 543:129 Sünger */
+.jk-fisUstasi    { --jk-art: url('assets/game/joker/fis-kulesi.svg'); }   /* 543:115 Fiş_kulesi */
+.jk-fisilti      { --jk-art: url('assets/game/joker/fisilti.svg'); }   /* 543:134 Fısıltı */
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
    çizim tamamen başka (sarı/turkuaz nota kartı → mavi çark kartı).
@@ -7255,12 +7277,13 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .sp-zamanTasi       { --sp-num-out: #6F3986; }
 .sp-ates            { --sp-num-out: #600909; }
 .sp-yankiTasi       { --sp-num-out: #427BC5; }
-.sp-ayTasi          { --sp-num-out: #3C4A8C; }   /* P57 — Ay Taşı (Figma çizimi bekleniyor) */
+.sp-ayTasi          { --sp-num-out: #696969; }   /* Figma 540:96 ölçümü (#D3D3D3 çerçeve, %50, siyah yüzde) */
+.sp-ayTasiTam       { --sp-num-out: #777557; }   /* Figma 540:83 ölçümü (#EFEBAF çerçeve, %50, siyah yüzde) */
 .tile.stoned        { --sp-num-out: #2F3332; }
 .tile.sp-altin .num, .tile.sp-gumus .num, .tile.sp-bakir .num,
 .tile.sp-zumrut .num, .tile.sp-karaDelikTasi .num, .tile.sp-aynaTasi .num,
 .tile.sp-yildizTasi .num, .tile.sp-zamanTasi .num, .tile.sp-ates .num,
-.tile.sp-yankiTasi .num, .tile.sp-ayTasi .num, .tile.stoned .num {
+.tile.sp-yankiTasi .num, .tile.sp-ayTasi .num, .tile.sp-ayTasiTam .num, .tile.stoned .num {
   /* Alt-piksel (LCD) yumuşatması rakamın kenarına renkli bir tül bırakıyor
      ve konturu bir yöne kaymış gösteriyordu; piksel yazı tipinde zaten
      gereksiz — kapatıldı. */
@@ -7289,7 +7312,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   .tile.sp-altin .num, .tile.sp-gumus .num, .tile.sp-bakir .num,
   .tile.sp-zumrut .num, .tile.sp-karaDelikTasi .num, .tile.sp-aynaTasi .num,
   .tile.sp-yildizTasi .num, .tile.sp-zamanTasi .num, .tile.sp-ates .num,
-  .tile.sp-yankiTasi .num, .tile.sp-ayTasi .num, .tile.stoned .num {
+  .tile.sp-yankiTasi .num, .tile.sp-ayTasi .num, .tile.sp-ayTasiTam .num, .tile.stoned .num {
     paint-order: stroke fill;
     -webkit-text-stroke: calc(var(--tw) * .0247) var(--sp-num-out);
     text-shadow: none;
@@ -7298,7 +7321,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 
 .tile.sp-altin, .tile.sp-gumus, .tile.sp-bakir, .tile.sp-zumrut,
 .tile.sp-karaDelikTasi, .tile.sp-aynaTasi, .tile.sp-yildizTasi,
-.tile.sp-zamanTasi, .tile.sp-ates, .tile.sp-yankiTasi {
+.tile.sp-zamanTasi, .tile.sp-ates, .tile.sp-yankiTasi, .tile.sp-ayTasi, .tile.sp-ayTasiTam {
   background: var(--sp-art) no-repeat 0 0 / 100% 100%;
   background-color: transparent;
   border-radius: 0;
@@ -7309,14 +7332,15 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .tile.sp-altin .dot, .tile.sp-gumus .dot, .tile.sp-bakir .dot,
 .tile.sp-zumrut .dot, .tile.sp-karaDelikTasi .dot, .tile.sp-aynaTasi .dot,
 .tile.sp-yildizTasi .dot, .tile.sp-zamanTasi .dot, .tile.sp-ates .dot,
-.tile.sp-yankiTasi .dot {
+.tile.sp-yankiTasi .dot, .tile.sp-ayTasi .dot, .tile.sp-ayTasiTam .dot {
   display: none;
 }
 /* Eski kimlik tülü artık gereksiz (kimlik varlığın kendisi). */
 .tile.sp-altin::before, .tile.sp-gumus::before, .tile.sp-bakir::before,
 .tile.sp-zumrut::before, .tile.sp-karaDelikTasi::before,
 .tile.sp-aynaTasi::before, .tile.sp-yildizTasi::before,
-.tile.sp-zamanTasi::before, .tile.sp-ates::before, .tile.sp-yankiTasi::before {
+.tile.sp-zamanTasi::before, .tile.sp-ates::before, .tile.sp-yankiTasi::before,
+.tile.sp-ayTasi::before, .tile.sp-ayTasiTam::before {
   content: none;
 }
 /* MIKNATIS ozel tasta da gorunur (PLAYTEST 28 · GRUP H).
@@ -8263,15 +8287,15 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 @keyframes dlRise { from { transform: translateY(160px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes dlIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { #dolunayFx, #dolunayFx * { animation: none !important; } }
-.tile.moon-tile { box-shadow: 0 0 0 2px #8EA2E8, 0 0 10px rgba(150, 170, 255, .65), 0 3px 6px rgba(0, 0, 0, .35); position: relative; }
+/* 2026-10-29 — Ay Taşı artık Figma çizimiyle (V1/V2): mavi halka ve köşe ay rozeti Figma'da yok → yalnız Dolunay (okey) turunda */
+.tile.moon-tile { position: relative; }
 .tile.moon-tile::after {
   content: attr(data-moon); position: absolute; top: -8px; right: -8px;
   font-size: 15px; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .6));
   pointer-events: none;
 }
-/* Ay Taşı halkası taşın kendi gölgesine ezilmesin: çerçeve çizgisiyle (outline) */
-.tile.moon-tile { outline: 3px solid #8EA2E8; outline-offset: 1px; }
 .tile.moon-tile::after { font-size: 18px; top: -10px; right: -10px; z-index: 2; }
+.tile.moon-tile::after { display: none; }   /* 2026-10-29 kullanıcı: köşe ay rozeti hiç yok (Dolunay'da da) */
 
 /* ============================================================
    P61 — KUMARHANE HİSSİ (bahis sahnesi, Katla, jackpot, yan bahis,

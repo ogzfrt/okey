@@ -17,6 +17,10 @@
     {
       id: '2026-10-29', date: { tr: '29 Ekim', en: 'October 29' },
       items: [
+        ['degisti', 'Common joker çizimleri', 'Yin Yang, Büyüteç, Kuzgun, Çift Kiraz, Bilye, Ok ve diğer Common jokerler artık kendi çizimleriyle.',
+          'Common joker art', 'Yin Yang, Magnifying Glass, Raven, Twin Cherries, Marbles, Arrow and other Common jokers now have their own artwork.'],
+        ['degisti', 'Ay Taşı', 'Kalıcı Ay Taşı gri ayla, Öteki Dünya kuyusundan gelen taş dolunayla görünür.',
+          'Moon Tile', 'Permanent Moon Tiles show a grey moon; tiles from the Otherworld well show a full moon.'],
         ['yeni', 'Final: Lanetli Çocuk', 'Lanetli Boyut artık bir finalle bitiyor. Lanetli Çocuk sayıları gizliyor, taşlarını dokunaçla kilitliyor ve son açılımında senden bir bedel alıyor. Yenersen Oyuncak Kutusu jokeri açılıyor.',
           'Finale: The Cursed Child', 'The Cursed Dimension now ends with a finale. The Cursed Child hides your numbers, locks your tiles with tentacles and takes one last price at your winning meld. Beat it to unlock the Toy Box joker.', 'proto'],
         ['yeni', 'Mini oyunlar', 'Lanetli Boyut’ta haritadaki olay rozetleri artık bir şey yapıyor: Karanlık Takas’ta fısıldayan üç kutudan birini seç, Kemik Falı’nda taşları ezberle ve boss’a hazır bir grupla gir, Ekstra Sunak’ta üç teklif arasından seç.',
