@@ -12346,6 +12346,33 @@ html[data-theme="kozmik"][data-run="lanetli"] .gm-stage #rack::after { filter: h
 .nobetci-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 600px; }
 .nobetci-row .tile { cursor: pointer; }
 .altar-ov button.pk-card.altar-card { cursor: pointer; justify-content: center; min-height: 140px; }
+/* MİNİ OYUNLAR — Karanlık Takas + Kemik Falı */
+.mg-ov .pk-box { max-width: 760px; }
+.tk-row { display: flex; gap: 18px; justify-content: center; }
+.tk-box { width: 190px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 12px; border-radius: 12px;
+  background: #3B1660; border: 3px solid #B46CFF; box-shadow: 0 0 14px rgba(180, 108, 255, .45), 0 5px 0 rgba(0, 0, 0, .4); }
+.tk-box .tk-lid { height: 130px; display: flex; align-items: center; justify-content: center; }
+.tk-box .tk-pick { width: 100%; height: 42px; border-radius: 10px; border: 3px solid #24102F; background: #5CFF9D; color: #24102F; font: 700 18px/1 var(--gm-font); cursor: pointer; box-shadow: 0 4px 0 #24102F; }
+.tk-box .tk-pick:hover { filter: brightness(1.1); }
+.tk-box .tk-peek { width: 100%; }
+.tk-box .tk-hint { max-width: 100%; overflow-wrap: anywhere; font: 700 13px/1.3 var(--gm-font); color: #E9D5FF; text-align: center; font-style: italic; min-height: 2.6em; }
+.tk-box .tk-peek { border: 2px dashed #FFD666; background: transparent; color: #FFD666; border-radius: 8px; padding: 6px 10px; font: 700 13px/1 var(--gm-font); cursor: pointer; }
+.tk-box .tk-in { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #DDF5E0; font: 700 14px/1.2 var(--gm-font); text-align: center; }
+.tk-box .tk-in.pen { color: #FF8BD0; }
+.tk-box .tk-ico { font: 46px/1 "Segoe UI Emoji", sans-serif; }
+.tk-box .tk-art { width: 66px; height: 90px; }
+.tk-box.peeked { border-color: #FFD666; }
+.tk-box.chosen { border-color: #5CFF9D; box-shadow: 0 0 22px rgba(92, 255, 157, .7); }
+.tk-box.other { opacity: .5; }
+.fal-body { display: flex; gap: 12px; justify-content: center; padding: 18px; }
+.fal-cell { background: none; border: 0; padding: 4px; border-radius: 10px; cursor: pointer; }
+.fal-cell .tile { --tw: 66px; cursor: pointer; }
+.fal-cell { position: relative; }
+.fal-cell.hidden-face::after { content: ''; position: absolute; inset: 4px; border-radius: 6px; background: url('assets/game/deck-back.svg') no-repeat center / 100% 100%, #2A1240; }
+.fal-cell.picked { outline: 4px solid #5CFF9D; outline-offset: 2px; }
+.fal-timer { height: 8px; margin: 0 24px 6px; background: rgba(255, 255, 255, .12); border-radius: 4px; overflow: hidden; }
+.fal-timer i { display: block; height: 100%; width: 100%; background: #5CFF9D; }
+.mg-ov .pk-foot { display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
 /* slot şeridinde çizimler */
 .pk-sym .reel-art { width: calc(var(--sym-h, 96px) * .63); height: calc(var(--sym-h, 96px) * .86); background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; flex: none; }
 .pk-sym .reel-art.cs-art { background-image: var(--cs-art); }

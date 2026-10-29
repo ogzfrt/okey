@@ -309,6 +309,14 @@ const TOTEM_DEFS = {
   ebediAlev: { key: 'ebediAlev', name: 'Ebedi Alev', rarity: 'legendary', icon: '🔥',
     desc: 'Her raund ilk açılımın ×1.5.', cost: 'Run boyunca joker slotu −1.' },
 };
+/* MİNİ OYUNLAR (rapor, Aşama 5) — Yol Haritası'nda düğümün olay rozetine göre:
+   takas — stage sonu (boss'tan sonra, sunaktan önce) ZORUNLU: 3 kapalı kutu (Rare lanetli eşya / 15-25 coin / ceza:
+           sonraki stage hedef +%30 ya da birikmiş lanet +2). Her kutu fısıldar, ipucu %70 doğru. Güvenli bakış: 5 + lanet×2 coin, tek.
+   fal   — boss raunduna girmeden önce İSTEĞE BAĞLI: 6 taş 2 sn açık, kapanır; 10 sn'de geçerli bir grup (per/sıralı) kuran 3 taşı seç.
+           Başarı: o 3 taş boss raunduna elinde başlar. Ceza: yanlış taş başına boss raunduna 1 taş eksik.
+   sunak — o stage'in Adak Sunağı'nda 3. teklif (yine yalnız biri alınır). */
+const TAKAS = { hintTrue: 0.7, coinMin: 15, coinMax: 25, penTarget: 0.3, penCurse: 2, peekBase: 5, peekPer: 2 };
+const FAL = { tiles: 6, showMs: 2000, pickMs: 10000 };
 const SKIP_REWARDS = { kese: { coin: 25 }, arinma: { curse: 2 }, degnek: { fallbackCoin: 10 }, fis: {} };
 function runModeOf(s) {
   return RUN_MODES[s?.runMode] || RUN_MODES.base;
@@ -4112,7 +4120,8 @@ const Game = {
        hedefler kalıcı +%10. Bir kerelik değil, çarpan gibi her hedefe. */
     const up = this.state?.permTargetUp || 0;
     /* LANETLİ BOYUT — her lanet seviyesi +%8, Lanetli yoldan oynanan stage ×1.3 */
-    const cm = this.curseTargetMult();
+    const pen = this.state?.stagePenalty && this.state.stagePenalty.stage === stage ? this.state.stagePenalty.mult : 1;   // Karanlık Takas cezası
+    const cm = this.curseTargetMult() * pen;
     const v = cm !== 1 ? niceUp(base, base * (1 + up) * cm) : up ? niceUp(base, base * (1 + up)) : niceTarget(base);
     return this.isSilent(stage, ric) ? niceTarget(v / 2) : v;
   },
@@ -4553,7 +4562,8 @@ const Game = {
       pk.options.forEach((x) => avoid.add(x.key));
       return { kind, type: types[Math.floor(this.rng() * types.length)], reward: pk.options[0], options: pk.options, taken: false };
     };
-    s.altar = { stage: s.stage, offers: [offer('short'), offer('perm')].filter(Boolean) };
+    const extra = this.stageEvent() === 'sunak' ? [offer(this.rng() < 0.5 ? 'short' : 'perm')] : [];   // Ekstra Sunak olayı
+    s.altar = { stage: s.stage, offers: [offer('short'), offer('perm'), ...extra].filter(Boolean) };
   },
   altarState() {
     const s = this.state;
@@ -4588,10 +4598,128 @@ const Game = {
     s.altarPaid = (s.altarPaid || 0) + 1;
     return { ok: true, curse: this.curseLevel() };
   },
+  /* bu stage'in Yol Haritası düğümündeki olay ('takas' | 'fal' | 'sunak' | null) */
+  stageEvent() {
+    const s = this.state;
+    const pm = s && this.lanetliOn() && (s.pathMap || (this.pathMapState(), s.pathMap));
+    if (!pm || !pm.rows[pm.row]) return null;
+    return (pm.rows[pm.row][pm.idx] || {}).ev || null;
+  },
+  /* ── KARANLIK TAKAS ── */
+  _rollTakas() {
+    const s = this.state;
+    const pk = this._rollCursedPick('rare', new Set());
+    const item = pk && pk.options[0];
+    const kinds = ['item', 'coin', 'pen'];
+    const contents = kinds.map((k) => k === 'item' ? { kind: 'item', item }
+      : k === 'coin' ? { kind: 'coin', coin: TAKAS.coinMin + Math.floor(this.rng() * (TAKAS.coinMax - TAKAS.coinMin + 1)) }
+      : { kind: 'pen', pen: this.rng() < 0.5 ? 'target' : 'curse' });
+    for (let i = contents.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [contents[i], contents[j]] = [contents[j], contents[i]]; }
+    const HINTS = { item: ['voice', 'moves'], coin: ['heavy', 'jingle'], pen: ['warm', 'breath'] };
+    for (const c of contents) {
+      const real = this.rng() < TAKAS.hintTrue;
+      const from = real ? c.kind : kinds.filter((k) => k !== c.kind)[Math.floor(this.rng() * 2)];
+      c.hint = HINTS[from][Math.floor(this.rng() * 2)];
+    }
+    s.takas = { stage: s.stage, boxes: contents, peeked: null, chosen: null };
+  },
+  takasState() {
+    const s = this.state;
+    if (!s || !s.takas || s.takas.stage !== s.stage || s.takas.chosen != null || s.status !== 'won') return null;
+    const t = s.takas;
+    return { boxes: t.boxes.map((c, i) => ({ hint: c.hint, open: t.peeked === i ? c : null })), peeked: t.peeked,
+      peekCost: TAKAS.peekBase + TAKAS.peekPer * this.curseLevel() };
+  },
+  takasPeek(i) {
+    const s = this.state, st = this.takasState();
+    if (!st || st.peeked != null || !s.takas.boxes[i]) return { ok: false, error: 'Bakış hakkın yok.' };
+    if (s.coins < st.peekCost) return { ok: false, error: 'Yetersiz coin.' };
+    spendCoins(s, st.peekCost);
+    s.takas.peeked = i;
+    return { ok: true, box: s.takas.boxes[i] };
+  },
+  takasChoose(i) {
+    const s = this.state;
+    if (!this.takasState() || !s.takas.boxes[i]) return { ok: false };
+    const c = s.takas.boxes[i];
+    s.takas.chosen = i;
+    if (c.kind === 'coin') gainCoins(s, c.coin);
+    else if (c.kind === 'item' && c.item) {
+      if (!Array.isArray(s.betPicks)) s.betPicks = [];
+      s.betPicks.push({ kind: 'rare', options: [c.item], source: 'takas' });
+    } else if (c.kind === 'pen') {
+      if (c.pen === 'curse') this._curseAdd(TAKAS.penCurse);
+      else s.stagePenalty = { stage: s.stage + 1, mult: 1 + TAKAS.penTarget };
+    }
+    return { ok: true, box: c, boxes: s.takas.boxes };
+  },
+  /* ── KEMİK FALI ── */
+  falPending() {
+    const s = this.state;
+    return !!(s && this.lanetliOn() && s.status === 'playing' && s.roundInStage === 3 && !this.isFinalStage()
+      && this.stageEvent() === 'fal' && !(s.fal && s.fal.stage === s.stage) && s.turn === 1 && !(s.score > 0));
+  },
+  falStart() {
+    const s = this.state;
+    if (!this.falPending()) return { ok: false };
+    const ok = (t) => !t.jokerTile && !t.fakeOkey && !t.special && !this.isOkeyTile(t);
+    const pool = s.deck.filter(ok);
+    /* garanti grup: aynı sayıdan 3 farklı renk (Per) — yoksa aynı renkten ardışık 3 (Sıralı) */
+    let group = null;
+    for (let tries = 0; tries < 40 && !group; tries++) {
+      const t0 = pool[Math.floor(this.rng() * pool.length)];
+      if (this.rng() < 0.5) {
+        const cols = [t0];
+        for (const t of pool) if (t.number === t0.number && !cols.some((x) => x.color === t.color)) cols.push(t);
+        if (cols.length >= 3) group = cols.slice(0, 3);
+      } else if (t0.number <= 11) {
+        const a = pool.find((t) => t.color === t0.color && t.number === t0.number + 1);
+        const c = pool.find((t) => t.color === t0.color && t.number === t0.number + 2);
+        if (a && c) group = [t0, a, c];
+      }
+    }
+    if (!group) return { ok: false };
+    const rest = pool.filter((t) => !group.includes(t));
+    const extra = [];
+    while (extra.length < FAL.tiles - 3 && rest.length) extra.push(rest.splice(Math.floor(this.rng() * rest.length), 1)[0]);
+    const tiles = [...group, ...extra];
+    for (let i = tiles.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [tiles[i], tiles[j]] = [tiles[j], tiles[i]]; }
+    s.fal = { stage: s.stage, ids: tiles.map((t) => t.id), done: false };
+    return { ok: true, tiles: tiles.map((t) => ({ id: t.id, color: t.color, number: t.number })), showMs: FAL.showMs, pickMs: FAL.pickMs };
+  },
+  /* ids: seçilen 3 taş (süre bitince eksik olabilir). Yanlış taş = hiçbir geçerli 3'lü grupta seçimle örtüşmeyen kısım. */
+  falAnswer(ids) {
+    const s = this.state;
+    if (!s.fal || s.fal.stage !== s.stage || s.fal.done) return { ok: false };
+    s.fal.done = true;
+    const all = s.fal.ids.map((id) => s.deck.find((t) => t.id === id)).filter(Boolean);
+    const pick = (ids || []).slice(0, 3).map((id) => all.find((t) => t.id === id)).filter(Boolean);
+    const valid = (g) => g.length === 3 && !!resolveCombo(g, () => false, this._freePerColors(), null)
+      && ['per', 'sirali'].includes(resolveCombo(g, () => false, this._freePerColors(), null).type);
+    let best = 0;
+    for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) for (let k = j + 1; k < all.length; k++) {
+      const g = [all[i], all[j], all[k]];
+      if (valid(g)) best = Math.max(best, g.filter((t) => pick.includes(t)).length);
+    }
+    const win = pick.length === 3 && valid(pick);
+    const wrong = win ? 0 : 3 - best;
+    if (win) {
+      /* o 3 taş ele gelir; yerine elden 3 sıradan taş desteye döner (el büyüklüğü değişmez) */
+      const back = s.hand.filter((t) => !t.jokerTile && !this.isOkeyTile(t) && !t.special && !t.rot).slice(-3);
+      for (const t of back) { s.hand = s.hand.filter((x) => x !== t); delete t.slot; s.deck.push(t); }
+      for (const t of pick) { s.deck = s.deck.filter((x) => x !== t); s.hand.push(t); t.falReady = true; }
+    } else if (wrong) {
+      const out = s.hand.filter((t) => !t.jokerTile && !this.isOkeyTile(t) && !t.special).slice(-wrong);
+      for (const t of out) { s.hand = s.hand.filter((x) => x !== t); delete t.slot; s.deck.push(t); }
+    }
+    s.handSnapshot = s.hand.map((t) => ({ id: t.id, face: `${COLOR_TR[t.color] || t.color} ${t.number}` }));   // el denetimi yeni elle
+    return { ok: true, win, wrong, answer: s.fal.ids };
+  },
   _lanetStageEnd(notes) {
     const s = this.state;
     if (!this.lanetliOn()) return;
     if (!this.isFinalStage()) this._rollAltar();
+    if (!this.isFinalStage() && this.stageEvent() === 'takas') this._rollTakas();
     if (this.hasActive('lanetTaci') || this.hasTotem('lanetKalbi')) { this._curseAdd(1); notes.push('🜏 lanet +1 (Lanet Tacı / Lanet Kalbi)'); }
     if (s.stagePath === 'cursed') {
       if (!Array.isArray(s.betPicks)) s.betPicks = [];
@@ -14430,7 +14558,7 @@ if (typeof module !== 'undefined') {
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, ROT, SILENT, ALTAR, CURSED, CURSED2, TOTEM_DEFS, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, ROT, SILENT, ALTAR, CURSED, CURSED2, TOTEM_DEFS, TAKAS, FAL, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

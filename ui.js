@@ -349,6 +349,8 @@
 
   /* Store'u aç (Grup B/C): tam ekran sahne + 'inStore' kaydı */
   function openStore() {
+    /* LANETLİ BOYUT — Karanlık Takas (zorunlu) sunaktan ve store'dan önce */
+    if (Game.takasState && Game.takasState()) { showTakas(() => openStore()); return; }
     /* kullanıcı 2026-10-29: Adak Sunağı boss raundunu yendikten hemen sonra KENDİLİĞİNDEN açılır, ardından store */
     const alt = Game.altarState && Game.altarState();
     if (alt && alt.offers.length && !alt.done && !Game.state.altar.seen) {
@@ -1191,6 +1193,7 @@
         };
         /* P58 · Kumarhane — KÖR BAHİS: el görülmeden, oyun ekranına geçmeden önce */
         if (Game.needsBet && Game.needsBet()) showBetPicker(go);
+        else if (Game.falPending && Game.falPending()) showFal(go);   // LANETLİ BOYUT — Kemik Falı (isteğe bağlı)
         else go();
       });
       else if (done) {
@@ -1406,7 +1409,7 @@
         + `<div class="mc-pill">${cursed ? t('pathCursed') : t('pathSafe')} · S${er + 2}</div>`
         + `<div class="mc-art pi-art">${pixIcon(cursed ? 'skull' : 'shield', 9)}</div>`
         + `<div class="mc-cond">${cursed ? t('pathCursedDesc') : t('pathSafeDesc', CURSE.safeCoin)}`
-        + (nd.ev ? `<span class="pi-ev">${pixIcon(nd.ev, 3)} ${t('pmEv_' + nd.ev)}</span>` : '') + `</div>`
+        + (nd.ev ? `<span class="pi-ev" title="${t('pmEvDesc_' + nd.ev)}">${pixIcon(nd.ev, 3)} ${t('pmEv_' + nd.ev)}</span>` : '') + `</div>`
         + `<div class="mc-target"><div class="mc-t-lbl">${t('pmFirstTarget')}</div><div class="mc-t-val">${tgt} <span class="mc-unit">${t('mcPts')}</span></div></div>`;
       c.querySelector('.mc-select').addEventListener('click', () => pickPath(i));
       el.mapCards.appendChild(c);
@@ -1474,7 +1477,7 @@
         name = (nd.type === 'cursed' ? t('pathCursed') : t('pathSafe')) + ' · S' + (r + 1);
         desc = nd.type === 'cursed' ? t('pathCursedDesc') : t('pathSafeDesc', CURSE.safeCoin);
       }
-      if (nd.ev) desc += ' ' + t('pmEv_' + nd.ev) + ' ' + t('pmEvSoon');
+      if (nd.ev) desc += '<br>' + t('pmEv_' + nd.ev) + ': ' + t('pmEvDesc_' + nd.ev);
       const st = [...b.classList].find((c) => c.startsWith('s-')).slice(2);
       desc += ' ' + t(st === 'done' ? 'pmDone' : st === 'closed' ? 'pmClosed' : 'pmOpen');
       attachTip(b, { name, desc }, {});
@@ -6530,7 +6533,7 @@
     const p = (s.betPicks || [])[0];
     if (!p) { if (done) done(); return; }
     /* Lanetli Boyut — Adak Sunağı ödülü (tek kart) ve Lanetli yol ödülü kendi başlığıyla (Kumarhane'nin "Bahis Ödülü" değil) */
-    const src = p.source === 'altar' ? 'altar' : p.source === 'cursedPath' ? 'path' : null;
+    const src = p.source === 'altar' ? 'altar' : p.source === 'cursedPath' ? 'path' : p.source === 'takas' ? 'takas' : null;
     const ov = packOverlay('joker', src ? src + 'PickTitle' : 'betPickTitle');
     ov.querySelector('.pk-sub-title').textContent = src === 'altar' ? t('altarPickSub')
       : t(p.kind === 'legendary' ? 'betPickSubLeg' : 'betPickSub');
@@ -9356,6 +9359,108 @@
       body.appendChild(c);
     });
     ov.querySelector('.altar-close').addEventListener('click', finish);
+    document.body.appendChild(ov);
+  }
+
+  /* LANETLİ BOYUT · KARANLIK TAKAS — 3 kapalı kutu; kutular fısıldar (%70 doğru); bir kez coin'le bakılır; biri seçilir */
+  function showTakas(done) {
+    const st = Game.takasState && Game.takasState();
+    if (!st) { if (done) done(); return; }
+    document.getElementById('takasOv')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'takasOv';
+    ov.className = 'pk-ov tone-violet altar-ov mg-ov';
+    const boxFace = (c) => c.kind === 'item' ? `<div class="tk-in">${c.item && c.item.type === 'joker' && JOKER_ART.has(c.item.key) ? `<div class="col-jk-art jk-${c.item.key} tk-art"></div>` : `<div class="tk-ico">${(c.item && c.item.icon) || '🃏'}</div>`}<b>${c.item ? (c.item.type === 'consum' ? T.consumName(c.item.key, c.item.name) : c.item.type === 'joker' ? T.name(c.item) : c.item.name) : ''}</b></div>`
+      : c.kind === 'coin' ? `<div class="tk-in"><div class="tk-ico">💰</div><b>+${c.coin} coin</b></div>`
+      : `<div class="tk-in pen"><div class="tk-ico">☠</div><b>${t('takasPen_' + c.pen)}</b></div>`;
+    const draw = () => {
+      const s2 = Game.takasState();
+      ov.innerHTML = `<div class="pk-box"><div class="pk-title">🎁 ${t('takasTitle')}</div>`
+        + `<div class="pk-sub-title">${t('takasSub')}</div><div class="pk-body pk-choice tk-row"></div>`
+        + `<div class="pk-foot"><span class="pk-hint">${s2 && s2.peeked == null ? t('takasPeekHint', s2.peekCost) : t('takasPickHint')}</span></div></div>`;
+      const row = ov.querySelector('.tk-row');
+      (s2 ? s2.boxes : []).forEach((bx, i) => {
+        const c = document.createElement('div');
+        c.className = 'tk-box' + (bx.open ? ' peeked' : '');
+        c.innerHTML = `<div class="tk-lid">${bx.open ? boxFace(bx.open) : pixIcon('takas', 9)}</div>`
+          + `<div class="tk-hint">“${t('takasHint_' + bx.hint)}”</div>`
+          + `<button class="ac-take tk-pick">${t('takasPick')}</button>`
+          + (s2.peeked == null ? `<button class="tk-peek">${t('takasPeek', s2.peekCost)}</button>` : '');
+        c.querySelector('.tk-pick').addEventListener('click', () => {
+          const r = Game.takasChoose(i);
+          if (!r.ok) return;
+          SFX.crack();
+          [...row.children].forEach((el2, k) => { el2.classList.add(k === i ? 'chosen' : 'other');
+            el2.querySelector('.tk-lid').innerHTML = boxFace(r.boxes[k]); el2.querySelectorAll('button').forEach((x) => x.remove()); });
+          const go = document.createElement('button');
+          go.className = 'ep-btn ep-blue';
+          go.textContent = t('takasGo');
+          go.addEventListener('click', () => { ov.remove(); render(); if ((Game.state.betPicks || []).length) showBetPicks(() => { render(); if (done) done(); }); else if (done) done(); });
+          ov.querySelector('.pk-foot').innerHTML = `<span class="pk-hint">${t('takasRes_' + r.box.kind, r.box.coin, r.box.pen ? t('takasPen_' + r.box.pen) : '')}</span>`;
+          ov.querySelector('.pk-foot').appendChild(go);
+        });
+        const pk = c.querySelector('.tk-peek');
+        if (pk) pk.addEventListener('click', () => { const r = Game.takasPeek(i); if (!r.ok) { toast(r.error, false); return; } SFX.coin(); draw(); });
+        row.appendChild(c);
+      });
+    };
+    draw();
+    document.body.appendChild(ov);
+  }
+  /* LANETLİ BOYUT · KEMİK FALI — boss'tan önce isteğe bağlı: 6 taş 2 sn görünür, kapanır; 10 sn'de grup kuran 3 taşı seç */
+  function showFal(done) {
+    document.getElementById('falOv')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'falOv';
+    ov.className = 'pk-ov tone-violet altar-ov mg-ov';
+    ov.innerHTML = `<div class="pk-box"><div class="pk-title">🦴 ${t('falTitle')}</div><div class="pk-sub-title">${t('falSub')}</div>`
+      + `<div class="pk-body fal-body"></div><div class="fal-timer"><i></i></div>`
+      + `<div class="pk-foot"><button class="ep-btn ep-blue fal-skip">${t('falSkip')}</button><button class="ep-btn fal-play">${t('falPlay')}</button></div></div>`;
+    const body = ov.querySelector('.fal-body'), foot = ov.querySelector('.pk-foot'), bar = ov.querySelector('.fal-timer i');
+    const finish = () => { ov.remove(); render(); if (done) done(); };
+    ov.querySelector('.fal-skip').addEventListener('click', finish);
+    ov.querySelector('.fal-play').addEventListener('click', () => {
+      const f = Game.falStart();
+      if (!f.ok) { finish(); return; }
+      foot.innerHTML = `<span class="pk-hint">${t('falWatch')}</span>`;
+      const picked = new Set();
+      const cells = f.tiles.map((tl) => {
+        const c = document.createElement('button');
+        c.className = 'fal-cell';
+        c.appendChild(tileEl({ ...tl }, false));
+        body.appendChild(c);
+        return c;
+      });
+      let timer = null, over = false;
+      const answer = () => {
+        if (over) return; over = true; clearTimeout(timer);
+        const r = Game.falAnswer([...picked]);
+        cells.forEach((c) => c.classList.remove('hidden-face'));
+        bar.style.transition = 'none';
+        foot.innerHTML = `<span class="pk-hint">${r.win ? t('falWin') : r.wrong ? t('falLose', r.wrong) : t('falNone')}</span>`;
+        const go = document.createElement('button');
+        go.className = 'ep-btn ep-blue'; go.textContent = t('takasGo');
+        go.addEventListener('click', finish);
+        foot.appendChild(go);
+        (r.win ? SFX.coin : SFX.crack)();
+      };
+      setTimeout(() => {
+        cells.forEach((c, i) => {
+          c.classList.add('hidden-face');
+          c.addEventListener('click', () => {
+            if (over) return;
+            const id = f.tiles[i].id;
+            if (picked.has(id)) { picked.delete(id); c.classList.remove('picked'); }
+            else if (picked.size < 3) { picked.add(id); c.classList.add('picked'); }
+            if (picked.size === 3) answer();
+          });
+        });
+        foot.innerHTML = `<span class="pk-hint">${t('falPick')}</span>`;
+        bar.style.transition = `width ${f.pickMs}ms linear`;
+        requestAnimationFrame(() => { bar.style.width = '0%'; });
+        timer = setTimeout(answer, f.pickMs);
+      }, f.showMs);
+    });
     document.body.appendChild(ov);
   }
 
