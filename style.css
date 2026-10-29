@@ -4063,7 +4063,7 @@ body.menu-open #app {
 .pk-body.pk-slot { display: flex; gap: 18px; justify-content: center; }
 .pk-reel {
   position: relative;
-  width: 172px; height: 106px;
+  width: 260px; height: 150px;   /* kullanıcı 2026-10-29: dönme kısmı geniş */
   overflow: hidden;
   border: 3px solid #C9A24A;
   border-radius: 12px;
@@ -4072,7 +4072,7 @@ body.menu-open #app {
 }
 .pk-strip { will-change: transform; }
 .pk-sym {
-  height: 106px;
+  height: 150px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   color: #F4EEE0;
   border-bottom: 1px solid rgba(255,255,255,.08);
@@ -8099,7 +8099,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35);
 }
 .pk-ov.slot-ov .pk-reel {
-  width: 150px; height: calc(var(--sym-h) * 3);
+  width: 300px; height: calc(var(--sym-h) * 3);   /* kullanıcı 2026-10-29: dönme kısmı geniş */
   border: 4px solid var(--gm-edge); border-radius: 6px;
   background: #1B1618;
   box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .5);
@@ -11908,8 +11908,8 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 /* denetim — Avukat'ın susturduğu joker (kullanıcı onaylı önizleme): çizim/ad sönük gri + kartın İÇİNDE ortada
    koyu plaka (🔇 + SUSTURULDU); drop-shadow yok (P84) */
 .joker-tile.av-muted { position: relative; }
-.joker-tile.av-muted .jt-art { filter: grayscale(1); opacity: .3; }
-.joker-tile.av-muted .jt-name { opacity: .35; }
+.joker-tile.av-muted .jt-art { filter: grayscale(1) brightness(.75); opacity: .55; }   /* kullanıcı: renkleri solsun, plaka yok */
+.joker-tile.av-muted .jt-name { opacity: .45; }
 .joker-tile.av-muted:not(.has-art) { background: #A7A7A7; border-color: #6E6E6E; }
 .joker-tile .av-badge {
   position: absolute; left: 2px; right: 2px; top: 50%; transform: translateY(-50%); z-index: 3;
@@ -12309,6 +12309,65 @@ html[data-theme="kozmik"][data-run="lanetli"] .gm-stage #rack::after { filter: h
 .path-map .pm-skip { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; border-radius: 8px; background: #12081D; border: 2px solid #9FE8FF;
   display: flex; align-items: center; justify-content: center; }
 .gm-stage .map-card.has-skip:not(.boss) .mc-art { top: 176px; }
+/* ADAK SUNAĞI — store düğmesi + teklif penceresi (lanetli mor, zehir yeşili vurgu) */
+#storeOverlay .store-actions .st-btn.st-altar { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: #3B1660; border: 3px solid #5CFF9D; color: #E9D5FF; box-shadow: 0 0 14px rgba(92, 255, 157, .45), 0 5px 0 rgba(0, 0, 0, .45); }
+#storeOverlay .store-actions .st-btn.st-altar span { font: 700 22px/1 var(--gm-font); letter-spacing: 2px; white-space: nowrap; }
+#storeOverlay .store-actions .st-btn.st-altar small { font: 700 14px/1 var(--gm-font); color: #5CFF9D; }
+#storeOverlay .store-actions .st-btn.st-altar svg { display: none; }
+#storeOverlay .store-actions .st-btn.st-altar.spent { opacity: .55; box-shadow: none; }
+/* kullanıcı: "gereksiz boş alan kaplıyor" — pencere iki kart kadar geniş */
+.altar-ov .pk-box { width: auto; max-width: 640px; }
+.altar-ov .pk-sub-title { max-width: 560px; margin-left: auto; margin-right: auto; }
+.altar-ov .pk-body { padding-left: 16px; padding-right: 16px; }
+.altar-ov .altar-card { width: 260px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 14px 14px 16px; cursor: default; }
+.altar-ov .altar-card .ac-tag { font: 700 13px/1 var(--gm-font); letter-spacing: 2px; padding: 5px 10px; border-radius: 6px; background: #24102F; color: #5CFF9D; }
+.altar-ov .altar-card.ac-perm .ac-tag { color: #FF8BD0; }
+.altar-ov .altar-card .ac-cost { font: 700 15px/1.3 var(--gm-font); color: #24102F; background: #E9D5FF; border: 2px solid #5E2E85; border-radius: 8px; padding: 8px 10px; width: 100%; box-sizing: border-box; }
+.altar-ov .altar-card .ac-arrow { font: 700 16px/1 var(--gm-font); color: #5E2E85; }
+.altar-ov .altar-card .ac-ico { font-size: 48px; }
+.altar-ov .altar-card .ac-take { margin-top: auto; width: 100%; height: 46px; border-radius: 10px; border: 3px solid #24102F; background: #5CFF9D; color: #24102F;
+  font: 700 20px/1 var(--gm-font); letter-spacing: 2px; cursor: pointer; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+.altar-ov .altar-card .ac-take:disabled { background: #6B6070; color: #DDF5E0; cursor: default; box-shadow: none; }
+.altar-ov .altar-card.taken { opacity: .6; }
+/* TOTEMLER — değnek panelinin altında (harita/store) ya da değnek sekmesinin içinde (oyun) */
+.totem-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 6px 4px; }
+.totem-row.in-game { border-top: 2px dashed rgba(201, 166, 255, .35); margin-top: 6px; padding-top: 10px; }
+.totem-chip { width: 54px; height: 54px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font: 30px/1 "Segoe UI Emoji", sans-serif;
+  background: #3B1660; border: 3px solid #B46CFF; box-shadow: 0 0 10px rgba(180, 108, 255, .5), 0 4px 0 rgba(0, 0, 0, .4); cursor: help; }
+.totem-chip.r-legendary { border-color: #FFB84D; box-shadow: 0 0 12px rgba(255, 184, 77, .55), 0 4px 0 rgba(0, 0, 0, .4); }
+.pk-ico.totem-ico { font-size: 44px; }
+/* Parti 2 taş işaretleri */
+.tile .tile-mark.cmark { position: absolute; left: 3px; top: 2px; font: 13px/1 "Segoe UI Emoji", sans-serif; pointer-events: none; }
+.gm-stage .tile.fossil-tile { outline: 3px solid #C9A46A; outline-offset: -1px; background-image: linear-gradient(160deg, #f3ead6 0%, #d9c8a4 100%); }
+.gm-stage .tile.kabus-tile { outline: 3px solid #B46CFF; outline-offset: -1px; box-shadow: 0 0 12px rgba(180, 108, 255, .8); }
+.gm-stage .tile.anom-tile { outline: 3px dashed #5CFF9D; outline-offset: -1px; }
+.gm-stage .tile.sentinel-tile { outline: 3px solid #9FE8FF; outline-offset: -1px; }
+.nobetci-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 600px; }
+.nobetci-row .tile { cursor: pointer; }
+.altar-ov button.pk-card.altar-card { cursor: pointer; justify-content: center; min-height: 140px; }
+/* slot şeridinde çizimler */
+.pk-sym .reel-art { width: calc(var(--sym-h, 96px) * .63); height: calc(var(--sym-h, 96px) * .86); background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; flex: none; }
+.pk-sym .reel-art.cs-art { background-image: var(--cs-art); }
+.pk-sym .reel-art.sp-art-sm { width: calc(var(--sym-h, 96px) * .55); height: calc(var(--sym-h, 96px) * .78); }
+.pk-sym .reel-ico { font-size: 44px; }
+.pk-rcard .reel-art { width: 60px; height: 82px; margin: 0 auto 4px; background-size: 100% 100%; image-rendering: pixelated; }
+.pk-rcard .reel-art.cs-art { background-image: var(--cs-art); }
+.pk-foot.pk-foot-2 { display: flex; gap: 14px; justify-content: center; }
+.pk-foot .pk-pass { min-width: 120px; }
+/* Lanetli Boyut: store sol sütununda lanet göstergesi (okey kutusunun altı) → değnek paneli aşağı kayar */
+#storeStage:has(#storeSide .curse-meter) #storeLeftInv { top: 738px; }
+/* okey yerleşimi: sıranın taşları + uçlardaki boş yerler */
+#okeySlotPick .okey-seq { display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; justify-content: center; }
+#okeySlotPick .tp-box { min-width: 520px; box-sizing: border-box; }
+#okeySlotPick .okey-seq { margin: 10px 0 14px; }
+#okeySlotPick .okey-seq .tile { --tw: 58px; cursor: default; }
+#okeySlotPick .okey-gap { width: 58px; height: calc(58px * 1.42); border-radius: 8px; border: 3px dashed #E6BE4E; background: rgba(230, 190, 78, .12);
+  color: #E6BE4E; font: 700 26px/1 var(--gm-font); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#okeySlotPick .okey-gap:hover { background: rgba(230, 190, 78, .3); transform: translateY(-3px); }
+/* çizimi gelmemiş lanetli değnek: mor çerçeveli kartta simge */
+.consum-card.cs-glyph .cs-emoji { display: flex; align-items: center; justify-content: center; font: 34px/1 "Segoe UI Emoji", sans-serif;
+  background: #3B1660 !important; border: 3px solid #B46CFF; border-radius: 10px; box-shadow: 0 0 10px rgba(180, 108, 255, .5); }
 /* ÇÜRÜK TAŞ — aşamaya göre koyu yeşil-siyah aura (box-shadow; filtre yok, P84) + köşede küf işareti */
 .tile.rot { position: relative; }
 /* yüzeye yayılan küf: aşama büyüdükçe leke büyür ve koyulaşır (sert kenarlı → piksel hissi) */

@@ -349,6 +349,13 @@
 
   /* Store'u aç (Grup B/C): tam ekran sahne + 'inStore' kaydı */
   function openStore() {
+    /* kullanıcı 2026-10-29: Adak Sunağı boss raundunu yendikten hemen sonra KENDİLİĞİNDEN açılır, ardından store */
+    const alt = Game.altarState && Game.altarState();
+    if (alt && alt.offers.length && !alt.done && !Game.state.altar.seen) {
+      Game.state.altar.seen = true;
+      showAltar(() => openStore());
+      return;
+    }
     renderStore();
     openScene(el.storeOverlay);
     updateTrainerBadge(); // trainer çipi store sahnesinde de görünsün
@@ -992,6 +999,19 @@
           ? t('retunedTileDesc', T.originName(tile.origin))
           : t(srcMark.k + 'Desc') }, {});
     }
+    /* LANETLİ BOYUT — Parti 2 taş işaretleri */
+    const cMark = (cls, ico, name, desc) => {
+      d.classList.add(cls);
+      const m = document.createElement('span');
+      m.className = 'tile-mark cmark';
+      m.textContent = ico;
+      d.appendChild(m);
+      attachTip(d, { name, rarityText: t('cursedTag'), desc }, {});
+    };
+    if (tile.fossil) cMark('fossil-tile', '🦴', t('fossilName'), t('fossilDesc', Game.state.fossil ? Game.state.fossil.age : 1));
+    else if (tile.kabus) cMark('kabus-tile', '👁', t('kabusName'), t('kabusDesc'));
+    else if (tile.anomAlt != null) cMark('anom-tile', '👾', t('anomName'), t('anomDesc', tile.number, tile.anomAlt));
+    else if (Game.isSentinel && Game.isSentinel(tile)) cMark('sentinel-tile', '🗿', t('sentName'), t('sentDesc'));
     /* LANETLİ BOYUT — Çürük Taş: aşamaya göre aura + köşede küf işareti; ipucu ne olacağını söyler (sayı yok) */
     const rotSt = Game.rotStage ? Game.rotStage(tile) : 0;
     if (rotSt) {
@@ -1273,6 +1293,7 @@
     document.getElementById('trainerMapBar')?.remove();
     if (Game.trainerMode) el.mapCards.parentElement.appendChild(trainerMapBar());
     renderPathMap();
+    renderTotems();
     setTimeout(lbRot, 30);
   }
 
@@ -1424,7 +1445,6 @@
         const r = Game.skipLanetRound();
         if (!r.ok) { toast(r.error, false); return; }
         SFX.chips();
-        toast(t('skipDone', t('skipRw_' + r.key)), true);
         pmFocus = null;
         render(); renderMap();
       });
@@ -2207,6 +2227,15 @@
       if (has('paratoner') && Game.canParatonerBait && Game.canParatonerBait())
         add('paratoner', t(s.paratonerBait != null ? 'abUndo' : 'abUse'), doParatoner);
       if (has('hileliZar') && Game.canZarCheat && Game.canZarCheat()) add('hileliZar', t('zarCheatBtn'), showZarCheat);   // kullanıcı 2026-10-25 — hile karttan
+      /* LANETLİ BOYUT — Parti 2: karta sol tıkla kullanılan lanetli jokerler */
+      const cursedDo = (res) => { if (!res || !res.ok) { if (res && res.error) toast(res.error, false); return; } render(); };
+      if (has('mezarci') && Game.mezarciCan && Game.mezarciCan()) add('mezarci', t('abBury'), () => cursedDo(Game.mezarciBury()));
+      if (has('fisilti')) add('fisilti', t('abWhisper', s.whisperDir === 'l' ? '←' : '→'), () => cursedDo(Game.fisiltiToggle()));
+      const mm = has('karaMum') && Game.mumState && Game.mumState();
+      if (mm && (mm.canUse || mm.armed)) add('karaMum', mm.armed ? t('abUndo') : t('abLight', mm.flames), () => cursedDo(Game.mumToggle()));
+      if (has('rehinci') && Game.rehinciCan && Game.rehinciCan()) add('rehinci', t('abUse'), () => cursedDo(Game.rehinciUse()));
+      if (has('kuklaUstasi') && Game.kuklaCan && Game.kuklaCan()) add('kuklaUstasi', t('abUse'), () => showKuklaPick());
+      if (has('zamanTefecisi') && Game.tefeciCan && Game.tefeciCan()) add('zamanTefecisi', t('abBorrow'), () => cursedDo(Game.tefeciBorrow()));
       if (list.length === 1) left = { lbl: list[0].lbl, fn: list[0].fn };
       else if (list.length > 1) left = { lbl: t('abChoose'), fn: () => showUseChooser(j, list) };
     }
@@ -2564,13 +2593,7 @@
       lb.textContent = tile2.classList.contains('ll-charm') ? '💋' : '⭐';
       tile2.appendChild(lb);
     }
-    /* denetim — Avukat'ın susturduğu kartta 🔇 plakası (kartın içinde, ortada) */
-    if (tile2.classList.contains('av-muted')) {
-      const ab = document.createElement('span');
-      ab.className = 'av-badge';
-      ab.innerHTML = `<i>🔇</i><b>${t('avMutedTag')}</b>`;
-      tile2.appendChild(ab);
-    }
+    /* kullanıcı 2026-10-29: susturulan joker yalnız SOLAR (renk gider) — üstüne plaka/emoji konmaz */
     // Godzilla şarj rozeti — o anki gerçek seviye canlı görünür
     if (!opts.backup && (j.key === 'godzilla' || (j.fused || []).some(f => f.key === 'godzilla'))) {
       const lv = Game.state.godzillaLevel || 0;
@@ -4430,21 +4453,38 @@
 
   /* Grup A — işlemede okey iki uca da oturabiliyorsa hangi taşın yerine
      geçeceğini oyuncu seçer (ıstakadaki konum tepside anlam taşımıyor). */
-  function pickOkeySlot(choices, cb) {
+  /* kullanıcı 2026-10-29 ("direkt o taşları görelim, yanlarında konulabilecek yerde boşluk olsun, seçelim") —
+     sıranın taşları gerçek görünümüyle dizilir; okeyin oturabileceği uçlarda kesikli boş yer durur, tıklanınca oraya oturur. */
+  function pickOkeySlot(choices, cb, info) {
     const ov = document.createElement('div');
     ov.id = 'okeySlotPick';
     ov.innerHTML =
       `<div class="tp-box"><h3>${t('okeySlotTitle')}</h3>` +
-      `<p>${t('okeySlotBody')}</p><div class="tp-row"></div>` +
+      `<p>${t('okeySlotBody')}</p><div class="tp-row okey-seq"></div>` +
       `<button class="btn ghost" id="osCancel">${t('fzCancel')}</button></div>`;
     const row = ov.querySelector('.tp-row');
-    choices.forEach(ch => {
-      const b = document.createElement('button');
-      b.className = 'tp-color okey-slot-opt';
-      b.textContent = ch.label;
-      b.addEventListener('click', () => { ov.remove(); cb(ch.start); });
-      row.appendChild(b);
-    });
+    if (info && info.fixed && info.color) {
+      const lo = Math.min(...choices.map((c) => c.start)), hi = Math.max(...choices.map((c) => c.start + info.len - 1));
+      for (let n = lo; n <= hi; n++) {
+        if (info.fixed.includes(n)) { row.appendChild(tileEl({ id: -7000 - n, color: info.color, number: n }, false)); continue; }
+        const ch = choices.find((c) => (c.miss || []).includes(n));
+        const slot = document.createElement('button');
+        slot.className = 'okey-gap';
+        slot.title = ch ? ch.label : '';
+        slot.innerHTML = `<span>+</span>`;
+        if (ch) slot.addEventListener('click', () => { ov.remove(); cb(ch.start); });
+        else slot.disabled = true;
+        row.appendChild(slot);
+      }
+    } else {
+      choices.forEach(ch => {
+        const b = document.createElement('button');
+        b.className = 'tp-color okey-slot-opt';
+        b.textContent = ch.label;
+        b.addEventListener('click', () => { ov.remove(); cb(ch.start); });
+        row.appendChild(b);
+      });
+    }
     ov.querySelector('#osCancel').addEventListener('click', () => ov.remove());
     document.body.appendChild(ov);
   }
@@ -4607,11 +4647,76 @@
   }
 
   /* Zaman Kumu: sahip olunan jokerlerden biri seçilir */
+  /* LANETLİ BOYUT — Kukla Ustası: bu raund hangi joker ×3 (o joker 2 raund yaşlanır) */
+  function showKuklaPick() {
+    const s = Game.state;
+    const all = s.jokers.filter((j) => j.key !== 'kuklaUstasi');
+    if (!all.length) { toast(t('consumNoJoker')); return; }
+    const ov = document.createElement('div');
+    ov.id = 'terziPick';
+    ov.innerHTML = `<div class="tp-box"><h3>🎭 ${T.name({ key: 'kuklaUstasi', name: JOKER_DEFS.kuklaUstasi.name })}</h3>`
+      + `<p>${t('kuklaPickSub')}</p><div class="tp-row" style="flex-wrap:wrap"></div>`
+      + `<div class="tr-row"><button class="btn ghost" id="cjCancel">${t('cancel')}</button></div></div>`;
+    const row = ov.querySelector('.tp-row');
+    for (const j of all) {
+      const b = document.createElement('button');
+      b.className = 'btn primary';
+      b.textContent = `${T.name(j)} (${Game.isRunLong(j) ? '∞' : j.usesLeft})`;
+      b.addEventListener('click', () => {
+        ov.remove();
+        const r = Game.kuklaSet(j.id);
+        if (!r.ok) { toast(r.error, false); return; }
+        render();
+      });
+      row.appendChild(b);
+    }
+    ov.querySelector('#cjCancel').addEventListener('click', () => ov.remove());
+    document.body.appendChild(ov);
+  }
+  /* Kan Sözleşmesi: iki imza */
+  function showPactPick(index, def) {
+    const ov = document.createElement('div');
+    ov.id = 'pactOv';
+    ov.className = 'pk-ov tone-violet altar-ov';
+    ov.innerHTML = `<div class="pk-box"><div class="pk-title">🩸 ${T.consumName(def.key, def.name)}</div>`
+      + `<div class="pk-sub-title">${t('pactSub')}</div><div class="pk-body pk-choice">`
+      + `<button class="pk-card altar-card" data-c="easy"><div class="ac-tag">${t('pactEasy')}</div><div class="ac-cost">${t('pactEasyDesc')}</div></button>`
+      + `<button class="pk-card altar-card ac-perm" data-c="hard"><div class="ac-tag">${t('pactHard')}</div><div class="ac-cost">${t('pactHardDesc')}</div></button>`
+      + `</div><div class="pk-foot"><button class="ep-btn ep-blue altar-close">${t('cancel')}</button></div></div>`;
+    ov.querySelectorAll('[data-c]').forEach((c) => c.addEventListener('click', () => {
+      ov.remove();
+      finishConsum(Game.useConsumable(index, { choice: c.dataset.c }));
+    }));
+    ov.querySelector('.altar-close').addEventListener('click', () => ov.remove());
+    document.body.appendChild(ov);
+  }
+  /* Nöbetçi (totem): ilk raund nöbetçi taşı seçilir */
+  function showNobetciPick() {
+    if (!Game.nobetciNeeds || !Game.nobetciNeeds() || document.getElementById('nobetciOv') || document.querySelector('.pk-ov')) return;
+    const ov = document.createElement('div');
+    ov.id = 'nobetciOv';
+    ov.className = 'pk-ov tone-violet altar-ov';
+    ov.innerHTML = `<div class="pk-box"><div class="pk-title">🗿 ${TOTEM_DEFS.nobetci.name}</div>`
+      + `<div class="pk-sub-title">${t('nobetciSub')}</div><div class="pk-body nobetci-row"></div></div>`;
+    const row = ov.querySelector('.pk-body');
+    for (const tile of Game.state.hand) {
+      if (tile.jokerTile || Game.isOkeyTile(tile)) continue;
+      const el2 = tileEl(tile, false);
+      el2.addEventListener('click', () => {
+        const r = Game.nobetciSet(tile.id);
+        if (!r.ok) { toast(r.error, false); return; }
+        ov.remove(); render();
+      });
+      row.appendChild(el2);
+    }
+    document.body.appendChild(ov);
+  }
+
   function pickConsumJoker(index, def) {
     const s = Game.state;
     /* Klon Şişesi yalnız ANA SLOT jokerini kopyalayabilir; Zaman Kumu ise
        süresi olan her jokeri uzatır ("run boyunca" yaşayanlar hariç). */
-    const all = def.key === 'klonSisesi'
+    const all = def.key === 'klonSisesi' || def.key === 'ruhAynasi'
       ? [...s.jokers]
       : [...s.jokers, ...s.backup, ...s.deckJokers].filter(j => !Game.isRunLong(j));
     if (!all.length) { toast(t('consumNoJoker')); return; }
@@ -4701,17 +4806,21 @@
        "Sağ tık" ipucu tooltip'te. Çizimi olmayan (ileride eklenecek) bir
        değnek eski kart düzeninde, düğmeyle kalır. */
     if (art) d.classList.add('art-only');
+    /* LANETLİ BOYUT — çizimi gelmemiş lanetli değnek: yazısız, çizimli değnek kalıbında simgeyle (ad/açıklama ipucunda) */
+    const glyph = !art && def.cursed;
+    if (glyph) d.classList.add('art-only', 'cs-glyph');
     /* P41 (kullanıcı isteği 2026-09-14) — SOL TIK KULLAN, SAĞ TIK SAT.
        Çizimli değnek kartının içinde yazı/düğme yok; eylemler üstüne gelince
        açılan ortak rozette (#actBadge, bkz. attachActs) yazar. Satış yalnız
        store rafında (opts.sell) — kullanıcı kararı: raund içinde satış yok. */
-    d.innerHTML = art
+    d.innerHTML = glyph ? `<span class="c-icon cs-art cs-emoji">${def.icon}</span>` : art
       ? `<span class="c-icon cs-art cs-${key}"></span>`
       : `<span class="c-icon">${def.icon}</span>` +
         `<div class="c-body"><b>${T.consumName(key, def.name)}</b><span>${T.consumDesc(key, def.desc)}</span></div>`;
     const useIt = () => {
       if (consumPick && consumPick.index === index) { consumPick = null; render(); return; }
       if (def.target === 'joker') { pickConsumJoker(index, def); return; }
+      if (def.target === 'pact') { showPactPick(index, def); return; }
       if (def.target === 'tile' || def.target === 'tileColor') {
         /* P29 · Grup O — store'da artık kullanılabilir: el yerine deste
            bileşiminden rastgele 10 taş sunulur. Raund İÇİNDE store açıksa
@@ -4735,18 +4844,18 @@
     };
     /* P47 (kullanıcı isteği 2026-09-14): değnek de RAUND İÇİNDE sağ tıkla satılır
        (P41'de yalnız store rafındaydı; jokerler P46'da açılmıştı). */
-    if (art) attachActs(d, () => ({
+    if (art || glyph) attachActs(d, () => ({
       left: { lbl: t(picking ? 'abCancel' : 'abUse'), fn: useIt },
       right: { lbl: t('abSell', Game.consumSellPrice(key)), fn: sellIt },
     }));
-    const hint = art
+    const hint = art || glyph
       ? ` — ${t(picking ? 'consumLeftCancel' : 'consumLeftUse')} · ${t('consumRightSell')}`
       : '';
     attachTip(d, { name: T.consumName(key, def.name),
       rarityText: `${T.rarity(def.rarity || 'common')} · ${t('consumTag')}`,
       accent: def.rarity || 'common',
       desc: T.consumDesc(key, def.desc) + hint }, {});
-    if (!art) {
+    if (!art && !glyph) {
       // çizimi henüz gelmemiş değnek eski kart düzeninde, düğmelerle kalır
       const btn = document.createElement('button');
       btn.className = 'c-use';
@@ -4862,7 +4971,7 @@
   /* LANETLİ BOYUT — Lanet Seviyesi göstergesi (sol sütun, STAGE/RAUND altında) */
   function renderCurse() {
     const on = !!(Game.lanetliOn && Game.lanetliOn() && Game.state);
-    for (const sel of ['#gameScreen .gm-left']) {
+    for (const sel of ['#gameScreen .gm-left', '#storeSide']) {   // kullanıcı 2026-10-29: store'da da görünsün
       const col = document.querySelector(sel);
       if (!col) continue;
       let m = col.querySelector('.curse-meter');
@@ -4950,6 +5059,8 @@
 
   function render() {
     setTimeout(lbRot, 30);
+    renderTotems();
+    if (curScreen() === 'game' && Game.nobetciNeeds && Game.nobetciNeeds()) setTimeout(showNobetciPick, 300);
     renderCurse();
     /* Yol seçimi artık harita şeridinde (renderPathMap); bekleyen seçim varken oyun ekranı haritaya döner */
     if (Game.needsPath && Game.needsPath() && curScreen() === 'game' && !document.querySelector('.pk-ov')) setTimeout(() => showScreen('map'), 0);
@@ -5307,7 +5418,7 @@
           const doAdd = (forceStart) => {
             const res = Game.addIsleme(i, [...selection], { forceStart });
             // Grup A: işlemede okey iki uca da oturabiliyorsa oyuncu seçsin
-            if (res.needChoice) { pickOkeySlot(res.choices, (st) => doAdd(st)); return; }
+            if (res.needChoice) { pickOkeySlot(res.choices, (st) => doAdd(st), res); return; }
             if (!res.ok) { nope(res.error, btn); return; }   // denetim3 #8
             selection.clear();
             toast(t('isleAdded'), true);
@@ -5454,6 +5565,12 @@
         items.push({ k: 'fatality', ico: '☠', title: T.bossName('fatality', 'Fatality'), mark: s.fatalityHit ? '✓' : '',
           txt: t('fatalityTip', s.fatalityLimit) + '<br>' + t('fatalityChip', s.fatalityLimit) });
       for (const x of notes) items.push({ title: s.boss ? T.bossName(s.boss.key, s.boss.name) : '', ...x });
+      if (s.mumArmed) items.push({ k: 'mum', ico: '🕯', title: JOKER_DEFS.karaMum.name, txt: t('mumChip') });
+      if (s.doom === s.roundSerial) items.push({ k: 'doom', ico: '⏳', title: CONSUMABLES.kiyametSaati.name, mark: s.turn <= 2 ? '✗' : s.turn >= s.maxTurns ? '×3' : '', txt: t('doomChip') });
+      if (s.rehinRound === s.roundSerial) items.push({ k: 'rehin', ico: '💰', title: JOKER_DEFS.rehinci.name, txt: t('rehinChip') });
+      if (s.puppet && s.puppet.round === s.roundSerial) { const pj = s.jokers.find((x) => x.id === s.puppet.id); if (pj) items.push({ k: 'kukla', ico: '🎭', title: JOKER_DEFS.kuklaUstasi.name, txt: t('kuklaChip', T.name(pj)) }); }
+      if (s.mirror && s.mirror.round === s.roundSerial) { const mj = s.jokers.find((x) => x.id === s.mirror.id); if (mj) items.push({ k: 'mirror', ico: '🪞', title: CONSUMABLES.ruhAynasi.name, txt: t('mirrorChip', T.name(mj)) }); }
+      if (s.mezarciMult) items.push({ k: 'mezarci', ico: '⚰', title: JOKER_DEFS.mezarci.name, txt: t('mezarciChip', s.mezarciMult.toFixed(1)) });
       if (Game.isSilent && Game.isSilent(s.stage, s.roundInStage))
         items.push({ k: 'silent', ico: '🔕', title: t('silentName'), mark: s.turn === 1 ? '' : '✗', txt: t('silentDesc') });
       renderInfoBadges(s.status === 'playing' ? items : []);
@@ -6412,11 +6529,14 @@
     const s = Game.state;
     const p = (s.betPicks || [])[0];
     if (!p) { if (done) done(); return; }
-    const ov = packOverlay('joker', 'betPickTitle');
-    ov.querySelector('.pk-sub-title').textContent = t(p.kind === 'legendary' ? 'betPickSubLeg' : 'betPickSub');
+    /* Lanetli Boyut — Adak Sunağı ödülü (tek kart) ve Lanetli yol ödülü kendi başlığıyla (Kumarhane'nin "Bahis Ödülü" değil) */
+    const src = p.source === 'altar' ? 'altar' : p.source === 'cursedPath' ? 'path' : null;
+    const ov = packOverlay('joker', src ? src + 'PickTitle' : 'betPickTitle');
+    ov.querySelector('.pk-sub-title').textContent = src === 'altar' ? t('altarPickSub')
+      : t(p.kind === 'legendary' ? 'betPickSubLeg' : 'betPickSub');
     const body = ov.querySelector('.pk-body');
     body.className = 'pk-body pk-choice';
-    ov.querySelector('.pk-foot').innerHTML = `<span class="pk-hint">${t('packChoiceHint')}</span>`;
+    ov.querySelector('.pk-foot').innerHTML = `<span class="pk-hint">${t(src === 'altar' ? 'altarPickHint' : 'packChoiceHint')}</span>`;
     p.options.forEach((opt, oi) => {
       const c = document.createElement('button');
       c.className = `pk-card r-${opt.rarity || 'special'}`;
@@ -6425,6 +6545,7 @@
       c.innerHTML = (opt.type === 'joker' && JOKER_ART.has(opt.key)
         ? `<div class="col-jk-art jk-${opt.key} bp-art"></div><div class="pk-name">${T.name(opt)}</div><div class="pk-sub">${T.rarity(opt.rarity)}</div>`
         : packFaceHtml(opt)) + `<div class="pk-desc">${packFaceDesc(opt)}</div>`;
+      packTip(c, opt);
       c.addEventListener('click', () => {
         if (ov.dataset.done) return;
         ov.dataset.done = '1';
@@ -7624,7 +7745,7 @@
     const cont = () => {
       close();
       resumeSave(save);
-      toast(t(save.where === 'inRound' && !save.mid ? 'roundRestartToast' : 'resumedToast'), true);   // denetim RK
+      /* kullanıcı 2026-10-29: "Run kaldığı yerden devam ediyor" gibi bilgi bildirimleri kalktı */
     };
     const slide = (p, i) => {
       const open = isOpen(p);
@@ -7730,6 +7851,14 @@
      oturması için sonuna bir dolgu sembolü eklenir ve şerit (hücre − 3)
      kaydırılır (üstte bir önceki sembol, ortada kazanan, altta dolgu).
      ============================================================ */
+  /* kullanıcı 2026-10-29 — slot şeridi kartların ÇİZİMLERİYLE döner (joker, değnek, özel taş); çizimi olmayan simgeyle */
+  function reelFaceHtml(x) {
+    if (x.converted) return packFaceHtml(x);
+    if (x.type === 'joker' && JOKER_ART.has(x.key)) return `<div class="col-jk-art jk-${x.key} reel-art"></div>`;
+    if (x.type === 'consum' && CONSUM_ART.has(x.key)) return `<div class="reel-art cs-art cs-${x.key}"></div>`;
+    if (x.type === 'joker' || x.type === 'consum') return `<div class="reel-ico">${x.type === 'joker' ? jokerIcon(x.key) : x.icon}</div><div class="pk-name">${x.type === 'joker' ? T.name(x) : T.consumName(x.key, x.name)}</div>`;
+    return `<div class="reel-art sp-art-sm sp-${x.kind}"></div>`;
+  }
   function buildReel(reel) {
     const wrap = document.createElement('div');
     wrap.className = 'pk-reel';
@@ -7738,7 +7867,7 @@
     const cell = (sym) => {
       const c = document.createElement('div');
       c.className = `pk-sym r-${sym.rarity || 'special'}`;
-      c.innerHTML = packFaceHtml(sym);
+      c.innerHTML = reelFaceHtml(sym);
       return c;
     };
     reel.forEach(sym => strip.appendChild(cell(sym)));
@@ -9100,6 +9229,10 @@
         `<div class="pk-name">${T.consumName(x.key, x.name)}</div>` +
         `<div class="pk-sub">${T.rarity(x.rarity)}</div>`;
     }
+    if (x.type === 'totem')   // LANETLİ BOYUT — totem: simge + TOTEM etiketi (çizimi kullanıcıdan gelecek)
+      return `<div class="pk-ico totem-ico">${x.icon || '🗿'}</div>` +
+        `<div class="pk-name">${x.name}</div>` +
+        `<div class="pk-sub">${t('totemTag')} · ${T.rarity(x.rarity)}</div>`;
     if (x.type === 'joker')
       return `<div class="pk-ico">${jokerIcon(x.key)}</div>` +
         `<div class="pk-name">${T.name(x)}</div>` +
@@ -9113,11 +9246,117 @@
       `<div class="pk-sub">${T.color(x.color)} ${x.number}</div>`;
   }
 
+  /* kullanıcı 2026-10-29 (Boyut Yırtığı'nın açıklaması üstüne gelince görünmüyordu) — ödül/paket kartlarının
+     HEPSİ aynı ipucunu taşır: joker, değnek, totem, özel taş */
+  function packTip(el, x) {
+    if (!x || x.converted) return;
+    const rar = x.type === 'totem' ? `${t('totemTag')} · ${T.rarity(x.rarity)}`
+      : x.type === 'consum' ? `${T.rarity(x.rarity || 'common')} · ${t('consumTag')}` : null;
+    attachTip(el, x.type === 'joker' ? { ...x, key: x.key, name: T.name(x), desc: T.desc({ key: x.key, desc: x.desc || '' }) }
+      : { name: x.type === 'consum' ? T.consumName(x.key, x.name) : (x.name || ''), rarityText: rar || undefined,
+        accent: x.rarity || 'common', desc: packFaceDesc(x) }, {});
+  }
   function packFaceDesc(x) {
     if (x.converted) return t('packConvertedLine', x.coins);
     if (x.type === 'consum') return T.consumDesc(x.key, x.desc || '');
     if (x.type === 'joker') return T.desc({ key: x.key, desc: x.desc || '' });
+    if (x.type === 'totem') return `${x.desc || ''} <b>${t('totemCost')}</b> ${x.cost || ''}`;
     return T.specialDesc(x.kind, SPECIAL_TILES[x.kind]?.desc || '');
+  }
+
+  /* LANETLİ BOYUT — TOTEMLER (Aşama 4): slot kaplamaz, kapasiteye sayılmaz; değnek panelinin altında ayrı satır.
+     Harita/store: sol envanterde değnek panelinin altında TOTEMLER paneli; oyun ekranı: değnek sekmesinin içinde. */
+  function totemChips(row) {
+    row.innerHTML = '';
+    for (const tt of (Game.state && Game.state.totems) || []) {
+      const d = TOTEM_DEFS[tt.key];
+      if (!d) continue;
+      const c = document.createElement('div');
+      c.className = `totem-chip r-${d.rarity}`;
+      c.textContent = d.icon;
+      attachTip(c, { name: d.name, rarityText: `${t('totemTag')} · ${T.rarity(d.rarity)}`, accent: d.rarity,
+        desc: `${d.desc}<br><b>${t('totemCost')}</b> ${d.cost}` }, {});
+      row.appendChild(c);
+    }
+  }
+  function renderTotems() {
+    const tot = (Game.state && Game.state.totems) || [];
+    for (const [hostId, id] of [['mapLeftInv', 'mapTotemPanel'], ['storeLeftInv', 'storeTotemPanel']]) {
+      const host = document.getElementById(hostId);
+      let p = document.getElementById(id);
+      if (!host || !tot.length) { p?.remove(); continue; }
+      if (!p) {
+        p = document.createElement('div');
+        p.id = id;
+        p.className = 'st-shoulder st-inv totem-panel';
+        p.innerHTML = `<div class="st-sh-tab"><span>${t('totemsTitle')}</span><span class="gm-sh-count"></span></div><div class="st-sh-body"><div class="totem-row"></div></div>`;
+        host.insertBefore(p, host.children[1] || null);
+      }
+      p.querySelector('.gm-sh-count').textContent = String(tot.length);
+      totemChips(p.querySelector('.totem-row'));
+    }
+    const body = document.getElementById('consumRow')?.parentElement;
+    if (body) {
+      let r = body.querySelector('.totem-row');
+      if (!tot.length) { r?.remove(); return; }
+      if (!r) { r = document.createElement('div'); r.className = 'totem-row in-game'; body.appendChild(r); }
+      totemChips(r);
+    }
+  }
+
+  /* LANETLİ BOYUT — ADAK SUNAĞI (Aşama 3): stage sonu store'unda Yenile ile Devam arasında düğme; pencerede iki teklif
+     (kısa bedel → Rare, kalıcı bedel → Legendary). Kabul edince bedel ödenir, lanet +1, ödül seçimi (dolu rafta takas). */
+  function renderAltarBtn() {
+    const acts = document.querySelector('#storeOverlay .store-actions');
+    if (!acts) return;
+    let btn = document.getElementById('btnAltar');
+    const st = Game.altarState && Game.altarState();
+    if (!st || !st.offers.length) { btn?.remove(); return; }
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'btnAltar';
+      btn.className = 'st-btn st-altar';
+      btn.addEventListener('click', () => { SFX.click && SFX.click(); showAltar(); });
+      acts.insertBefore(btn, document.getElementById('btnStoreContinue'));
+    }
+    const open = st.offers.filter((o) => o.ok).length;
+    btn.innerHTML = `${pixIcon('sessiz', 3)}<span>${t('altarBtn')}</span><small>${t('altarBtnSub', open)}</small>`;
+    btn.classList.toggle('spent', !open);
+  }
+  function showAltar(done) {
+    const st = Game.altarState && Game.altarState();
+    if (!st) { if (done) done(); return; }
+    const finish = () => { ov.remove(); if (done) done(); };
+    document.getElementById('altarOv')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'altarOv';
+    ov.className = 'pk-ov tone-violet altar-ov';
+    ov.innerHTML = `<div class="pk-box"><div class="pk-title">🜏 ${t('altarTitle')}</div>`
+      + `<div class="pk-sub-title">${t('altarSub', Game.curseLevel())}</div><div class="pk-body pk-choice"></div>`
+      + `<div class="pk-foot"><button class="ep-btn ep-blue altar-close">${t('altarLeave')}</button></div></div>`;
+    const body = ov.querySelector('.pk-body');
+    st.offers.forEach((o, i) => {
+      const r = o.reward;
+      const c = document.createElement('div');
+      c.className = `pk-card altar-card ac-${o.kind} r-${r.rarity}` + (o.taken ? ' taken' : '');
+      const art = r.type === 'joker' && JOKER_ART.has(r.key) ? `<div class="col-jk-art jk-${r.key} bp-art"></div>`
+        : `<div class="ac-ico">${r.type === 'totem' ? r.icon : r.type === 'consum' ? r.icon : jokerIcon(r.key)}</div>`;
+      c.innerHTML = `<div class="ac-tag">${t(o.kind === 'short' ? 'altarShort' : 'altarPerm')}</div>`
+        + `<div class="ac-cost">${t('pact_' + o.type + '_' + o.kind)}</div><div class="ac-arrow">▼</div>`
+        + art + `<div class="pk-name">${T.name(r)}</div><div class="pk-sub">${T.rarity(r.rarity)}</div>`
+        + `<div class="pk-desc">${packFaceDesc(r)}</div>`
+        + `<button class="ac-take" ${o.ok ? '' : 'disabled'}>${o.taken ? t('altarTaken') : o.ok ? t('altarAccept') : t('altarCant')}</button>`;
+      c.querySelector('.ac-take').addEventListener('click', () => {
+        const res = Game.acceptAltar(i);
+        if (!res.ok) { toast(res.error, false); return; }
+        SFX.crack();
+        ov.remove();
+        showBetPicks(() => { render(); if (done) done(); });   // tek seçim: armağandan sonra store
+      });
+      body.appendChild(c);
+    });
+    ov.querySelector('.altar-close').addEventListener('click', finish);
+    document.body.appendChild(ov);
   }
 
   function packOverlay(kind, titleKey) {
@@ -9145,6 +9384,7 @@
       c.className = `pk-card r-${opt.rarity || 'special'}`;
       c.style.animationDelay = `${oi * 0.11}s`;
       c.innerHTML = packFaceHtml(opt) + `<div class="pk-desc">${packFaceDesc(opt)}</div>`;
+      packTip(c, opt);
       c.addEventListener('click', () => {
         if (ov.dataset.done) return;
         ov.dataset.done = '1';
@@ -9194,7 +9434,9 @@
         const c = document.createElement('div');
         c.className = `pk-rcard r-${x.rarity || 'special'}`;
         c.style.animationDelay = `${i * 0.09}s`;
-        c.innerHTML = packFaceHtml(x) + `<div class="pk-desc">${packFaceDesc(x)}</div>`;
+        const hasArt = (x.type === 'joker' && JOKER_ART.has(x.key)) || (x.type === 'consum' && CONSUM_ART.has(x.key));
+        c.innerHTML = hasArt ? reelFaceHtml(x) + `<div class="pk-name">${x.type === 'joker' ? T.name(x) : T.consumName(x.key, x.name)}</div>` : packFaceHtml(x);   // kullanıcı 2026-10-29: çizimli, açıklamasız (üstüne gelince)
+        packTip(c, x);
         rw.appendChild(c);
       });
       ov.querySelector('.pk-box').insertBefore(rw, foot);
@@ -9206,7 +9448,17 @@
         renderStore(); render();
         for (const c2 of res.contents || []) onJokerGained(c2.key, c2.jokerId);
       });
-      foot.appendChild(b);
+      /* PAS — çıkanı almazsın */
+      const pass = document.createElement('button');
+      pass.className = 'btn ghost pk-pass';
+      pass.textContent = t('packPass');
+      pass.addEventListener('click', () => {
+        if (res.index != null) Game.passPack(res.index);
+        ov.remove();
+        renderStore(); render();
+      });
+      foot.classList.add('pk-foot-2');
+      foot.append(pass, b);
       b.focus();
     }
   }
@@ -9274,6 +9526,9 @@
     const s = Game.state;
     if (!s.store) return;
     setTimeout(lbRot, 30);
+    document.getElementById('btnAltar')?.remove();   // sunak artık store'dan önce kendiliğinden açılıyor
+    renderCurse();
+    renderTotems();
     hideTip();
     /* P65 — haritanın sol sütunu, $ kutusu, joker paneli ve destesiyle
        BİREBİR aynı içerik (bkz. renderMap). Kalıcı çarpan satırı haritada
@@ -10344,7 +10599,7 @@
     { key: 'jokers', ico: '🃏', big: true, disc: 'joker', filters: ['all', 'common', 'rare', 'legendary', 'mythic'],
       filterLabel: (f) => (f === 'all' ? t('colAll') : T.rarity(f)),
       filterFn: (d, f) => d.rarity === f,
-      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.rarity !== 'epic' && d.rarity !== 'final')), card: (d) => colJokerCard(d) },
+      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.rarity !== 'epic' && d.rarity !== 'final' && !d.cursed)), card: (d) => colJokerCard(d) },
     /* P71b (kullanıcı: "final boss jokerleri ayrı bölüm olmasın") — Boss Jokerleri
        artık iki nadirliği birlikte taşır: Hepsi / Boss / Final Boss çipleri, diğer
        joker bölümleriyle aynı filtre mantığı (d.rarity === filtre). Final boss
@@ -10354,13 +10609,30 @@
       items: () => [...Object.values(JOKER_DEFS).filter(d => d.rarity === 'final'),
         ...Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic')],
       card: (d) => (d.rarity === 'final' && !Disc.known('joker', d) ? colFinalCard(d) : colJokerCard(d)) },
-    { key: 'consum', ico: '🪄', disc: 'consum', items: () => byRarity(Object.values(CONSUMABLES)), card: (d) => colConsumCard(d) },
+    { key: 'consum', ico: '🪄', disc: 'consum', items: () => byRarity(Object.values(CONSUMABLES).filter(d => !d.cursed)), card: (d) => colConsumCard(d) },
     { key: 'special', ico: '💠', disc: 'special', items: () => Object.values(SPECIAL_TILES), card: (d) => colSpecialCard(d) },
     { key: 'upgrade', ico: '⭐', disc: 'upgrade', items: () => Object.values(UPGRADE_DEFS), card: (d) => colUpgradeTile(d) },
+    /* Lanetli Boyut (2026-10-29) — lanetli joker + değnek + totem kendi kategorisinde; betada mod gizli → kategori yok */
+    ...(BETA ? [] : [{ key: 'cursed', ico: '🜏', filters: ['all', 'joker', 'consum', 'totem'], filterLabel: (f) => t('colF_cursed_' + f),
+      filterFn: (d, f) => d._kind === f,
+      items: () => [...byRarity(Object.values(JOKER_DEFS).filter(d => d.cursed)).map(d => ({ ...d, _kind: 'joker' })),
+        ...byRarity(Object.values(CONSUMABLES).filter(d => d.cursed)).map(d => ({ ...d, _kind: 'consum' })),
+        ...Object.values(TOTEM_DEFS).map(d => ({ ...d, _kind: 'totem' }))],
+      card: (d) => (d._kind === 'joker' ? colJokerCard(d) : colCursedTile(d)) }]),
     { key: 'modes', ico: '🎮', items: () => Modes.statusRows(), card: null },
     { key: 'music', ico: '🎵', filters: ['all', 'tema', 'store', 'boss'], filterLabel: (f) => t('musF_' + f),
       items: () => musicCatalog(), card: (d) => colMusicCard(d) },
   ];
+  function colCursedTile(d) {   // lanetli değnek / totem: çizimler gelene kadar simge
+    const totem = d._kind === 'totem';
+    const c = document.createElement('div');
+    c.className = `joker-tile r-${d.rarity || 'common'} col-tile`;
+    const nm = totem ? d.name : T.consumName(d.key, d.name);
+    c.innerHTML = `<div class="col-icon">${d.icon}</div><div class="jt-name">${nm}</div>`;
+    attachTip(c, { name: nm, accent: d.rarity, rarityText: `${totem ? t('totemTag') : t('consumTag')} · ${T.rarity(d.rarity)}`,
+      desc: totem ? `${d.desc}<br><b>${t('totemCost')}</b> ${d.cost}` : T.consumDesc(d.key, d.desc) }, {});
+    return c;
+  }
   /* P67 — sayfa/kategori değişimi pencereyi YENİDEN açmaz: openScene giriş
      animasyonunu sıfırdan oynatıyordu, ekran bir an kaybolup geri geliyordu. */
   function colOpen() {
@@ -10460,7 +10732,8 @@
 
   function renderCollectionAll() {
     const order = ['common', 'rare', 'epic', 'legendary', 'mythic', 'final'];
-    const all = Object.values(JOKER_DEFS);
+    /* Lanetli Boyut (2026-10-29) — lanetli eşyalar kendi rafında; betada mod gizli olduğu için hiç görünmez */
+    const all = Object.values(JOKER_DEFS).filter((d) => !d.cursed);
     $('colSub').textContent = t('colSub', all.length);
     /* PLAYTEST 20 · GRUP R — MODLAR durum listesi.
        Kilit sistemi ana menü tasarımına düğme EKLEMEDEN kuruldu (Figma
@@ -10519,6 +10792,29 @@
       }
       el.colBody.appendChild(grid);
     }
+    /* LANETLİ BOYUT rafı: lanetli jokerler + değnekler + totemler (çizimler gelene kadar simgeyle) — yalnız prototip */
+    if (!BETA) {
+      const cj = Object.values(JOKER_DEFS).filter((d) => d.cursed).sort((x, y) => order.indexOf(x.rarity) - order.indexOf(y.rarity));
+      const cc = Object.values(CONSUMABLES).filter((d) => d.cursed);
+      const ct = Object.values(TOTEM_DEFS);
+      const head = document.createElement('div');
+      head.className = 'col-rar-head tr-legendary col-casino-head col-cursed-head';
+      head.innerHTML = `🜏 ${t('colCursed')} <span>${t('colCount', cj.length + cc.length + ct.length)}</span><small>${t('colCursedNote')}</small>`;
+      el.colBody.appendChild(head);
+      const grid = document.createElement('div');
+      grid.className = 'col-grid tr-col-tiles col-casino col-cursed';
+      for (const d of cj) grid.appendChild(colJokerCard(d));
+      for (const d of [...cc, ...ct]) {
+        const c = document.createElement('div');
+        c.className = `joker-tile r-${d.rarity || 'common'} col-tile`;
+        c.innerHTML = `<div class="col-icon">${d.icon}</div><div class="jt-name">${d.cost ? d.name : T.consumName(d.key, d.name)}</div>`;
+        attachTip(c, { name: d.cost ? d.name : T.consumName(d.key, d.name), accent: d.rarity,
+          rarityText: `${d.cost ? t('totemTag') : t('consumTag')} · ${T.rarity(d.rarity)}`,
+          desc: d.cost ? `${d.desc}<br><b>${t('totemCost')}</b> ${d.cost}` : T.consumDesc(d.key, d.desc) }, {});
+        grid.appendChild(c);
+      }
+      el.colBody.appendChild(grid);
+    }
     // Grup M — Tüketilebilirler (prototip: hepsi baştan görünür)
     {
       /* PLAYTEST 29 · GRUP N (bug) — DEĞNEK RAFI RARITY'E GÖRE SIRALANIR.
@@ -10531,7 +10827,7 @@
          ÇİZİM ANINDA garanti edilir — joker rafının kullandığı `order`
          dizisinin aynısı. Sıralama KARARLIDIR: aynı rarity içinde tanım
          sırası korunur (indeks kırıcı). */
-      const cons = Object.values(CONSUMABLES)
+      const cons = Object.values(CONSUMABLES).filter((d) => !d.cursed)
         .map((d, i) => ({ d, i }))
         .sort((a, b) => {
           const ra = order.indexOf(a.d.rarity || 'common');
@@ -11444,6 +11740,7 @@
   if (!BETA) window.__test = {
     disc: Disc, pickBuyDest, fuzyonMenu, showUseChooser, render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
+    pickOkeySlot,   // okey yerleşim penceresi (görsel test)
     // Playtest 17 — Grup A/F doğrulaması için
     notify, showCoinFlip, pickFuzyon, flushRoundStart,
     // Playtest 19 — Grup E: Füzyon kullanım menüsü

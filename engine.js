@@ -115,6 +115,9 @@ const TOTAL_STAGES = 8;
    RUN_MODES.targets içinde okunduğu için tablodan ÖNCE tanımlı olmak zorunda
    (const TDZ); final boss tanımı BOSSES'in altında. */
 const FINAL_TARGET = 5200;   // P71 — bot ölçümüyle kalibre (BET=mix final geçiş ≈%50)
+/* kullanıcı 2026-10-29: eş Orion'un açılımı her şeyle (çarpanlar, jokerler) etkileşir ama YARI gücüyle */
+let PARTNER_SHARE = +((typeof process !== 'undefined' && process.env && process.env.PARTNER_SHARE) || 0.5);
+let PARTNER_MODE = (typeof process !== 'undefined' && process.env && process.env.PARTNER_MODE) || 'full';   // eş Orion puanlama ('belt' = eski kural, ölçüm kolu)
 const LADY_REFILL_TO = 21;   // P71 — tur başı çekişte el bu sayıya tamamlanır
 const LADY_STAR_MULT = 2;    // P71 — Sahnenin Yıldızı: seçilen jokerin katkısı ×2 (denge kolu)
 const LADY_USES = 6;         // P71 — boss jokerlerinin (2–4) belirgin şekilde üstü
@@ -262,6 +265,50 @@ const ROT = { perRound: 4, inHand: 1, drawZone: 12, mult: [0.3, 0.6, 1.2], cols:
 /* SESSİZ RAUND — lanet 4+ iken boss olmayan raundun %20'si: hedef yarı; ilk turda bitirirsen birikmiş lanet −1,
    geç bitirirsen rastgele bir lanetli eşyan bir sonraki raund susar (eşyalar Aşama 4'te). */
 const SILENT = { minCurse: 4, chance: 0.2 };
+/* ADAK SUNAĞI (rapor, Aşama 3) — her stage sonunda store'un yanında; iki teklif: KISA bedel → Rare, KALICI bedel →
+   Legendary. Yenileme yok; her ödenen bedel birikmiş lanet +1; sınırına gelmiş bedel türü teklif edilmez; aynı tür en
+   fazla 2 kez üst üste. Ödüller lanetli eşyalar gelene kadar (Aşama 4) normal havuzdan joker.
+   Bedeller:  tur  — kısa: 3 raund 1 tur eksik (en az 3 tur)
+              el   — kısa: 3 raund 2 eksik taşla başla · kalıcı: her raund 1 eksik taş (el en az 17)
+              coin — kısa: coin'in %50'si gider · kalıcı: joker slotu −1 (en az 3 slot)
+              ruh  — kısa: kalıcı çarpandan −0.5x · kalıcı: −1.0x (0'ın altına inmez → yetmiyorsa teklif edilmez) */
+/* denge turu 4 (2026-10-29): her teklifi körlemesine alan bot bile zarardaydı → bedeller hafifledi (kısa bedel 3 → 2 raund,
+   el 2 → 1 taş, coin %50 → %30, ruh 0.5/1.0 → 0.25/0.5) ve bedel ayrıca lanet ARTIRMAZ (alınan lanetli eşya zaten taşır).
+   Sonuç: körlemesine alan bot nötr, düşünerek seçen oyuncu kazançlı. */
+const ALTAR = { rounds: 2, maxSame: 2, minTurns: 3, minHand: 17, minSlots: 3, turCut: 1, handCutShort: 1, handCutPerm: 1,
+  coinPct: 0.3, slotCut: 1, ruhShort: 0.25, ruhPerm: 0.5, curse: 0 };
+/* LANETLİ EŞYALAR (rapor, Aşama 4) — yalnız Lanetli Boyut'ta çıkar; elde olduğu sürece taşınan lanet +1 (joker + totem;
+   değnek elde beklerken saymaz). Parti 1 değerleri: */
+/* Parti 2 değerleri (rapor): */
+/* Denge turu 1 (2026-10-29, eşya başına 300 run): çoğu eşya taşınan lanet (+%8 hedef) bedelini karşılamıyordu —
+   lanet kapalıyken bile Sünger/Rehinci/Tefeci/Kukla/Anomali tabanın altındaydı. Değerler büyütüldü (eski → yeni):
+   mezarci 1.0→2.0 · fosilPer 0.5→1.0 · rehinMult 3→6 · kabusPct .05→.02 (+ açınca kabusOpen) · kuklaK 3→4 · nobetci .5→1.0
+   + fisiltiRot (yeni) + anomOpen (yeni). Tefeci faizi kalktı. */
+/* denge turu 2: rehinCost .5→.25 · kuklaAge 1→0 · tefeci tur borcu yerine coin faizi (tefeciCoin) · nobetci 1→2 · fisiltiRot .5→.6 her
+   çürük aşamasında · anomOpen 1→2 */
+/* denge turu 3: rehinMult 6→8 · kuklaK 4→5 · tefeciCoin 6→3 · fisiltiRot .6→1.0 */
+const CURSED2 = { mezarci: 2.0, mumFlames: 8, mumMult: 1.5, mumCurse: 2, fosilPer: 1.0, rehinCost: 0.25, rehinMult: 8.0,
+  kabusPct: 0.02, kabusOpen: 1.5, kuklaK: 5, kuklaAge: 0, tefeciMax: 2, tefeciCoin: 3, aynaK: 2, kiyametK: 3, kiyametLock: 2, yirtikCut: 0.25, yirtikRot: 3,
+  kanEasy: 0.4, kanHard: 0.4, kanLose: 0.5, nobetci: 2.0, fisiltiRot: 1.0, anomOpen: 2.0 };
+/* denge turu 1: sungerPer .25→.6 · kemikTaht 1.0→1.5 · kadehCoin 3→5, kadehPerm .2→.5, kadehPrice 1.25→1.15 · kokRotMult 2.5→3.0, kokJunkCap 10→6 */
+const CURSED = { sungerPer: 0.8, tacPer: 1.0, kemikTaht: 1.5, ebediAlev: 1.5, kadehCoin: 6, kadehPerm: 0.8, kadehPrice: 1.1,
+  kokRot: 8, kokInHand: 2, kokZone: 20, kokRotMult: 4.0, kokJunkCap: 4, kemiklerShift: 2, asiAdd: 2 };
+/* TOTEMLER — slot kaplamaz, run boyu kalıcı, kalıcı bir bedel taşır; değnek panelinin altında ayrı satır (kapasiteye sayılmaz).
+   Yalnız Adak Sunağı ve Lanetli yol ödülünden çıkar. */
+const TOTEM_DEFS = {
+  curukKok: { key: 'curukKok', name: 'Çürük Kök', rarity: 'rare', icon: '🌿',
+    desc: 'Her raund 4 yerine 8 Çürük Taş; Çürük aşaması +4.0x.', cost: 'Çöp olan her taş desteye kalıcı Çöp Taş olarak döner.' },
+  kemikTaht: { key: 'kemikTaht', name: 'Kemik Taht', rarity: 'rare', icon: '🦴',
+    desc: 'Her açılım +1.5x.', cost: 'Her raund 1 taş eksik başlarsın.' },
+  kanKadehi: { key: 'kanKadehi', name: 'Kan Kadehi', rarity: 'rare', icon: '🍷',
+    desc: 'Her bedel ödeyişinde (sunak, değnek, Lanetli yol) +6 coin ve kalıcı +0.8x.', cost: 'Store fiyatları %10 artar.' },
+  lanetKalbi: { key: 'lanetKalbi', name: 'Lanet Kalbi', rarity: 'legendary', icon: '🫀',
+    desc: 'Lanet Seviyesi hedefleri artırmaz.', cost: 'Birikmiş lanet hiç azalmaz ve her stage sonunda 1 artar.' },
+  nobetci: { key: 'nobetci', name: 'Nöbetçi', rarity: 'rare', icon: '🗿',
+    desc: 'İlk raund bir taş seçersin (renk + sayı); o taşın her kopyası açılımda +2.0x.', cost: 'O taşın kopyalarını atarsan işleğe düşer (%100).' },
+  ebediAlev: { key: 'ebediAlev', name: 'Ebedi Alev', rarity: 'legendary', icon: '🔥',
+    desc: 'Her raund ilk açılımın ×1.5.', cost: 'Run boyunca joker slotu −1.' },
+};
 const SKIP_REWARDS = { kese: { coin: 25 }, arinma: { curse: 2 }, degnek: { fallbackCoin: 10 }, fis: {} };
 function runModeOf(s) {
   return RUN_MODES[s?.runMode] || RUN_MODES.base;
@@ -924,7 +971,7 @@ const BOSSES = [
   { key: 'ucKagitci', name: 'Üç Kağıtçı', desc: `Çektiğin taşlar ters gelir; onları açınca ya da sonraki tur görürsün.` },   // P54 · Grup A (eski The Cheating)
   { key: 'dervish', name: 'GLITCH', desc: 'Her tur çektiğin 3 taş glitch’li gelir, ikisi bozuktur. Bozuk taşı açarsan o açılımın puanı %25 düşer.' },
   { key: 'terziIgne', name: 'Terzi\'nin İğnesi', desc: `Her tur başında 2 taşın dikilir: o tur atamaz ve açamazsın. Tur bitince serbest kalır.` },
-  { key: 'avukat', name: 'Avukat', desc: 'Her tur bir jokerin susturulur, o tur çalışmaz. Joker yok olmaz.' },
+  { key: 'avukat', name: 'Avukat', desc: 'Her tur bir jokerin susturulur, o tur çalışmaz.' },
   { key: 'ritim', name: 'Ritim', desc: `Her açılımdan önce ritim oyunu çıkar; tutturamazsan o açılım puan vermez.` },
   { key: 'kahin', name: 'Kahin', desc: `Her tur uyman gereken bir kehanet gelir; uymazsan o turun puanı sıfırlanır. Hepsine uyarsan +500 puan.` },
   { key: 'tuccar', name: 'Tüccar', desc: 'Teklifler çok daha ağır ve reddedemezsin: ya bedeli ödersin ya cezayı.' },
@@ -1564,6 +1611,23 @@ const MAGNET_MAX = 3;
 const VERNIK_KIND = { gumusVernik: 'gumus', simyaSisesi: 'altin' };
 const KUMBARA_COIN = 8;   // P51 · Grup B: Kumbara 12 → 8
 const CONSUMABLES = {
+  /* LANETLİ BOYUT (Aşama 4) — lanetli değnekler: yalnız Lanetli Boyut'ta; bedel kullanıldığı anda ödenir */
+  sessizCan: { key: 'sessizCan', name: 'Sessiz Çan', icon: '🔕', price: 4, rarity: 'common', target: null, cursed: true,
+    desc: 'Bu raund Sessiz Raund olur: hedef yarı; ilk turda bitirirsen lanet −1, bitiremezsen bir lanetli eşyan susar.' },
+  kemikler: { key: 'kemikler', name: 'Kemikler', icon: '🦴', price: 4, rarity: 'common', target: null, cursed: true,
+    desc: 'Bu raund elindeki tüm taşların sayısı rastgele ±2 kayar. Lanet +1.' },
+  curukAsi: { key: 'curukAsi', name: 'Çürük Aşı', icon: '💉', price: 4, rarity: 'common', target: null, cursed: true,
+    desc: 'Çürük Taşların saati 1 tur geri. Desteye 2 Çürük Taş eklenir.' },
+  kanSozlesmesi: { key: 'kanSozlesmesi', name: 'Kan Sözleşmesi', icon: '🩸', price: 5, rarity: 'common', target: 'pact', cursed: true,
+    desc: 'İmza seç: hedef −%40 ve lanet +1, ya da hedef +%40; kazanırsan 2× coin + lanetli eşya, kaybedersen kalıcı −0.5x.' },
+  kaderIpi: { key: 'kaderIpi', name: 'Kader İpi', icon: '🧵', price: 7, rarity: 'rare', target: null, cursed: true,
+    desc: 'Desteden istediğin taşı eline çek. Sonraki tur çekiş yok, lanet +1.' },
+  ruhAynasi: { key: 'ruhAynasi', name: 'Ruh Aynası', icon: '🪞', price: 7, rarity: 'rare', target: 'joker', cursed: true,
+    desc: 'Seçtiğin jokerin kopyası bu raund fazladan çalışır (etkisi ×2). Asıl joker 1 raund fazla yaşlanır.' },
+  kiyametSaati: { key: 'kiyametSaati', name: 'Kıyamet Saati', icon: '⏳', price: 7, rarity: 'rare', target: null, cursed: true,
+    desc: 'Bu raund ilk iki tur açılım yok; son turda açtığın gruplar ×3.' },
+  boyutYirtigi: { key: 'boyutYirtigi', name: 'Boyut Yırtığı', icon: '🌀', price: 10, rarity: 'legendary', target: null, cursed: true,
+    desc: 'Elini desteye karıştır, aynı sayıda yeni taş çek; 3\'ü Olgun Çürük olur, bu raund hedef −%25. Run boyu el 1 taş eksik.' },
   /* COMMON — deste marangozluğu */
   boya: { key: 'boya', name: 'Boya Kabı', icon: '🎨', price: 5, rarity: 'common', target: 'tileColor',
     desc: 'Bir taş seç: rengi kalıcı değişir.' },
@@ -2523,6 +2587,33 @@ const JOKER_DEFS = {
     desc: `Her tur zar atılır (1-13): açtığın o sayıdaki her taş +0.4x. Raund başına 1 kez zarı istediğin sayıya çevirebilirsin; her hile taş başına bonusu kalıcı +0.05x artırır.` },
   martingale: { key: 'martingale', name: 'Altın Jeton',   /* P105: eski ad Martingale (kullanıcı: anlamsız) */ rarity: 'rare', casino: true,
     desc: `Kaybettiğin yan bahis, sonrakinin ödemesini 2 katına çıkarır (en çok ×8). Tutunca kat başına kalıcı +0.2x.` },
+
+  /* ===== LANETLİ BOYUT (Aşama 4) — `cursed: true` → YALNIZ Lanetli Boyut'ta çıkar (jokerPool süzer);
+     elde olduğu sürece taşınan lanet +1 (curseCarried). ===== */
+  sunger: { key: 'sunger', name: 'Sünger', rarity: 'common', cursed: true,
+    desc: 'Lanet Seviyesi başına +0.8x. Güvenli yol laneti azaltmaz.',
+    effect: () => ({ mult: round2(CURSED.sungerPer * Game.curseLevel()), flat: 0 }) },
+  mezarci: { key: 'mezarci', name: 'Mezarcı', rarity: 'common', cursed: true,
+    desc: 'Karta tıkla: elindeki Çöp Taşları gömersin (atış hakkı gitmez); gömülen her Çöp Taş bu raund +2.0x. Çürük Taşlar bir tur hızlı çürür.' },
+  fisilti: { key: 'fisilti', name: 'Fısıltı', rarity: 'common', cursed: true,
+    desc: 'Çürük Taşın bulaşma yönünü sen seçersin (karta tıkla: ← / →); bulaşan taş Olgun başlar. Açılımdaki her çürük taş ek +1.0x. Satılamaz.' },
+  karaMum: { key: 'karaMum', name: 'Kara Mum', rarity: 'rare', cursed: true, runLong: true,
+    desc: 'Run boyu 8 alev: karta tıklayıp yaktığın alev sonraki açılımını ×1.5 yapar. Alevler bitince mum söner, lanet +2.' },
+  fosil: { key: 'fosil', name: 'Fosil', rarity: 'rare', cursed: true,
+    desc: 'Raund sonu elde kalan en büyük taş fosilleşir: sonraki raundlara elinde başlar, her raund +1 büyür; açınca yaşı ×1.0x. Atılamaz.' },
+  rehinci: { key: 'rehinci', name: 'Rehinci', rarity: 'rare', cursed: true,
+    desc: 'Raundda 1 kez (karta tıkla): kalıcı çarpandan 0.25x sat, bu raund her açılım +8.0x.' },
+  anomali: { key: 'anomali', name: 'Anomali', rarity: 'rare', cursed: true,
+    desc: 'Her tur bir taşın sayısı bir kayar; o raund iki sayı gibi sayılır ve açılımda +2.0x verir.' },
+  kabus: { key: 'kabus', name: 'Kâbus', rarity: 'rare', cursed: true,
+    desc: 'Raund başında eline okey gibi bir Kâbus Taşı gelir; açılımda +1.5x. Elde beklediği her tur, hedefin %2\'si kadar puanını yer.' },
+  kuklaUstasi: { key: 'kuklaUstasi', name: 'Kukla Ustası', rarity: 'legendary', cursed: true,
+    desc: 'Her raund bir jokerin etkisi ×5 (karta tıkla, jokeri seç).' },
+  zamanTefecisi: { key: 'zamanTefecisi', name: 'Zaman Tefecisi', rarity: 'legendary', cursed: true,
+    desc: 'Karta tıkla: bu raund +1 tur (raundda en çok 2). Raund sonunda her ödünç tur için 3 coin faiz ödersin.' },
+  lanetTaci: { key: 'lanetTaci', name: 'Lanet Tacı', rarity: 'legendary', cursed: true,
+    desc: 'Lanet Seviyesi başına +1.0x. Lanet azalmaz, her stage +1 artar.',
+    effect: () => ({ mult: round2(CURSED.tacPer * Game.curseLevel()), flat: 0 }) },
 
   /* ===== BOSS (EPIC) — Slot Jokerleri (4) + Deste Jokerleri (4, GDD 10):
      deste jokerleri desteye karışır, eline gelince aktifleşir,
@@ -4039,23 +4130,36 @@ const Game = {
   /* ── ÇÜRÜK TAŞ ── 0 = çürük değil, 1 Taze, 2 Olgun, 3 Çürük, 4 Çöp */
   rotStage(t) {
     const s = this.state;
+    if (t && t.junk) return 4;   // Çürük Kök'ün kalıcı Çöp taşı
     if (!t || !t.rot || t.rotBorn == null || !s) return 0;
-    return Math.max(1, Math.min(4, s.turn - t.rotBorn + 1));
+    return Math.max(1, Math.min(4, s.turn - t.rotBorn + 1 + (this.hasActive('mezarci') ? 1 : 0)));   // Mezarcı: bir tur hızlı
   },
   _rotOk(t) {
     return !!t && !t.jokerTile && !t.fakeOkey && !t.special && !t.hidra && !this.isOkeyTile(t);
   },
   _rotSeed() {
     const s = this.state;
-    for (const t of [...s.hand, ...s.deck]) { delete t.rot; delete t.rotBorn; delete t.rotSpread; }
+    for (const t of [...s.hand, ...s.deck]) {
+      delete t.rot; delete t.rotBorn; delete t.rotSpread; delete t.junk; delete t.anomAlt;
+      if (t.tmpOrig != null) { t.number = t.tmpOrig; delete t.tmpOrig; }   // Anomali / Kemikler kalıcı değil
+    }
     if (!this.lanetliOn()) return;
     const pick = (arr, n) => {
       const pool = arr.filter((t) => this._rotOk(t) && !t.rot);
       for (let k = 0; k < n && pool.length; k++) pool.splice(Math.floor(this.rng() * pool.length), 1)[0].rot = true;
     };
-    pick(s.hand, ROT.inHand);
-    pick(s.deck.slice(0, ROT.drawZone), ROT.perRound - ROT.inHand);
+    const kok = this.hasTotem('curukKok');
+    pick(s.hand, kok ? CURSED.kokInHand : ROT.inHand);
+    pick(s.deck.slice(0, kok ? CURSED.kokZone : ROT.drawZone), (kok ? CURSED.kokRot : ROT.perRound) - (kok ? CURSED.kokInHand : ROT.inHand));
     for (const t of s.hand) if (t.rot) t.rotBorn = s.turn;
+    /* Çürük Kök bedeli: önceki raundlarda Çöp olan taşlar desteye kalıcı Çöp olarak döner */
+    if (s.permJunk) {
+      const pool = s.deck.filter((t) => this._rotOk(t) && !t.rot);
+      for (let k = 0; k < s.permJunk && pool.length; k++) {
+        const t = pool.splice(Math.floor(this.rng() * pool.length), 1)[0];
+        t.rot = true; t.junk = true; t.rotSpread = true; t.rotBorn = -99;
+      }
+    }
   },
   /* tur başı: yeni gelen çürüklerin saati başlar; Çürük aşamasına giren taş sağındakine bulaşır.
      Sağ = aynı ıstaka satırında bir sonraki hücre (UI t.slot yazar; yoksa — bot — el sırası). */
@@ -4068,16 +4172,66 @@ const Game = {
       if (!t.rot || t.rotSpread || this.rotStage(t) !== 3) continue;
       t.rotSpread = true;
       let n;
-      if (hasSlots) n = (t.slot % ROT.cols) === ROT.cols - 1 ? null : s.hand.find((x) => x.slot === t.slot + 1);
-      else n = s.hand[s.hand.indexOf(t) + 1];
+      const left = this.hasActive('fisilti') && s.whisperDir === 'l';   // Fısıltı: yönü oyuncu seçer
+      if (hasSlots) n = left ? ((t.slot % ROT.cols) === 0 ? null : s.hand.find((x) => x.slot === t.slot - 1))
+        : ((t.slot % ROT.cols) === ROT.cols - 1 ? null : s.hand.find((x) => x.slot === t.slot + 1));
+      else n = s.hand[s.hand.indexOf(t) + (left ? -1 : 1)];
       if (!n || n.rot || !this._rotOk(n)) { events.push(`🦠 Çürük ${COLOR_TR[t.color]} ${t.number} çürüdü; sağında bulaşacak taş yok`); continue; }
-      n.rot = true; n.rotBorn = s.turn;
+      n.rot = true; n.rotBorn = s.turn - (this.hasActive('fisilti') ? 1 : 0);   // Fısıltı: bulaşan taş Olgun başlar
       events.push(`🦠 Çürük ${COLOR_TR[t.color]} ${t.number} sağındaki ${COLOR_TR[n.color]} ${n.number} taşına bulaştı`);
     }
   },
+  _cursedAfterOpen() {
+    const s = this.state;
+    if (s.mumArmed) {
+      s.mumArmed = false;
+      const j = this._recOf('karaMum');
+      if (j) {
+        j.flames = (j.flames == null ? CURSED2.mumFlames : j.flames) - 1;
+        if (j.flames <= 0) {   // mum söner: kart gider, lanet +2
+          s.jokers = s.jokers.filter((x) => x !== j);
+          this._curseAdd(CURSED2.mumCurse);
+          (s.roundStartNotes = s.roundStartNotes || []).push('🕯 Kara Mum söndü: lanet +2');
+        }
+      }
+    }
+    if (s.fossil && (s.opened || []).some((c) => c.tiles.some((t) => t.fossil))) s.fossil = null;   // fosil açıldı: tükenir
+  },
+  _cursedTurnStart(events) {
+    const s = this.state;
+    if (!this.lanetliOn()) return;
+    if (this.hasActive('anomali')) {
+      const pool = s.hand.filter((t) => this._rotOk(t) && t.anomAlt == null);
+      if (pool.length) {
+        const t = pool[Math.floor(this.rng() * pool.length)];
+        t.anomAlt = t.number === 1 ? 2 : t.number === 13 ? 12 : t.number + (this.rng() < 0.5 ? -1 : 1);
+        events.push(`👾 Anomali: ${COLOR_TR[t.color]} ${t.number} bu raund ${t.anomAlt} gibi de sayılır`);
+      }
+    }
+    const kb = s.hand.find((t) => t.kabus);
+    if (kb && s.turn > 1) {
+      const bite = Math.ceil(s.target * CURSED2.kabusPct);
+      s.score = Math.max(0, s.score - bite);
+      events.push(`👁 Kâbus Taşı elinde bekledi: −${bite} puan`);
+    }
+  },
+  /* raund başı: Fosil ve Kâbus taşları ele gelir; Zaman Tefecisi borcu ödenir */
+  _cursedRoundStart() {
+    const s = this.state;
+    if (!this.lanetliOn()) { s.fossil = null; return; }
+    if (s.fossil && this.hasActive('fosil')) {
+      s.fossil.age++;
+      s.fossil.number = Math.min(13, s.fossil.number + (s.fossil.age > 1 ? 1 : 0));
+      s.hand.push({ id: nextTileId(s), color: s.fossil.color, number: s.fossil.number, fossil: true, origin: 'fosil' });
+    }
+    if (this.hasActive('kabus'))
+      s.hand.push({ id: nextTileId(s), color: s.okey.color, number: s.okey.number, isOkeyReal: true, copied: true, kabus: true, origin: 'kabus' });
+    s.mezarciMult = 0;   // (Zaman Tefecisi borcu maxTurns kurulduktan sonra ödenir)
+  },
   rotMultOf(tiles) {
     let m = 0, n = 0;
-    for (const t of tiles || []) { const st = this.rotStage(t); if (st >= 1 && st <= 3) { m += ROT.mult[st - 1]; n++; } }
+    const tbl = this.hasTotem('curukKok') ? [ROT.mult[0], ROT.mult[1], CURSED.kokRotMult] : ROT.mult;   // Çürük Kök
+    for (const t of tiles || []) { const st = this.rotStage(t); if (st >= 1 && st <= 3) { m += tbl[st - 1]; n++; } }
     return { m, n };
   },
   lanetliOn() { return !!runModeOf(this.state).lanetli; },
@@ -4099,10 +4253,13 @@ const Game = {
     const s = this.state;
     if (!s || !this.lanetliOn()) return 1;
     const path = (stage == null || stage === s.stage) && s.stagePath === 'cursed' ? CURSE.cursedPathMult : 1;
-    return (1 + CURSE.targetPer * this.curseLevel()) * path;
+    const lv = this.hasTotem('lanetKalbi') ? 0 : this.curseLevel();   // Lanet Kalbi: lanet hedefi artırmaz
+    return (1 + CURSE.targetPer * lv) * path;
   },
   _curseAdd(n) {
     const s = this.state;
+    /* Lanet Tacı (joker) ve Lanet Kalbi (totem): birikmiş lanet hiç azalmaz */
+    if (n < 0 && (this.hasActive('lanetTaci') || this.hasTotem('lanetKalbi'))) return;
     s.curseStored = Math.max(0, Math.min(CURSE.max, (s.curseStored || 0) + n));
   },
   /* RAUND ATLAMA — atlanan raund oynanmaz: ödül hemen alınır, raundun coin'i gelmez, arkasından store
@@ -4226,19 +4383,219 @@ const Game = {
     s.pathMap.row++; s.pathMap.idx = idx; s.pathMap.walked.push([s.pathMap.row, idx]);
     s.pathPending = false;
     s.stagePath = kind;
-    this._curseAdd(kind === 'cursed' ? 1 : -1);
+    this._curseAdd(kind === 'cursed' ? 1 : this.hasActive('sunger') ? 0 : -1);   // Sünger: Güvenli yol arındırmaz
+    if (kind === 'cursed') this._bedelPaid();
     this._rollSilent();   // Sessiz Raund — yol (lanet) belli olduktan sonra
     s.target = this.targetFor(s.stage, s.roundInStage);
     return { ok: true, kind, ev: nextRow[idx].ev, curse: this.curseLevel(), target: s.target };
   },
   /* Stage sonu (boss kazanılınca): Güvenli → coin; Lanetli → 3 seçenekten 1 (en az Rare; Aşama 4'te
      lanetli eşyalar gelene kadar normal havuzdan). */
+  /* ── PARTİ 2: elle kullanılan lanetli jokerler (UI: jokerActs) ── */
+  _recOf(key) { return (this.state.jokers || []).find((j) => j.key === key) || null; },
+  mezarciCan() {
+    const s = this.state;
+    return s.status === 'playing' && this.hasActive('mezarci') && s.hand.some((t) => this.rotStage(t) === 4);
+  },
+  mezarciBury() {
+    const s = this.state;
+    if (!this.mezarciCan()) return { ok: false, error: 'Gömülecek Çöp Taş yok.' };
+    const junk = s.hand.filter((t) => this.rotStage(t) === 4);
+    for (const t of junk) this._takeTile(t, 'mezarcı');
+    s.mezarciMult = round2((s.mezarciMult || 0) + CURSED2.mezarci * junk.length);
+    return { ok: true, n: junk.length, note: `⚰ Mezarcı: ${junk.length} Çöp Taş gömüldü — bu raund +${s.mezarciMult.toFixed(1)}x` };
+  },
+  fisiltiToggle() {
+    const s = this.state;
+    if (!this.hasActive('fisilti')) return { ok: false };
+    s.whisperDir = s.whisperDir === 'l' ? 'r' : 'l';
+    return { ok: true, dir: s.whisperDir };
+  },
+  mumState() {
+    const s = this.state, j = this._recOf('karaMum');
+    if (!j || !this.hasActive('karaMum')) return null;
+    if (j.flames == null) j.flames = CURSED2.mumFlames;
+    return { id: j.id, flames: j.flames, armed: !!s.mumArmed, canUse: s.status === 'playing' && s.phase === 'meld' && j.flames > 0 };
+  },
+  mumToggle() {
+    const st = this.mumState();
+    if (!st || (!st.canUse && !st.armed)) return { ok: false };
+    this.state.mumArmed = !st.armed;
+    return { ok: true, armed: this.state.mumArmed };
+  },
+  rehinciCan() {
+    const s = this.state;
+    return s.status === 'playing' && this.hasActive('rehinci') && s.rehinRound !== s.roundSerial && (s.permMult || 0) >= CURSED2.rehinCost;
+  },
+  rehinciUse() {
+    const s = this.state;
+    if (!this.rehinciCan()) return { ok: false, error: 'Rehinci şu an kullanılamaz.' };
+    s.permMult = round2(s.permMult - CURSED2.rehinCost);
+    s.rehinRound = s.roundSerial;
+    return { ok: true, note: `💰 Rehinci: kalıcı −${CURSED2.rehinCost}x, bu raund her açılım +${CURSED2.rehinMult.toFixed(1)}x` };
+  },
+  kuklaCan() {
+    const s = this.state;
+    return s.status === 'playing' && this.hasActive('kuklaUstasi') && !(s.puppet && s.puppet.round === s.roundSerial);
+  },
+  kuklaSet(jokerId) {
+    const s = this.state;
+    if (!this.kuklaCan()) return { ok: false, error: 'Bu raund kukla zaten seçildi.' };
+    const j = s.jokers.find((x) => x.id === jokerId && x.key !== 'kuklaUstasi');
+    if (!j) return { ok: false, error: 'Kukla yapılacak jokeri seç.' };
+    s.puppet = { id: j.id, round: s.roundSerial };
+    if (CURSED2.kuklaAge) j.extraAge = (j.extraAge || 0) + CURSED2.kuklaAge;
+    return { ok: true, note: `🎭 Kukla Ustası: ${j.name} bu raund ×${CURSED2.kuklaK}` };
+  },
+  tefeciCan() {
+    const s = this.state;
+    return s.status === 'playing' && this.hasActive('zamanTefecisi') && (s.tefeciRoundN || 0) < CURSED2.tefeciMax
+      && s.tefeciRoundSerial !== -1;
+  },
+  tefeciBorrow() {
+    const s = this.state;
+    if (s.tefeciRoundSerial !== s.roundSerial) { s.tefeciRoundSerial = s.roundSerial; s.tefeciRoundN = 0; }
+    if (!this.tefeciCan()) return { ok: false, error: 'Bu raund daha fazla tur ödünç alamazsın.' };
+    const interest = 0;   // denge turu 1: faiz kalktı
+    s.tefeciRoundN++;
+    s.maxTurns++;
+    s.tefeciCoinDebt = (s.tefeciCoinDebt || 0) + CURSED2.tefeciCoin + interest;   // denge turu 2: borç raund sonunda coin olarak ödenir
+    s.tefeciLastSerial = s.roundSerial;
+    return { ok: true, note: `⏳ Zaman Tefecisi: bu raund +1 tur; raund sonunda ${s.tefeciCoinDebt} coin ödersin` };
+  },
+  nobetciNeeds() {
+    const s = this.state;
+    return !!(s && this.hasTotem('nobetci') && !s.sentinel && s.status === 'playing' && s.hand.length);
+  },
+  nobetciSet(tileId) {
+    const s = this.state;
+    const t = s.hand.find((x) => x.id === tileId);
+    if (!this.nobetciNeeds() || !t || t.jokerTile || this.isOkeyTile(t)) return { ok: false, error: 'Elinden normal bir taş seç.' };
+    s.sentinel = { color: t.color, number: t.number };
+    return { ok: true, note: `🗿 Nöbetçi: ${COLOR_TR[t.color]} ${t.number} nöbette` };
+  },
+  isSentinel(t) {
+    const sn = this.state && this.state.sentinel;
+    return !!(sn && t && !t.jokerTile && !this.isOkeyTile(t) && t.color === sn.color && t.number === sn.number && this.hasTotem('nobetci'));
+  },
+  hasTotem(key) { return !!(this.state && (this.state.totems || []).some((t) => t.key === key)); },
+  /* bir BEDEL ödendi (sunak, Lanetli yol, bedelli değnek) — Kan Kadehi her birinde +3 coin ve kalıcı +0.2x */
+  _bedelPaid(notes) {
+    const s = this.state;
+    if (!this.hasTotem('kanKadehi')) return;
+    gainCoins(s, CURSED.kadehCoin);
+    s.permMult = round2((s.permMult || 0) + CURSED.kadehPerm);
+    if (notes) notes.push(`🍷 Kan Kadehi: +${CURSED.kadehCoin} coin, kalıcı +${CURSED.kadehPerm}x`);
+  },
+  grantTotem(key) {
+    const s = this.state, def = TOTEM_DEFS[key];
+    if (!def || this.hasTotem(key)) return null;
+    if (!Array.isArray(s.totems)) s.totems = [];
+    s.totems.push({ key, id: ++_jokerId });
+    if (key === 'ebediAlev') while (s.jokers.length > this.slotCap()) s.backup.push(s.jokers.pop());
+    return { type: 'totem', key, name: def.name, rarity: def.rarity };
+  },
+  _rollCursedPick(rar, avoid) {
+    const s = this.state, skip = new Set(avoid || []);
+    const owned = this._ownedJokerKeys();
+    const pool = [
+      ...this.jokerPool((d) => d.cursed && d.rarity === rar && !owned.has(d.key), { cursedAll: true })
+        .map((d) => ({ type: 'joker', key: d.key, name: d.name, rarity: d.rarity, desc: d.desc })),
+      ...Object.values(CONSUMABLES).filter((d) => d.cursed && d.rarity === rar && this._consumOfferable(d.key, { cursedAll: true }))
+        .map((d) => ({ type: 'consum', key: d.key, name: d.name, rarity: d.rarity, desc: d.desc, icon: d.icon })),
+      ...Object.values(TOTEM_DEFS).filter((d) => d.rarity === rar && !this.hasTotem(d.key))
+        .map((d) => ({ type: 'totem', key: d.key, name: d.name, rarity: d.rarity, desc: d.desc, cost: d.cost, icon: d.icon })),
+    ].filter((o) => !skip.has(o.key));
+    const options = [];
+    while (options.length < BET_PICK_CHOICES && pool.length) options.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0]);
+    if (options.length < BET_PICK_CHOICES) {   // lanetli havuz küçükse normal jokerle tamamlanır
+      const extra = this._rollBetPick(rar, new Set([...skip, ...options.map((o) => o.key)]));
+      for (const o of (extra ? extra.options : [])) if (options.length < BET_PICK_CHOICES) options.push(o);
+    }
+    return options.length ? { kind: rar, options } : null;
+  },
+  /* ── ADAK SUNAĞI ── */
+  _pactRoundCuts() {
+    const s = this.state, out = { turns: 0, hand: 0 };
+    if (!Array.isArray(s.pacts)) return out;
+    for (const pc of s.pacts) {
+      if (pc.kind !== 'short' || !(pc.left > 0)) continue;
+      if (pc.type === 'tur') out.turns += ALTAR.turCut;
+      if (pc.type === 'el') out.hand += ALTAR.handCutShort;
+      pc.left--;
+    }
+    s.pacts = s.pacts.filter((pc) => pc.kind === 'perm' || pc.left > 0);
+    return out;
+  },
+  _pactActive(type) { return (this.state.pacts || []).filter((pc) => pc.type === type && (pc.kind === 'perm' || pc.left > 0)).length; },
+  /* bu bedel şu an ödenebilir mi (sınır + üst üste en fazla 2) */
+  pactOk(type, kind) {
+    const s = this.state;
+    if (this._pactActive(type) >= ALTAR.maxSame) return false;
+    const shortTurns = (s.pacts || []).filter((pc) => pc.type === 'tur' && pc.left > 0).length * ALTAR.turCut;
+    const shortHand = (s.pacts || []).filter((pc) => pc.type === 'el' && pc.kind === 'short' && pc.left > 0).length * ALTAR.handCutShort;
+    const hand = handSizeFor(s.stage + 1) + (s.permHandBonus || 0) - shortHand;
+    if (type === 'tur') return kind === 'short' && 4 + (s.permTurns || 0) - shortTurns - ALTAR.turCut >= ALTAR.minTurns;
+    if (type === 'el') return hand - (kind === 'short' ? ALTAR.handCutShort : ALTAR.handCutPerm) >= ALTAR.minHand;
+    if (type === 'coin') return kind === 'short' ? s.coins >= 4 : this.slotCap() - ALTAR.slotCut >= ALTAR.minSlots;
+    if (type === 'ruh') return (s.permMult || 0) >= (kind === 'short' ? ALTAR.ruhShort : ALTAR.ruhPerm);
+    return false;
+  },
+  _rollAltar() {
+    const s = this.state;
+    const avoid = new Set();
+    const offer = (kind) => {
+      const types = (kind === 'short' ? ['tur', 'el', 'coin', 'ruh'] : ['el', 'coin', 'ruh']).filter((ty) => this.pactOk(ty, kind));
+      if (!types.length) return null;
+      const pk = this._rollCursedPick(kind === 'short' ? 'rare' : 'legendary', avoid);
+      if (!pk) return null;
+      /* ödül: o nadirlikten 3 karttan 1 seçim (tek rastgele joker bedeli karşılamıyordu — bot ölçümü) */
+      pk.options.forEach((x) => avoid.add(x.key));
+      return { kind, type: types[Math.floor(this.rng() * types.length)], reward: pk.options[0], options: pk.options, taken: false };
+    };
+    s.altar = { stage: s.stage, offers: [offer('short'), offer('perm')].filter(Boolean) };
+  },
+  altarState() {
+    const s = this.state;
+    if (!s || !this.lanetliOn() || !s.altar || s.altar.stage !== s.stage || s.status !== 'won') return null;
+    /* kullanıcı 2026-10-29: sunakta YALNIZ BİR teklif alınır — biri alınınca diğeri kapanır */
+    const done = s.altar.offers.some((o) => o.taken);
+    return { ...s.altar, done, offers: s.altar.offers.map((o) => ({ ...o, ok: !done && !o.taken && this.pactOk(o.type, o.kind) })) };
+  },
+  /* teklifi kabul et: bedel hemen ödenir (coin/ruh/slot) ya da sayaç başlar (tur/el), lanet +1,
+     ödül bekleyen seçim olarak (betPicks — dolu rafta takas sorusu dahil) verilir */
+  acceptAltar(i) {
+    const s = this.state, st = this.altarState();
+    const o = st && st.offers[i];
+    if (!o || !o.ok) return { ok: false, error: 'Bu teklif şu an kabul edilemez.' };
+    if (o.type === 'coin' && o.kind === 'perm' && s.jokers.length > this.slotCap() - ALTAR.slotCut) {
+      if (s.backup.length >= MAX_BACKUP) return { ok: false, error: 'Önce bir joker slotunu boşalt (slot −1 bedeli).' };
+    }
+    if (o.type === 'coin' && o.kind === 'short') { const lost = Math.floor(s.coins * ALTAR.coinPct); s.coins -= lost; o.lost = lost; }
+    if (o.type === 'coin' && o.kind === 'perm') {
+      s.permSlotCut = (s.permSlotCut || 0) + ALTAR.slotCut;
+      while (s.jokers.length > this.slotCap()) s.backup.push(s.jokers.pop());   // fazla joker backup'a iner
+    }
+    if (o.type === 'el' && o.kind === 'perm') s.permHandBonus = (s.permHandBonus || 0) - ALTAR.handCutPerm;
+    if (o.type === 'ruh') s.permMult = Math.max(0, (s.permMult || 0) - (o.kind === 'short' ? ALTAR.ruhShort : ALTAR.ruhPerm));
+    if (!Array.isArray(s.pacts)) s.pacts = [];
+    s.pacts.push({ type: o.type, kind: o.kind, left: o.kind === 'short' ? ALTAR.rounds : null });
+    s.altar.offers[i].taken = true;
+    this._curseAdd(ALTAR.curse);
+    this._bedelPaid();
+    if (!Array.isArray(s.betPicks)) s.betPicks = [];
+    s.betPicks.push({ kind: o.kind === 'short' ? 'rare' : 'legendary', options: o.options || [o.reward], source: 'altar' });
+    s.altarPaid = (s.altarPaid || 0) + 1;
+    return { ok: true, curse: this.curseLevel() };
+  },
   _lanetStageEnd(notes) {
     const s = this.state;
     if (!this.lanetliOn()) return;
+    if (!this.isFinalStage()) this._rollAltar();
+    if (this.hasActive('lanetTaci') || this.hasTotem('lanetKalbi')) { this._curseAdd(1); notes.push('🜏 lanet +1 (Lanet Tacı / Lanet Kalbi)'); }
     if (s.stagePath === 'cursed') {
       if (!Array.isArray(s.betPicks)) s.betPicks = [];
-      const p = this._rollBetPick(this.rng() < CURSE.legendaryChance ? 'legendary' : 'rare', new Set());
+      const p = this._rollCursedPick(this.rng() < CURSE.legendaryChance ? 'legendary' : 'rare', new Set());
       if (p) { p.source = 'cursedPath'; s.betPicks.push(p); }
       notes.push('🜏 Lanetli yol ödülü: 3 karttan birini seç');
     } else {
@@ -4258,7 +4615,8 @@ const Game = {
      tavana (SLOT_BONUS_MAX) kadar büyütür. Kapasiteyi soran TÜM kod bunu
      kullanır — MAX_SLOTS'a doğrudan bakan yer kalmamalı. */
   slotCap() {
-    return MAX_SLOTS + Math.min(SLOT_BONUS_MAX, this.state?.slotBonus || 0);
+    return MAX_SLOTS + Math.min(SLOT_BONUS_MAX, this.state?.slotBonus || 0) - (this.state?.permSlotCut || 0)   // Adak Sunağı bedeli
+      - (this.hasTotem('ebediAlev') ? 1 : 0);   // Ebedi Alev totemi
   },
 
   /* GRUP E (P22) — "elimde zaten Game Over'ı önleyen bir kart var mı?"
@@ -4417,7 +4775,9 @@ const Game = {
      hiçbir şey yapmayan bir seçenek çıkmasın). Heybe envanteri büyütür;
      envanter zaten en büyük hâldeyse kart satın alınabilir ama
      kullanılamaz durumdaydı — artık havuza hiç girmiyor. */
-  _consumOfferable(key) {
+  _consumOfferable(key, opts) {
+    if (CONSUMABLES[key]?.cursed && !this.lanetliOn()) return false;   // lanetli değnek yalnız Lanetli Boyut'ta
+    if (CONSUMABLES[key]?.cursed && CONSUMABLES[key].rarity !== 'common' && !(opts && opts.cursedAll)) return false;   // Rare+ yalnız yol/sunak
     if (key === 'heybe') return this.consumCap() < CONSUM_SLOT_MAX;
     /* Ferman hakkı dolduysa kart artık satılmaz/paketten çıkmaz —
        Ambar'ın tavan elemesiyle aynı kural (ölü kart teklif edilmez). */
@@ -4554,6 +4914,7 @@ const Game = {
         `Stage ${s.stage} — yeni okey ilan edildi: ${COLOR_TR[s.okey.color]} ${s.okey.number}`);
       /* LANETLİ BOYUT — S2'den itibaren stage başında Güvenli / Lanetli yol seçilir */
       if (this.lanetliOn() && !this.isFinalStage()) { s.pathPending = true; s.stagePath = null; }
+      s.altar = null;   // Adak Sunağı yalnız stage sonu store'unda; kaçan teklif gider
       // Grup H — el büyümesi otomatik ve koşulsuz bir sistemdir; oyuncuya duyurulur
       if (handSizeFor(s.stage) > handSizeFor(s.stage - 1))
         s.roundStartNotes.push(
@@ -4768,6 +5129,12 @@ const Game = {
     }
     const got = this._grantPackOption(opt, 6);
     if (got && gave) got.gave = gave;
+    /* ADAK SUNAĞI — bedeli kalıcı (lanet +1) olduğu için armağan da YAŞLANMAZ (ölçüm: yaşlanan tek joker bedeli
+       hiçbir zaman karşılamıyordu). Ustanın Mührü ile aynı bayrak: runLong → ∞ */
+    if (got && got.jokerId != null && p.source === 'altar') {
+      const j = [...s.jokers, ...s.backup].find((x) => x.id === got.jokerId);
+      if (j) { j.runLong = true; j.altarGift = true; got.altarGift = true; }
+    }
     s.betPicks.shift();
     return { ok: true, got, left: s.betPicks.length };
   },
@@ -5692,8 +6059,9 @@ const Game = {
     for (const t of s.deck)
       t.isOkeyReal = !t.fakeOkey && !t.jokerTile
         && t.color === s.okey.color && t.number === s.okey.number;
-    s.hand = s.deck.splice(0, Math.min(MAX_HAND,
-      (s.trainerHandSize || handSizeFor(s.stage)) + (s.permHandBonus || 0)));
+    const pactCut = this._pactRoundCuts();   // LANETLİ BOYUT — Adak Sunağı kısa bedelleri (bu raund)
+    s.hand = s.deck.splice(0, Math.min(MAX_HAND, Math.max(pactCut.hand ? ALTAR.minHand : 0,
+      (s.trainerHandSize || handSizeFor(s.stage)) + (s.permHandBonus || 0) - pactCut.hand - (this.hasTotem('kemikTaht') ? 1 : 0))));
     /* Grup E nöbetçisi — raund yeni dağıtıldı: burada deste bozulmuş
        olamaz, bozulmuşsa hata dağıtımdan ÖNCEki adımlardadır. */
     /* Grup A: yeni raund yeni deste demek — el fotoğrafı ve defter
@@ -5707,8 +6075,12 @@ const Game = {
     s.karaKediMax = null; // Kara Kedi boss eşiği her raund yeniden ölçülür
     s.turn = 1;
     this._rotSeed();   // LANETLİ BOYUT — Çürük Taş (diğer modlarda yalnız eski bayrakları temizler)
+    this._cursedRoundStart();
     // Uzun Soluk yükseltmesi her raunda kalıcı +1 tur ekler
-    s.maxTurns = 4 + (s.permTurns || 0);
+    const kalpCut = 0;   // denge turu 1: Lanet Kalbi'nin tur bedeli kalktı (her stage lanet +1 oldu)
+    s.maxTurns = Math.max(pactCut.turns || kalpCut ? ALTAR.minTurns : 0, 4 + (s.permTurns || 0) - pactCut.turns - kalpCut);
+    s.roundOpenDone = false;   // Ebedi Alev: raundun ilk açılımı
+    if (s.tefeciDebt) { s.maxTurns = Math.max(ALTAR.minTurns, s.maxTurns - s.tefeciDebt); s.tefeciDebt = 0; }   // Zaman Tefecisi borcu
     s.score = 0;
     s.scoreDebt = 0;     // Grup D: Tüccar puan borcu raundu aşmaz
     s.trainerSkipped = false;   // trainer raund atlama bayrağı raundu aşmaz
@@ -6448,6 +6820,7 @@ const Game = {
   _onTurnStart(events) {
     const s = this.state;
     this._rotTurnStart(events);   // LANETLİ BOYUT — Çürüme Saati
+    this._cursedTurnStart(events);
     s.ladyStarId = null;   // P71 — yıldız _bossTurnStart'tan SONRA seçilir (aşağıda)
     /* ÜÇ KAĞITÇI (BOSS) — ters gelen taş BİR tur ters kalır: bu turda çekilenler
        (`faceDownFresh`) bekler, bir önceki turun ters taşları şimdi açılır. */
@@ -6545,6 +6918,16 @@ const Game = {
         events.push(`👹 Kelebek yasağı: bu tur ${{ per: 'Per', sirali: 'Sıralı', cift: 'Çift' }[s.bossBan]} açarsan puan %30 kesilir`);
       }
       this._bossTurnStart(events); // Grup F: yeni 12 boss'un tur başı etkileri
+    }
+    /* kullanıcı 2026-10-29 ("Lady Luck var ama elim 21'e tamamlanmıyor") — tamamlama çekişte yapılıyordu, Cellat gibi
+       tur başı boss etkileri ondan SONRA taş götürünce el 19'da kalıyordu. Boss etkilerinden sonra el yeniden 21'e tamamlanır. */
+    if (this._ladyActive()) {
+      const need = Math.min(LADY_REFILL_TO, MAX_HAND) - this.realHandCount();
+      if (need > 0 && s.deck.length) {
+        const extra = s.deck.splice(0, Math.min(need, s.deck.length));
+        s.hand.push(...extra);
+        events.push(`💋 Lady Luck: el ${LADY_REFILL_TO}'e tamamlandı (+${extra.length})`);
+      }
     }
     /* P71 — Sahnenin Yıldızı: her tur puan veren bir joker ×2. Boss tur başından
        SONRA seçilir ki _ladyActive() bu turun Avukat susturmasını görsün. */
@@ -6966,11 +7349,14 @@ const Game = {
      normal oyunda hiçbir rastgele havuzda ÇIKMAZ: store, store rafı ekleme,
      gizli paket ve Anka Kuşu dönüşümü hepsi buradan okur. Trainer modunda
      oyuncu kurulumdan elle seçebilir — orası bu filtreye tabi değildir. */
-  jokerPool(filterFn) {
+  /* opts.cursedAll — Rare+ lanetli eşyalar store'da/pakette çıkmaz (rapor: yalnız Lanetli yol + Adak Sunağı) */
+  jokerPool(filterFn, opts) {
     /* P61 — Kumarhane jokerleri (casino) yalnız Kumarhane Run'da çıkar */
     const casinoOk = !!(this.state && this.kumarhaneOn());
+    const cursedOk = !!(this.state && this.lanetliOn());   // Lanetli Boyut eşyaları yalnız kendi modunda
     return Object.values(JOKER_DEFS)
-      .filter(d => !d.trainerOnly && d.rarity !== 'final' && (casinoOk || !d.casino) && (!filterFn || filterFn(d)));
+      .filter(d => !d.trainerOnly && d.rarity !== 'final' && (casinoOk || !d.casino) && (cursedOk || !d.cursed)
+        && (!d.cursed || d.rarity === 'common' || (opts && opts.cursedAll)) && (!filterFn || filterFn(d)));
   },
 
   tileValue(tile, combo) {
@@ -7158,6 +7544,8 @@ const Game = {
       }
       let k = this._rankK(j);
       if (j.id === star) k *= LADY_STAR_MULT;
+      if (s.puppet && s.puppet.round === s.roundSerial && s.puppet.id === j.id && this.hasActive('kuklaUstasi')) k *= CURSED2.kuklaK;   // Kukla Ustası
+      if (s.mirror && s.mirror.round === s.roundSerial && s.mirror.id === j.id) k *= CURSED2.aynaK;   // Ruh Aynası
       if (k !== 1) out.push({ id: j.id, k, name: j.name, star: j.id === star, rank: j.beltStars || 0 });
     }
     return out;
@@ -7301,6 +7689,38 @@ const Game = {
           text: `+${MEDUSA_MULT.toFixed(1)}x +${MEDUSA_FLAT} puan (heykel taş)` });
       }
       // LANETLİ BOYUT — Çürük Taş: Taze / Olgun / Çürük çarpanı (ROT.mult, taş başına)
+      if (this.hasActive('fisilti')) {
+        const nr = ctx.tiles.filter((t) => { const st = this.rotStage(t); return st >= 1 && st <= 3; }).length;
+        if (nr) { mult += CURSED2.fisiltiRot * nr; triggered.push({ id: 'fisilti', name: 'Fısıltı', text: `+${(CURSED2.fisiltiRot * nr).toFixed(1)}x (çürük)` }); }
+      }
+      if (this.hasActive('anomali')) {
+        const na = ctx.tiles.filter((t) => t.anomAlt != null).length;
+        if (na) { mult += CURSED2.anomOpen * na; triggered.push({ id: 'anomali', name: 'Anomali', text: `+${(CURSED2.anomOpen * na).toFixed(1)}x` }); }
+      }
+      if (ctx.tiles.some((t) => t.kabus)) { mult += CURSED2.kabusOpen; triggered.push({ id: 'kabus', name: 'Kâbus', text: `+${CURSED2.kabusOpen.toFixed(1)}x` }); }
+      if (s.mezarciMult && this.hasActive('mezarci')) {
+        mult += s.mezarciMult;
+        triggered.push({ id: 'mezarci', name: 'Mezarcı', text: `+${s.mezarciMult.toFixed(1)}x (gömülen Çöp)` });
+      }
+      if (s.rehinRound === s.roundSerial && this.hasActive('rehinci')) {
+        mult += CURSED2.rehinMult;
+        triggered.push({ id: 'rehinci', name: 'Rehinci', text: `+${CURSED2.rehinMult.toFixed(1)}x (rehin)` });
+      }
+      const fos = ctx.tiles.find((t) => t.fossil);
+      if (fos && s.fossil) {
+        const fm = round2(CURSED2.fosilPer * s.fossil.age);
+        mult += fm;
+        triggered.push({ id: 'fosil', name: 'Fosil', text: `+${fm.toFixed(1)}x (yaş ${s.fossil.age})` });
+      }
+      const sent = ctx.tiles.filter((t) => this.isSentinel(t)).length;
+      if (sent) {
+        mult += round2(CURSED2.nobetci * sent);
+        triggered.push({ id: 'nobetci', name: 'Nöbetçi', text: `+${(CURSED2.nobetci * sent).toFixed(1)}x (${sent} nöbetçi taş)` });
+      }
+      if (this.hasTotem('kemikTaht')) {
+        mult += CURSED.kemikTaht;
+        triggered.push({ id: 'kemikTaht', name: 'Kemik Taht', text: `+${CURSED.kemikTaht.toFixed(1)}x` });
+      }
       const rot = this.rotMultOf(ctx.tiles);
       if (rot.n) {
         mult += rot.m;
@@ -7743,6 +8163,24 @@ const Game = {
       const aj = this.slotRecs().find(j => j.key === 'yasakElma');
       triggered.push({ id: aj ? aj.id : 'apple', name: 'Adem ile Havva', text: `🍎 elma: ×${APPLE_MULT} (+${b})` });
     }
+    /* KARA MUM — yakılan alev bu açılımı ×1.5 */
+    if (final > 0 && s.mumArmed && this.hasActive('karaMum')) {
+      const b3 = Math.ceil(final * (CURSED2.mumMult - 1));
+      final += b3;
+      triggered.push({ id: 'karaMum', name: 'Kara Mum', text: `🕯 alev ×${CURSED2.mumMult} (+${b3})` });
+    }
+    /* KIYAMET SAATİ — bu raundun son turunda açılan gruplar ×3 */
+    if (final > 0 && s.doom === s.roundSerial && s.turn >= s.maxTurns) {
+      const b4 = final * (CURSED2.kiyametK - 1);
+      final += b4;
+      triggered.push({ id: 'kiyamet', name: 'Kıyamet Saati', text: `⏳ son tur ×${CURSED2.kiyametK} (+${b4})` });
+    }
+    /* EBEDİ ALEV (totem) — her raundun ilk açılımı ×2 */
+    if (final > 0 && !s.roundOpenDone && this.hasTotem('ebediAlev')) {
+      const b2 = Math.ceil(final * (CURSED.ebediAlev - 1));
+      final += b2;
+      triggered.push({ id: 'ebediAlev', name: 'Ebedi Alev', text: `🔥 raundun ilk açılımı ×${CURSED.ebediAlev} (+${b2})` });
+    }
     let damgaBonus = 0;
     const damgaJ = !s.jokersDisabled && this.slotRecs().find(j => j.key === 'ayna');
     if (damgaJ && !s.damgaUsed && s.damgaArmed && final > 0) {
@@ -7839,7 +8277,16 @@ const Game = {
        BAŞARILI olunca açılır (aşağıda, `_revealTiles`). */
     const freeColors = this._freePerColors();
     // Grup A: okey, ıstakada bırakıldığı hücreye göre değer alır
-    const res = resolveCombo(tiles, (t) => this.isOkeyTile(t), freeColors, this._posOpts());
+    let res = resolveCombo(tiles, (t) => this.isOkeyTile(t), freeColors, this._posOpts());
+    /* ANOMALİ — kayan taş o raund iki sayı gibi sayılır: grup tutmazsa alternatif sayılarla denenir */
+    const anoms = !res ? tiles.filter((t) => t.anomAlt != null).slice(0, 3) : [];
+    for (let m = 1; !res && m < (1 << anoms.length); m++) {
+      const flip = anoms.filter((_, k) => m & (1 << k));
+      const swap = () => flip.forEach((t) => { if (t.tmpOrig == null) t.tmpOrig = t.number; const x = t.number; t.number = t.anomAlt; t.anomAlt = x; });
+      swap();
+      res = resolveCombo(tiles, (t) => this.isOkeyTile(t), freeColors, this._posOpts());
+      if (!res) swap();   // tutmadı: geri al (tuttuysa taş o sayıda kalır, diğeri alternatif olur)
+    }
     if (!res) return { ok: false, error: 'Geçersiz grup — Per, Sıralı veya Çift kurallarına uymuyor.' };
     const type = res.type;
 
@@ -8211,8 +8658,15 @@ const Game = {
   },
   /* eş puanı = taş puanı + k × (kemer jokerinin bu açılıma katkısı) — spec örneği:
      Medusa +3x kemer jokeri: 24 + 1.5 × 72 = 132 */
+  /* PARTNER_MODE: 'belt' — ham + yalnız kemerdeki jokerin katkısı (P90 kararı); 'full' — eşin açılımı oyuncunun açılımı
+     gibi TÜM jokerlerin çarpanıyla puanlanır (kullanıcı 2026-10-29: "Zincir'den hiç yararlanamadı, çarpansız açılım"). */
   _partnerScore(opened, raw) {
     const s = this.state;
+    if (PARTNER_MODE === 'full') {
+      const keep = [s.staged, s.islemeler, s.turnMode];
+      s.staged = opened; s.islemeler = []; s.turnMode = 'per';
+      try { const full = this._calcOpening().final; return Math.max(raw, Math.round(raw + PARTNER_SHARE * (full - raw))); } finally { [s.staged, s.islemeler, s.turnMode] = keep; }
+    }
     const ap = s.jokers.find(j => j.id === s.beltId);
     if (!ap) return raw;
     const { none, withJ } = this._partnerCalc(opened, ap.id);
@@ -8431,9 +8885,10 @@ const Game = {
       const choices = res.altStarts.map(st => {
         const win = []; for (let i = 0; i < L; i++) win.push(st + i);
         const miss = win.filter(n => !fixed.includes(n));
-        return { start: st, label: miss.map(n => `${COLOR_TR[color]} ${n}`).join(' + ') };
+        return { start: st, miss, label: miss.map(n => `${COLOR_TR[color]} ${n}`).join(' + ') };
       });
-      return { ok: false, needChoice: true, comboIndex, ids: [...ids], choices,
+      /* kullanıcı 2026-10-29 — pencere sıranın taşlarını ve okeyin oturabileceği boş yerleri gösterir */
+      return { ok: false, needChoice: true, comboIndex, ids: [...ids], choices, color, fixed: [...new Set(fixed)].sort((a, b) => a - b), len: L,
         error: 'Okey hangi taşın yerine geçsin?' };
     }
 
@@ -8934,6 +9389,8 @@ const Game = {
     if (s.godPick) return { ok: false, error: 'Önce Tanrının Eli ile destenden taşlarını seç.' };
     if (s.ucKagit) return { ok: false, error: 'Önce Üç Kağıtçı\'dan bir taş seç.' };
     if (s.phase !== 'meld' || (!s.staged.length && !s.islemeler.length)) return { ok: false };
+    if (s.doom === s.roundSerial && s.turn <= CURSED2.kiyametLock)
+      return { ok: false, error: `⏳ Kıyamet Saati: ilk ${CURSED2.kiyametLock} tur açılım yok.` };
 
     // Grup H: gizli uzaylı taşıyan kombinasyonlar puanlanmadan önce çöker
     const alienEv = [];
@@ -9012,6 +9469,8 @@ const Game = {
     for (const c of s.staged) if (s.statTypes[c.type] != null) s.statTypes[c.type]++;
     this._sideTrackMeld();   // P61 — yan bahis koşulları
     s.openedThisTurn = true;
+    s.roundOpenDone = true;
+    this._cursedAfterOpen();
 
     /* DAMGA — hak yalnız GERÇEKTEN 2 kat verdiğinde harcanır; basış
        ise her açılımdan sonra düşer, böylece puanlamayan bir açılım
@@ -9345,6 +9804,7 @@ const Game = {
       return { ok: false, error: 'Hayalet taş atılamaz — yalnız açılımda kullanılır.' };
     if (picks.some(t => t.sewn))
       return { ok: false, error: 'Bu taş dikili — discard edilemez (Terzi\'nin İğnesi).' };
+    if (picks.some(t => t.fossil)) return { ok: false, error: '🦴 Fosil atılamaz — açınca tükenir.' };
     // Terzi'nin İğnesi BOSS Koşulu (Grup F): dikili taş bu tur atılamaz da
     if (picks.some(t => t.bossSewn))
       return { ok: false, error: '👹 İğne bu taşı dikti — bu tur atılamaz (tur bitince serbest kalır).' };
@@ -9505,6 +9965,9 @@ const Game = {
         events.push(`Açılım yapmadan geçtin: işlek riski +%${Math.round(skipPen * 100)}`);
       }
       rate = Math.max(0, rate - (s.permIslekReduce || 0)); // Nazar Boncuğu + Muska
+      /* NÖBETÇİ (totem) bedeli — nöbetçi taşın kopyası atıldıysa işlek kesin, ceza o taştan */
+      const sentPick = islekCands.find((t) => this.isSentinel(t));
+      if (sentPick) { rate = 1; events.push('🗿 Nöbetçi taşın kopyasını attın: işleğe düştü'); }
       if (this.rngIslek() < rate) {
         const extra = islekCands.length > 1
           ? ` (yalnız en yüksek taş sayılır — ${islekCands.length} taş atıldı)` : '';
@@ -9874,6 +10337,7 @@ const Game = {
        (normal çekişten azsa normal çekiş geçerli; ıstaka sınırı aşağıda) */
     if (this._ladyActive()) wantN = Math.max(wantN, LADY_REFILL_TO - this.realHandCount());
     if (s.orionDebt) { wantN = Math.max(0, wantN - s.orionDebt); s.orionDebt = 0; }   // P90 — Orion'un attığını aldın
+    if (s.noDrawNext) { wantN = 0; s.noDrawNext = false; events.push('🧵 Kader İpi: bu tur çekiş yok'); }
     const drawN = Math.max(0, Math.min(wantN, MAX_HAND - this.realHandCount()));
     /* TANRININ ELİ (P31 · Grup E) — otomatik çekiş YOK: hak `s.godPick`
        olarak bekler, oyuncu destesinden seçer (godPickTake). Tur yine
@@ -10041,6 +10505,8 @@ const Game = {
       /* Trainer'da süre ∞ seçilebilir (test kolaylığı) — sonsuz süreli
          joker yaşlanmaz. Normal oyunda böyle bir joker hiç oluşmaz. */
       if (!j.fresh && !j.protected && !s.ageSkip && Number.isFinite(j.usesLeft)) j.usesLeft--;
+      if (j.extraAge && Number.isFinite(j.usesLeft) && !this.isRunLong(j)) j.usesLeft -= j.extraAge;   // Kukla Ustası / Ruh Aynası
+      delete j.extraAge;
       delete j.protected;
     }
     if (s.ageSkip) notes.push('⏳ Zaman Taşı: hiçbir jokerin süresi azalmadı');
@@ -10275,6 +10741,15 @@ const Game = {
     s.winStreak++;
     if (s.wonOnTurn == null) s.wonOnTurn = s.turn;
     const boss = this.isBossRound();
+    if (this.lanetliOn() && this.hasActive('fosil')) {   // Fosil: elde kalan en büyük taş fosilleşir
+      const cands = s.hand.filter((t) => this._rotOk(t) && !t.fossil && !t.kabus);
+      if (!s.fossil && cands.length) {
+        const top = cands.reduce((a, c) => (c.number > a.number ? c : a));
+        s.fossil = { color: top.color, number: top.number, age: 0 };
+      }
+    }
+    if (this.hasTotem('curukKok'))   // bu raundun Çöp'leri kalıcı olur
+      s.permJunk = Math.min(CURSED.kokJunkCap, (s.permJunk || 0) + s.hand.filter((t) => this.rotStage(t) === 4 && !t.junk).length);
     if (this.isSilent(s.stage, s.roundInStage)) {
       if (s.wonOnTurn === 1) { this._curseAdd(-1); s.silentResult = 'cleansed'; }
       else {
@@ -10395,6 +10870,16 @@ const Game = {
 
     s.coinReport = { base, bonus, penalty, net, jokerCoins, permCoin, bondCoin: 0, noMeldTurns: s.noMeldTurns, boss, extraNotes };   // P52: Tahvil kaldırıldı
     gainCoins(s, net + jokerCoins + permCoin);
+    if (s.tefeciCoinDebt) { const pay = Math.min(s.coins, s.tefeciCoinDebt); s.coins -= pay; extraNotes.push(`⏳ Zaman Tefecisi: −${pay} coin faiz`); s.tefeciCoinDebt = 0; }
+    /* KAN SÖZLEŞMESİ (zor imza) — kazandın: 2× coin + lanetli eşya */
+    if (s.bloodPact && s.bloodPact.round === s.roundSerial && s.bloodPact.hard) {
+      gainCoins(s, net);
+      if (!Array.isArray(s.betPicks)) s.betPicks = [];
+      const pk = this._rollCursedPick(this.rng() < CURSE.legendaryChance ? 'legendary' : 'rare', new Set());
+      if (pk) { pk.source = 'cursedPath'; s.betPicks.push(pk); }
+      extraNotes.push(`🩸 Kan Sözleşmesi tuttu: +${net} coin ve lanetli eşya`);
+      s.bloodPact = null;
+    }
     /* MADDE E1 — faiz raund gelirinden SONRA, store üretilmeden ÖNCE
        ödenir: "store açılışında cebinde ne varsa" onun üzerinden. */
     s.coinReport.interest = interestFor(s.coins);
@@ -11043,6 +11528,15 @@ const Game = {
      motora hiç uğramaz. Önceden verilen ödül geri alınıp yenisi verilir
      (`_ungrantGot`); her makara bir kez durdurulur.
      ============================================================ */
+  /* kullanıcı 2026-10-29 — slot paketine PAS: çıkanı almazsın (paket parası iade edilmez) */
+  passPack(index = 0) {
+    const s = this.state;
+    const pack = s.store?.packs?.[index];
+    if (!pack || !pack.sold || !pack.contents || pack.passed) return { ok: false };
+    for (const got of pack.contents) this._ungrantGot(got);
+    pack.passed = true;
+    return { ok: true };
+  },
   _ungrantGot(got) {
     const s = this.state;
     if (!got) return;
@@ -11236,6 +11730,10 @@ const Game = {
   _grantPackOption(opt, cap) {
     const s = this.state;
     if (!opt) return null;
+    if (opt.type === 'totem') {   // LANETLİ BOYUT — totem slot kaplamaz, her zaman alınır
+      const got = this.grantTotem(opt.key);
+      return got ? { ...opt } : null;
+    }
     /* GRUP N (P20) — YER YOKSA ÖDÜL KAYBOLMAZ, COİN'E ÇEVRİLİR.
        Eskiden burada `null` dönülüyordu; `buyPack` da bunu "paket boş"
        sayıp satışı iptal ediyordu. Bu, envanteri dolu oyuncunun paketi
@@ -11573,6 +12071,88 @@ const Game = {
       if (s.deck) s.deck.splice(Math.floor(this.rng() * (s.deck.length + 1)), 0, tile);
     };
     switch (key) {
+      case 'kanSozlesmesi': {
+        if (s.status !== 'playing' || this.isFinalStage()) return { ok: false, error: 'Kan Sözleşmesi raund içinde imzalanır.' };
+        if (!target || (target.choice !== 'easy' && target.choice !== 'hard')) return { ok: false, needsTarget: 'pact' };
+        if (target.choice === 'easy') {
+          s.target = niceTarget(s.target * (1 - CURSED2.kanEasy));
+          this._curseAdd(1); this._bedelPaid();
+        } else {
+          s.target = niceUp(s.target, s.target * (1 + CURSED2.kanHard));
+          s.bloodPact = { round: s.roundSerial, hard: true };
+        }
+        consume();
+        return { ok: true, note: target.choice === 'easy' ? `🩸 Kan Sözleşmesi: hedef ${s.target}, lanet +1` : `🩸 Kan Sözleşmesi: hedef ${s.target} — kazanırsan 2× coin + lanetli eşya` };
+      }
+      case 'kaderIpi': {
+        if (s.status !== 'playing' || s.phase !== 'meld' || s.godPick) return { ok: false, error: 'Kader İpi açılım aşamasında çekilir.' };
+        s.godPick = { n: 1, fate: true };
+        s.noDrawNext = true;
+        this._curseAdd(1); this._bedelPaid(); consume();
+        return { ok: true, note: '🧵 Kader İpi: desteden istediğin taşı seç (sonraki tur çekiş yok, lanet +1)' };
+      }
+      case 'ruhAynasi': {
+        const j = s.jokers.find((x) => x.id === target?.jokerId);
+        if (!j) return { ok: false, needsTarget: 'joker', error: 'Kopyalanacak jokeri seç.' };
+        s.mirror = { id: j.id, round: s.roundSerial };
+        j.extraAge = (j.extraAge || 0) + 1;
+        consume();
+        return { ok: true, note: `🪞 Ruh Aynası: ${j.name} bu raund ×${CURSED2.aynaK}` };
+      }
+      case 'kiyametSaati': {
+        if (s.status !== 'playing' || s.turn > 1) return { ok: false, error: 'Kıyamet Saati raundun ilk turunda kurulur.' };
+        s.doom = s.roundSerial;
+        consume();
+        return { ok: true, note: `⏳ Kıyamet Saati: ilk ${CURSED2.kiyametLock} tur açılım yok, son tur ×${CURSED2.kiyametK}` };
+      }
+      case 'boyutYirtigi': {
+        if (s.status !== 'playing' || s.phase !== 'meld') return { ok: false, error: 'Boyut Yırtığı açılım aşamasında açılır.' };
+        const back = s.hand.filter((t) => !t.fossil && !t.kabus && !t.hidra);
+        const n = back.length;
+        s.hand = s.hand.filter((t) => !back.includes(t));
+        for (const t of back) { delete t.slot; s.deck.splice(Math.floor(this.rng() * (s.deck.length + 1)), 0, t); }
+        const drawn = s.deck.splice(0, n);
+        s.hand.push(...drawn);
+        const pool = drawn.filter((t) => this._rotOk(t) && !t.rot);
+        for (let k = 0; k < CURSED2.yirtikRot && pool.length; k++) {
+          const t = pool.splice(Math.floor(this.rng() * pool.length), 1)[0];
+          t.rot = true; t.rotBorn = s.turn - 1;   // Olgun
+        }
+        s.target = niceTarget(s.target * (1 - CURSED2.yirtikCut));
+        s.permHandBonus = (s.permHandBonus || 0) - 1;
+        s.handSnapshot = s.hand.map((t) => ({ id: t.id, face: `${COLOR_TR[t.color] || t.color} ${t.number}` }));   // el denetimi yeni elle başlar
+        consume();
+        return { ok: true, note: `🌀 Boyut Yırtığı: yeni el, hedef ${s.target}, run boyu el 1 taş eksik` };
+      }
+      case 'sessizCan': {
+        if (!this.lanetliOn() || s.status !== 'playing' || this.isBossRound() || this.isFinalStage())
+          return { ok: false, error: 'Sessiz Çan yalnız boss olmayan bir raundda çalınır.' };
+        if (this.isSilent(s.stage, s.roundInStage)) return { ok: false, error: 'Bu raund zaten Sessiz.' };
+        if (!s.silent || s.silent.stage !== s.stage) s.silent = { stage: s.stage, rics: [] };
+        s.silent.rics.push(s.roundInStage);
+        s.target = this.targetFor(s.stage, s.roundInStage);
+        consume();
+        return { ok: true, note: `🔕 Sessiz Çan: bu raund Sessiz — hedef ${s.target}` };
+      }
+      case 'kemikler': {
+        if (s.status !== 'playing') return { ok: false, error: 'Kemikler yalnız raund içinde atılır.' };
+        for (const t of s.hand) {
+          if (t.jokerTile || t.fakeOkey || t.special || this.isOkeyTile(t)) continue;
+          const d = Math.floor(this.rng() * (2 * CURSED.kemiklerShift + 1)) - CURSED.kemiklerShift;
+          if (t.tmpOrig == null) t.tmpOrig = t.number;   // raund sonunda geri döner (deste bozulmasın)
+          t.number = Math.max(1, Math.min(13, t.number + d));
+        }
+        this._curseAdd(1); this._bedelPaid(); consume();
+        return { ok: true, note: '🦴 Kemikler atıldı: taşların ±2 kaydı, lanet +1' };
+      }
+      case 'curukAsi': {
+        if (s.status !== 'playing') return { ok: false, error: 'Çürük Aşı yalnız raund içinde vurulur.' };
+        for (const t of s.hand) if (t.rot && !t.junk && t.rotBorn != null) t.rotBorn = Math.min(s.turn, t.rotBorn + 1);
+        const pool = s.deck.filter((t) => this._rotOk(t) && !t.rot);
+        for (let k = 0; k < CURSED.asiAdd && pool.length; k++) pool.splice(Math.floor(this.rng() * pool.length), 1)[0].rot = true;
+        consume();
+        return { ok: true, note: '💉 Çürük Aşı: çürüklerin saati 1 tur geri, desteye 2 Çürük Taş' };
+      }
       case 'kumbara':
         gainCoins(s, KUMBARA_COIN); consume();
         return { ok: true, note: `🐖 Kumbara kırıldı: +${KUMBARA_COIN} coin` };
@@ -12980,6 +13560,7 @@ const Game = {
     const s = this.state;
     const j = [...s.jokers, ...s.backup, ...s.deckJokers].find(x => x.id === jokerId);
     if (!j) return { ok: false };
+    if (j.key === 'fisilti') return { ok: false, error: 'Fısıltı satılamaz.' };
     /* denetim JB-03 — Füzyon içindeki Kaptan kurtarınca kilit alt kayıtta duruyordu; kart satılabiliyordu */
     if (this._noSellCard(j))
       return { ok: false, error: `${j.name} satılamaz — Game Over'dan kurtardıktan sonra kilitlendi.` };
@@ -13154,7 +13735,7 @@ const Game = {
      (3-5-8-12) ayrıca kalibre edilmiştir.
      ========================================================================== */
   modePrice(n) {
-    const m = runModeOf(this.state).priceMult;
+    const m = runModeOf(this.state).priceMult * (this.hasTotem('kanKadehi') ? CURSED.kadehPrice : 1);   // Kan Kadehi: fiyatlar %25 artar
     return m === 1 ? n : Math.max(1, Math.ceil(n * m));
   },
 
@@ -13849,7 +14430,7 @@ if (typeof module !== 'undefined') {
     LADY_REFILL_TO, LADY_STAR_MULT, LADY_USES, STAR_SCORE_KEYS, overshootBonus, stageCoinScale,
     COIN_BASE_NORMAL, COIN_BASE_BOSS, NOMELD_PEN_NORMAL, NOMELD_PEN_BOSS,
     CIFT_EXTRA_STEP, BETS, BET_KEYS, KATLA, RUN_MODES,
-    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, ROT, SILENT, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
+    SIDE_BETS, SIDE_KEYS, SIDE_STAKE, BJ, bjValue, CURSE, ROT, SILENT, ALTAR, CURSED, CURSED2, TOTEM_DEFS, FIS_USTASI_MULT, RULET_HIT, RULET_MISS, RULET_PER, KRUPIYE_MULT, KRUPIYE_SAFE_PERM, MARTINGALE_CAP, MARTINGALE_PERM, HILELI_ZAR_BASE, HILELI_ZAR_GROW, SANSLI_ZAR_MIN, UC_PEEK_COST, AY_WELL_SIZE, AY, moonFillIcon, isMoonTile,
     CONSUMABLES, MAX_CONSUMABLES, SPECIAL_TILES, SPECIAL_MAX_COPIES, TOTAL_STAGES, handSizeFor, MAX_HAND,
     RACK_COLS,
     CARPAN_TABLE, STAGE_TARGETS, UPGRADE_DEFS, PACK_DEFS, PACK_MAX_SLOTS, TUCCAR_MAX_REFUSE,

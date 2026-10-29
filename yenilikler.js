@@ -15,6 +15,21 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-10-29', date: { tr: '29 Ekim', en: 'October 29' },
+      items: [
+        ['yeni', 'Adak Sunağı ve lanetli eşyalar', 'Lanetli Boyut’ta boss’u yenince Adak Sunağı açılır: bir bedel öde, bir lanetli eşya al. 11 lanetli joker, 8 lanetli değnek ve slot kaplamayan 6 totem geldi.',
+          'Offering Altar and cursed items', 'In the Cursed Dimension the Offering Altar opens after you beat the boss: pay a price, take a cursed item. 11 cursed jokers, 8 cursed wands and 6 slot-free totems arrived.', 'proto'],
+        ['degisti', 'Slot makinesi', 'Kartlar çizimleriyle döner, makara daha geniş; çıkan kartın açıklaması üstüne gelince görünür. Çıkanı istemezsen Pas diyebilirsin.',
+          'Slot machine', 'Cards spin with their artwork on a wider reel; hover the result to read it. Don’t want it? Pass.'],
+        ['degisti', 'Eşin Orion', 'Orion’un açılımları artık jokerlerinden ve çarpanlarından yarı güçle yararlanır.',
+          'Partner Orion', 'Orion’s melds now benefit from your jokers and multipliers at half strength.'],
+        ['degisti', 'Okey yerleşimi', 'Okeyin oturabileceği yerler artık taşların yanında boşluk olarak görünür; tıkla, oraya otursun.',
+          'Joker placement', 'Where the joker can go now shows as empty spots next to the tiles; click one to place it.'],
+        ['duzeldi', 'Lady Luck', 'Boss taşlarını aldıktan sonra da elin 21’e tamamlanıyor.',
+          'Lady Luck', 'Your hand is topped back up to 21 even after a boss takes tiles.'],
+      ],
+    },
+    {
       id: '2026-10-28d', date: { tr: '28 Ekim', en: 'October 28' },
       items: [
         ['yeni', 'Çürük Taş', 'Lanetli Boyut’ta her raund 4 çürük taş gelir. Elinde bekledikçe olgunlaşır ve açılımda daha çok çarpan verir; ama çürüdüğünde sağındaki taşa bulaşır, sonra Çöp olur.',
