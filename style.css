@@ -12519,3 +12519,8 @@ body.cocuk-fog #rack .tile:not(.deck-joker)::after { content: '?'; position: abs
 /* Oyuncak Kutusu paneli (Ay Kuyusu kalıbı) */
 .gm-stage .gm-well.toy-well .aw-slots { --tw: 36px; gap: 6px; }
 .gm-stage .gm-well.toy-well .aw-count { color: #FFD666; }
+/* 2026-10-29 · Ekstra: Koleksiyon görünümü + Mod kilidi (test) yan yana — sekme yüksekliği değişmez */
+#settingsOv .set-pane[data-pane="extra"] > .set-card { width: 100%; }   /* Ekstra: bütün kartlar ikili satırla aynı genişlikte */
+#settingsOv .set-cyc-pair > .set-card { margin: 0; min-width: 0; }
+#settingsOv .set-cyc-pair .set-label { font-size: 15px; }
+#settingsOv .set-cyc-pair .cyc-val { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

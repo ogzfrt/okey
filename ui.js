@@ -7884,7 +7884,7 @@
     const slide = (p, i) => {
       const open = isOpen(p);
       const name = p.soon ? t('rpSoonName') : t('rpName_' + p.key);
-      const desc = p.soon ? t('rpSoonDesc') : (open ? t('rpDesc_' + p.key) : t('modeLockedTip'));
+      const desc = p.soon ? t('rpSoonDesc') : (open ? t('rpDesc_' + p.key) : (t('modeLockedTip_' + p.key) || t('modeLockedTip')));
       return `<div class="rp-slide${i === runPickIdx ? ' on' : ''}${open ? ' mp-card' : ' rp-locked'}"`
         + (open ? ` data-mode="${p.key}"` : '') + ` data-i="${i}">`
         + (p.img ? `<div class="rp-art rp-art-img mode-${p.key}">`
@@ -8323,11 +8323,16 @@
        eleman eklenmez. Oynanış sayıları burada değil motorda (RUN_MODES).
        Gelecekte kilitli bir mod eklenecekse örnek:
          { key: 'endless', btn: 'btnEndless', requires: 'base' } */
-    { key: 'hizli', requires: BETA ? 'base' : null },   // beta: Orion yenilince açılır
+    { key: 'hizli', requires: null, gate: 'base' },   // beta: Orion yenilince açılır
     /* LANETLİ BOYUT — kullanıcı: "Kumarhane Run'dan sonra kilidi açılacak"; prototipte her şey açık
        (oyun-modlari-yol-haritasi), beta'da mod zaten gizli */
-    { key: 'lanetli', requires: BETA ? 'hizli' : null },
+    { key: 'lanetli', requires: null, gate: 'hizli' },
   ];
+  /* `gate` — kilit zinciri: betada her zaman, prototipte yalnız Ayarlar › Ekstra › MOD KİLİDİ (TEST)
+     açıkken uygulanır (kullanıcı 2026-10-29: "normal oyna menüsünde modları kilitleme, yalnız Kozmik açık;
+     bir de kilidi açma seçeneği — test edeceğim"). Prototipte varsayılan kapalı: her şey açık kalır. */
+  const MODE_LOCK_KEY = 'okeyModeLockTest';
+  const modeLockOn = () => !!BETA || (() => { try { return localStorage.getItem(MODE_LOCK_KEY) === '1'; } catch (e) { return false; } })();
 
   const Modes = {
     _read() {
@@ -8343,8 +8348,26 @@
     unlocked(key) {
       const m = MODES.find(x => x.key === key);
       if (!m) return true;
-      if (m.never || !m.requires) return true;
-      return this.done(m.requires);
+      const req = m.requires || (modeLockOn() ? m.gate : null);
+      if (m.never || !req) return true;
+      return this.done(req);
+    },
+    /* Ekstra › MOD KİLİDİ (TEST) adımları: off = kilit yok · kozmik = yalnız Kozmik açık ·
+       kumarhane = Kozmik bitmiş say (Kumarhane açılır) · hepsi = Kumarhane de bitmiş say (Lanetli açılır) */
+    testStep() {
+      if (!modeLockOn()) return 'off';
+      return this.done('hizli') ? 'hepsi' : this.done('base') ? 'kumarhane' : 'kozmik';
+    },
+    setTestStep(v) {
+      try { localStorage.setItem(MODE_LOCK_KEY, v === 'off' ? '0' : '1'); } catch (e) { /* yok */ }
+      if (v !== 'off') {
+        const st = this._read();
+        if (v === 'kozmik') { delete st.base; delete st.hizli; }
+        if (v === 'kumarhane') { st.base = true; delete st.hizli; }
+        if (v === 'hepsi') { st.base = true; st.hizli = true; }
+        this._write(st);
+      }
+      this.applyLocks();
     },
     /* Bir mod tamamlandı — kilitleri aç. Yeni açılan modların listesini
        döndürür ki UI bunları duyurabilsin. */
@@ -8781,7 +8804,10 @@
       extra:
         go('setHintsReset', t('hintsLabel'), t('hintsResetDesc')) +
         /* P101 — kilitli/keşfedilmemiş görünümü test (gerçek kayıt silinmez) */
+        `<div class="set-two set-cyc-pair">` +
         cyc('colrev', t('colRevealLabel'), DISC_MODES.map((k) => ({ v: k, text: t('colRev_' + k), cls: 'set-colrev', attr: 'data-colrev' })), Disc.mode()) +
+        (BETA ? '' : cyc('modelock', t('modeLockLabel'), ['off', 'kozmik', 'kumarhane', 'hepsi'].map((k) => ({ v: k, text: t('modeLock_' + k), cls: 'set-modelock', attr: 'data-modelock' })), Modes.testStep())) +
+        `</div>` +
         go('setDiscReset', t('discResetLabel'), t('discResetDesc', Disc.stats())) +
         /* P90d (kullanıcı 2026-10-12) — yenmekle uğraşmadan test: her final için
            "yenildi" tik kutusu (kilit + maskot eşyası + run başı final jokeri) */
@@ -8934,6 +8960,11 @@
       ov.querySelectorAll('.set-cspat').forEach((x) => x.classList.toggle('on', x === b));
       applyRunTheme();
       toast(t('csPatToast', t('csPat_' + casinoPattern)), true);
+    }));
+    ov.querySelectorAll('.set-modelock').forEach((b) => b.addEventListener('click', () => {
+      Modes.setTestStep(b.dataset.modelock);
+      ov.querySelectorAll('.set-modelock').forEach((x) => x.classList.toggle('on', x === b));
+      toast(t('modeLockToast', t('modeLock_' + Modes.testStep())), true);
     }));
     ov.querySelectorAll('.set-colrev').forEach((b) => b.addEventListener('click', () => {
       Disc.setMode(b.dataset.colrev);
@@ -10308,7 +10339,7 @@
        Trainer run'ı kayıt yazmaz, bu yüzden kilidi de açmaz. */
     let openedModes = [];
     /* denetim SY-07 — seed'li run kilit açmaz ("istatistiklere, keşiflere ve kilitlere sayılmaz") */
-    if (!Game.trainerMode && !Game.state.seeded) openedModes = Modes.complete('base');
+    if (!Game.trainerMode && !Game.state.seeded) openedModes = Modes.complete(Game.state.runMode || 'base');   // kazanılan mod (Kumarhane → Lanetli kilidi)
     /* P71 — modun final boss'u yenildiyse ödül kalıcı açılır (Trainer hariç) */
     const finKey = Game.finalBeaten();
     const finNew = finKey && !Game.state.seeded ? Finals.unlock(finKey) : false;   // P114: seed'li run kilit açmaz

@@ -180,6 +180,9 @@
       modeName_trainer: 'Trainer Modu',
       modeName_hizli: 'Kumarhane Run (4 Stage + Final)',      // P58 · Grup C (anahtar 'hizli' kaldı)
       modeLockedTip: 'Kozmik Run’ı kazanınca (Orion’u yenince) açılır.',
+      modeLockedTip_lanetli: 'Kumarhane Run’ı kazanınca (Lady Luck’ı yenince) açılır.',
+      modeLockLabel: 'MOD KİLİDİ (TEST)', modeLock_off: 'Kapalı', modeLock_kozmik: 'Yalnız Kozmik',
+      modeLock_kumarhane: '+ Kumarhane', modeLock_hepsi: 'Hepsi açıldı', modeLockToast: (v) => `Mod kilidi: ${v}`,
       /* MADDE D4 — mod seçim katmanı */
       modePickTitle: 'RUN MODU SEÇ',
       modePickBody: 'Bulutsular mı, kumarhane mi?',
@@ -1327,6 +1330,9 @@
       modeName_trainer: 'Trainer Mode',
       modeName_hizli: 'Casino Run (4 Stages + Final)',
       modeLockedTip: 'Unlocks when you win a Cosmic Run (defeat Orion).',
+      modeLockedTip_lanetli: 'Unlocks when you win a Casino Run (defeat Lady Luck).',
+      modeLockLabel: 'MODE LOCK (TEST)', modeLock_off: 'Off', modeLock_kozmik: 'Cosmic only',
+      modeLock_kumarhane: '+ Casino', modeLock_hepsi: 'All unlocked', modeLockToast: (v) => `Mode lock: ${v}`,
       modePickTitle: 'CHOOSE RUN MODE',
       modePickBody: 'The nebulae or the casino?',
       modeDesc_base: '8 stages · 24 rounds. Targets start at 250, standard economy.',
