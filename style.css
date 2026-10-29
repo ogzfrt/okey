@@ -7125,7 +7125,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-vasiyet      { --jk-art: url('assets/game/joker/vasiyet.svg'); }        /* 464:243 */
 .jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P85 · Figma 455:6178 (yeniden çizim; eski 444:2) */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
-/* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — 17 Common kart */
+/* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — 20 Common kart */
 .jk-sayiTapinagi { --jk-art: url('assets/game/joker/yin-yang.svg'); }   /* 520:7 Ying_yang */
 .jk-anarsist     { --jk-art: url('assets/game/joker/indirim-kuponu.svg'); }   /* 520:2 İndirim_kuponu */
 .jk-bereket      { --jk-art: url('assets/game/joker/buyutec.svg'); }   /* 533:36 Büyüteç */
@@ -7143,6 +7143,9 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-sunger       { --jk-art: url('assets/game/joker/sunger.svg'); }   /* 543:129 Sünger */
 .jk-fisUstasi    { --jk-art: url('assets/game/joker/fis-kulesi.svg'); }   /* 543:115 Fiş_kulesi */
 .jk-fisilti      { --jk-art: url('assets/game/joker/fisilti.svg'); }   /* 543:134 Fısıltı */
+.jk-buyukTas     { --jk-art: url('assets/game/joker/balkabagi.svg'); }   /* 544:155 Balkabağı → Dev Kabak */
+.jk-mezarci      { --jk-art: url('assets/game/joker/mezarci.svg'); }   /* 544:167 Mezarcı */
+.jk-tekRenkRuhu  { --jk-art: url('assets/game/joker/boya-fircasi.svg'); }   /* 545:184 Boya_fırçası */
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
    çizim tamamen başka (sarı/turkuaz nota kartı → mavi çark kartı).

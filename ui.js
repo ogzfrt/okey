@@ -10615,9 +10615,9 @@
     /* denetim3 #50 · Figma RARE-JOKERLER 468:256 — kalan Rare çizimleri (Rare 24/24) */
     'hipnotizor', 'tradeJokeri', 'terzi', 'terazi', 'katalizor', 'dedikodu', 'rulet', 'martingale',
     'hileliZar', 'sansliZar', 'yanki', 'zincir', 'kumarbaz', 'bitki', 'yankee', 'ayna',
-    /* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — Common çizimleri (17 kart) */
+    /* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — Common çizimleri (20 kart) */
     'sayiTapinagi', 'anarsist', 'bereket', 'copcu', 'ikizler', 'islemeci', 'kucukTas', 'takim', 'kalabalikPer', 'ciftFirtina', 'renkUstasi', 'uzunKosu', 'kosucu',
-    'ciftVurus', 'sunger', 'fisUstasi', 'fisilti']);   // Common 17: Boks Eldiveni + Kumarhane Fiş Kulesi + Lanetli Sünger / Fısıltı   // P105 · Figma 488:85 Krupiye (kumarhane Legendary)   // P105 · Figma 485:2 Bungee_gum / 485:35 Renk_körü / 485:21 Two_face
+    'ciftVurus', 'sunger', 'fisUstasi', 'fisilti', 'buyukTas', 'mezarci', 'tekRenkRuhu']);   // Common 20: + Boks Eldiveni, Kumarhane Fiş Kulesi, Lanetli Sünger / Fısıltı / Mezarcı, Dev Kabak (Figma 'Balkabağı'), Boya Fırçası   // P105 · Figma 488:85 Krupiye (kumarhane Legendary)   // P105 · Figma 485:2 Bungee_gum / 485:35 Renk_körü / 485:21 Two_face
 
   const SPECIAL_ART = new Set(['altin', 'gumus', 'bakir', 'zumrut',
     'karaDelikTasi', 'aynaTasi', 'yildizTasi', 'zamanTasi', 'ates',
