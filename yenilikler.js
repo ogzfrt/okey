@@ -25,6 +25,10 @@
           'The Seal wakes up', 'When you open the game the Seal greets you: it drops in as a sleeping tile, opens its eye, sprouts arms and legs and walks to its spot on the menu. Click to skip.'],
         ['degisti', 'Geri düğmesi', 'Run seçimi, Koleksiyon ve Ayarlar pencerelerinde Geri düğmesi artık aynı yerde ve aynı görünüşte.',
           'Back button', 'Run select, Collection and Settings now share the same Back button, in the same place.'],
+        ['degisti', 'Common joker çizimleri tamam', 'Timsah, Kart Sayıcı, Dolu Bardak, Boş Bardak ve Domino da çizimine kavuştu; artık bütün Common jokerlerin kendi çizimi var.',
+          'All Common jokers drawn', 'Crocodile, Card Counter, Full Glass, Empty Glass and Domino got their artwork; every Common joker now has its own drawing.'],
+        ['degisti', 'Run seçimi', 'Sekmeler, Oyna ve Geri artık kendi renkleriyle ayrılıyor; Oyna en belirgin düğme.',
+          'Run select', 'Tabs, Play and Back now each have their own colour; Play stands out the most.'],
       ],
     },
     {

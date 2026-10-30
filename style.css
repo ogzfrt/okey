@@ -7125,7 +7125,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-vasiyet      { --jk-art: url('assets/game/joker/vasiyet.svg'); }        /* 464:243 */
 .jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P85 · Figma 455:6178 (yeniden çizim; eski 444:2) */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
-/* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — 20 Common kart */
+/* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — 25 Common kart (2026-10-30: hepsi çizili) */
 .jk-sayiTapinagi { --jk-art: url('assets/game/joker/yin-yang.svg'); }   /* 520:7 Ying_yang */
 .jk-anarsist     { --jk-art: url('assets/game/joker/indirim-kuponu.svg'); }   /* 520:2 İndirim_kuponu */
 .jk-bereket      { --jk-art: url('assets/game/joker/buyutec.svg'); }   /* 533:36 Büyüteç */
@@ -7146,6 +7146,11 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-buyukTas     { --jk-art: url('assets/game/joker/balkabagi.svg'); }   /* 544:155 Balkabağı → Dev Kabak */
 .jk-mezarci      { --jk-art: url('assets/game/joker/mezarci.svg'); }   /* 544:167 Mezarcı */
 .jk-tekRenkRuhu  { --jk-art: url('assets/game/joker/boya-fircasi.svg'); }   /* 545:184 Boya_fırçası */
+.jk-hizliTuketici { --jk-art: url('assets/game/joker/timsah.svg'); }   /* 559:16 Timsah */
+.jk-kartSayici   { --jk-art: url('assets/game/joker/kart-sayici.svg'); }   /* 559:2 Kart_sayıcı (Kumarhane) */
+.jk-doluEl       { --jk-art: url('assets/game/joker/dolu-bardak.svg'); }   /* 562:29 Dolu_bardak */
+.jk-bosCep       { --jk-art: url('assets/game/joker/bos-bardak.svg'); }   /* 562:55 Boş_bardak */
+.jk-seriAcici    { --jk-art: url('assets/game/joker/domino.svg'); }   /* 562:46 Domino */
 /* P53 · GRUP E (2026-09-19) — frame'de kart SAYISI değişmedi (17 çizim), tek
    değişen RİTİM: eski node RİTİM_JOKER yerine yeni node 371:4 "RİTİM" geldi ve
    çizim tamamen başka (sarı/turkuaz nota kartı → mavi çark kartı).
@@ -12574,3 +12579,33 @@ body.cocuk-fog #rack .tile:not(.deck-joker)::after { content: '?'; position: abs
 #bootOv .bt-legs  { background-image: url('assets/menu3/boot/mascot-legs.svg') !important; transform-origin: 50% 76.9%; }
 #bootOv .bt-arm-l { background-image: url('assets/menu3/boot/mascot-arm-l.svg') !important; transform-origin: 11.9% 49%; }
 #bootOv .bt-arm-r { background-image: url('assets/menu3/boot/mascot-arm-r.svg') !important; transform-origin: 89.4% 49%; }
+
+
+/* ==========================================================================
+   P119c (kullanıcı 2026-10-30, Balatro örneği) — RUN SEÇİMİNDE RENKLE AYRILAN ROLLER
+   Balatro'daki üçlü (kırmızı sekmeler · mavi OYNA · turuncu Geri) bizim
+   paletimize uyarlandı: sekmeler OKEY TAŞI KIRMIZISI, OYNA OKEY TAŞI MAVİSİ,
+   Geri temanın vurgu rengi (--gm-turn-on, Ayarlar'daki Geri ile aynı).
+   Tonlar her temada pencere zeminine göre ayarlı.
+   ========================================================================== */
+:root {
+  --ui-tab: #E74C3C;  --ui-tab-ink: #FFFCEF;   /* taş kırmızısı */
+  --ui-go:  #1E88E4;  --ui-go-ink:  #FFFCEF;   /* taş mavisi */
+}
+html[data-theme="mor"]       { --ui-tab: #E0566B; --ui-go: #2F93E8; }
+html[data-theme="amber"]     { --ui-tab: #D8432F; --ui-go: #1C7DD4; }
+html[data-theme="lacivert"]  { --ui-tab: #E74C3C; --ui-go: #2E9BF0; }
+html[data-theme="kumarhane"] { --ui-tab: #2F7FD8; --ui-go: #1F9A5B; }   /* mavi fiş + yeşil çuha; Geri altın */
+html[data-theme="kozmik"]    { --ui-tab: #E85D75; --ui-go: #2F7DFF; }   /* Geri neon mor */
+/* Bal temasında vurgu turuncusu üstünde temanın koyu turuncusu okunmuyordu (Ayarlar'daki Geri dahil) */
+html[data-theme="amber"] .ep-btn.ep-blue { color: #4A2608; }
+.rp-tab {
+  background: color-mix(in srgb, var(--ui-tab) 42%, var(--gm-dark)) !important;
+  color: color-mix(in srgb, var(--ui-tab-ink) 75%, transparent) !important;
+  border: 0 !important; border-radius: 8px;
+}
+.rp-tab.on { background: var(--ui-tab) !important; color: var(--ui-tab-ink) !important; text-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
+.ep-btn.rp-go {
+  background: var(--ui-go); border-color: var(--ui-go); color: var(--ui-go-ink);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .3); font-size: 28px; padding: 14px;
+}
