@@ -15,6 +15,15 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-10-30', date: { tr: '30 Ekim', en: 'October 30' },
+      items: [
+        ['yeni', 'Taşlar desteden gelir', 'Raunda girince elin desteden tek tek dağıtılıyor; çektiğin taş desteden dönerek ıstakana uçuyor, seçtiğin taş yaylanıyor, attığın taş havada yay çizip yuvasına düşüyor.',
+          'Tiles come from the deck', 'Entering a round now deals your hand from the deck one tile at a time; drawn tiles flip over as they fly to your rack, selected tiles spring up and discarded tiles arc into the slot.'],
+        ['yeni', 'Giriş ekranı', 'Yeni run’a ya da kayda girerken ekran kararıyor, taş belirip yanarak kayboluyor ve masa açılıyor.',
+          'Intro screen', 'Starting a run or loading a save now fades to dark, shows a tile that burns away and sweeps the table in.'],
+      ],
+    },
+    {
       id: '2026-10-29', date: { tr: '29 Ekim', en: 'October 29' },
       items: [
         ['degisti', 'Common joker çizimleri', 'Yin Yang, Büyüteç, Kuzgun, Çift Kiraz, Bilye, Ok ve diğer Common jokerler artık kendi çizimleriyle.',

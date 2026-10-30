@@ -12527,3 +12527,30 @@ body.cocuk-fog #rack .tile:not(.deck-joker)::after { content: '?'; position: abs
 #settingsOv .set-cyc-pair > .set-card { margin: 0; min-width: 0; }
 #settingsOv .set-cyc-pair .set-label { font-size: 15px; }
 #settingsOv .set-cyc-pair .cyc-val { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+
+/* ==========================================================================
+   P118 (kullanıcı isteği 2026-10-30) — TAŞ HAREKETİ + GİRİŞ SPLASH'İ
+   Hareketler ui.js'te (runTileFx · Splash); burada yalnız katmanlar.
+   ========================================================================== */
+/* uçan taşın arka yüzü: destedeki maskotlu kapak, dönüşün ortasında kaybolur */
+.tile .tile-back-fx {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: url('assets/game/deck-back.svg') no-repeat center / 100% 100%;
+  image-rendering: pixelated;
+}
+/* giriş splash'i: koyu perde + çapraz silme şeridi + yanarak kaybolan taş.
+   Tıklamayı tutmaz — perdenin altındaki ekran zaten değişmiştir. */
+#splashOv {
+  position: fixed; inset: 0; z-index: 9500; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+#splashOv .sp-cover, #splashOv .sp-band { position: absolute; inset: 0; }
+#splashOv .sp-cover {
+  background: #10131B;
+  background: color-mix(in srgb, var(--gm-dark) 42%, #07080D);
+  opacity: 0;
+  transition: background-color .35s ease;
+}
+#splashOv .sp-band { background: var(--gm-light); opacity: 0; clip-path: polygon(-3% 0, 200% 0, 200% 100%, -31% 100%); }
+#splashOv .sp-tile { position: relative; opacity: 0; image-rendering: pixelated; }

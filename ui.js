@@ -611,17 +611,244 @@
       transform: `scale(${k})`,
     });
     document.body.appendChild(clone);
+    /* Hedef: küçülmüş taş atılanlar yuvasının TAM ORTASINA otursun.
+       Ötelemeler ekran pikselindedir (kopyanın ebeveyni body, ölçeksiz). */
+    const dx = dst.left + (dst.width - r.width * .88) / 2 - r.left;
+    const dy = dst.top + (dst.height - r.height * .88) / 2 - r.top;
+    /* P118 — taş düz çizgide kaymaz, havaya kalkıp yay çizerek yuvaya düşer */
+    if (!fxOff()) {
+      clone.style.transition = 'none';
+      const ms = 430 * fxK();
+      clone.animate([
+        { transform: `scale(${k})` },
+        { transform: `translate(${dx * .42}px, ${dy * .42 - 90 * k}px) scale(${k * 1.06}) rotate(-12deg)`, offset: .42 },
+        { transform: `translate(${dx}px, ${dy}px) scale(${k * .88}) rotate(6deg)` },
+      ], { duration: ms, easing: 'cubic-bezier(.3,.1,.45,1)', fill: 'forwards' });
+      setTimeout(() => clone.remove(), ms + 30);
+      return;
+    }
     void clone.offsetWidth;          // başlangıç hâli uygulansın, geçiş oradan başlasın
     requestAnimationFrame(() => {
-      /* Hedef: küçülmüş taş atılanlar yuvasının TAM ORTASINA otursun.
-         Ötelemeler ekran pikselindedir (kopyanın ebeveyni body, ölçeksiz). */
-      const dx = dst.left + (dst.width - r.width * .88) / 2 - r.left;
-      const dy = dst.top + (dst.height - r.height * .88) / 2 - r.top;
       clone.style.transform =
         `translate(${dx}px, ${dy}px) scale(${k * .88}) rotate(6deg)`;
       clone.style.opacity = '.9';
     });
     setTimeout(() => clone.remove(), 480);
+  }
+
+  /* ============================================================
+     P118 (kullanıcı isteği 2026-10-30, Balatro videoları) — TAŞ HAREKETİ
+     Taşlar artık ıstakada "belirmez": desteden kalkar, havada arka
+     yüzünden ön yüzüne döner ve hücresine oturur.
+     • Raund başı (dealHand): tüm el soldan sağa, üst sıra sonra alt sıra,
+       tek tek dağıtılır.
+     • Çekiş (newTileIds): atıştan/jokerden gelen taş aynı yoldan uçar.
+     • Seçme: taş yaylanarak kalkar / iner.
+     Istaka her render'da YENİDEN KURULUR; bu yüzden uçuş taşın kendisine
+     değil kimliğine bağlıdır (dealFx: id → başlangıç anı). Uçuş sürerken
+     render gelirse yeni taş, animasyona kaldığı ANDAN devam eder.
+     Otomasyon tarayıcısında (playwright) ve "hareketi azalt" tercihinde
+     kapalıdır — yerleşim ölçen testler taşı yerinde bulmalı.
+     ============================================================ */
+  const fxOff = () => {
+    if (typeof navigator !== 'undefined' && navigator.webdriver && !window.__fxTest) return true;
+    try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+  };
+  /* Ayarlar › Animasyon hızı "Hızlı" → süreler yarıya (animSpeed aşağıda tanımlı: TDZ'ye düşmemek için doğrudan okunur) */
+  /* window.__fxSlow: inceleme kancası — hareketi kare kare görmek için yavaşlatır */
+  const fxK = () => { let k = 1; try { k = localStorage.getItem('okeyAnimSpeed') === 'fast' ? .5 : 1; } catch (e) { /* varsayılan */ } return k * (window.__fxSlow || 1); };
+  const dealFx = new Map();   // taş id → { t0, delay, dur }
+  let dealAllPending = false;
+  let selFx = null;           // { id, on, at } — son tıklanan taş
+  function dealHand() { if (!fxOff()) dealAllPending = true; }
+
+  function runTileFx() {
+    if (fxOff()) { dealAllPending = false; dealFx.clear(); return; }
+    const now = performance.now();
+    const tiles = [...el.rack.querySelectorAll('.tile[data-id]')];
+    const deck = document.querySelector('#pileCol .deck-pile');
+    if (dealAllPending) {
+      dealAllPending = false;
+      const k = fxK();
+      const step = Math.min(55, 1000 / Math.max(1, tiles.length)) * k;
+      tiles.forEach((d, i) => dealFx.set(d.dataset.id, { t0: now, delay: i * step, dur: 430 * k }));
+      /* her taş oturduğunda kısa bir "tık" — beep'in `when` parametresiyle tek seferde planlanır */
+      tiles.forEach((_, i) => beep(1500 + (i % 5) * 90, .018, 'square', .022, (i * step + 430 * k * .85) / 1000));
+    }
+    // çekilen taşlar (atış, joker, değnek …) — newTileIds render'dan ~600 ms sonra temizlenir
+    let n = 0;
+    for (const id of newTileIds) {
+      const key = String(id);
+      if (!dealFx.has(key)) dealFx.set(key, { t0: now, delay: (n++) * 70 * fxK(), dur: 430 * fxK() });
+    }
+    for (const [key, f] of dealFx) {   // biten ve artık "yeni" olmayan kayıtlar silinir
+      if (now - f.t0 > f.delay + f.dur + 50 && !newTileIds.has(+key) && !newTileIds.has(key)) dealFx.delete(key);
+    }
+    if (!dealFx.size && !selFx) return;
+    const dr = deck && deck.getBoundingClientRect();
+    for (const d of tiles) {
+      const f = dealFx.get(d.dataset.id);
+      if (f && dr && dr.width) {
+        const elapsed = now - f.t0;
+        if (elapsed >= f.delay + f.dur) continue;
+        const tr = d.getBoundingClientRect();
+        if (!tr.width) continue;
+        const k = tr.width / d.offsetWidth;   // gm-stage ölçeği: ekran pikseli → tasarım pikseli
+        const dx = (dr.left + dr.width / 2 - (tr.left + tr.width / 2)) / k;
+        const dy = (dr.top + dr.height / 2 - (tr.top + tr.height / 2)) / k;
+        const s0 = dr.width / tr.width;       // destedeki taş ıstakadakinden büyük olabilir
+        d.style.animation = 'none';           // eski CSS tileDraw kayması devre dışı
+        const back = document.createElement('i');
+        back.className = 'tile-back-fx';
+        d.appendChild(back);
+        /* iki animasyon AYNI eğriyi paylaşır: ofsetler eğri uygulanmış ilerlemededir,
+           yoksa arka yüz, taş dönüşü bitirdikten sonra da görünür kalır */
+        const opt = { duration: f.dur, delay: f.delay, fill: 'backwards', easing: 'cubic-bezier(.25,.6,.35,1)' };
+        const FLIP = .3;   // dönüş yolun başında biter; taş yolun çoğunu yüzü açık uçar
+        const a = d.animate([
+          { transform: `translate(${dx}px, ${dy}px) rotate(0deg) scale(${s0}, ${s0})` },
+          { transform: `translate(${dx * (1 - FLIP)}px, ${dy * (1 - FLIP) - 40}px) rotate(-10deg) scale(.04, ${(s0 + 1.1) / 2})`, offset: FLIP },
+          { transform: `translate(0px, -12px) rotate(3deg) scale(1.06, 1.06)`, offset: .78 },
+          { transform: `translate(0px, 0px) rotate(0deg) scale(1, 1)` },
+        ], opt);
+        // arka yüz dönüşün ilk yarısında görünür, taş "yan" durduğu anda kaybolur
+        const b = back.animate([{ opacity: 1 }, { opacity: 1, offset: FLIP }, { opacity: 0, offset: FLIP }, { opacity: 0 }], opt);
+        a.currentTime = b.currentTime = elapsed;
+        a.onfinish = () => back.remove();
+        d.style.zIndex = '6';
+        setTimeout(() => { d.style.zIndex = ''; }, Math.max(0, f.delay + f.dur - elapsed));
+        continue;
+      }
+      if (selFx && d.dataset.id === String(selFx.id) && now - selFx.at < 120) {
+        d.animate(selFx.on
+          ? [{ transform: 'translateY(0)' }, { transform: 'translateY(-15px) rotate(-3deg) scale(1.06)', offset: .55 }, { transform: 'translateY(-10px)' }]
+          : [{ transform: 'translateY(-10px)' }, { transform: 'translateY(3px) scale(.97)', offset: .6 }, { transform: 'translateY(0)' }],
+        { duration: 210 * fxK(), easing: 'ease-out' });
+      }
+    }
+    selFx = null;
+  }
+
+  /* ============================================================
+     P118 — OYUNA GİRİŞ SPLASH'İ (yeni run · devam · öğretici)
+     Menüden haritaya sert kesme yerine: ekran temanın koyu tonuyla
+     kararır, ortada maskotlu taş arkası belirir; perde arkasında ekran
+     değişir, çapraz bir silme perdeyi sağa süpürür ve taş piksel piksel
+     yanarak kaybolur. Görsel, destenin CSS'teki arka yüzünden okunur
+     (tek dosyalık sürüm CSS yollarını gömer, JS yollarını gömmez).
+     ============================================================ */
+  const Splash = {
+    busy: false,
+    queue: [],
+    then(fn) { if (this.busy) this.queue.push(fn); else fn(); },
+    play(mid) {
+      const k = fxK();
+      this.busy = true;
+      const ov = document.createElement('div');
+      ov.id = 'splashOv';
+      ov.setAttribute('aria-hidden', 'true');
+      ov.innerHTML = '<div class="sp-band"></div><div class="sp-cover"></div><canvas class="sp-tile"></canvas>';
+      document.body.appendChild(ov);
+      const [band, cover, cv] = ov.children;
+      const S = 3, PAD = 40, AW = 81, AH = 110;          // taş 81×110 piksel sanatı, 3 kat
+      const W = AW * S + PAD * 2, H = AH * S + PAD * 2;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.width = W * dpr; cv.height = H * dpr;
+      cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      const ctx = cv.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.imageSmoothingEnabled = false;
+      const img = new Image();
+      const deck = document.querySelector('.gm-stage .deck-pile');
+      const m = deck && /url\(["']?(.*?)["']?\)/.exec(getComputedStyle(deck).backgroundImage);
+      if (m) img.src = m[1];
+      // yanma eşiği: alttan yukarı yükselen alev + piksel başına rastlantı
+      const C = 2, cols = Math.ceil(AW / C), rows = Math.ceil(AH / C);
+      const thr = [];
+      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+        thr.push((1 - y / rows) * .62 + Math.abs(x / cols - .5) * .18 + Math.random() * .28);
+      }
+      const sparks = [];
+      let burn = -1;   // <0: yanma başlamadı
+      const draw = () => {
+        ctx.clearRect(0, 0, W, H);
+        if (img.complete && img.naturalWidth) ctx.drawImage(img, PAD, PAD, AW * S, AH * S);
+        if (burn >= 0) {
+          ctx.globalCompositeOperation = 'destination-out';
+          thr.forEach((v, i) => { if (v < burn - .07) ctx.fillRect(PAD + (i % cols) * C * S, PAD + Math.floor(i / cols) * C * S, C * S, C * S); });
+          ctx.globalCompositeOperation = 'source-atop';   // kor yalnız taşın kalan piksellerine düşer
+          thr.forEach((v, i) => {
+            if (v >= burn - .07 && v < burn) {
+              const q = (burn - v) / .07;
+              ctx.fillStyle = q < .35 ? '#FFE58A' : q < .7 ? '#F28A2E' : '#6E2418';
+              const x = PAD + (i % cols) * C * S, y = PAD + Math.floor(i / cols) * C * S;
+              ctx.fillRect(x, y, C * S, C * S);
+              if (q < .2 && Math.random() < .05) sparks.push({ x, y, vx: (Math.random() - .5) * .8, vy: -1 - Math.random() * 1.6, life: 1 });
+            }
+          });
+          ctx.globalCompositeOperation = 'source-over';
+        }
+        for (const p of sparks) {
+          p.x += p.vx; p.y += p.vy; p.life -= .035;
+          if (p.life <= 0) continue;
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.life > .5 ? '#FFE58A' : '#F28A2E';
+          ctx.fillRect(Math.round(p.x), Math.round(p.y), S, S);
+        }
+        ctx.globalAlpha = 1;
+      };
+      let raf = 0;
+      const loop = () => { draw(); raf = requestAnimationFrame(loop); };
+      loop();
+      [band, cover].forEach((x) => x.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 * k, fill: 'forwards' }));
+      cv.animate([
+        { transform: 'scale(.35) rotate(-14deg)', opacity: 0 },
+        { transform: 'scale(1.08) rotate(4deg)', opacity: 1, offset: .6 },
+        { transform: 'scale(1) rotate(0deg)', opacity: 1 },
+      ], { duration: 420 * k, easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' });
+      SFX.draw();
+      setTimeout(() => {
+        try { mid(); } catch (e) { console.error('splash: ekran geçişi', e); }
+        setTimeout(() => {
+          // çapraz silme: kenarında temanın açık tonunda ince bir şerit
+          const poly = (l) => `polygon(${l}% 0, 200% 0, 200% 100%, ${l - 28}% 100%)`;
+          const wipe = { duration: 520 * k, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' };
+          cover.animate([{ clipPath: poly(0) }, { clipPath: poly(130) }], wipe);
+          band.animate([{ clipPath: poly(-3) }, { clipPath: poly(127) }], wipe);
+          beep(330, .16, 'triangle', .05); beep(495, .14, 'triangle', .04, .07);
+          setTimeout(() => {
+            const t0 = performance.now(), dur = 640 * k;
+            const tick = () => {
+              burn = Math.min(1.1, ((performance.now() - t0) / dur) * 1.1);
+              if (burn < 1.1) requestAnimationFrame(tick);
+              else setTimeout(() => {
+                cancelAnimationFrame(raf);
+                ov.remove();
+                this.busy = false;
+                const q = this.queue.splice(0);
+                q.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
+              }, 260 * k);   // son kıvılcımlar sönsün
+            };
+            tick();
+          }, 170 * k);
+        }, 430 * k);
+      }, 180 * k);
+    },
+  };
+  function withSplash(fn) {
+    if (Splash.busy || fxOff()) return fn();
+    Splash.play(fn);
+  }
+
+  /* P118 — harita → raund: harita kartları aşağı kayarak çekilir, sonra raund açılır */
+  function slideMapOut(cb) {
+    const cards = fxOff() ? [] : [...el.mapCards.querySelectorAll('.map-card')];
+    if (!cards.length) { cb(); return; }
+    const k = fxK();
+    const anims = cards.map((c, i) => c.animate(
+      [{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-14px)', opacity: 1, offset: .25 }, { transform: 'translateY(520px)', opacity: 0 }],
+      { duration: 330 * k, delay: i * 45 * k, easing: 'cubic-bezier(.5,0,.75,.4)', fill: 'forwards' }));
+    setTimeout(() => { cb(); anims.forEach((a) => a.cancel()); }, (330 + (cards.length - 1) * 45) * k);
   }
 
   /* ---------- Sürükle & bırak — SERBEST HÜCRE (2026-07-09) ----------
@@ -1195,12 +1422,13 @@
       if (active) btn.addEventListener('click', () => {
         if (boss) SFX.boss();              // boss girişi (GDD 14.5)
         else SFX.mapPlay();                // P113
-        const go = () => {
+        const go = () => slideMapOut(() => {   // P118 — kartlar çekilir, el desteden dağıtılır
           markInRound();                   // raund içine girildi
+          dealHand();
           showScreen('game');
           flushRoundStart();               // raund başı olayları + pop-up'lar
           setTimeout(kumarStartPanels, 1500);  // P61 — Rulet rengi + yan bahis (eli görerek; bahis bandı geçtikten sonra)
-        };
+        });
         /* P58 · Kumarhane — KÖR BAHİS: el görülmeden, oyun ekranına geçmeden önce */
         if (Game.needsBet && Game.needsBet()) showBetPicker(go);
         else if (Game.falPending && Game.falPending()) showFal(go);   // LANETLİ BOYUT — Kemik Falı (isteğe bağlı)
@@ -5428,6 +5656,7 @@
         }
       }
     }
+    runTileFx();   // P118 — dağıtma / çekiş / seçme hareketi
 
     /* Figma 210:3627 - sayaç "87/108" biçiminde: KALAN / TOPLAM. Toplam,
        taşın bulunabileceği tüm yerler taranarak bulunur (desteden çıkmış
@@ -5967,10 +6196,12 @@
         nope(t('discardMax', Game.MAX_DISCARD), el.btnDiscard);   // denetim3 #8
         return;
       } else selection.add(id);
+      selFx = { id, on: selection.has(id), at: performance.now() };   // P118
     } else {
       if (selection.has(id)) selection.delete(id);
       else selection.add(id);
     }
+    selFx = { id, on: selection.has(id), at: performance.now() };   // P118
     SFX.tick();
     render();
   }
@@ -6973,6 +7204,7 @@
     if (!res.ok) { if (res.error) nope(res.error, el.btnDiscard); return; }   // denetim3 #8
     selection.clear();
     newTileIds = new Set(res.drawn || []);
+    if (res.worldRestart) dealHand();   // P118 — raund baştan: el yeniden dağıtılır
     SFX.draw();
     if (res.events && res.events.length) {
       notify(res.events);
@@ -7275,7 +7507,8 @@
       s.boss = aht;
     },
 
-    start() {
+    start() { withSplash(() => this._begin()); },   // P118 — giriş splash'i
+    _begin() {
       this._dom();
       this.saved = { state: Game.state };
       Game.tutorialMode = true;
@@ -7582,6 +7815,7 @@
       if (s.roundInStage === 1 && !this.seen.has('isleme')) this.seedRound1();
       selection.clear();
       newTileIds.clear();
+      dealHand();   // P118
       showScreen('game');
       flushRoundStart();
     },
@@ -7636,7 +7870,8 @@
 
   /* ---------- Menüler / pause (Grup D) ---------- */
 
-  function startNewRun(mode, seed) {
+  function startNewRun(mode, seed) { withSplash(() => startNewRunNow(mode, seed)); }   // P118 — giriş splash'i
+  function startNewRunNow(mode, seed) {
     if (BETA && loadSave()) betaHook('runAbandoned', { mode: mode || 'base' });
     clearSave();
     Game.newRun(mode, { finals: finalJokers(), seed });   // P114 — seed boşsa motor yenisini üretir
@@ -7647,11 +7882,11 @@
     /* MADDE D4 — açılış jokerleri varsa ÖNCE çark döner, okey banner'ı
        ondan sonra gelir: iki duyuru üst üste binmesin. */
     const opening = Game.state.openingJokers;
-    const proceed = () => {
+    const proceed = () => Splash.then(() => {   // P118 — duyurular splash bitince
       if (opening && opening.length)
         showOpeningReel(opening, Game.state.openingReels, () => showOkeyBanner());
       else showOkeyBanner(); // maskot okeyi ilan eder (GDD 14.2)
-    };
+    });
     /* denetim3 #12 (kullanıcı: "Kumarhane'ye girince önce bu run'ın genel ipucu, sonra başlangıç
        jokerlerinin slot makinesi, sonra bahis / mini oyun ipuçları") — ilk Kumarhane run'ında */
     if (Game.kumarhaneOn && Game.kumarhaneOn() && Hints.enabled && !Game.trainerMode && !Hints.seen('kumarhaneRun')) {
@@ -8149,7 +8384,8 @@
     }
   }
 
-  function resumeSave(save) {
+  function resumeSave(save) { withSplash(() => resumeSaveNow(save)); }   // P118 — giriş splash'i
+  function resumeSaveNow(save) {
     try {
       Game.restore(save.data);
     } catch (e) {
@@ -8174,6 +8410,7 @@
       /* denetim RK — raund ortası kayıt: kaldığı turdan devam. Bekleyen karar pencereleri
          (Şeytan/Boşluk/Tüccar duyurusu, Katla, Rulet, yan bahis) yeniden açılır; Üç Kağıtçı,
          Tanrının Eli ve Hayalet teklifi render içinde zaten açılır. */
+      dealHand();   // P118
       showScreen('game');
       render();
       flushRoundStart();
@@ -11811,6 +12048,7 @@
   function enterTrainerRound() {
     SFX.boss();
     const go = () => {
+      dealHand();   // P118
       showScreen('game');
       flushRoundStart();
       setTimeout(kumarStartPanels, 1500);
