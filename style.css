@@ -12609,3 +12609,38 @@ html[data-theme="amber"] .ep-btn.ep-blue { color: #4A2608; }
   background: var(--ui-go); border-color: var(--ui-go); color: var(--ui-go-ink);
   font-size: 28px; padding: 14px;
 }
+
+
+/* P120 — store → slot uçuşu: $ kutusundan süzülen "−N" (ui.js coinDrop) */
+.coin-float {
+  position: absolute; left: 50%; top: -6px; pointer-events: none; z-index: 5;
+  font: 700 30px/1 var(--gm-font); color: var(--gm-turn-on); white-space: nowrap;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, .45);
+}
+
+/* uçan store kartı kabı: rafın .store-item sınıfını taşır (çizim stilleri uygulansın) ama kart zemini/kenarı yok */
+#storeStage .store-item.fly-host {
+  position: absolute !important; margin: 0 !important; padding: 0 !important; z-index: 60;
+  background: none !important; border: 0 !important; box-shadow: none !important; outline: 0 !important;
+  transform-origin: 0 0; pointer-events: none; display: block !important; min-height: 0 !important;
+}
+#storeStage .store-item.fly-host::before, #storeStage .store-item.fly-host::after { display: none !important; }
+
+
+/* P120 — taş dönüşümü (ui.js xfTile): dönen eski yüz ve piksel kıvılcımlar, satırın içinde */
+#rack .tile.xf-old { position: absolute; margin: 0; z-index: 7; pointer-events: none; }
+#rack .xf-spark { position: absolute; width: 11px; height: 11px; z-index: 8; pointer-events: none; image-rendering: pixelated; }
+
+
+/* P120 — öğreticide KATMANLI Mühür (açılış splash'inin parçaları): kol hedefi gösterir, göz açılır/kırpılır */
+#tutPanel.mascot .tm-msc > i { background: none !important; }
+#tutPanel .tm-l { position: absolute; inset: 0; background: no-repeat 0 0 / 100% 100%; }
+#tutPanel .tm-l.bt-body  { background-image: url('assets/menu3/boot/mascot-body.svg'); }
+#tutPanel .tm-l.bt-pupil { background-image: url('assets/menu3/boot/mascot-pupil.svg'); transform-origin: 50% 39%; }
+#tutPanel .tm-l.bt-lid   { background-image: url('assets/menu3/boot/mascot-lid.svg'); transform-origin: 50% 39%; opacity: 0; }
+#tutPanel .tm-l.bt-legs  { background-image: url('assets/menu3/boot/mascot-legs.svg'); }
+#tutPanel .tm-l.bt-arm-l { background-image: url('assets/menu3/boot/mascot-arm-l.svg'); transform-origin: 11.9% 49%; transition: transform .35s cubic-bezier(.3,.7,.4,1.2); }
+#tutPanel .tm-l.bt-arm-r { background-image: url('assets/menu3/boot/mascot-arm-r.svg'); transform-origin: 89.4% 49%; transition: transform .35s cubic-bezier(.3,.7,.4,1.2); }
+/* hedefler arasında kayan çerçeve + karartma deliği (yalnız hareket açıkken eklenen .fx) */
+#tutSpot.fx .ts-ring { transition: left .35s ease, top .35s ease, width .35s ease, height .35s ease; }
+#tutSpot.fx .ts-holes rect { transition: x .35s ease, y .35s ease, width .35s ease, height .35s ease; }

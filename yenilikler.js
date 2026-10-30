@@ -29,6 +29,12 @@
           'All Common jokers drawn', 'Crocodile, Card Counter, Full Glass, Empty Glass and Domino got their artwork; every Common joker now has its own drawing.'],
         ['degisti', 'Run seçimi', 'Sekmeler, Oyna ve Geri artık kendi renkleriyle ayrılıyor; Oyna en belirgin düğme.',
           'Run select', 'Tabs, Play and Back now each have their own colour; Play stands out the most.'],
+        ['yeni', 'Aldığın kart yerine uçar', 'Store’dan aldığın joker ve değnek raftan kalkıp slotuna uçuyor, paranın düştüğünü sayaçta görüyorsun.',
+          'Purchases fly to their slot', 'Jokers and wands you buy now fly from the shelf to their slot, and you watch your money count down.'],
+        ['yeni', 'Dönüşen taşlar', 'Bir joker taşını dönüştürünce (heykel, okey, Ay Taşı, 13…) taş dönerek yeni yüzüne geçiyor ve dönüştüren joker sıçrıyor.',
+          'Transforming tiles', 'When a joker transforms a tile (stone, joker, Moon Tile, 13…) the tile flips to its new face and the joker that did it hops.'],
+        ['degisti', 'Mühür canlandı', 'Öğreticide Mühür yukarıdan düşüp gözünü açıyor, konuşurken yazı harf harf akıyor, yer değiştirirken hopluyor ve yapman gereken şeyi koluyla gösteriyor.',
+          'The Seal comes alive', 'In the tutorial the Seal drops in and opens its eye, its words type out, it hops between spots and points at what you should do.'],
       ],
     },
     {
