@@ -21,6 +21,10 @@
           'Tiles come from the deck', 'Entering a round now deals your hand from the deck one tile at a time; drawn tiles flip over as they fly to your rack, selected tiles spring up and discarded tiles arc into the slot.'],
         ['yeni', 'Giriş ekranı', 'Yeni run’a ya da kayda girerken ekran kararıyor, taş belirip yanarak kayboluyor ve masa açılıyor.',
           'Intro screen', 'Starting a run or loading a save now fades to dark, shows a tile that burns away and sweeps the table in.'],
+        ['yeni', 'Mühür uyanıyor', 'Oyunu açınca Mühür seni karşılıyor: uyuyan bir taş olarak düşüyor, gözünü açıyor, kollarını ve bacaklarını çıkarıp menüdeki yerine yürüyor. Tıklayınca geçebilirsin.',
+          'The Seal wakes up', 'When you open the game the Seal greets you: it drops in as a sleeping tile, opens its eye, sprouts arms and legs and walks to its spot on the menu. Click to skip.'],
+        ['degisti', 'Geri düğmesi', 'Run seçimi, Koleksiyon ve Ayarlar pencerelerinde Geri düğmesi artık aynı yerde ve aynı görünüşte.',
+          'Back button', 'Run select, Collection and Settings now share the same Back button, in the same place.'],
       ],
     },
     {

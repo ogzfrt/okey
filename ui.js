@@ -868,6 +868,141 @@
     Splash.play(fn);
   }
 
+  /* ============================================================
+     P119 (kullanıcı seçimi 2026-10-30: "B) Mühür uyanıyor") — OYUN AÇILIŞ SPLASH'İ
+     Karanlıkta gözü kapalı bir taş düşer, titrer, iki kez zıplar, döner;
+     gözü açılır, kolları ve bacakları çıkar, göz kırpar ve hoplayarak
+     menüdeki yerine yürür. O sırada perde açılır, logo iner, düğmeler
+     sırayla kayarak gelir; sonunda gerçek menü maskotu devralır.
+     Maskot katmanları assets/menu3/boot/ (mascot.svg'nin yolları, aynı
+     480×674 tuval) — yollar CSS sınıflarında (tek dosyalık sürüm kuralı).
+     Sayfa başına bir kez; tıklama / tuş anında geçer; testte ve "hareketi
+     azalt"ta yok. ~3.3 sn (Hızlı animasyonda yarısı).
+     ============================================================ */
+  function bootSplash() {
+    if (fxOff()) return;
+    const mascot = document.querySelector('.fm-mascot');
+    if (!mascot) return;
+    const k = fxK();
+    const items = [...document.querySelectorAll('.fm-mascot-item')];
+    const menuEls = [document.getElementById('menuLogo'), ...document.querySelectorAll('.fm-buttons .fm-btn'), document.getElementById('btnNews')].filter(Boolean);
+    // gerçek maskot salınımsız ölçülür (devir anında aynı yerde dursun)
+    mascot.style.animation = 'none';
+    mascot.style.visibility = 'hidden';
+    items.forEach((x) => { x.style.opacity = '0'; });
+    menuEls.forEach((x) => { x.style.opacity = '0'; });
+    const R = mascot.getBoundingClientRect();
+    const ov = document.createElement('div');
+    ov.id = 'bootOv';
+    ov.setAttribute('aria-hidden', 'true');
+    ov.innerHTML = '<div class="bt-sky"></div><div class="bt-actor"><div class="bt-hop">'
+      + '<i class="bt-legs"></i><i class="bt-arm-l"></i><i class="bt-arm-r"></i><i class="bt-body"></i><i class="bt-pupil"></i><i class="bt-lid"></i></div></div>';
+    document.body.appendChild(ov);
+    const sky = ov.querySelector('.bt-sky'), actor = ov.querySelector('.bt-actor'), hop = ov.querySelector('.bt-hop');
+    const [legs, armL, armR, , pupil, lid] = hop.children;   // lid: kapalı göz (bebeğin deliğini iris rengiyle örter)
+    Object.assign(actor.style, { left: R.left + 'px', top: R.top + 'px', width: R.width + 'px', height: R.height + 'px' });
+    // başlangıç: ekranın ortası, %58 boy (gövdenin ortası ekranın ortasına)
+    const S0 = .7;
+    const sx = innerWidth / 2 - (R.left + R.width / 2), sy = innerHeight / 2 - (R.top + R.height * .385);
+    const at = (s) => `translate(${sx}px, ${sy}px) scale(${s})`;
+    const u = R.height / 674;   // maskot tuvalinin bir pikseli (ekranda)
+    let done = false;
+    const anims = [];
+    const A = (elm, kf, o) => { const a = elm.animate(kf, { fill: 'forwards', ...o, duration: o.duration * k, delay: (o.delay || 0) * k }); anims.push(a); return a; };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms * k));
+    const finish = () => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('pointerdown', finish, true);
+      window.removeEventListener('keydown', finish, true);
+      anims.forEach((a) => a.cancel());
+      ov.remove();
+      menuEls.forEach((x) => { x.style.opacity = ''; });
+      items.forEach((x) => { x.style.opacity = ''; });
+      mascot.style.visibility = '';
+      mascot.style.animation = '';   // salınım 0'dan başlar → devirde zıplama yok
+    };
+    window.addEventListener('pointerdown', finish, true);
+    window.addEventListener('keydown', finish, true);
+    // kapalı göz + gizli uzuvlar
+    A(pupil, [{ transform: 'scaleY(.07)' }], { duration: 1 });
+    A(legs, [{ transform: 'scaleY(0)' }], { duration: 1 });
+    A(armL, [{ transform: 'scale(0)' }], { duration: 1 });
+    A(armR, [{ transform: 'scale(0)' }], { duration: 1 });
+    (async () => {
+      // 1 · taş yukarıdan düşer, hafif ezilerek oturur
+      A(actor, [{ transform: at(S0) }], { duration: 1 });
+      A(hop, [
+        { transform: `translateY(${-260 * u}px)`, opacity: 0 },
+        { transform: 'translateY(0) scale(1.06, .9)', opacity: 1, offset: .7 },
+        { transform: 'translateY(0) scale(1, 1)', opacity: 1 },
+      ], { duration: 380, easing: 'cubic-bezier(.5,0,.75,1)' });
+      beep(110, .16, 'triangle', .08, .26 * k);
+      await wait(520);
+      if (done) return;
+      // 2 · uykusunda titrer
+      A(hop, [0, -7, 6, -5, 4, -2, 0].map((r) => ({ transform: `rotate(${r}deg)` })), { duration: 480, easing: 'linear' });
+      [0, .12, .24].forEach((w) => beep(900 + w * 400, .03, 'square', .03, w * k));
+      await wait(560);
+      if (done) return;
+      // 3 · iki kez zıplar
+      for (let i = 0; i < 2; i++) {
+        A(hop, [
+          { transform: 'translateY(0) scale(1.05, .92)' },
+          { transform: `translateY(${-70 * u}px) scale(.96, 1.06)`, offset: .45 },
+          { transform: 'translateY(0) scale(1.07, .9)', offset: .85 },
+          { transform: 'translateY(0) scale(1, 1)' },
+        ], { duration: 300, easing: 'ease-out' });
+        beep(140 + i * 30, .12, 'triangle', .07, .26 * k);
+        await wait(320);
+        if (done) return;
+      }
+      // 4 · döner; tam ortada gözünü açar
+      A(hop, [{ transform: 'scaleX(1)' }, { transform: 'scaleX(.04)', offset: .5 }, { transform: 'scaleX(1)' }], { duration: 300, easing: 'ease-in-out' });
+      await wait(150);
+      if (done) return;
+      A(pupil, [{ transform: 'scaleY(.07)' }, { transform: 'scaleY(1.18)', offset: .7 }, { transform: 'scaleY(1)' }], { duration: 220, easing: 'ease-out' });
+      A(lid, [{ opacity: 1, transform: 'scaleY(1)' }, { opacity: 0, transform: 'scaleY(.2)' }], { duration: 120 });
+      [660, 880, 1320].forEach((f, i) => beep(f, .08, 'triangle', .06, i * .06 * k));
+      await wait(220);
+      if (done) return;
+      // 5 · bacaklar ve kollar çıkar
+      A(legs, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1.14)', offset: .7 }, { transform: 'scaleY(1)' }], { duration: 230, easing: 'ease-out' });
+      A(armL, [{ transform: 'scale(0) rotate(40deg)' }, { transform: 'scale(1.15) rotate(-8deg)', offset: .7 }, { transform: 'scale(1) rotate(0deg)' }], { duration: 260, delay: 60, easing: 'ease-out' });
+      A(armR, [{ transform: 'scale(0) rotate(-40deg)' }, { transform: 'scale(1.15) rotate(8deg)', offset: .7 }, { transform: 'scale(1) rotate(0deg)' }], { duration: 260, delay: 60, easing: 'ease-out' });
+      beep(220, .05, 'square', .05); beep(440, .09, 'triangle', .05, .05 * k); beep(330, .07, 'triangle', .04, .1 * k);
+      await wait(380);
+      if (done) return;
+      // 6 · göz kırpar
+      A(pupil, [{ transform: 'scaleY(1)' }, { transform: 'scaleY(.08)', offset: .45 }, { transform: 'scaleY(1)' }], { duration: 200 });
+      A(lid, [{ opacity: 0 }, { opacity: 1, offset: .35 }, { opacity: 1, offset: .55 }, { opacity: 0 }], { duration: 200 });
+      await wait(260);
+      if (done) return;
+      // 7 · hoplayarak menüdeki yerine yürür; perde açılır, menü gelir
+      A(actor, [{ transform: at(S0) }, { transform: 'translate(0px, 0px) scale(1)' }], { duration: 900, easing: 'cubic-bezier(.45,.05,.4,1)' });
+      A(hop, [
+        { transform: 'translateY(0) rotate(0deg)' },
+        { transform: `translateY(${-38 * u}px) rotate(-4deg)`, offset: .17 },
+        { transform: 'translateY(0) rotate(0deg)', offset: .33 },
+        { transform: `translateY(${-38 * u}px) rotate(4deg)`, offset: .5 },
+        { transform: 'translateY(0) rotate(0deg)', offset: .67 },
+        { transform: `translateY(${-24 * u}px) rotate(-3deg)`, offset: .83 },
+        { transform: 'translateY(0) rotate(0deg)' },
+      ], { duration: 900, easing: 'linear' });
+      [0, .3, .6].forEach((w, i) => beep(180 + i * 40, .07, 'triangle', .05, (w + .15) * k));
+      A(sky, [{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: 'ease-out' });
+      menuEls.forEach((x, i) => {
+        const fromLogo = x.id === 'menuLogo';
+        A(x, [
+          { opacity: 0, transform: fromLogo ? 'translateY(-160px)' : 'translateX(-260px)' },
+          { opacity: 1, transform: 'none' },
+        ], { duration: 420, delay: 150 + i * 70, easing: 'cubic-bezier(.2,.8,.3,1.15)' });
+      });
+      await wait(Math.max(920, 150 + menuEls.length * 70 + 420));
+      finish();
+    })();
+  }
+
   /* P118 — harita → raund: harita kartları aşağı kayarak çekilir, sonra raund açılır */
   function slideMapOut(cb) {
     const cards = fxOff() ? [] : [...el.mapCards.querySelectorAll('.map-card')];
@@ -8197,7 +8332,7 @@
         foot = `<button class="ep-btn rp-go" id="rpGo">${t('rpContinueBtn')}</button>`;
       }
       ov.innerHTML = `<div class="ep-box rp-box"><div class="rp-plate">${t('modePickTitle')}</div>${tabs}<div class="rp-body">${body}</div>`
-        + `<div class="rp-foot">${foot}<button class="ep-btn ep-ghost rp-back" id="rpBack">${t('rpBack')}</button></div></div>`;
+        + `<div class="rp-foot">${foot}<button class="ep-btn ep-blue rp-back" id="rpBack">${t('rpBack')}</button></div></div>`;
       ov.querySelectorAll('.rp-tab').forEach(b => b.addEventListener('click', () => { if (!b.disabled) { tab = b.dataset.tab; draw(); } }));
       ov.querySelectorAll('.rp-arrow').forEach(b => b.addEventListener('click', () => go(+b.dataset.d)));
       ov.querySelectorAll('.rp-dots i').forEach(b => b.addEventListener('click', () => { runPickIdx = +b.dataset.i; draw(); }));
@@ -9087,7 +9222,7 @@
       `<div class="tp-box set-box"><div class="set-plate">${t('settingsTitle')}</div>` +
       `<div class="set-tabs">` + tabs.map(([k, l]) => `<button type="button" class="set-tab${k === setTabNow ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('') + `</div>` +
       `<div class="set-body">` + Object.entries(panes).map(([k, h]) => `<div class="set-pane${k === setTabNow ? ' on' : ''}" data-pane="${k}">${h}</div>`).join('') + `</div>` +
-      `<button type="button" class="ep-btn ep-blue set-back" id="setClose">${t('close')}</button></div>`;
+      `<button type="button" class="ep-btn ep-blue set-back" id="setClose">${t('rpBack')}</button></div>`;   // P119 — bütün menü pencerelerinde tek "Geri"
     document.body.appendChild(ov);
 
     /* sekmeler */
@@ -12270,7 +12405,7 @@
   }
   if (location.hash === '#map') showScreen('map');
   else if (location.hash === '#game') showScreen('game');
-  else showScreen('menu');
+  else { showScreen('menu'); bootSplash(); }
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
   if (!BETA) window.__test = {

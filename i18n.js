@@ -437,7 +437,7 @@
       beltSub: 'Kemerdeki joker süre harcamaz: ★ ×1.5 · 3 raundda ★★ ×2 · 6 raundda ★★★ ORION\'UN KEMERİ (×4, süresiz). Raund başına 1 kez bağlanır/değiştirilir; değiştirirsen yeni joker sıfırdan başlar.',
       beltLater: 'SONRA',
       beltLockedNote: 'Kemeri bu raund bağladın — sonraki raund değiştirebilirsin.',
-      colBack: '← Geri',
+      colBack: 'Geri',
       colCount: (n) => `${n} joker`,
       colDeckTag: '◈ deste',
       /* stage sonu güçlendirme (Grup H) */
@@ -1576,7 +1576,7 @@
       beltSub: 'A belted joker never ages: ★ ×1.5 · ★★ ×2 after 3 rounds · ★★★ ORION\'S BELT (×4, permanent) after 6. Set or switch once per round; switching restarts from zero.',
       beltLater: 'LATER',
       beltLockedNote: 'You set the belt this round — you can change it next round.',
-      colBack: '← Back',
+      colBack: 'Back',
       colCount: (n) => `${n} jokers`,
       colDeckTag: '◈ deck',
       upTitle: '🏆 STAGE COMPLETE!',

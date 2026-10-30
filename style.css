@@ -8618,6 +8618,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .rp-where { color: var(--gm-light); font: 700 12px/1.3 var(--gm-font); text-align: center; margin-top: 10px; opacity: .85; }
 .rp-foot { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 16px; }
 .rp-go { width: min(380px, 100%); font-size: 24px; padding: 12px; }
+.rp-back { width: 100%; }   /* P119 — Ayarlar'daki Geri gibi tam genişlik */
 .rp-go[disabled] { opacity: .45; cursor: not-allowed; filter: none; transform: none; }
 .rp-warn { margin-top: -4px; }
 
@@ -8869,11 +8870,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
   font: 700 24px/1 var(--gm-font); letter-spacing: -1px; box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
 }
 #collectionScene #colSub { color: var(--gm-light); opacity: .85; font: 700 12px/1.4 var(--gm-font); margin-top: 8px; }
-#collectionScene #btnColBack {
-  background: transparent; color: var(--gm-light); border: 3px solid var(--gm-light); border-radius: 8px;
-  font: 700 16px/1 var(--gm-font); padding: 9px 16px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35);
-}
-#collectionScene #btnColBack:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+/* P119 (kullanıcı 2026-10-30) — Geri düğmesi Ayarlar'ınkiyle aynı: altta, tam genişlik, vurgu renginde (.ep-btn.ep-blue) */
+#collectionScene #btnColBack { width: 100%; flex: 0 0 auto; margin-top: 4px; }
 .col-well { background: rgba(0, 0, 0, .28); border-radius: 8px; padding: 14px; box-shadow: inset 0 3px 0 rgba(0, 0, 0, .35); }
 /* giriş */
 .col-hub { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 6px 2px; }
@@ -12557,3 +12555,22 @@ body.cocuk-fog #rack .tile:not(.deck-joker)::after { content: '?'; position: abs
 #splashOv .sp-band { background: var(--gm-light); opacity: 0; clip-path: polygon(-3% 0, 200% 0, 200% 100%, -31% 100%); }
 #splashOv .sp-tilewrap { position: relative; }
 #splashOv .sp-tile { position: relative; opacity: 0; image-rendering: pixelated; }
+
+
+/* ==========================================================================
+   P119 — OYUN AÇILIŞ SPLASH'İ "Mühür uyanıyor" (ui.js bootSplash)
+   Maskot katmanları mascot.svg'nin kendi yolları, aynı 480×674 tuvalde:
+   üst üste konunca birebir menü maskotu olur.
+   ========================================================================== */
+#bootOv { position: fixed; inset: 0; z-index: 9700; cursor: pointer; }
+/* karanlık ama galaksinin yeşilinden bir spot: siyah kollar/bacaklar zeminde seçilsin */
+#bootOv .bt-sky { position: absolute; inset: 0; background: #050807; background: radial-gradient(ellipse 34% 46% at 50% 50%, #2B5C4C 0%, #16342B 45%, #08110E 80%, #050807 100%); }
+#bootOv .bt-actor { position: absolute; transform-origin: 50% 38.5%; }   /* gövdenin ortası */
+#bootOv .bt-hop { position: absolute; inset: 0; transform-origin: 50% 77%; }   /* gövdenin alt kenarı */
+#bootOv .bt-hop > i { position: absolute; inset: 0; background: no-repeat 0 0 / 100% 100%; }
+#bootOv .bt-body  { background-image: url('assets/menu3/boot/mascot-body.svg') !important; }
+#bootOv .bt-lid   { background-image: url('assets/menu3/boot/mascot-lid.svg') !important; transform-origin: 50% 39%; }
+#bootOv .bt-pupil { background-image: url('assets/menu3/boot/mascot-pupil.svg') !important; transform-origin: 50% 39%; }
+#bootOv .bt-legs  { background-image: url('assets/menu3/boot/mascot-legs.svg') !important; transform-origin: 50% 76.9%; }
+#bootOv .bt-arm-l { background-image: url('assets/menu3/boot/mascot-arm-l.svg') !important; transform-origin: 11.9% 49%; }
+#bootOv .bt-arm-r { background-image: url('assets/menu3/boot/mascot-arm-r.svg') !important; transform-origin: 89.4% 49%; }
