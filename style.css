@@ -12539,6 +12539,8 @@ body.cocuk-fog #rack .tile:not(.deck-joker)::after { content: '?'; position: abs
   background: url('assets/game/deck-back.svg') no-repeat center / 100% 100%;
   image-rendering: pixelated;
 }
+/* dağıtım sürerken taşın ineceği hücre boş yuva olarak görünür (ui.js runTileFx) */
+#rack .rack-empty.deal-ph { position: absolute; z-index: 0; margin: 0; pointer-events: none; }
 /* giriş splash'i: koyu perde + çapraz silme şeridi + yanarak kaybolan taş.
    Tıklamayı tutmaz — perdenin altındaki ekran zaten değişmiştir. */
 #splashOv {

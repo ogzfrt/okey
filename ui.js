@@ -686,6 +686,7 @@
     for (const [key, f] of dealFx) {   // biten ve artık "yeni" olmayan kayıtlar silinir
       if (now - f.t0 > f.delay + f.dur + 50 && !newTileIds.has(+key) && !newTileIds.has(key)) dealFx.delete(key);
     }
+    el.rack.querySelectorAll('.deal-ph').forEach((x) => x.remove());   // önceki render'ın yer tutucuları
     if (!dealFx.size && !selFx) return;
     const dr = deck && deck.getBoundingClientRect();
     for (const d of tiles) {
@@ -719,6 +720,17 @@
         a.onfinish = () => back.remove();
         d.style.zIndex = '6';
         setTimeout(() => { d.style.zIndex = ''; }, Math.max(0, f.delay + f.dur - elapsed));
+        /* P118c (kullanıcı) — taş gelene kadar hücresi BOŞ YUVA gibi görünsün; yoksa dağıtım
+           sürerken taşların ineceği yer düz açık zemin kalıyordu. Yer tutucu satırın İLK
+           çocuğu (taşların altında kalsın: satır translate yüzünden kendi katmanıdır); hücre
+           sırası sayan sürükle-bırak kodu .deal-ph'yi atlar. */
+        const row = d.parentNode, rw = row.getBoundingClientRect();
+        const ph = document.createElement('div');
+        ph.className = 'rack-empty deal-ph';
+        Object.assign(ph.style, { left: (tr.left - rw.left) / k + 'px', top: (tr.top - rw.top) / k + 'px' });
+        row.insertBefore(ph, row.firstChild);
+        a.addEventListener('finish', () => ph.remove());
+        a.addEventListener('cancel', () => ph.remove());
         continue;
       }
       if (selFx && d.dataset.id === String(selFx.id) && now - selFx.at < 120) {
@@ -881,7 +893,7 @@
     const useRow2 = Math.abs(y - (r2.top + r2.height / 2)) < Math.abs(y - (r1.top + r1.height / 2));
     const row = useRow2 ? el.rackRow2 : el.rackRow1;
     const rect = useRow2 ? r2 : r1;
-    const tiles = [...row.children].filter(c => c.dataset.id !== String(dragId));
+    const tiles = [...row.children].filter(c => c.dataset.id !== String(dragId) && !c.classList.contains('deal-ph'));
     let index = tiles.length;
     for (let i = 0; i < tiles.length; i++) {
       const cr = tiles[i].getBoundingClientRect();
@@ -920,7 +932,7 @@
     const r2 = el.rackRow2.getBoundingClientRect();
     const useRow2 = Math.abs(y - (r2.top + r2.height / 2)) < Math.abs(y - (r1.top + r1.height / 2));
     const row = useRow2 ? el.rackRow2 : el.rackRow1;
-    const cells = [...row.children];
+    const cells = [...row.children].filter(c => !c.classList.contains('deal-ph'));   // P118c — dağıtım yer tutucusu hücre değil
     if (!cells.length) return -1;
     let col = 0, best = Infinity;
     cells.forEach((c, i) => {
