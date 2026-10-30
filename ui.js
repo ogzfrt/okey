@@ -618,7 +618,7 @@
     /* P118 — taş düz çizgide kaymaz, havaya kalkıp yay çizerek yuvaya düşer */
     if (!fxOff()) {
       clone.style.transition = 'none';
-      const ms = 430 * fxK();
+      const ms = 540 * fxK();
       clone.animate([
         { transform: `scale(${k})` },
         { transform: `translate(${dx * .42}px, ${dy * .42 - 90 * k}px) scale(${k * 1.06}) rotate(-12deg)`, offset: .42 },
@@ -658,6 +658,7 @@
   /* window.__fxSlow: inceleme kancası — hareketi kare kare görmek için yavaşlatır */
   const fxK = () => { let k = 1; try { k = localStorage.getItem('okeyAnimSpeed') === 'fast' ? .5 : 1; } catch (e) { /* varsayılan */ } return k * (window.__fxSlow || 1); };
   const dealFx = new Map();   // taş id → { t0, delay, dur }
+  const TILE_FLY = 600;       // bir taşın desteden hücresine uçuşu (ms)
   let dealAllPending = false;
   let selFx = null;           // { id, on, at } — son tıklanan taş
   function dealHand() { if (!fxOff()) dealAllPending = true; }
@@ -670,16 +671,17 @@
     if (dealAllPending) {
       dealAllPending = false;
       const k = fxK();
-      const step = Math.min(55, 1000 / Math.max(1, tiles.length)) * k;
-      tiles.forEach((d, i) => dealFx.set(d.dataset.id, { t0: now, delay: i * step, dur: 430 * k }));
+      /* P118b (kullanıcı: "taşların gelişi çok hızlı") — 21 taşlık el ~1.7 sn'de dağıtılır, her uçuş 0.6 sn */
+      const step = Math.min(85, 1650 / Math.max(1, tiles.length)) * k;
+      tiles.forEach((d, i) => dealFx.set(d.dataset.id, { t0: now, delay: i * step, dur: TILE_FLY * k }));
       /* her taş oturduğunda kısa bir "tık" — beep'in `when` parametresiyle tek seferde planlanır */
-      tiles.forEach((_, i) => beep(1500 + (i % 5) * 90, .018, 'square', .022, (i * step + 430 * k * .85) / 1000));
+      tiles.forEach((_, i) => beep(1500 + (i % 5) * 90, .018, 'square', .022, (i * step + TILE_FLY * k * .85) / 1000));
     }
     // çekilen taşlar (atış, joker, değnek …) — newTileIds render'dan ~600 ms sonra temizlenir
     let n = 0;
     for (const id of newTileIds) {
       const key = String(id);
-      if (!dealFx.has(key)) dealFx.set(key, { t0: now, delay: (n++) * 70 * fxK(), dur: 430 * fxK() });
+      if (!dealFx.has(key)) dealFx.set(key, { t0: now, delay: (n++) * 120 * fxK(), dur: TILE_FLY * fxK() });
     }
     for (const [key, f] of dealFx) {   // biten ve artık "yeni" olmayan kayıtlar silinir
       if (now - f.t0 > f.delay + f.dur + 50 && !newTileIds.has(+key) && !newTileIds.has(key)) dealFx.delete(key);
@@ -707,7 +709,7 @@
         const FLIP = .3;   // dönüş yolun başında biter; taş yolun çoğunu yüzü açık uçar
         const a = d.animate([
           { transform: `translate(${dx}px, ${dy}px) rotate(0deg) scale(${s0}, ${s0})` },
-          { transform: `translate(${dx * (1 - FLIP)}px, ${dy * (1 - FLIP) - 40}px) rotate(-10deg) scale(.04, ${(s0 + 1.1) / 2})`, offset: FLIP },
+          { transform: `translate(${dx * (1 - FLIP)}px, ${dy * (1 - FLIP) - 56}px) rotate(-10deg) scale(.04, ${(s0 + 1.1) / 2})`, offset: FLIP },
           { transform: `translate(0px, -12px) rotate(3deg) scale(1.06, 1.06)`, offset: .78 },
           { transform: `translate(0px, 0px) rotate(0deg) scale(1, 1)` },
         ], opt);
@@ -747,9 +749,10 @@
       const ov = document.createElement('div');
       ov.id = 'splashOv';
       ov.setAttribute('aria-hidden', 'true');
-      ov.innerHTML = '<div class="sp-band"></div><div class="sp-cover"></div><canvas class="sp-tile"></canvas>';
+      ov.innerHTML = '<div class="sp-band"></div><div class="sp-cover"></div><div class="sp-tilewrap"><canvas class="sp-tile"></canvas></div>';
       document.body.appendChild(ov);
-      const [band, cover, cv] = ov.children;
+      const [band, cover, wrap] = ov.children;
+      const cv = wrap.firstChild;
       const S = 3, PAD = 40, AW = 81, AH = 110;          // taş 81×110 piksel sanatı, 3 kat
       const W = AW * S + PAD * 2, H = AH * S + PAD * 2;
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -800,39 +803,52 @@
       let raf = 0;
       const loop = () => { draw(); raf = requestAnimationFrame(loop); };
       loop();
-      [band, cover].forEach((x) => x.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 * k, fill: 'forwards' }));
+      /* Kullanıcı (P118b): "bi anda yok oluyor, kendini hissettirmiyor" — taş artık ağırlıkla
+         iner (yaylanıp hafif ezilir, alçak bir vuruş sesi), karanlıkta ~1 sn süzülerek durur,
+         silme ve yanma daha uzun sürer; toplam ~2.4 sn (Hızlı'da yarısı). */
+      [band, cover].forEach((x) => x.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240 * k, fill: 'forwards' }));
       cv.animate([
-        { transform: 'scale(.35) rotate(-14deg)', opacity: 0 },
-        { transform: 'scale(1.08) rotate(4deg)', opacity: 1, offset: .6 },
-        { transform: 'scale(1) rotate(0deg)', opacity: 1 },
-      ], { duration: 420 * k, easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' });
+        { transform: 'translateY(-60px) scale(.35) rotate(-16deg)', opacity: 0 },
+        { transform: 'translateY(0) scale(1.12, 1.12) rotate(5deg)', opacity: 1, offset: .52 },
+        { transform: 'translateY(0) scale(1.04, .94) rotate(-2deg)', opacity: 1, offset: .72 },
+        { transform: 'translateY(0) scale(1, 1) rotate(0deg)', opacity: 1 },
+      ], { duration: 620 * k, easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' });
+      // karanlıkta beklerken hafifçe süzülür (sarmalayıcıda: iniş animasyonuyla çakışmasın)
+      const float = wrap.animate([
+        { transform: 'translateY(0) rotate(-1.2deg)' },
+        { transform: 'translateY(-8px) rotate(1.2deg)' },
+        { transform: 'translateY(0) rotate(-1.2deg)' },
+      ], { duration: 1700 * k, delay: 520 * k, iterations: Infinity, easing: 'ease-in-out' });
       SFX.draw();
+      beep(110, .18, 'triangle', .09, .32 * k); beep(220, .08, 'square', .03, .32 * k);   // iniş vuruşu
       setTimeout(() => {
         try { mid(); } catch (e) { console.error('splash: ekran geçişi', e); }
         setTimeout(() => {
           // çapraz silme: kenarında temanın açık tonunda ince bir şerit
           const poly = (l) => `polygon(${l}% 0, 200% 0, 200% 100%, ${l - 28}% 100%)`;
-          const wipe = { duration: 520 * k, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' };
+          const wipe = { duration: 720 * k, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' };
           cover.animate([{ clipPath: poly(0) }, { clipPath: poly(130) }], wipe);
-          band.animate([{ clipPath: poly(-3) }, { clipPath: poly(127) }], wipe);
-          beep(330, .16, 'triangle', .05); beep(495, .14, 'triangle', .04, .07);
-          setTimeout(() => {
-            const t0 = performance.now(), dur = 640 * k;
+          band.animate([{ clipPath: poly(-4) }, { clipPath: poly(126) }], wipe);
+          beep(330, .2, 'triangle', .05); beep(495, .18, 'triangle', .04, .09);
+          setTimeout(() => {   // yanma, silme kenarı taşın üstünden geçerken başlar
+            const t0 = performance.now(), dur = 860 * k;
+            beep(180, .3, 'sawtooth', .025);
             const tick = () => {
               burn = Math.min(1.1, ((performance.now() - t0) / dur) * 1.1);
               if (burn < 1.1) requestAnimationFrame(tick);
               else setTimeout(() => {
                 cancelAnimationFrame(raf);
+                float.cancel();
                 ov.remove();
                 this.busy = false;
                 const q = this.queue.splice(0);
                 q.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
-              }, 260 * k);   // son kıvılcımlar sönsün
+              }, 240 * k);   // son kıvılcımlar sönsün
             };
             tick();
-          }, 170 * k);
-        }, 430 * k);
-      }, 180 * k);
+          }, 330 * k);
+        }, 790 * k);
+      }, 260 * k);
     },
   };
   function withSplash(fn) {

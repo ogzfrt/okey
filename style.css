@@ -12553,4 +12553,5 @@ body.cocuk-fog #rack .tile:not(.deck-joker)::after { content: '?'; position: abs
   transition: background-color .35s ease;
 }
 #splashOv .sp-band { background: var(--gm-light); opacity: 0; clip-path: polygon(-3% 0, 200% 0, 200% 100%, -31% 100%); }
+#splashOv .sp-tilewrap { position: relative; }
 #splashOv .sp-tile { position: relative; opacity: 0; image-rendering: pixelated; }
