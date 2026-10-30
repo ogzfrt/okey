@@ -12644,3 +12644,82 @@ html[data-theme="amber"] .ep-btn.ep-blue { color: #4A2608; }
 /* hedefler arasında kayan çerçeve + karartma deliği (yalnız hareket açıkken eklenen .fx) */
 #tutSpot.fx .ts-ring { transition: left .35s ease, top .35s ease, width .35s ease, height .35s ease; }
 #tutSpot.fx .ts-holes rect { transition: x .35s ease, y .35s ease, width .35s ease, height .35s ease; }
+
+
+/* P121 (kullanıcı 2026-10-30: seçim çerçevesi "UI dilimize göre değil") — SEÇİLİ TAŞ.
+   Eski hâl: yuvarlak köşeli 3 px --accent (pembe-kırmızı) halka + bulanık pembe gölge.
+   Yeni: taşın KENDİ pikselli silüetini izleyen 3 px çerçeve (dört yöne drop-shadow zinciri,
+   basamaklı köşeler korunur), temanın vurgu renginde (--gm-turn-on); altında sert piksel gölge.
+   Aynı anda en çok birkaç taş seçili → filtre maliyeti önemsiz (P84 sürekli filtreler içindi). */
+#rack .tile.selected,
+#rack .tile.selected:hover {
+  transform: translateY(-12px);
+  box-shadow: none;
+  filter: drop-shadow(3px 0 0 var(--gm-turn-on)) drop-shadow(-3px 0 0 var(--gm-turn-on))
+          drop-shadow(0 3px 0 var(--gm-turn-on)) drop-shadow(0 -3px 0 var(--gm-turn-on))
+          drop-shadow(0 7px 0 rgba(0, 0, 0, .38));
+}
+
+
+/* P121 — ADEM İLE HAVVA: Elma kendi görünüşüyle (okeyden ayırt edilsin). Elma okey kimliği taşıdığı için
+   .okey sınıfını da alır; eski 🍎 işareti `.tile.okey::after { display: none }` yüzünden hiç görünmüyordu
+   ve Elma sıradan okey gibi duruyordu. Geçici piksel elma — Figma çizimi gelince yalnız bu görsel değişir. */
+.tile.okey.apple-tile, .tile.apple-tile {
+  background:
+    url('assets/game/apple-tile.svg') no-repeat 50% 10% / 56% auto,
+    url('assets/game/tile-face.svg') no-repeat 50% 50% / 90.12% 92.73%,
+    url('assets/game/tile-border.svg') no-repeat 0 0 / 100% 100%;
+  image-rendering: pixelated;
+}
+.tile.apple-tile .num { visibility: hidden; }
+/* mühür kabı GİZLENMEZ (yüzdeki delikten ıstaka zemini görünür) — içi boş halka, okey gözü/elmas yok */
+.tile.okey.apple-tile .dot, .tile.apple-tile .dot {
+  background:
+    url('assets/game/gem-l1.svg') no-repeat 17.07% 19.05% / 65.85% 64.29%,
+    url('assets/game/gem-l5.svg') no-repeat 12.20% 14.29% / 75.61% 71.43%,
+    url('assets/game/gem-l4.svg') no-repeat  7.32%  9.52% / 85.37% 80.95%,
+    url('assets/game/gem-l3.svg') no-repeat  2.44%  4.76% / 95.12% 90.48%,
+    url('assets/game/gem-l2.svg') no-repeat     0     0   / 100%   100%;
+}
+.tile.apple-tile .dot::after { display: none; }
+.tile.apple-tile::after { display: none !important; }
+
+
+/* P122 — oyun hissi: sahne içi beyaz parlama, yükselen sayı, kıvılcım patlaması (ui.js stageFlash/popText/sparkBurst) */
+.gm-stage .stage-flash { position: absolute; inset: 0; background: #FFFFFF; pointer-events: none; z-index: 950; }
+.gm-stage .pop-text {
+  position: absolute; z-index: 940; pointer-events: none; white-space: nowrap;
+  font: 700 30px/1 var(--gm-font); color: #FFFFFF; letter-spacing: -1px;
+  text-shadow: 0 3px 0 var(--gm-dark), 2px 0 0 var(--gm-dark), -2px 0 0 var(--gm-dark), 0 -2px 0 var(--gm-dark);
+}
+.gm-stage .pop-text.pt-chip { color: #8FD3FF; }
+.gm-stage .burst-spark { position: absolute; width: 12px; height: 12px; z-index: 945; pointer-events: none; }
+
+
+/* P122 · B — uçan piksel coin (ui.js coinFly) */
+.coin-fly {
+  position: fixed; width: 22px; height: 22px; z-index: 9450; pointer-events: none;
+  background: url('assets/game/coin-px.svg') no-repeat center / 100% 100%; image-rendering: pixelated;
+}
+
+
+/* P122 · C — ELLE TUTULUR KARTLAR: imlece doğru 3B eğilme (--rx/--ry ui.js'ten) + joker çiziminde boşta salınım.
+   Salınım `rotate`/`translate` bireysel özellikleriyle → karttaki transform/animasyonlarla çakışmaz. */
+#rack .tile:hover { transform: translateY(-4px) perspective(520px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+#rack .tile.selected,
+#rack .tile.selected:hover { transform: translateY(-12px) perspective(520px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+.gm-stage .joker-tile .jt-art,
+#storeStage .store-item .st-frame {
+  transform: perspective(420px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .14s ease-out;
+}
+@keyframes jkIdle {
+  0%, 100% { rotate: -1.1deg; translate: 0 0; }
+  50%      { rotate: 1.1deg;  translate: 0 -2px; }
+}
+html.fx-on .gm-stage .joker-tile.has-art .jt-art { animation: jkIdle 3.6s ease-in-out infinite; }
+html.fx-on .gm-stage .joker-tile:nth-child(2n).has-art .jt-art { animation-delay: -1.2s; animation-duration: 4.1s; }
+html.fx-on .gm-stage .joker-tile:nth-child(3n).has-art .jt-art { animation-delay: -2.3s; animation-duration: 3.3s; }
+@media (prefers-reduced-motion: reduce) { html.fx-on .gm-stage .joker-tile.has-art .jt-art { animation: none; } }
+
+

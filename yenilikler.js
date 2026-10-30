@@ -15,6 +15,25 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-10-31', date: { tr: '31 Ekim', en: 'October 31' },
+      items: [
+        ['degisti', 'Adem ile Havva: İki Elma', 'Raund başında eline 2 Elma geliyor. Tek Elmalı açılım ×2; iki Elmayı aynı açılımda açarsan ×6 ama cennetten kovulursun: o raund artık taş çekemezsin. Elma artık okey gibi görünmüyor, kendi elmasıyla.',
+          'Adam & Eve: Two Apples', '2 Apples reach your hand at round start. A meld with one Apple ×2; meld both together for ×6 but you are cast out: no more draws that round. The Apple no longer looks like a joker tile.'],
+        ['degisti', 'Pandora: Armağan', 'Kutunun armağanı artık taşları işaretlemiyor: 3 taşın o raund gerçek Altın Taş’a dönüyor (değeri 13, Altın Taş’ın +60’ı ve girdiği grubun +%30’u).',
+          'Pandora: Gifts', 'The gift no longer marks tiles: 3 of your tiles become real Gold Tiles that round (worth 13, plus the Gold Tile’s +60 and +30% for their group).'],
+        ['yeni', 'Puanlama anı', 'Açılımda taşlar tek tek zıplayıp değerlerini söylüyor, büyük puanda ekran sarsılıyor, dev çarpanda an bir nefes duruyor, hedefi geçince puan kutusu patlıyor. Sarsıntıyı Ayarlar › Oyun’dan kapatabilirsin.',
+          'The scoring moment', 'Tiles in a meld hop one by one and call out their value, big scores shake the screen, huge multipliers freeze the moment, and passing the target bursts the score box. Turn the shake off in Settings › Game.'],
+        ['yeni', 'Para akışı', 'Raund sonu fişi satır satır sayıyor, coin’ler cüzdana uçuyor; sattığın kart coin’e dağılıyor, yenilenen raftaki kartlar dönerek açılıyor.',
+          'Money flow', 'The round receipt counts line by line and coins fly into your wallet; sold cards burst into coins and rerolled cards flip open.'],
+        ['yeni', 'Elle tutulur kartlar', 'Taşlar ve jokerler imlecine doğru eğiliyor, joker çizimleri hafifçe salınıyor, sürüklediğin taş hızınla yatıp yaylanarak oturuyor; seçili taşın çerçevesi taşın kendi kenarını izliyor.',
+          'Cards you can feel', 'Tiles and jokers tilt toward your cursor, joker art sways gently, dragged tiles lean with your speed and spring into place; the selection frame follows the tile’s own edge.'],
+        ['yeni', 'Büyük anlar', 'Okey göstergesi dönerek açılıyor, kazanınca taşlar sıçrıyor, kaybedince ıstakadan düşüyor.',
+          'Big moments', 'The joker indicator flips open, tiles jump when you win and tumble off the rack when you lose.'],
+        ['degisti', 'Kartlarda yazı yok', 'Pandora gibi varyant pencerelerinde ve slot makinesinin sonuç kartlarında ad ve açıklama kartın altında yazmıyor; üstüne gelince görünüyor.',
+          'Cleaner cards', 'Variant windows and slot machine result cards no longer print names and descriptions underneath; hover to read them.'],
+      ],
+    },
+    {
       id: '2026-10-30', date: { tr: '30 Ekim', en: 'October 30' },
       items: [
         ['yeni', 'Taşlar desteden gelir', 'Raunda girince elin desteden tek tek dağıtılıyor; çektiğin taş desteden dönerek ıstakana uçuyor, seçtiğin taş yaylanıyor, attığın taş havada yay çizip yuvasına düşüyor.',

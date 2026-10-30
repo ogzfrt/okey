@@ -2569,7 +2569,7 @@ const JOKER_DEFS = {
      kullanıldığı açılım ×3 puan verir. Elmayı AÇTIĞIN an cennetten
      kovulursun: raundun kalanında tur başı 2 taş eksik çekiş, işlek +%20. */
   yasakElma: { key: 'yasakElma', name: 'Adem ile Havva', rarity: 'mythic', uses: 1,
-    desc: `Raund başında eline bir Elma gelir: her taşın yerine geçer, açılımına ×1.5 verir. Elmayı açarsan kalan turlarda 2 taş eksik çekersin, işlek riski +%20.` },
+    desc: `Raund başında eline 2 Elma gelir; okey gibi her taşın yerine geçer. Tek Elmalı açılım ×2. İki Elmayı aynı açılımda açarsan ×6 — ama cennetten kovulursun: raundun kalan turlarında taş çekemezsin.` },
   /* PLAYTEST 31 · GRUP J (kullanıcı onayı 2026-09-13) — KAĞIT JOKERİ → KAĞIT
      (EN "Paper"). Eski efekt (en düşük 3 taş 13 olur) kaldırıldı, yeni
      anahtar. Her raund başında elindeki en düşük 2 asıl deste taşı KALICI
@@ -2967,9 +2967,14 @@ const VOID_SCORE = 40;           // Grup G — Boşluk: yutulan taş başına pu
 const VOID_MULT = 0.15;          // Grup G — Boşluk: yutulan taş başına kalıcı çarpan (0.08 → 1.0 · P51: 1.0 → 0.15)
 const GHOST_LIFE = 2;           // P52 · Grup E — Hayalet taşının ömrü (tur)
 const PINKY_MAX = 2;             // Grup C — Pinky Warrior: bu değere kadar taşlar okey · P51: 1-3 → 1-2 (bot kaldıracı ×3.4)
-const APPLE_MULT = 1.5;          // Grup I — Yasak Elma: elmalı açılımın puan katı (P51: ×3 → ×2 → ×1.5; yeni el büyümesiyle 1. tur kaldıracı ×3.7-4.5)
-const APPLE_DRAW_CUT = 2;        // Grup I — kovulunca tur başı eksik çekiş
-const APPLE_ISLEK = 0.20;        // Grup I — kovulunca raundun kalanına işlek riski
+/* P121 (kullanıcı 2026-10-30: "Mythic gibi hissettirmedi") — ADEM İLE HAVVA = İKİ ELMA.
+   Mythic tek raund yaşar → karar raundun içinde: raund başında 2 Elma gelir (okey gibi
+   her taşın yerine geçer). Tek Elmalı açılım ×APPLE_SOLO_MULT; iki Elma AYNI açılımda
+   ×APPLE_PAIR_MULT ama "cennetten kovulma": raundun kalan turlarında desteden çekiş yok.
+   Eski hâl (P51): tek elma ×1.5, açınca kalan turlarda 2 eksik çekiş + işlek +%20. */
+const APPLE_COUNT = 2;           // raund başında gelen Elma sayısı (Adem + Havva)
+const APPLE_SOLO_MULT = 2;       // tek Elmalı açılımın puan katı
+const APPLE_PAIR_MULT = 6;       // iki Elma aynı açılımda
 
 /* P35 · Grup M: S1 +100/2.5x → +150/2.5x · S2 +250/3.5x → +300/5.0x ·
    S3 +550/5.5x → +600/10.0x */
@@ -6551,10 +6556,13 @@ const Game = {
        okeyin kimliğidir ama `copied` olduğu için asıl destenin 2 kopya
        sınırına girmez; raund bitince destede yeniden kurulmaz. */
     if (this.hasActive('yasakElma')) {
-      if (this.realHandCount() < MAX_HAND) {
+      let got = 0;
+      for (let a = 0; a < APPLE_COUNT && this.realHandCount() < MAX_HAND; a++, got++) {
         s.hand.push({ id: nextTileId(s), color: s.okey.color, number: s.okey.number,
           isOkeyReal: true, copied: true, apple: true, origin: 'yasakElma' });
-        s.roundStartNotes.push(`🍎 Adem ile Havva: eline Yasak Elma geldi — okey gibi her taşın yerine geçer, açılımına ×${APPLE_MULT}. Açarsan cezası başlar.`);
+      }
+      if (got) {
+        s.roundStartNotes.push(`🍎 Adem ile Havva: eline ${got} Elma geldi — tek Elmalı açılım ×${APPLE_SOLO_MULT}, ikisi birlikte ×${APPLE_PAIR_MULT} ama kalan turlarda çekiş yok.`);
       } else {
         s.roundStartNotes.push('🍎 Adem ile Havva: ıstaka dolu — elma bu raund düşmedi');
       }
@@ -6653,8 +6661,10 @@ const Game = {
     // Pandora (Grup F) — kutu raund başında elde açılır
     const pandoraJ = this.slotRecs().find(j => j.key === 'truva' && !j.revealed);
     if (pandoraJ) this._revealPandora(pandoraJ, s.roundStartNotes);
-    /* Pandora · ARMAĞAN — her raund başında 3 taş 13'e çıkar ve altın
-       işaretlenir; açılımda o grubun puanını %25 artırır. */
+    /* Pandora · ARMAĞAN — her raund başında 3 taş 13'e çıkar ve o raund GERÇEK
+       Altın Taş olur (P121, kullanıcı 2026-10-30: "altınla işaretlenir" yerine taş altına
+       dönsün). Altın Taş'ın kendi +60'ı + girdiği grubun puanı %30. Deste her raund
+       yeniden kurulduğu için dönüşüm raundluktur (kalıcı özel taş kaydı açılmaz). */
     const armJ = this.slotRecs().find(j => j.key === 'truva' && j.pandora === 'armagan');
     if (armJ) {
       const cand = s.hand.filter(t => !t.jokerTile && !t.fakeOkey && !this.isOkeyTile(t)
@@ -6664,11 +6674,12 @@ const Game = {
         const t = cand.splice(Math.floor(this.rng() * cand.length), 1)[0];
         t.number = 13;
         t.gift = true;
+        t.special = 'altin';
         retune(t, 'pandoraArmagan');
         n++;
       }
-      if (n) s.roundStartNotes.push(`🎁 Pandora (Armağan): ${n} taşın değeri 13 oldu `
-        + `— açılımda kullandığın grubun puanı %${Math.round(PANDORA_ARMAGAN_BONUS * 100)} artar`);
+      if (n) s.roundStartNotes.push(`🎁 Pandora (Armağan): ${n} taşın Altın Taş'a döndü, değeri 13 `
+        + `— girdiği grubun puanı %${Math.round(PANDORA_ARMAGAN_BONUS * 100)} artar`);
     }
     /* P100 — BOĞA PİYASASI raund başında sıfırdan başlar (eski Borsa piyasa çekilişi kalktı). */
     s.borsa = null;          // (P100'den beri kullanılmıyor — eski piyasa)
@@ -8442,13 +8453,15 @@ const Game = {
        Boss kesintileri damgadan SONRA ve yüzde olarak işler, dolayısıyla
        damga onların da etkisini büyütmez/küçültmez. */
     let final = baseScore + flat;
-    /* YASAK ELMA (P31 · Grup I) — elmalı açılım ×3 (işleme taşları dahil). */
-    if (!s.jokersDisabled && final > 0 && this.hasActive('yasakElma')
-        && [...ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)].some(t => t.apple)) {
-      const b = Math.ceil(final * (APPLE_MULT - 1));   // ×1.5: yarım puan yukarı yuvarlanır
+    /* ADEM İLE HAVVA (P121) — açılımdaki Elma sayısı (işleme taşları dahil): 1 → ×2, 2 → ×6. */
+    const applesIn = [...ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)].filter(t => t.apple).length;
+    if (!s.jokersDisabled && final > 0 && applesIn && this.hasActive('yasakElma')) {
+      const m = applesIn >= 2 ? APPLE_PAIR_MULT : APPLE_SOLO_MULT;
+      const b = Math.ceil(final * (m - 1));
       final += b;
       const aj = this.slotRecs().find(j => j.key === 'yasakElma');
-      triggered.push({ id: aj ? aj.id : 'apple', name: 'Adem ile Havva', text: `🍎 elma: ×${APPLE_MULT} (+${b})` });
+      triggered.push({ id: aj ? aj.id : 'apple', name: 'Adem ile Havva',
+        text: applesIn >= 2 ? `🍎🍎 iki Elma: ×${APPLE_PAIR_MULT} (+${b})` : `🍎 Elma: ×${APPLE_SOLO_MULT} (+${b})` });
     }
     /* KARA MUM — yakılan alev bu açılımı ×1.5 */
     if (final > 0 && s.mumArmed && this.hasActive('karaMum')) {
@@ -9980,11 +9993,11 @@ const Game = {
         events.push(`Cellat ${COLOR_TR[low.color]} ${low.number} taşını idam etti (+${CELLAT_EXEC} puan, açılımlara +${CELLAT_MOTIVE})`);
       }
     }
-    /* YASAK ELMA (P31 · Grup I) — elma açıldıysa cennetten kovulma. */
-    if (!s.appleEaten && [...r.ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)].some(t => t.apple)) {
+    /* ADEM İLE HAVVA (P121) — iki Elma aynı açılımda: cennetten kovulma (kalan turlarda çekiş yok).
+       Tek Elmanın bedeli yok. */
+    if (!s.appleEaten && [...r.ctx.tiles, ...s.islemeler.flatMap(e => e.tiles)].filter(t => t.apple).length >= 2) {
       s.appleEaten = true;
-      s.islekRateBonus = round2((s.islekRateBonus || 0) + APPLE_ISLEK);
-      events.push(`🍎 Elmayı ısırdın — kovuldun: kalan turlarda ${APPLE_DRAW_CUT} taş eksik çekersin, işlek riski +%${Math.round(APPLE_ISLEK * 100)}`);
+      events.push('🍎 İki Elmayı birlikte yediniz — cennetten kovuldunuz: bu raundun kalan turlarında taş çekemezsin');
     }
     /* Gökyüzü Ejderhası (P31 · Grup F) — ıstakadan rastgele 1 taş KALICI
        silinir: Ustura ile aynı defter (tileMods remove + özel/mıknatıs
@@ -10010,6 +10023,7 @@ const Game = {
       raw: r.raw, carpan: r.carpan, carpanText: r.carpanText, parts: r.parts, pre: preBase,
       final: r.final, count: r.ctx.count, mode: s.turnMode,
       bonuses: [], triggered: r.triggered, events,
+      tileIds: r.ctx.tiles.map(t => t.id),   // P122 — puanlama sahnesinde taş taş sayım (yalnız görünüm)
     };
 
     if (r.ctx.ciftCount >= 7) {   // P58 · Grup A: 8+ Çift de rekordur
@@ -10639,7 +10653,7 @@ const Game = {
     let wantN = 5 + (s.permDraw || 0) // kalıcı çekiş yükseltmesi (madde 24 · Bol Çekiş, eski adı Derin Nefes)
       + (s.tuccarDraw || 0)  // Tüccar takası: bu raund +1 taş
       + (s.bonusDraw || 0)   // Grup E — Yıldız Taşı: açılımda kazanılan ekstra çekiş
-      - (s.appleEaten ? APPLE_DRAW_CUT : 0);   // P31 · Grup I — cennetten kovulma
+      - (s.appleEaten ? 999 : 0);   // P121 — Adem ile Havva: kovulunca raundun kalanında çekiş yok
     if (s.bonusDraw) { events.push(`⭐ Yıldız Taşı: +${s.bonusDraw} ekstra taş`); s.bonusDraw = 0; }
     /* P71 — LADY LUCK · Tamamlama: el 21'in altındaysa eksik kadar çek
        (normal çekişten azsa normal çekiş geçerli; ıstaka sınırı aşağıda) */
@@ -12837,7 +12851,7 @@ const Game = {
     salgin: { name: 'Pandora — Salgın', icon: '🦠',
       desc: `Kutudan dertler çıktı: her tur ${PANDORA_SALGIN_TILES} taşın hastalanır. Hasta taş açılımda +${PANDORA_SALGIN_MULT.toFixed(1)}x verir; elde tutarsan her tur -${PANDORA_SALGIN_BURN} puan yakar.` },
     armagan: { name: 'Pandora — Armağan', icon: '🎁',
-      desc: `Kutu boşaldı: her raund başında ${PANDORA_ARMAGAN_TILES} taşının değeri 13 olur ve altınla işaretlenir. İşaretli taşın girdiği grubun puanı %${Math.round(PANDORA_ARMAGAN_BONUS * 100)} artar.` },
+      desc: `Kutu boşaldı: her raund başında ${PANDORA_ARMAGAN_TILES} taşın Altın Taş'a döner ve değeri 13 olur. Altın Taş'ın girdiği grubun puanı %${Math.round(PANDORA_ARMAGAN_BONUS * 100)} artar.` },
   },
 
   _revealPandora(j, notes) {
@@ -14757,7 +14771,7 @@ if (typeof module !== 'undefined') {
     /* PLAYTEST 26 — Yankee birikimi · PLAYTEST 30 — Legendary denge sabitleri */
     VASIYET_CAP, IPOTEK_TURNS, CLOCK_SECONDS, CLOCK_PER_SEC, normSeed, seedHash, SEED_LEN, MIDAS_COIN, TEKER_MULT, KAIOKEN_MULT_2, KAIOKEN_MULT_3,
     niceTarget, niceUp, WORLD_PERM_MULT, WORLD_TARGET_UP, KIYAMET_KEEP, EJDERHA_TILE_MULT, VOID_SCORE, VOID_MULT,
-    SEYTAN_SCORE, SEYTAN_MULT, PINKY_MAX, APPLE_MULT, APPLE_DRAW_CUT, APPLE_ISLEK, KAGIT_TILES,
+    SEYTAN_SCORE, SEYTAN_MULT, PINKY_MAX, APPLE_COUNT, APPLE_SOLO_MULT, APPLE_PAIR_MULT, KAGIT_TILES,
     MEDUSA_MULT, MEDUSA_FLAT, NOSTRA_MULT, TEKER_FLAT, ATES_HAGGLE_WIN, ATES_DISCOUNT,
     ATES_STEAL_WIN, ATES_STEAL_ISLEK, SISYPHUS_STEPS, FRANK_REVIVE_FLAT, FRANK_STITCH_MULT,
     PANDORA_UMUT_FLAT, PANDORA_SALGIN_MULT, PANDORA_SALGIN_BURN, PANDORA_ARMAGAN_BONUS,

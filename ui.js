@@ -1176,7 +1176,7 @@
   }
   /* $ kutusu: "−N" süzülür, sayı eski değerden yenisine sayar */
   function coinDrop(from) {
-    const v = storeOpen() ? document.getElementById('storeCoinVal') : el.coinVal;
+    const v = storeOpen() ? document.getElementById('storeCoinVal') : curScreen() === 'map' ? document.getElementById('mapCoinVal') : el.coinVal;
     const to = Game.state.coins;
     if (fxOff() || !v || from == null || from === to) return;
     const box = v.closest('.gm-coin') || v;
@@ -1193,6 +1193,199 @@
       if (p < 1) requestAnimationFrame(tick); else v.textContent = String(Game.state.coins);
     };
     tick();
+  }
+
+  /* ============================================================
+     P122 (kullanıcı 2026-10-30: "donukluk hissiyatını yok etmek istiyorum") — OYUN HİSSİ ARAÇLARI.
+     Önem kademeli geri bildirim (gamedev game-feel): sarsıntı sahnenin `translate`'ini oynatır
+     (sahne `transform: scale` taşıdığı için transform'a dokunulmaz), sönümlenerek dinlenmeye döner.
+     Ayarlar › Oyun › Ekran sarsıntısı ile kapanır; testte / hareketi azalt'ta yok.
+     ============================================================ */
+  const SHAKE_KEY = 'okeyShake';
+  const shakeOn = () => { try { return localStorage.getItem(SHAKE_KEY) !== 'off'; } catch (e) { return true; } };
+  const liveStage = () => document.querySelector(storeOpen() ? '#storeStage' : '.screen:not(.hidden) .gm-stage');
+  /* güç 0..1 → genlik² (küçük vuruş zar zor kıpırdar, büyük vuruş çarpar), sönümlü sinüs */
+  function screenShake(power, stage = liveStage()) {
+    if (fxOff() || !shakeOn() || !stage || power <= 0) return;
+    const amp = 2 + 16 * power * power, n = 9, kf = [];
+    for (let i = 0; i <= n; i++) {
+      const d = 1 - i / n;
+      kf.push({ translate: `${(Math.sin(i * 2.1) * amp * d).toFixed(1)}px ${(Math.cos(i * 2.9) * amp * .6 * d).toFixed(1)}px` });
+    }
+    kf[n] = { translate: '0px 0px' };
+    stage.animate(kf, { duration: (260 + 260 * power) * fxK(), easing: 'linear' });
+  }
+  /* kısa beyaz parlama (dev çarpan / hedef) — sahnenin içinde */
+  function stageFlash(strength = .45, stage = liveStage()) {
+    if (fxOff() || !stage) return;
+    const f = document.createElement('div');
+    f.className = 'stage-flash';
+    stage.appendChild(f);
+    f.animate([{ opacity: strength }, { opacity: 0 }], { duration: 220 * fxK(), easing: 'ease-out' }).onfinish = () => f.remove();
+  }
+  /* sahnede bir öğenin üstünden yükselen kısa yazı (ör. "+12") */
+  function popText(target, text, cls = '') {
+    const stage = target && target.closest('.gm-stage');
+    if (!stage || fxOff()) return;
+    const sr = stage.getBoundingClientRect(), sc = (sr.width / (stage.offsetWidth || sr.width)) || 1, r = target.getBoundingClientRect();
+    const p = document.createElement('div');
+    p.className = 'pop-text ' + cls;
+    p.textContent = text;
+    p.style.left = ((r.left + r.width / 2 - sr.left) / sc) + 'px';
+    p.style.top = ((r.top - sr.top) / sc - 6) + 'px';
+    stage.appendChild(p);
+    p.animate([{ transform: 'translate(-50%, 0) scale(.6)', opacity: 0 }, { transform: 'translate(-50%, -18px) scale(1.15)', opacity: 1, offset: .3 },
+      { transform: 'translate(-50%, -34px) scale(1)', opacity: 0 }], { duration: 720 * fxK(), easing: 'ease-out' }).onfinish = () => p.remove();
+  }
+  /* piksel kıvılcım patlaması (sahne koordinatında bir öğenin çevresinde) */
+  function sparkBurst(target, n = 14, colors = ['#FFE58A', '#FFFFFF', 'var(--gm-turn-on)']) {
+    const stage = target && target.closest('.gm-stage');
+    if (!stage || fxOff()) return;
+    const sr = stage.getBoundingClientRect(), sc = (sr.width / (stage.offsetWidth || sr.width)) || 1, r = target.getBoundingClientRect();
+    const cx = (r.left + r.width / 2 - sr.left) / sc, cy = (r.top + r.height / 2 - sr.top) / sc;
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement('i');
+      p.className = 'burst-spark';
+      const ang = (i / n) * Math.PI * 2 + Math.random() * .3, dist = 60 + Math.random() * 70;
+      p.style.left = cx + 'px'; p.style.top = cy + 'px';
+      p.style.background = colors[i % colors.length];
+      stage.appendChild(p);
+      p.animate([{ transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist}px)) scale(.3)`, opacity: 0 }],
+        { duration: 560 * fxK(), easing: 'cubic-bezier(.2,.7,.4,1)' }).onfinish = () => p.remove();
+    }
+  }
+
+  /* P122 · B — PARA AKIŞI: piksel coin'ler bir yerden $ kutusuna (ya da verilen hedefe) yay çizerek akar */
+  function coinFly(fromRect, toEl, n = 6) {
+    if (fxOff() || !fromRect || !toEl) return;
+    const tr = toEl.getBoundingClientRect();
+    if (!tr.width) return;
+    const K = fxK();
+    n = Math.max(1, Math.min(10, n));
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement('i');
+      c.className = 'coin-fly';
+      const sx = fromRect.left + fromRect.width * (.3 + Math.random() * .4), sy = fromRect.top + fromRect.height * (.3 + Math.random() * .4);
+      const dx = tr.left + tr.width / 2 - sx, dy = tr.top + tr.height / 2 - sy;
+      Object.assign(c.style, { left: sx + 'px', top: sy + 'px' });
+      document.body.appendChild(c);
+      const a = c.animate([
+        { transform: 'translate(-50%, -50%) scale(.4)', opacity: 0 },
+        { transform: `translate(calc(-50% + ${(Math.random() - .5) * 50}px), calc(-50% - ${30 + Math.random() * 30}px)) scale(1.2)`, opacity: 1, offset: .25 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.8)`, opacity: 1 },
+      ], { duration: 620 * K, delay: i * 70 * K, easing: 'cubic-bezier(.45,.05,.55,1)', fill: 'backwards' });
+      a.onfinish = () => {
+        c.remove();
+        beep(1245 + (i % 4) * 80, .035, 'square', .04);
+        toEl.animate([{ transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 140 * K });
+      };
+    }
+  }
+  const coinBoxEl = () => (storeOpen() ? document.getElementById('storeCoins')
+    : curScreen() === 'map' ? document.getElementById('mapCoin') : document.getElementById('coinChip'));
+  /* satılan kart dönerek küçülür; coin'ler $ kutusuna akar */
+  function sellPoof(cardEl, gain, c0) {
+    if (fxOff() || !cardEl || !cardEl.getBoundingClientRect().width) return;
+    const r = cardEl.getBoundingClientRect();
+    const g = stageClone(cardEl, 'fly-clone');
+    Object.assign(g.clone.style, { left: r.left + 'px', top: r.top + 'px', transition: 'none', zIndex: 9400 });
+    document.body.appendChild(g.clone);
+    g.clone.animate([{ transform: `scale(${g.k})`, opacity: 1 }, { transform: `scale(${g.k * 1.12}) rotate(-6deg)`, opacity: 1, offset: .3 },
+      { transform: `translate(${r.width * .3}px, ${r.height * .3}px) scale(0) rotate(40deg)`, opacity: 0 }],
+      { duration: 420 * fxK(), easing: 'ease-in', fill: 'forwards' }).onfinish = () => g.clone.remove();
+    setTimeout(() => {   // render'dan sonra: coin'ler varana dek kutu eski değeri gösterir
+      const v = storeOpen() ? document.getElementById('storeCoinVal') : curScreen() === 'map' ? document.getElementById('mapCoinVal') : el.coinVal;
+      if (v && c0 != null) v.textContent = String(c0);
+    }, 0);
+    setTimeout(() => { coinFly(r, coinBoxEl(), Math.ceil((gain || 3) / 2)); }, 160 * fxK());
+    setTimeout(() => coinDrop(c0), 560 * fxK());
+  }
+
+  /* P122 · B — RAUND SONU FİŞİ (Balatro "cash out" yapısı, bizim fişimizle): satırlar sırayla kayar,
+     her tutar sayar, toplamdan cüzdana coin'ler akar, cüzdan sayacı eski değerden tırmanır.
+     Düğme beklemez — oyuncu istediği an geçer. */
+  function cashOutFx(root, total) {
+    if (fxOff() || !root) return;
+    const K = fxK();
+    const rows = [...root.querySelectorAll('.rw-receipt .rw-row, .rw-receipt .rw-total')];
+    const wallet = root.querySelector('.rw-wallet');
+    const tot = root.querySelector('.rw-total b');
+    let at = 220 * K;
+    rows.forEach((r, i) => {
+      r.animate([{ transform: 'translateX(-26px)', opacity: 0 }, { transform: 'translateX(4px)', opacity: 1, offset: .7 }, { transform: 'none', opacity: 1 }],
+        { duration: 260 * K, delay: at, easing: 'ease-out', fill: 'backwards' });
+      const b = r.querySelector('b'), txt = b ? b.textContent : '';
+      const m = /^([+−-]?\$?)(\d+)$/.exec(txt.trim());
+      if (b && m) {
+        const n = +m[2], pre = m[1];
+        setTimeout(() => {
+          const t0 = performance.now(), dur = 240 * K;
+          const step = (now) => { const p = Math.min(1, (now - t0) / dur); b.textContent = pre + Math.round(n * p); if (p < 1) requestAnimationFrame(step); };
+          requestAnimationFrame(step);
+          beep(880 + i * 90, .05, 'square', .05);
+        }, at);
+      }
+      at += 170 * K;
+    });
+    if (wallet && total > 0) wallet.textContent = t('rwWallet', Game.state.coins - total);   // sayım başlamadan eski cüzdan
+    if (wallet && tot && total > 0) setTimeout(() => {
+      coinFly(tot.getBoundingClientRect(), wallet, Math.min(10, Math.ceil(total / 2)));
+      const s = Game.state, to = s.coins, from = to - total, t0 = performance.now() + 380 * K, dur = 600 * K;
+      const step = (now) => { const p = Math.max(0, Math.min(1, (now - t0) / dur)); wallet.textContent = t('rwWallet', Math.round(from + (to - from) * p)); if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }, at + 120 * K);
+  }
+
+  /* P122 · C — ELLE TUTULUR KARTLAR. Taş ve joker kartı imlece doğru hafifçe eğilir (3B); joker çizimi
+     boştayken nefes alır gibi salınır (CSS); sürüklenen taş hıza göre yatar, bırakılınca yaylanarak oturur.
+     Eğilme CSS değişkeniyle (--rx/--ry) — dönüşüm kuralları stil dosyasında; tek bir belge dinleyicisi. */
+  function landBounce(id) {
+    if (fxOff()) return;
+    const d = el.rack.querySelector(`.tile[data-id="${id}"]:not(.xf-old)`);
+    if (d) d.animate([{ transform: 'translateY(-10px) scale(1.08, .92)' }, { transform: 'translateY(0) scale(.95, 1.06)', offset: .45 },
+      { transform: 'none' }], { duration: 260 * fxK(), easing: 'ease-out' });
+  }
+  document.documentElement.classList.toggle('fx-on', !fxOff());   // sürekli CSS hareketleri (boşta salınım) yalnız bununla
+  {
+    let tiltEl = null;
+    const TILT_SEL = '#rack .tile[data-id]:not(.xf-old), .gm-stage .joker-tile, #storeStage .store-item:not(.fly-host)';
+    const clear = () => { if (tiltEl) { tiltEl.style.removeProperty('--rx'); tiltEl.style.removeProperty('--ry'); tiltEl = null; } };
+    document.addEventListener('pointermove', (e) => {
+      if (fxOff() || e.pointerType === 'touch' || dragging) { clear(); return; }
+      const t2 = e.target.closest && e.target.closest(TILT_SEL);
+      if (t2 !== tiltEl) clear();
+      if (!t2) return;
+      tiltEl = t2;
+      const r = t2.getBoundingClientRect();
+      const nx = (e.clientX - r.left) / r.width - .5, ny = (e.clientY - r.top) / r.height - .5;
+      t2.style.setProperty('--ry', (nx * 16).toFixed(1) + 'deg');
+      t2.style.setProperty('--rx', (-ny * 16).toFixed(1) + 'deg');
+    }, { passive: true });
+    document.addEventListener('pointerleave', clear);
+  }
+
+  /* P122 · D — BÜYÜK ANLAR. Kayıp: ıstakadaki taşlar yerçekimiyle düşer. Zafer: taşlar dalga hâlinde sıçrar.
+     (Boss girişi animasyonu kullanıcı kararıyla YOK: boss raundlarına karakter çizimleri gelecek, joker
+     kartıyla sahneleme onlarla çakışır.) */
+  /* kayıp: ıstakadaki taşlar yerçekimiyle düşer · zafer: taşlar dalga hâlinde sıçrar */
+  function rackFall() {
+    if (fxOff()) return;
+    const ts = [...el.rack.querySelectorAll('.tile[data-id]:not(.xf-old)')];
+    ts.forEach((d) => {
+      const rot = (Math.random() - .5) * 80, dx = (Math.random() - .5) * 60;
+      d.animate([{ transform: 'none' }, { transform: `translate(${dx * .2}px, -18px) rotate(${rot * .1}deg)`, offset: .18 },
+        { transform: `translate(${dx}px, 760px) rotate(${rot}deg)` }],
+        { duration: (900 + Math.random() * 300) * fxK(), delay: Math.random() * 260 * fxK(), easing: 'cubic-bezier(.45,0,.9,.6)', fill: 'forwards' });
+    });
+    screenShake(.5, document.querySelector('#gameScreen .gm-stage'));
+  }
+  function rackHop() {
+    if (fxOff()) return;
+    [...el.rack.querySelectorAll('.tile[data-id]:not(.xf-old)')].forEach((d, i) => {
+      d.animate([{ transform: 'none' }, { transform: 'translateY(-26px) rotate(-4deg)', offset: .4 }, { transform: 'translateY(2px)', offset: .75 }, { transform: 'none' }],
+        { duration: 420 * fxK(), delay: (i % 17) * 32 * fxK() + Math.floor(i / 17) * 90 * fxK(), easing: 'ease-out' });
+    });
   }
 
   /* P118 — harita → raund: harita kartları aşağı kayarak çekilir, sonra raund açılır */
@@ -1283,6 +1476,7 @@
       if (Game.state.status !== 'playing') return;
       const start = { x: e.clientX, y: e.clientY };
       let started = false, ghost = null, marker = null, targetIdx = -1, ghostK = 1;
+      let lastX = null, sway = 0;   // P122 · C — sürüklenen taş hızına göre yatar
       const srcRect = d.getBoundingClientRect();
       const move = (ev) => {
         if (!started) {
@@ -1305,7 +1499,9 @@
         }
         ghost.style.left = (ev.clientX - srcRect.width / 2) + 'px';
         ghost.style.top = (ev.clientY - srcRect.height / 2) + 'px';
-        ghost.style.transform = `scale(${ghostK * 1.06}) rotate(2deg)`;
+        if (lastX != null && !fxOff()) sway = Math.max(-18, Math.min(18, sway * .75 + (ev.clientX - lastX) * .9));
+        lastX = ev.clientX;
+        ghost.style.transform = `scale(${ghostK * 1.06}) rotate(${(2 + sway).toFixed(1)}deg)`;
         targetIdx = freeRack()
           ? computeFreeDrop(ev.clientX, ev.clientY, marker, tile.id)
           : computeDropSlot(ev.clientX, ev.clientY, marker);
@@ -1324,6 +1520,7 @@
               applyFreeDrop(tile.id, targetIdx);   // GRUP J (P20)
               SFX.tap();
               render();
+              landBounce(tile.id);   // P122 · C
             }
           } else if (targetIdx >= 0) {
             const slotOf = () => (Game.state.hand.find((x) => x.id === tile.id) || {}).slot;
@@ -1331,6 +1528,7 @@
             Game.moveTile(tile.id, targetIdx); // hedef hücreye koy / takas et
             if (slotOf() !== was) SFX.tap();
             render();
+            landBounce(tile.id);   // P122 · C
           }
         }
       };
@@ -1559,7 +1757,7 @@
       : tile.alien ? { c: 'alien', i: '👽', k: 'alienTile' }
       : tile.copied ? { c: 'copied', i: '⧉', k: 'copiedTile' }
       : tile.plague ? { c: 'plague', i: '🦠', k: 'plagueTile' }
-      : tile.gift ? { c: 'gift', i: '🎁', k: 'giftTile' }
+      : (tile.gift && !tile.special) ? { c: 'gift', i: '🎁', k: 'giftTile' }   // P121: Armağan taşı artık Altın Taş çizimiyle
       : tile.revived ? { c: 'revived', i: '⚡', k: 'revivedTile' }
       : tile.stitched ? { c: 'stitched', i: '🧬', k: 'stitchedTile' }
       : tile.modded ? { c: 'modded', i: '✎', k: 'moddedTile' }
@@ -2726,8 +2924,11 @@
      Füzyon her raftan ve her an birleşir (P26 · E2); diğerleri ana slotta,
      raund oynanırken ve o anki aşamada kullanılabiliyorsa. */
   function sellJokerNow(j) {
+    const cardEl = [...document.querySelectorAll(`.joker-tile[data-jid="${j.id}"]`)].find((x) => x.getBoundingClientRect().width);   // P122
+    const c0 = Game.state.coins;
     const res = Game.sellJoker(j.id);
     if (!res.ok) { toast(res.error || t('sellFail')); return; }
+    sellPoof(cardEl, res.gain, c0);
     toast(t('sellToast', T.name(res), res.gain), true); SFX.sell(); renderStore(); render();
     if (curScreen() === 'map') { hideActBadge(); renderMap(); }   // P58: haritadan satış
   }
@@ -4680,6 +4881,17 @@
       `<div class="ob-bar"><i></i></div></div>` +
       `<div class="ob-skip">${t('obSkip')}</div></div></div>`;
     ov.querySelector('.ob-tile').appendChild(tileEl({ id: -1, color: s.okey.color, number: s.okey.number, isOkeyReal: true }, false));
+    /* P122 · D — gösterge taşı arka yüzünden dönerek açılır */
+    if (!fxOff()) {
+      const ot = ov.querySelector('.ob-tile .tile'), K = fxK();
+      if (ot) {
+        const bk = document.createElement('i'); bk.className = 'tile-back-fx'; ot.appendChild(bk);
+        const o = { duration: 620 * K, delay: 280 * K, fill: 'backwards', easing: 'ease-in-out' };
+        ot.animate([{ transform: 'scale(1)' }, { transform: 'scaleX(.04) scaleY(1.08)', offset: .5 }, { transform: 'scale(1.12)', offset: .78 }, { transform: 'none' }], o);
+        bk.animate([{ opacity: 1 }, { opacity: 1, offset: .5 }, { opacity: 0, offset: .5 }, { opacity: 0 }], o).onfinish = () => bk.remove();
+        setTimeout(() => { beep(880, .06, 'triangle', .06); beep(1320, .1, 'triangle', .05, .06); }, 590 * K);
+      }
+    }
     updateMascotItems();
     const inner = ov.querySelector('.ep-msc-in');
     document.querySelectorAll('.fm-mascot-item.on').forEach((im) => {
@@ -5544,8 +5756,10 @@
        Yalnız STORE panelinde: satış joker tarafında da store'a bağlı bir
        işlem ve raund ortasında coin basmak dengeyi bozardı. */
     const sellIt = () => {
+      const c0 = Game.state.coins;
       const res = Game.sellConsumable(index);
       if (!res.ok) { toast(res.error || t('sellConsumFail')); return; }
+      sellPoof(d, res.gain, c0);   // P122
       toast(t('sellToast', T.consumName(res.key, res.name), res.gain), true);
       SFX.sell(); renderStore(); render();
     };
@@ -6851,6 +7065,20 @@
       return { x: (r.left + r.width / 2 - sr.left) / sc, y: (r.top - sr.top) / sc - 6 };
     };
     let at = 450 * k;   // kullanıcı: daha yavaş / belirgin
+    /* P122 — TAŞ TAŞ SAYIM (Balatro'nun kart kart sayımı): açılımın taşları masada sırayla zıplar,
+       üstlerinden kendi değerleri yükselir, her taşta tık sesi bir yarım ton tırmanır. */
+    const meldEls = (res.tileIds || []).map((id) => document.querySelector(`#meldArea .tile[data-id="${id}"], #combosRow .tile[data-id="${id}"]`)).filter(Boolean);
+    if (!fxOff()) meldEls.forEach((te, i) => {
+      timers.push(setTimeout(() => {
+        te.animate([{ transform: 'none' }, { transform: 'translateY(-14px) scale(1.14) rotate(-4deg)', offset: .35 },
+          { transform: 'translateY(2px) scale(.97)', offset: .7 }, { transform: 'none' }], { duration: 300 * k, easing: 'ease-out' });
+        const num = (te.querySelector('.num') || {}).textContent;
+        if (num && /^\d+$/.test(num.trim())) popText(te, '+' + num.trim(), 'pt-chip');
+        beep(392 * Math.pow(2, Math.min(i, 18) / 12), .05, 'square', .05);
+      }, at));
+      at += 110 * k;
+    });
+    if (meldEls.length) at += 160 * k;
     steps.forEach((st, i) => {
       timers.push(setTimeout(() => {
         st.ops.forEach(P.apply); st.done = true;
@@ -6868,13 +7096,32 @@
         timers.push(setTimeout(() => { b.remove(); card && card.classList.remove('jk-seq-pop'); }, 1050 * k));
         if (st.kind === 'boss') beep(220, .16, 'sawtooth', .07);
         else beep(560 + Math.min(i, 10) * 70, .09, 'square', .08);
+        if (st.big) { stageFlash(.42, stage); screenShake(.55, stage); beep(98, .22, 'triangle', .1); }   // P122 — dev çarpan
       }, at));
-      at += 720 * k;
+      /* P122 — ×3 ve üstü bir kat: an bir nefes uzar ("donma"), ardından sahne devam eder */
+      const xm = /×\s*(\d+(?:[.,]\d+)?)/.exec(`${(st.tr && st.tr.text) || ''} ${st.label || ''}`);   // balon farkı yazar (+360), kat jokerin metninde
+      st.big = !!(xm && parseFloat(xm[1].replace(',', '.')) >= 3);
+      at += (st.big ? 980 : 720) * k;
     });
     /* sonda toplam: puan paneli eski değerden yeniye sayar */
     timers.push(setTimeout(() => {
       totEl.textContent = res.final;
       box.classList.add('ss-done');
+      /* P122 — puan büyüdükçe sarsıntı (100 ≈ yok · 1000 ≈ orta · 10000+ ≈ güçlü) */
+      screenShake(Math.max(0, Math.min(1, (Math.log10(Math.max(1, res.final)) - 2) / 2.4)), stage);
+      const tgt = Game.state.target;
+      if (tgt && oldScore < tgt && Game.state.score >= tgt) {   // hedef geçildi: puan kutusu patlar
+        timers.push(setTimeout(() => {
+          const sp = document.getElementById('scorePanel');
+          if (sp) {
+            sp.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12) rotate(-1deg)', offset: .35 }, { transform: 'scale(.97)', offset: .7 }, { transform: 'scale(1)' }],
+              { duration: 420 * k, easing: 'ease-out' });
+            sparkBurst(sp, 18);
+          }
+          stageFlash(.3, stage);
+          [523, 659, 784, 1047].forEach((f, i) => beep(f, .12, 'triangle', .07, i * .07));
+        }, 700 * k));
+      }
       const from = oldScore, to = Game.state.score, t0 = performance.now(), dur = 800 * k;
       const tick2 = (now) => {
         if (finished) return;
@@ -8843,7 +9090,10 @@
         const c = document.createElement('div');
         c.className = `pk-rcard r-${x.rarity || 'special'}`;
         c.style.animationDelay = `${i * 0.09}s`;
-        c.innerHTML = packFaceHtml(x) + `<div class="pk-desc">${packFaceDesc(x)}</div>`;
+        /* P121 (kullanıcı 2026-10-30) — ad/açıklama kartta yazmaz, üstüne gelince ipucunda */
+        const hasArt = (x.type === 'joker' || !x.type) && JOKER_ART.has(x.key);
+        c.innerHTML = hasArt ? reelFaceHtml(x) : packFaceHtml(x);
+        packTip(c, x);
         rw.appendChild(c);
       });
       ov.querySelector('.pk-box').insertBefore(rw, foot);
@@ -9488,9 +9738,14 @@
     const panes = {
       game:
         cyc('lang', t('language'), [{ v: 'tr', text: 'Türkçe', cls: 'set-lang', attr: 'data-lang' }, { v: 'en', text: 'English', cls: 'set-lang', attr: 'data-lang' }], T.lang) +
-        /* P111 — joker puanlama animasyonu hızı */
+        /* P111 — joker puanlama animasyonu hızı · P122 — ekran sarsıntısı (erişilebilirlik); yan yana:
+           sekme boyu sabit kalsın (browser_denetim_ui — sekmeler arası geçişte pencere zıplamasın) */
+        `<div class="set-two set-cyc-pair">` +
         cyc('anim', t('animSpeedLabel'), [{ v: 'normal', text: t('animNormal'), cls: 'set-anim', attr: 'data-anim' },
           { v: 'fast', text: t('animFast'), cls: 'set-anim', attr: 'data-anim' }], animSpeed()) +
+        cyc('shake', t('shakeLabel'), [{ v: 'on', text: t('shakeOn'), cls: 'set-shake', attr: 'data-shake' },
+          { v: 'off', text: t('shakeOff'), cls: 'set-shake', attr: 'data-shake' }], shakeOn() ? 'on' : 'off') +
+        `</div>` +
         `<div class="set-grid">` +
         (finalsOn
           ? chk('set-finaljk', t('finalJokerLabel'), finalJokerOn, '💋')
@@ -9609,6 +9864,11 @@
     sVol.addEventListener('change', () => SFX.tick());   // bırakınca örnek ses
     const mOn = ov.querySelector('#setMusicOn'), mVol = ov.querySelector('#setMusicVol');
     mOn.addEventListener('click', () => { Music.setOn(!Music.on); setChk(mOn, Music.on); });
+    ov.querySelectorAll('.set-shake').forEach((b) => b.addEventListener('click', () => {   // P122
+      try { localStorage.setItem(SHAKE_KEY, b.dataset.shake); } catch (e) {}
+      ov.querySelectorAll('.set-shake').forEach((x) => x.classList.toggle('on', x === b));
+      if (b.dataset.shake === 'on') screenShake(.4, document.querySelector('#settingsOv .pk-box, #settingsOv'));
+    }));
     ov.querySelectorAll('.set-anim').forEach((b) => b.addEventListener('click', () => {   // P111
       try { localStorage.setItem(ANIM_KEY, b.dataset.anim); } catch (e) {}
       ov.querySelectorAll('.set-anim').forEach((x) => x.classList.toggle('on', x === b));
@@ -9870,6 +10130,8 @@
         `</div>`;
       el.modalBody.innerHTML = `<div class="rw">${heroHtml}${coinHtml}</div>`;
       el.overlay.classList.add('rw-open');
+      cashOutFx(el.modalBody, total);   // P122 — fiş satır satır, coin'ler cüzdana
+      rackHop();   // P122 · D — taşlar zaferle sıçrar
       // P59 · Kumarhane: raund arası store yok → düğme "Devam" der
       el.modalBtn.textContent = (Game.kumarhaneOn && Game.kumarhaneOn() && !s.store && !s.upgradeOffer && !s.runFinished)
         ? t('okBtn') : t('goStore');
@@ -10423,7 +10685,7 @@
         c.className = `pk-rcard r-${x.rarity || 'special'}`;
         c.style.animationDelay = `${i * 0.09}s`;
         const hasArt = (x.type === 'joker' && JOKER_ART.has(x.key)) || (x.type === 'consum' && CONSUM_ART.has(x.key));
-        c.innerHTML = hasArt ? reelFaceHtml(x) + `<div class="pk-name">${x.type === 'joker' ? T.name(x) : T.consumName(x.key, x.name)}</div>` : packFaceHtml(x);   // kullanıcı 2026-10-29: çizimli, açıklamasız (üstüne gelince)
+        c.innerHTML = hasArt ? reelFaceHtml(x) : packFaceHtml(x);   // kullanıcı 2026-10-29: çizimli, açıklamasız · P121: ad da yazmaz (üstüne gelince ipucunda)
         packTip(c, x);
         rw.appendChild(c);
       });
@@ -10827,10 +11089,18 @@
   }
 
   el.btnReroll.addEventListener('click', () => {
+    const c0 = Game.state.coins;
     const res = Game.rerollStore();
     if (!res.ok) { toast(res.error); return; }
     SFX.reroll();   // P113
     renderStore();
+    coinDrop(c0);   // P122
+    if (!fxOff()) document.querySelectorAll('#storeRowA .store-item:not(.sold-out)').forEach((c, i) => {   // P122 — kart kart dönerek açılır
+      c.animate([{ transform: 'scaleX(0) translateY(-10px)' }, { transform: 'scaleX(0) translateY(-10px)', offset: .01 },
+        { transform: 'scaleX(1.08) translateY(-6px)', offset: .7 }, { transform: 'none' }],
+        { duration: 340 * fxK(), delay: i * 90 * fxK(), easing: 'ease-out', fill: 'backwards' });
+      setTimeout(() => beep(700 + i * 120, .04, 'triangle', .05), i * 90 * fxK());
+    });
   });
 
   /* ---------- Stage sonu güçlendirme sahnesi (Grup H) ---------- */
@@ -11019,7 +11289,13 @@
   }
 
   /* GAME OVER — kullanıcı örneği 2 */
+  /* P122 · D — kayıpta önce ıstakadaki taşlar düşer, panel ardından gelir (hareket kapalıysa anında) */
   function showGameOver() {
+    if (fxOff()) { showGameOverNow(); return; }
+    rackFall();
+    setTimeout(showGameOverNow, 820 * fxK());
+  }
+  function showGameOverNow() {
     const s = Game.state;
     LStats.run(s, false);   // P88
     const st = endStats(s);
@@ -11450,8 +11726,9 @@
       const c = document.createElement('div');
       c.className = `pk-card r-${def.rarity} var-card`;
       c.style.animationDelay = `${i * 0.11}s`;
-      c.innerHTML = `<div class="col-jk-art ${v.art}"></div>`
-        + `<div class="pk-name">${v.name}</div><div class="pk-desc">${v.desc}</div>`;
+      /* P121 (kullanıcı 2026-10-30) — kartın altında ad/açıklama YAZMAZ; üstüne gelince ipucunda */
+      c.innerHTML = `<div class="col-jk-art ${v.art}"></div>`;
+      attachTip(c, { name: v.name, rarityText: T.rarity(def.rarity), accent: def.rarity, desc: v.desc }, {});
       body.appendChild(c);
     });
     // Esc yalnız bu pencereyi kapatır (arkadaki koleksiyon açık kalır)
