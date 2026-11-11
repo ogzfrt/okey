@@ -12744,3 +12744,10 @@ html, body { overscroll-behavior: none; }
   background-size: 100% 100%, 7.5% 12.17%;
   background-position: 0 0, 50% 37.5%;
 }
+
+
+/* P124 — 2'Lİ ÖZEL TAŞ PAKETİ: makara hücreleri BOŞ (siyah) dönüyordu. Makaradaki özel taş
+   (.reel-art.sp-art-sm) yalnız ölçü alıyordu; çizimi veren `background: var(--sp-art)` kuralı
+   yalnız .pk-ico içindi (joker ve değnek makaralarının kendi kuralı var, özel taşınki eksikti). */
+.pk-sym .reel-art.sp-art-sm,
+.pk-rcard .reel-art.sp-art-sm { background-image: var(--sp-art); }
