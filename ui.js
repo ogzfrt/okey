@@ -968,6 +968,24 @@
      Sayfa başına bir kez; tıklama / tuş anında geçer; testte ve "hareketi
      azalt"ta yok. ~3.3 sn (Hızlı animasyonda yarısı).
      ============================================================ */
+  /* P123 — KÖK NEDEN DÜZELTMESİ: Mühür'ün katmanları (assets/menu3/boot) CSS arka planı olduğundan
+     ancak öğe sayfaya girince indirilmeye başlıyordu. Yayındaki sitede (ağ gecikmesi) animasyon
+     katmanlar gelmeden oynuyor: boş spot, tek başına süzülen göz bebeği, sonradan beliren gövde.
+     Katmanlar artık ÖNCE yüklenir (bir kez; öğretici Mühür'ü de aynı önbellekten yararlanır),
+     zaman çizelgesi ondan sonra başlar. */
+  let mascotLayersReady = null;
+  function preloadMascotLayers(els) {
+    if (mascotLayersReady) return mascotLayersReady;
+    const urls = [...els].map((x) => (getComputedStyle(x).backgroundImage.match(/url\(["']?(.+?)["']?\)/) || [])[1]).filter(Boolean);
+    mascotLayersReady = Promise.all(urls.map((u) => new Promise((res) => {
+      const im = new Image();
+      im.onload = () => { (im.decode ? im.decode() : Promise.resolve()).then(res, res); };
+      im.onerror = res;
+      im.src = u;
+    })));
+    return mascotLayersReady;
+  }
+
   function bootSplash() {
     if (fxOff()) return;
     const mascot = document.querySelector('.fm-mascot');
@@ -978,7 +996,10 @@
     // gerçek maskot salınımsız ölçülür (devir anında aynı yerde dursun)
     mascot.style.animation = 'none';
     mascot.style.visibility = 'hidden';
-    items.forEach((x) => { x.style.opacity = '0'; });
+    /* P123 — eşyalar (şapka / kalpler) maskotla AYNI salınımı paylaşır; maskotun salınımı devirde
+       baştan başladığı için eşyalarınki de onunla birlikte durdurulup birlikte başlatılır. Eskiden
+       eşyalar sayfa açılışındaki fazda kalıyor, maskot ~3 sn geriden geliyordu: şapka kafadan kayıyordu. */
+    items.forEach((x) => { x.style.opacity = '0'; x.style.animation = 'none'; });
     menuEls.forEach((x) => { x.style.opacity = '0'; });
     const R = mascot.getBoundingClientRect();
     const ov = document.createElement('div');
@@ -1009,7 +1030,9 @@
       menuEls.forEach((x) => { x.style.opacity = ''; });
       items.forEach((x) => { x.style.opacity = ''; });
       mascot.style.visibility = '';
+      void mascot.offsetWidth;       // 'none' hâli işlensin: hepsi aynı karede, 0'dan başlar
       mascot.style.animation = '';   // salınım 0'dan başlar → devirde zıplama yok
+      items.forEach((x) => { x.style.animation = ''; });   // P123 — maskotla aynı fazda
     };
     window.addEventListener('pointerdown', finish, true);
     window.addEventListener('keydown', finish, true);
@@ -1019,6 +1042,12 @@
     A(armL, [{ transform: 'scale(0)' }], { duration: 1 });
     A(armR, [{ transform: 'scale(0)' }], { duration: 1 });
     (async () => {
+      /* P123 — katmanlar gelmeden oynatma (en çok 4 sn beklenir; gelmezse splash atlanır, menü açılır) */
+      hop.style.visibility = 'hidden';
+      const ready = await Promise.race([preloadMascotLayers(hop.children).then(() => true), new Promise((r) => setTimeout(() => r(false), 4000))]);
+      if (done) return;
+      if (!ready) { finish(); return; }
+      hop.style.visibility = '';
       // 1 · taş yukarıdan düşer, hafif ezilerek oturur
       A(actor, [{ transform: at(S0) }], { duration: 1 });
       A(hop, [
@@ -1470,10 +1499,21 @@
     return (useRow2 ? RACK_COLS : 0) + col;
   }
 
+  /* P123 — DOKUNMATİK SÜRÜKLEME (iPad): basış sürerken tarayıcı hareketi sayfa kaydırması saymasın.
+     Asıl kilit CSS'te (touch-action: none); bu, eski iOS'ta ve lastik-bant kaymasında yedektir.
+     Dönen işlev dinleyiciyi kaldırır. Fare/kalemde hiçbir şey yapmaz. */
+  function touchGuard(e) {
+    if (e.pointerType !== 'touch') return () => {};
+    const stop = (ev) => { if (ev.cancelable) ev.preventDefault(); };
+    window.addEventListener('touchmove', stop, { passive: false });
+    return () => window.removeEventListener('touchmove', stop);
+  }
+
   function enableDrag(d, tile) {
     d.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       if (Game.state.status !== 'playing') return;
+      const unguard = touchGuard(e);
       const start = { x: e.clientX, y: e.clientY };
       let started = false, ghost = null, marker = null, targetIdx = -1, ghostK = 1;
       let lastX = null, sway = 0;   // P122 · C — sürüklenen taş hızına göre yatar
@@ -1506,9 +1546,13 @@
           ? computeFreeDrop(ev.clientX, ev.clientY, marker, tile.id)
           : computeDropSlot(ev.clientX, ev.clientY, marker);
       };
-      const up = () => {
+      /* P123 — pointercancel (tarayıcı hareketi devraldı / sistem hareketi): taş yerinde kalır, hayalet temizlenir */
+      const up = (ev) => {
         window.removeEventListener('pointermove', move);
         window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        unguard();
+        if (ev && ev.type === 'pointercancel') targetIdx = -1;
         if (ghost) ghost.remove();
         if (marker) marker.remove();
         d.classList.remove('drag-src');
@@ -1534,6 +1578,7 @@
       };
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
     });
   }
 
@@ -3589,6 +3634,7 @@
       const row = card.parentElement;
       if (!row) return;
       const start = { x: e.clientX, y: e.clientY };
+      const unguard = touchGuard(e);   // P123
       let started = false, ghost = null, marker = null, toIdx = -1, other = null;
       /* P112 — öbür raf: ana slottan sürüklenince backup, backup'tan sürüklenince ana slot */
       const otherZoneAt = (x, y) => {
@@ -3649,14 +3695,17 @@
         row.insertBefore(marker, ref);
       };
 
-      const up = () => {
+      const up = (ev) => {
         window.removeEventListener('pointermove', move);
         window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        unguard();
         if (!started) return;
         card.classList.remove('jk-dragging');
         ghost?.remove();
         marker?.remove();
         document.querySelectorAll('.jk-drop-zone').forEach((z) => z.classList.remove('jk-drop-zone'));
+        if (ev && ev.type === 'pointercancel') return;   // P123 — yarıda kesilen sürükleme hiçbir şeyi taşımaz
         if (other) {
           /* P112 — öbür rafa bırakıldı */
           const res = where === 'main' ? Game.moveToBackup(j.id, other.tgt) : Game.moveToMain(j.id);
@@ -3678,6 +3727,7 @@
 
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
     });
   }
 
@@ -8579,7 +8629,7 @@
       newTileIds.clear();
       if (BETA) { showScreen('menu'); showRunPick(); return; }   // beta: öğreticiden sonra doğrudan mod seçimi
       if (mode === 'play') {
-        Game.newRun(undefined, { finals: finalJokers() });
+        Game.newRun(undefined, { finalPool: finalJokers() });
         showScreen('map');
         showOkeyBanner();
       } else {
@@ -8596,7 +8646,7 @@
   function startNewRunNow(mode, seed) {
     if (BETA && loadSave()) betaHook('runAbandoned', { mode: mode || 'base' });
     clearSave();
-    Game.newRun(mode, { finals: finalJokers(), seed });   // P114 — seed boşsa motor yenisini üretir
+    Game.newRun(mode, { finalPool: finalJokers(), seed });   // P114 — seed boşsa motor yenisini üretir
     rpSeedVal = '';
     selection.clear();
     newTileIds.clear();
@@ -9387,7 +9437,10 @@
     },
   };
 
-  /* P86 (kullanıcı 2026-10-08) — FİNAL BOSS JOKERİ ayarı: açık kalıcı final jokerleri
+  /* P123 (kullanıcı 2026-11-11) — final jokerleri artık run başında elde verilmez; bu ayar açıkken
+     kilidi açılmış final jokerleri STORE'da rastgele, çok ucuza (3) çıkar; kapalıyken hiç çıkmaz.
+     Eski açıklama (P86):
+     P86 (kullanıcı 2026-10-08) — FİNAL BOSS JOKERİ ayarı: açık kalıcı final jokerleri
      her yeni run'a elde başlar (P71 davranışı, varsayılan AÇIK); kapalıyken verilmez.
      Kilit (okeyFinals) etkilenmez, ayar yalnız run başında okunur. */
   const FINAL_JOKER_KEY = 'okeyFinalJoker';

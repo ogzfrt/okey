@@ -1118,8 +1118,15 @@ const RARITY = {
   legendary: { tr: 'Legendary',   price: 14, sell: 7,  discount: 0.08, discPrice: 10, uses: 3 },
   mythic:    { tr: 'Mythic',      price: 20, sell: 10, discount: 0.04, discPrice: 15, uses: 1 },
   epic:      { tr: 'Boss (Epic)', price: 0,  sell: 12, discount: 0,    discPrice: 0,  uses: 3 },  // store'da satılmaz · denetim3 #20 (kullanıcı): satış 8 → 12
-  final:     { tr: 'Final',       price: 0,  sell: 7,  discount: 0,    discPrice: 0,  uses: 6 },  // P71 — yalnız final boss ödülü
+  /* P123 (kullanıcı kararı 2026-11-11: "Orion ile başlamayalım, store'da çok ucuza alınabilsin" →
+     tüm final jokerleri) — final jokerleri artık run başında elde VERİLMEZ; kilidi açılmışsa store
+     rafında rastgele çıkar (FINAL_SHOP_CHANCE), fiyatı 3. Satış 7 → 1: 3'e alıp 7'ye satmak coin
+     basardı. */
+  final:     { tr: 'Final',       price: 3,  sell: 1,  discount: 0,    discPrice: 3,  uses: 6 },
 };
+/* P123 — store'da her joker rafı gözünün, kilidi açılmış (ve elde / rafta olmayan) bir final jokeri
+   olma ihtimali. 2-3 gözlü rafta store başına ≈ %23-32. */
+const FINAL_SHOP_CHANCE = 0.12;
 
 /* ==========================================================================
    PLAYTEST 25 · KART BAZLI FİYAT İSTİSNASI (kullanıcı kararı 2026-09-09)
@@ -3739,6 +3746,8 @@ const Game = {
       backup: [],           // GDD 7.4 — Backup Slot (maks 2, dondurulmuş)
       consumables: [],      // GDD 6.5b — envanter (maks 3, run boyunca taşınır)
       finalJokersGiven: [], // P71 — kalıcı final jokerleri (UI'dan gelen anahtarlar)
+      /* P123 — kilidi açılmış final jokerleri: store rafına rastgele girer (UI: opts.finalPool) */
+      finalPool: [...new Set(opts.finalPool || [])].filter(k => JOKER_DEFS[k] && JOKER_DEFS[k].rarity === 'final'),
       storeTilePick: null,  // P29 · Grup O — store'da sunulan 10 taş
       tileMods: [],         // Grup K — tüketilebilirlerin kalıcı deste değişiklikleri
       specialTiles: [],     // GDD 6.5c — desteye kalıcı eklenen özel normal taşlar
@@ -3796,7 +3805,9 @@ const Game = {
        Sonuçlar BURADA belirlenir (kayıt/geri yükleme güvenli); UI onları
        `s.openingJokers` üzerinden çark animasyonuyla gösterir. */
     this._grantOpeningJokers();
-    this._grantFinalJokers(opts.finals);   // P71 — kalıcı açılmış final jokerleri (UI verir)
+    /* P123 — oyun artık `finals` GÖNDERMEZ (final jokerleri store'dan alınır: `finalPool`);
+       `finals` yalnız testlerin / denge botlarının "elde başlat" kancası olarak durur. */
+    this._grantFinalJokers(opts.finals);
     this._startRound();
   },
 
@@ -11583,6 +11594,18 @@ const Game = {
     const recentKeys = new Set(s.lastStoreKeys || []);
     const takenKeys = new Set(items.map(i => i.key));
     for (let i = items.length; i < slotCount; i++) {
+      /* P123 — kilidi açılmış final jokeri rafa RASTGELE girer. Aday yoksa zar atılmaz
+         (final jokeri açmamış oyuncunun seed akışı değişmez). Trainer store filtresi açıkken çıkmaz. */
+      const finalsLeft = (this.trainerMode && s.trainerStoreFilter?.length) ? []
+        : (s.finalPool || []).filter(k => JOKER_DEFS[k] && !ownedKeys.has(k) && !takenKeys.has(k));
+      if (finalsLeft.length && this.rng() < FINAL_SHOP_CHANCE) {
+        const fdef = JOKER_DEFS[finalsLeft[Math.floor(this.rng() * finalsLeft.length)]];
+        takenKeys.add(fdef.key);
+        let fprice = this.modePrice(jokerPrice(fdef.key, 'final')), fbase;
+        if (anarchist) { fbase = fprice; fprice = anar(fprice, fbase); }
+        items.push({ key: fdef.key, name: fdef.name, desc: fdef.desc, rarity: 'final', price: fprice, basePrice: fbase, discounted: false, sold: false });
+        continue;
+      }
       let rarity = this._rollRarity();
       const inRarity = pool.filter(d => d.rarity === rarity);
       let candidates = inRarity.filter(d => !ownedKeys.has(d.key) && !takenKeys.has(d.key) && !recentKeys.has(d.key));

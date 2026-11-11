@@ -12723,3 +12723,24 @@ html.fx-on .gm-stage .joker-tile:nth-child(3n).has-art .jt-art { animation-delay
 @media (prefers-reduced-motion: reduce) { html.fx-on .gm-stage .joker-tile.has-art .jt-art { animation: none; } }
 
 
+/* P123 — DOKUNMATİK SÜRÜKLEME (iPad). Sürüklenebilir taş/joker kartında parmak hareketi tarayıcıya
+   (sayfa kaydırma / yakınlaştırma) GİTMEZ, doğrudan pointer olaylarına düşer; uzun basışta metin
+   seçimi ve iOS büyüteç/menü balonu çıkmaz. Sayfanın kendisi lastik-bant yapmaz. Fareyi etkilemez. */
+html, body { overscroll-behavior: none; }
+#rack .tile, .joker-tile {
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+
+
+/* P123 — MÜHÜR'ÜN GÖZÜ: gövde katmanında göz bebeğinin yeri DELİK; bebek küçülürken (göz açma / kırpma)
+   ve kapak yarı saydamken delikten arka plan görünüyordu. Gövdenin ALTINA iris renginde sabit bir yama
+   (kapak katmanının rengi ve kutusu: 222–258 × 222–304 / 480×674). Animasyon aynı; yalnız delik kapanır. */
+#bootOv .bt-hop > i.bt-body,
+#tutPanel .tm-l.bt-body {
+  background-image: url('assets/menu3/boot/mascot-body.svg'), linear-gradient(#C082BA, #C082BA) !important;
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 7.5% 12.17%;
+  background-position: 0 0, 50% 37.5%;
+}
