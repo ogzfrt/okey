@@ -9822,6 +9822,8 @@ html[data-theme="boss"][data-boss-ui="kirby"] {
   --img-tray-4: url('assets/game/boss/sir-by/tray-4.svg');
   --img-tile-back: url('assets/game/boss/sir-by/tile-back.png');
   --img-rack-glow: url('assets/game/boss/sir-by/rack-glow.png');
+  --boss-char: url('assets/game/boss/sir-by/character.png');
+  --boss-char-x: 0px; --boss-char-y: 0px; --boss-char-w: 1920px; --boss-char-h: 1080px;
   --st-edge: #1E1E1E; --st-edge-soft: rgba(30, 30, 30, .38); --st-bg: #ECE8DC;
   --st-head: #1E1E1E; --st-rule: rgba(30, 30, 30, .35); --st-glow: rgba(232, 228, 218, .25);
 }
