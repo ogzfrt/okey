@@ -1188,6 +1188,7 @@
       landed = true;
       node.remove();
       target.style.visibility = '';
+      PFX.play('collectBurst', target);   // P126 · B — slota iniş
       target.animate([{ transform: 'scale(1.18)' }, { transform: 'scale(.95)', offset: .6 }, { transform: 'scale(1)' }],
         { duration: 240 * fxK(), easing: 'ease-out' });
       beep(990, .04, 'square', .05); beep(1320, .05, 'triangle', .04, .04);
@@ -1285,6 +1286,82 @@
     }
   }
 
+  /* ============================================================
+     P126 (kullanıcı 2026-11-12: "pixelfx'ten yola çıkarak efektlerde büyük güncelleme") — PİKSEL
+     EFEKT KATMANI. pixelfx (vendor/pixelfx, MIT) efektleri pixelfx.js paketinden (window.PFXLIB) gelir.
+     Her sahnenin (.gm-stage) üstünde tek bir şeffaf <canvas> durur: tuval 1920×1080 tasarım
+     pikselinde, efekt pikseli PFX_PX tasarım pikseli (480×270 → keskin, ölçekle büyür; arayüzün piksel boyuna yakın). Efekt
+     yalnız oynarken çizilir (rAF), bitince kare temizlenir ve döngü durur. Testte / hareketi
+     azalt'ta (fxOff) hiç çalışmaz; paket yüklenmediyse sessizce geçer.
+       PFX.play(ad, hedef, {dx, dy, after, stopAt, ...efekt seçenekleri})
+         hedef: sahnedeki bir öğe (ortası) ya da {x, y, stage} (tasarım pikseli)
+     ============================================================ */
+  const PFX_PX = 4;
+  /* P126b (kullanıcı 2026-11-12: "hiçbirini beğenmedim, yalnız prototipte görmek istiyorum; Ayarlar ›
+     Ekstra'da aç/kapa") — DENEME KATMANI: betada hiç çalışmaz (paket betaya eklenmez de), prototipte
+     Ayarlar › Ekstra › "PİXEL EFEKTLER (DENEME)" ile açılıp kapanır (varsayılan açık). Kullanıcı
+     geri bildirimiyle oyuna özel efektler kurulacak; bunlar yalnız malzeme ve deneme. */
+  const PFX_KEY = 'okeyPfx';
+  let pfxOn = (() => { try { return localStorage.getItem(PFX_KEY) !== '0'; } catch (e) { return true; } })();
+  /* pixelfx efektlerinin çıkış noktası (origin) altta: efekt yukarı doğru çizilir. Hedefin ORTASINA
+     otursun diye çıkış noktası bu kadar efekt pikseli aşağı kaydırılır (çizilen alanın dikey
+     ortası; node ile ölçüldü). Ekranın tepesindeki $ kutusunda efekt ekran dışına taşmıyordu. */
+  const PFX_MID = { hitSpark: 16, zapHit: 0, sunburst: 0, confetti: 27, collectBurst: 37, coinCollect: 36, poof: 29, gemSpin: 19 };
+  const PFX = (() => {
+    const layers = new WeakMap();   // stage → { cv, ctx, frame, img, fxs, raf }
+    function layerFor(stage) {
+      let L = layers.get(stage);
+      if (L && L.cv.isConnected) return L;
+      const lib = window.PFXLIB;
+      const w = Math.round((stage.offsetWidth || 1920) / PFX_PX), h = Math.round((stage.offsetHeight || 1080) / PFX_PX);
+      const cv = document.createElement('canvas');
+      cv.className = 'pfx-layer';
+      cv.width = w; cv.height = h;
+      stage.appendChild(cv);
+      const ctx = cv.getContext('2d');
+      L = { cv, ctx, frame: lib.createFrame(w, h), img: ctx.createImageData(w, h), fxs: [], raf: 0, last: 0 };
+      layers.set(stage, L);
+      return L;
+    }
+    function tick(L, now) {
+      const lib = window.PFXLIB;
+      const dt = Math.min(.05, (now - L.last) / 1000 / fxK());
+      L.last = now;
+      lib.clearFrame(L.frame);
+      L.fxs = L.fxs.filter((e) => {
+        if (e.delay > 0) { e.delay -= dt; return true; }
+        e.fx.update(dt);
+        if (e.stopAt != null && e.fx.t >= e.stopAt) e.fx.stop();
+        e.fx.draw(L.frame);
+        return !e.fx.done();
+      });
+      lib.composite(L.frame, L.img.data, null);
+      L.ctx.putImageData(L.img, 0, 0);
+      L.raf = L.fxs.length ? requestAnimationFrame((t) => tick(L, t)) : 0;
+      if (!L.raf) L.ctx.clearRect(0, 0, L.cv.width, L.cv.height);
+    }
+    function play(name, target, o = {}) {
+      const lib = window.PFXLIB;
+      if (BETA || !pfxOn || fxOff() || !lib || !lib.fx[name] || !target) return;
+      let stage, x, y;
+      if (target.getBoundingClientRect) {
+        stage = target.closest('.gm-stage');
+        if (!stage) return;
+        const sr = stage.getBoundingClientRect(), sc = (sr.width / (stage.offsetWidth || sr.width)) || 1, r = target.getBoundingClientRect();
+        if (!r.width) return;
+        x = (r.left + r.width / 2 - sr.left) / sc; y = (r.top + r.height / 2 - sr.top) / sc;
+      } else ({ stage, x, y } = target);
+      if (!stage) return;
+      const L = layerFor(stage);
+      const { dx = 0, dy = 0, after = 0, stopAt = null, ...rest } = o;
+      const fx = lib.createFx(lib.fx[name], { seed: (Math.random() * 1e6) | 0, ...rest,
+        x: Math.round((x + dx) / PFX_PX), y: Math.round((y + dy) / PFX_PX) + (PFX_MID[name] || 0) });
+      L.fxs.push({ fx, delay: after / 1000, stopAt });
+      if (!L.raf) { L.last = performance.now(); L.raf = requestAnimationFrame((t) => tick(L, t)); }
+    }
+    return { play };
+  })();
+
   /* P122 · B — PARA AKIŞI: piksel coin'ler bir yerden $ kutusuna (ya da verilen hedefe) yay çizerek akar */
   function coinFly(fromRect, toEl, n = 6) {
     if (fxOff() || !fromRect || !toEl) return;
@@ -1306,6 +1383,7 @@
       ], { duration: 620 * K, delay: i * 70 * K, easing: 'cubic-bezier(.45,.05,.55,1)', fill: 'backwards' });
       a.onfinish = () => {
         c.remove();
+        if (i === n - 1) PFX.play('collectBurst', toEl, { dy: 92 });   // P126 · B — $ kutusunun altında, koyu zeminde (krem kutu üstünde kayboluyordu)
         beep(1245 + (i % 4) * 80, .035, 'square', .04);
         toEl.animate([{ transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 140 * K });
       };
@@ -1316,6 +1394,7 @@
   /* satılan kart dönerek küçülür; coin'ler $ kutusuna akar */
   function sellPoof(cardEl, gain, c0) {
     if (fxOff() || !cardEl || !cardEl.getBoundingClientRect().width) return;
+    PFX.play('poof', cardEl, { after: 200 });   // P126 · B — kart dumana dönüşür
     const r = cardEl.getBoundingClientRect();
     const g = stageClone(cardEl, 'fly-clone');
     Object.assign(g.clone.style, { left: r.left + 'px', top: r.top + 'px', transition: 'none', zIndex: 9400 });
@@ -7124,6 +7203,7 @@
           { transform: 'translateY(2px) scale(.97)', offset: .7 }, { transform: 'none' }], { duration: 300 * k, easing: 'ease-out' });
         const num = (te.querySelector('.num') || {}).textContent;
         if (num && /^\d+$/.test(num.trim())) popText(te, '+' + num.trim(), 'pt-chip');
+        PFX.play('hitSpark', te, { aim: -Math.PI / 2 + (i % 2 ? .5 : -.5), height: 0, dy: -72 });   // P126 · A — taşın üstünde (krem taş üstünde beyaz kıvılcım görünmüyordu)
         beep(392 * Math.pow(2, Math.min(i, 18) / 12), .05, 'square', .05);
       }, at));
       at += 110 * k;
@@ -7146,7 +7226,7 @@
         timers.push(setTimeout(() => { b.remove(); card && card.classList.remove('jk-seq-pop'); }, 1050 * k));
         if (st.kind === 'boss') beep(220, .16, 'sawtooth', .07);
         else beep(560 + Math.min(i, 10) * 70, .09, 'square', .08);
-        if (st.big) { stageFlash(.42, stage); screenShake(.55, stage); beep(98, .22, 'triangle', .1); }   // P122 — dev çarpan
+        if (st.big) { stageFlash(.42, stage); screenShake(.55, stage); beep(98, .22, 'triangle', .1); PFX.play('zapHit', card || box); }   // P122 — dev çarpan · P126 · A yıldırım
       }, at));
       /* P122 — ×3 ve üstü bir kat: an bir nefes uzar ("donma"), ardından sahne devam eder */
       const xm = /×\s*(\d+(?:[.,]\d+)?)/.exec(`${(st.tr && st.tr.text) || ''} ${st.label || ''}`);   // balon farkı yazar (+360), kat jokerin metninde
@@ -7158,7 +7238,9 @@
       totEl.textContent = res.final;
       box.classList.add('ss-done');
       /* P122 — puan büyüdükçe sarsıntı (100 ≈ yok · 1000 ≈ orta · 10000+ ≈ güçlü) */
-      screenShake(Math.max(0, Math.min(1, (Math.log10(Math.max(1, res.final)) - 2) / 2.4)), stage);
+      const pw = Math.max(0, Math.min(1, (Math.log10(Math.max(1, res.final)) - 2) / 2.4));
+      screenShake(pw, stage);
+      if (pw >= .45) PFX.play('sunburst', box, { stopAt: .4 + pw * .8 });   // P126 · A — büyük puan: ışık patlaması
       const tgt = Game.state.target;
       if (tgt && oldScore < tgt && Game.state.score >= tgt) {   // hedef geçildi: puan kutusu patlar
         timers.push(setTimeout(() => {
@@ -7167,6 +7249,7 @@
             sp.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12) rotate(-1deg)', offset: .35 }, { transform: 'scale(.97)', offset: .7 }, { transform: 'scale(1)' }],
               { duration: 420 * k, easing: 'ease-out' });
             sparkBurst(sp, 18);
+            PFX.play('confetti', sp);   // P126 · A — hedef geçildi
           }
           stageFlash(.3, stage);
           [523, 659, 784, 1047].forEach((f, i) => beep(f, .12, 'triangle', .07, i * .07));
@@ -9836,7 +9919,8 @@
         + Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).filter((fb) => !(BETA && fb.key === 'lanetliCocuk')).map((fb) =>
           chk(`set-finalwin fw-${fb.key}`, t('finalWinLabel', fb.name), Finals.has(fb.key), fb.icon || '🏆')).join('')
         + `</div></div>` +
-        go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn),
+        go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn) +
+        (BETA ? '' : chk('set-pfx', t('pfxLabel'), pfxOn, '✨')),   // P126b — deneme efektleri (yalnız prototip)
     };
     ov.innerHTML =
       `<div class="tp-box set-box"><div class="set-plate">${t('settingsTitle')}</div>` +
@@ -9960,6 +10044,11 @@
       finalJokerOn = v;
       try { localStorage.setItem(FINAL_JOKER_KEY, v ? '1' : '0'); } catch (e) {}
       toast(t(v ? 'finalJokerOnToast' : 'finalJokerOffToast'), true);
+    });
+    tog('.set-pfx', () => pfxOn, (v) => {   // P126b
+      pfxOn = v;
+      try { localStorage.setItem(PFX_KEY, v ? '1' : '0'); } catch (e) {}
+      toast(t(v ? 'pfxOnToast' : 'pfxOffToast'), true);
     });
     tog('.set-bossui', () => bossUiOn, (v) => {
       bossUiOn = v;
@@ -13066,7 +13155,7 @@
   else { showScreen('menu'); bootSplash(); }
 
   /* test kancaları (Playwright otomasyonu) — prototip aşamasında açık */
-  if (!BETA) window.__test = {
+  if (!BETA) window.__test = { PFX,   // P126 — efekt katmanı (testler)
     disc: Disc, pickBuyDest, fuzyonMenu, showUseChooser, render, renderStore, openStore, showUpgradeScene, showScreen, startNewRun, LStats, showSettings, showBeltPicker, TUT,
     showRoundEnd, showRunComplete, showPilePopup, fitLabels: fitActionLabels,
     pickOkeySlot,   // okey yerleşim penceresi (görsel test)
