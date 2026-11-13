@@ -10121,6 +10121,8 @@ html[data-theme="boss"][data-boss-ui="uzayli"] {
   --img-tray-4: url('assets/game/boss/uzayli/tray-4.svg');
   --img-tile-back: url('assets/game/boss/uzayli/tile-back.png');
   --img-rack-glow: url('assets/game/boss/uzayli/rack-glow.png');
+  --boss-char: url('assets/game/boss/uzayli/character.png');
+  --boss-char-x: 586px; --boss-char-y: 0px; --boss-char-w: 765px; --boss-char-h: 844px;
   --st-edge: #3A1A22; --st-edge-soft: rgba(58, 26, 34, .38); --st-bg: #F2D6CE;
   --st-head: #3A1A22; --st-rule: rgba(58, 26, 34, .35); --st-glow: rgba(122, 176, 255, .25);
 }
