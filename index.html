@@ -8,7 +8,7 @@
      Oyun kendi temalarını çizer; renklerine dokunulmasın. -->
 <meta name="color-scheme" content="only light">
 <title>OKEY Roguelike — Prototip</title>
-<link rel="stylesheet" href="style.css?v=9507c35">
+<link rel="stylesheet" href="style.css?v=6a220e5">
 <script>
 /* RENK TEMASI — İLK BOYAMADAN ÖNCE UYGULANIR.
    Tema `html[data-theme]` ile sürülüyor. Bu satır ui.js'e bırakılsaydı
@@ -178,6 +178,8 @@
        ve konumlar tasarıma çekildi. -->
   <div id="gameScreen" class="screen hidden">
     <div class="gm-stage">
+      <!-- P130 — The Corporates boss raundu: monitördeki portre raundun şirket logosuna evrilir (ui.js corpScreen) -->
+      <div id="corpScreen" class="corp-screen" aria-hidden="true"><i class="cs-logo"></i><i class="cs-noise"></i></div>
 
       <!-- ---- üst sol: duraklat + RUN INFO ----
            Figma'da bu iki butondan ikincisi ("i", node 210:3805) RUN
@@ -517,10 +519,10 @@
   </div>
 
 </div>
-<script src="engine.js?v=9507c35"></script>
-<script src="i18n.js?v=9507c35"></script>
-<script src="pixelfx.js?v=9507c35"></script>
-<script src="ui.js?v=9507c35"></script>
-<script src="yenilikler.js?v=9507c35"></script>
+<script src="engine.js?v=6a220e5"></script>
+<script src="i18n.js?v=6a220e5"></script>
+<script src="pixelfx.js?v=6a220e5"></script>
+<script src="ui.js?v=6a220e5"></script>
+<script src="yenilikler.js?v=6a220e5"></script>
 </body>
 </html>

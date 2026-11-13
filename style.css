@@ -7124,6 +7124,7 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-sisyphus     { --jk-art: url('assets/game/joker/sisyphus.svg'); }       /* 464:193 */
 .jk-vasiyet      { --jk-art: url('assets/game/joker/vasiyet.svg'); }        /* 464:243 */
 .jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P85 · Figma 455:6178 (yeniden çizim; eski 444:2) */
+.jk-orion        { --jk-art: url('assets/game/joker/orion.svg'); }         /* P130 · Figma 601:2 (FINAL_BOSS_JOKERLER) */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — 25 Common kart (2026-10-30: hepsi çizili) */
 .jk-sayiTapinagi { --jk-art: url('assets/game/joker/yin-yang.svg'); }   /* 520:7 Ying_yang */
@@ -12815,3 +12816,55 @@ html[data-txt="3"] :is(#jokerTip, #tutPanel .tm-bub, .hint-ov .pk-box, .hint-ov 
 html[data-crt="2"] { filter: url(#crtF); }
 html[data-crt="2"] #crtOv, html[data-crt="2"] #crtOv .crt-roll, html[data-crt="2"] body.game-open #cosmos { animation: none; }   /* hareket filtreyi her karede yeniden hesaplatır */
 html[data-crt="2"] #crtOv .crt-frame { border-radius: 1.4vmin; }   /* P129d — kenarlar hafif (Hafif'le aynı çerçeve) */
+
+/* P130 (kullanıcının iPad fotoğrafı, 2026-11-14: The Corporates kural kutusunda "harfler karışıyor") —
+   boss kural metninin satır aralığı 1.2-1.35 idi; bu piksel yazıda Ş/Ğ/İ gibi harflerin işaretleri
+   satır kutusundan taşıyor, iPad Safari'de alt satır üst satırın üstüne biniyordu. Bütün sığdırma
+   kademelerinde (fit1-3) en az 1.45. Ayrıca iOS'un yazıyı kendiliğinden büyütmesi (text autosizing)
+   kapatılır: satır yüksekliği büyütülmeden yalnız yazı büyüyordu. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.gm-stage .gm-left[class] #bossBanner.gm-boss-cond .bb-desc,
+.gm-stage .gm-left[class] #bossBanner.gm-boss-cond .bb-extra { line-height: 1.45; }
+
+/* P130 — The Corporates boss raundu: monitördeki portre (canvas 835,96 · 251×438; build_boss_ui
+   BOSS_CHARS corporates) raundun şirket logosuna evrilir. Logo, joker kartı corporates-<şirket>.svg'nin
+   EKRAN bölgesidir (svg 23..57 × 7..63 birim): ekran yüksekliği 438 px'e oturur (k = 438/57 = 7.684),
+   yatay ortalanır. Sıra (ui.js corpScreen, raund başında bir kez): parazit portreyi örter → logo üstten
+   aşağı satır satır gelir → kısa titreme → parazit söner. Hareket azaltılmışsa logo doğrudan gelir. */
+#corpScreen { display: none; }
+html[data-theme="boss"][data-boss-ui="corporates"] #gameScreen #corpScreen:not([data-corp=""]) {
+  display: block; position: absolute; z-index: -1; pointer-events: none; overflow: hidden;
+  left: 835px; top: 96px; width: 251px; height: 438px;
+}
+/* P130b (kullanıcı: "logolar kenarlardan duvara değiyor, ekran boşlukları olmalı") — logo küçültülür
+   (k = 5.8: ekran bölgesi 203×331 px, yanlarda 24 px boşluk) ve ortalanır; çevresi şirketin ekran
+   rengiyle dolar (.cs-logo zemini). Satır satır açılma .cs-logo'ya uygulanır (zemin + logo birlikte). */
+#corpScreen .cs-logo { position: absolute; inset: 0; display: block; clip-path: inset(0 0 100% 0);
+  background: var(--cs-bg, #000); }
+#corpScreen .cs-logo::before { content: ''; position: absolute; left: 24px; top: 53.7px; width: 203px; height: 330.6px;
+  background: var(--cs-logo, none) -133.4px -40.6px / 469.8px 638px no-repeat; image-rendering: pixelated; }
+#corpScreen .cs-logo::after { content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0 3px, rgba(0, 0, 0, .14) 3px 4px); }
+#corpScreen[data-corp="kizil"] { --cs-logo: url('assets/game/joker/corporates-kurogane.svg'); --cs-bg: #EEB1B1; }
+#corpScreen[data-corp="derin"] { --cs-logo: url('assets/game/joker/corporates-abyssal.svg'); --cs-bg: #83A8C0; }
+#corpScreen[data-corp="altin"] { --cs-logo: url('assets/game/joker/corporates-heliox.svg'); --cs-bg: #A9A569; }
+#corpScreen[data-corp="yesil"] { --cs-logo: url('assets/game/joker/corporates-verdatek.svg'); --cs-bg: #6AAD7B; }
+#corpScreen .cs-noise { position: absolute; inset: 0; z-index: 1; opacity: 0;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, .5) 0 2px, rgba(0, 0, 0, .55) 2px 5px, rgba(200, 220, 190, .35) 5px 6px, rgba(0, 0, 0, .7) 6px 11px),
+    repeating-linear-gradient(to right, rgba(0, 0, 0, .35) 0 7px, rgba(255, 255, 255, .18) 7px 9px, rgba(0, 0, 0, 0) 9px 23px),
+    #2a3226; }
+#corpScreen.done .cs-logo { clip-path: none; }
+#corpScreen.morph .cs-logo { animation: csLogo 1.7s .45s both; }
+#corpScreen.morph .cs-noise { animation: csNoise 1.7s .45s both, csRoll .18s steps(3) infinite; }
+#corpScreen.morph { animation: csShake 1.7s .45s both; }
+@keyframes csLogo {
+  0% { clip-path: inset(0 0 100% 0); }
+  38% { clip-path: inset(0 0 100% 0); animation-timing-function: steps(12, end); }
+  74%, 100% { clip-path: inset(0 0 0 0); } }
+@keyframes csNoise { 0% { opacity: 0; } 5% { opacity: .95; } 10% { opacity: .55; } 15% { opacity: 1; }
+  38% { opacity: .95; } 74% { opacity: .7; } 88% { opacity: .2; } 92% { opacity: .45; } 100% { opacity: 0; } }
+@keyframes csRoll { from { background-position: 0 0, 0 0, 0 0; } to { background-position: 0 -33px, 23px 0, 0 0; } }
+@keyframes csShake { 0%, 74% { transform: none; } 77% { transform: translateX(-7px); } 80% { transform: translateX(6px); }
+  83% { transform: translateX(-3px) skewX(-2deg); } 86%, 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { #corpScreen.morph .cs-logo, #corpScreen.morph .cs-noise, #corpScreen.morph { animation: none; } #corpScreen.morph .cs-logo { clip-path: none; } }

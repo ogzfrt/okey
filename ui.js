@@ -6209,6 +6209,29 @@
     });
   }
 
+  /* P130 (kullanıcı 2026-11-14: "The Corporates boss raundunda, hangi şirketin kuralıyla oynuyorsak
+     boss'un görünümünden animasyonla o şirketin logosuna evrilsin o ekran; joker kartlarındaki
+     varyasyonların yalnız ekran kısmı") — monitördeki portrenin TAM üstünde #corpScreen: raund
+     başında (her yeni görevde bir kez) parazit → satır satır logo → kısa titreme; raund boyu logo
+     kalır. Logo = corporates-<şirket>.svg'nin ekran bölgesi (CSS). Boss arayüzü kapalıysa görünmez. */
+  let corpShown = null;
+  function corpScreen() {
+    const el = document.getElementById('corpScreen');
+    if (!el) return;
+    const s = Game.state, task = s && Game.isBossRound && Game.isBossRound() && s.boss && s.boss.key === 'corporates' && s.corpTask && s.corpTask.boss ? s.corpTask : null;
+    const key = task ? task.key : '';
+    if (el.dataset.corp !== key) {
+      el.dataset.corp = key;
+      el.classList.remove('morph', 'done');
+      if (!key) { corpShown = null; return; }
+    }
+    if (!key || corpShown === task) return;
+    corpShown = task;
+    void el.offsetWidth;
+    if (fxOff()) { el.classList.add('done'); return; }
+    el.classList.add('morph');
+  }
+
   function render() {
     setTimeout(lbRot, 30);
     renderTotems();
@@ -6219,6 +6242,7 @@
     if (Game.state && Game.state.ghostOffer && !document.getElementById('ghostOv'))
       setTimeout(showGhostOffer, 0);   // P100 — kayıttan dönülünce bekleyen Hayalet tur teklifi
     applyRunTheme();   // P78 — boss raundu arayüzü (raund ekran değişmeden başlayıp bitebilir)
+    corpScreen();   // P130
     renderChessClock();   // P110
     scheduleRoundSave();   // denetim RK — raund ortası kayıt (her eylem render ile biter)
     if (curScreen() === 'map') setTimeout(() => { if (curScreen() === 'map') renderMap(); }, 0);   // P80 — haritadaki envanter tazelensin
@@ -11861,6 +11885,7 @@
     'medusa',                                 // P67 · Figma 420:2 (Legendary 3/15)
     'nostradamus',                            // P71 · Figma 428:2 (Legendary 4/15)
     'ladyLuck',                               // P72 · Figma 444:2 (FINAL_BOSS_JOKERLER 436:2) — Kumarhane finali
+    'orion',                                  // P130 · Figma 601:2 (FINAL_BOSS_JOKERLER 436:2) — Temel Run finali
     'rusvet', 'midas',                        // P73 · Figma 444:41 Bahşiş + 444:84 Midas (Legendary 6/15)
     'ucuncuTeker',                            // P75 · Figma 450:2 → P89 464:219 "Tek Teker" (eski adı Üçüncü Teker)
     /* P89 · Figma LEGENDARY_JOKERLER 383:1000 — Legendary 15/15 */
