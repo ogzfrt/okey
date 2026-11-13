@@ -1314,6 +1314,89 @@
      geri bildirimiyle oyuna özel efektler kurulacak; bunlar yalnız malzeme ve deneme. */
   const PFX_KEY = 'okeyPfx';
   let pfxOn = (() => { try { return localStorage.getItem(PFX_KEY) !== '0'; } catch (e) { return true; } })();
+  /* P129 (kullanıcı 2026-11-13: "Balatro / Gambonanza'daki gibi CRT televizyon efekti, opsiyonel,
+     yalnız prototipte; Ayarlar › Ekstra'da aç/kapa") — tüm ekranın ÜSTÜNDE tıklanamayan tek katman
+     (#crtOv): tarama çizgileri, RGB maske (aperture grille), kavisli köşeler + vinyet (ekran bombesi
+     hissi), yavaş kayan ışık bandı.
+     Oyunun DOM'una dokunmaz (tıklama koordinatları aynı kalır). Betada hiç
+     oluşmaz. Varsayılan kapalı. */
+  /* P129b (kullanıcı: "TV içinde hissiyatı vermiyor, 3 kademe yap") — 0 kapalı · 1 hafif (yalnız üst
+     katman) · 2 tam TV: katmana ek olarak tüm sayfaya SVG filtresi (#crtF, <html>'e uygulanır):
+       · bükülme: feDisplacementMap + çalışırken üretilen fıçı (barrel) haritası — kenarlar içe
+         doğru bükülür, köşeler kavislenip kararır (görüntü dışından örneklenen yer boş = siyah);
+       · renk kayması: kırmızı kanal sola, mavi sağa 1,5 px (yazı kenarında saçak);
+       · ışık taşması: parlak yerlerin bulanık kopyası üstüne eklenir; hafif doygunluk.
+     Filtre yalnız GÖRÜNTÜYÜ büker, tıklama hedefleri yerinde kalır (kenarlarda birkaç px kayma). */
+  const CRT_KEY = 'okeyCrt';
+  let crtLv = BETA ? 0 : (() => { try { const v = +localStorage.getItem(CRT_KEY); return v === 1 || v === 2 ? v : 0; } catch (e) { return 0; } })();
+  const CRT_K = .008;            // bükülme gücü: kenar ortasında genişliğin %0,4'ü kadar içe (P129d: referans ekran görüntülerine göre; .045 / .016 abartılıydı)
+  let crtSize = '';
+  function crtFilter() {
+    const W = innerWidth, H = innerHeight;
+    let svg = document.getElementById('crtSvg');
+    if (!svg) {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.id = 'crtSvg';
+      svg.setAttribute('aria-hidden', 'true');
+      svg.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
+      svg.innerHTML = '<filter id="crtF" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">' +
+        '<feImage id="crtMap" preserveAspectRatio="none" result="map"/>' +
+        '<feDisplacementMap id="crtDisp" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="G" result="d"/>' +
+        '<feOffset in="d" dx="-1.5" result="dr"/><feColorMatrix in="dr" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>' +
+        '<feColorMatrix in="d" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>' +
+        '<feOffset in="d" dx="1.5" result="db"/><feColorMatrix in="db" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>' +
+        '<feComposite in="r" in2="g" operator="arithmetic" k2="1" k3="1" result="rg"/>' +
+        '<feComposite in="rg" in2="b" operator="arithmetic" k2="1" k3="1" result="rgb"/>' +
+        '<feColorMatrix in="rgb" type="matrix" values="1.7 0 0 0 -.7  0 1.7 0 0 -.7  0 0 1.7 0 -.7  0 0 0 1 0" result="hi"/>' +
+        '<feGaussianBlur in="hi" stdDeviation="8" result="bl"/>' +
+        '<feComposite in="rgb" in2="bl" operator="arithmetic" k2="1" k3=".25" result="glow"/>' +
+        '<feColorMatrix in="glow" type="saturate" values="1.15" result="sat"/>' +
+        '<feFlood flood-color="#000" result="k"/><feComposite in="sat" in2="k" operator="over"/></filter>';
+      document.body.appendChild(svg);
+    }
+    const key = W + 'x' + H;
+    if (key === crtSize) return;
+    crtSize = key;
+    // fıçı haritası: çıkış pikseli (u, v) ∈ [-1, 1] → kaynaktan (u, v)·(1 + K·r²) örneklenir
+    const w = 240, h = Math.max(2, Math.round(w * H / W));
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const cx = cv.getContext('2d'), img = cx.createImageData(w, h), d = img.data;
+    const S = Math.ceil(2 * CRT_K * 2 * Math.max(W, H) / 2) + 2;    // en büyük kayma ×2
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const u = (x + .5) / w * 2 - 1, v = (y + .5) / h * 2 - 1, r2 = u * u + v * v;
+        const dx = u * CRT_K * r2 * W / 2, dy = v * CRT_K * r2 * H / 2;
+        const i = (y * w + x) * 4;
+        d[i] = Math.round(128 + dx / S * 255); d[i + 1] = Math.round(128 + dy / S * 255); d[i + 2] = 0; d[i + 3] = 255;
+      }
+    }
+    cx.putImageData(img, 0, 0);
+    const f = svg.querySelector('#crtF'), m = svg.querySelector('#crtMap');
+    for (const [k, v] of [['x', 0], ['y', 0], ['width', W], ['height', H]]) { f.setAttribute(k, v); m.setAttribute(k, v); }
+    m.setAttribute('href', cv.toDataURL('image/png'));
+    svg.querySelector('#crtDisp').setAttribute('scale', S);
+  }
+  function applyCrt() {
+    let el = document.getElementById('crtOv');
+    const root = document.documentElement;
+    if (crtLv && !BETA) {
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'crtOv';
+        el.setAttribute('aria-hidden', 'true');
+        el.innerHTML = '<i class="crt-mask"></i><i class="crt-roll"></i><i class="crt-frame"></i>';
+        document.body.appendChild(el);
+      }
+      if (crtLv === 2) crtFilter();
+      root.dataset.crt = String(crtLv);
+    } else {
+      if (el) el.remove();
+      delete root.dataset.crt;
+    }
+  }
+  addEventListener('resize', () => { if (crtLv === 2) crtFilter(); });
+  applyCrt();
   /* pixelfx efektlerinin çıkış noktası (origin) altta: efekt yukarı doğru çizilir. Hedefin ORTASINA
      otursun diye çıkış noktası bu kadar efekt pikseli aşağı kaydırılır (çizilen alanın dikey
      ortası; node ile ölçüldü). Ekranın tepesindeki $ kutusunda efekt ekran dışına taşmıyordu. */
@@ -9920,9 +10003,10 @@
       extra:
         go('setHintsReset', t('hintsLabel'), t('hintsResetDesc')) +
         /* P101 — kilitli/keşfedilmemiş görünümü test (gerçek kayıt silinmez) */
-        `<div class="set-two set-cyc-pair">` +
+        `<div class="set-two set-cyc-pair${BETA ? '' : ' set-three'}">` +   // P129b — prototipte 3. kart: CRT kademesi (yeni satır açmaz)
         cyc('colrev', t('colRevealLabel'), DISC_MODES.map((k) => ({ v: k, text: t('colRev_' + k), cls: 'set-colrev', attr: 'data-colrev' })), Disc.mode()) +
         (BETA ? '' : cyc('modelock', t('modeLockLabel'), ['off', 'kozmik', 'kumarhane', 'hepsi'].map((k) => ({ v: k, text: t('modeLock_' + k), cls: 'set-modelock', attr: 'data-modelock' })), Modes.testStep())) +
+        (BETA ? '' : cyc('crt', t('crtLabel'), [0, 1, 2].map((v) => ({ v, text: t('crtLv' + v), cls: 'set-crtlv', attr: 'data-crtlv' })), crtLv)) +
         `</div>` +
         go('setDiscReset', t('discResetLabel'), t('discResetDesc', Disc.stats())) +
         /* P90d (kullanıcı 2026-10-12) — yenmekle uğraşmadan test: her final için
@@ -10071,6 +10155,13 @@
       try { localStorage.setItem(PFX_KEY, v ? '1' : '0'); } catch (e) {}
       toast(t(v ? 'pfxOnToast' : 'pfxOffToast'), true);
     });
+    ov.querySelectorAll('.set-crtlv').forEach((b) => b.addEventListener('click', () => {   // P129b
+      crtLv = +b.dataset.crtlv;
+      try { localStorage.setItem(CRT_KEY, String(crtLv)); } catch (e) {}
+      applyCrt();
+      ov.querySelectorAll('.set-crtlv').forEach((x) => x.classList.toggle('on', x === b));
+      toast(t('crtToast', t('crtLv' + crtLv)), true);
+    }));
     tog('.set-bossui', () => bossUiOn, (v) => {
       bossUiOn = v;
       try { localStorage.setItem(BOSS_UI_KEY, v ? '1' : '0'); } catch (e) {}
