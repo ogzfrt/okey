@@ -370,6 +370,17 @@
   /* Para birimi ikonu — CSS ile çizilen sikke */
   const COIN = '<span class="coin-ico" aria-label="coin"></span>';
 
+  /* P127 (iPad geri bildirimi, kullanıcı 2026-11-13: "3 kademe") — YAZI BOYUTU. Ayarlar › Görünüm.
+     Açıklama metinleri büyür: ipucu kutusu, öğretici balonu, ipucu pencereleri, bildirim. Kutu
+     yazıyla birlikte büyür (CSS zoom, html[data-txt]) → yazı kutudan taşmaz. 1 = normal. */
+  const TXT_KEY = 'okeyTextSize';
+  const TXT_STEPS = { 1: 1, 2: 1.15, 3: 1.3 };
+  let txtSize = (() => { try { const v = +localStorage.getItem(TXT_KEY); return TXT_STEPS[v] ? v : 1; } catch (e) { return 1; } })();
+  function applyTxtSize() {
+    if (txtSize === 1) delete document.documentElement.dataset.txt;
+    else document.documentElement.dataset.txt = String(txtSize);
+  }
+  applyTxtSize();
   function toast(msg, good = false) {
     el.toast.textContent = T.ev(msg);
     el.toast.className = good ? 'good' : '';
@@ -2709,7 +2720,7 @@
       ? actBadge.getBoundingClientRect() : null;
     const rightEdge = hr ? Math.max(r.right, hr.right) : r.right;
     const leftEdge = hr ? Math.min(r.left, hr.left) : r.left;
-    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    const tr0 = tip.getBoundingClientRect(), tw = tr0.width, th = tr0.height;   // P127 — yazı boyutu (zoom) dahil gerçek boy
     let x = rightEdge + 10;
     if (x + tw > window.innerWidth - 8) x = leftEdge - tw - 10;
     x = Math.max(8, x);
@@ -2721,8 +2732,9 @@
       y = row.bottom + 14;
     }
     y = Math.max(8, Math.min(y, window.innerHeight - th - 8));
-    tip.style.left = x + 'px';
-    tip.style.top = y + 'px';
+    const zk = TXT_STEPS[txtSize] || 1;   // P127 — zoom'lu öğede left/top da zoom'la çarpılır
+    tip.style.left = (x / zk) + 'px';
+    tip.style.top = (y / zk) + 'px';
   }
 
   /* P41 (kullanıcı isteği 2026-09-14) — ÜSTÜNE GELİNCE EYLEM ROZETİ.
@@ -9888,10 +9900,11 @@
           : `<div class="set-card set-chk set-locked"><span class="chk-ico">💋</span><span class="set-label">${t('finalJokerLabel')}</span><span class="set-note set-finaljk-lock">🔒 ${t('finalJokerLocked')}</span></div>`) +
         `</div>`,
       look:
-        `<div class="set-two">` +
+        `<div class="set-two set-three">` +   // P127 — tema · desen · yazı boyutu tek satırda (sekme boyu sabit: browser_denetim_ui)
         cyc('theme', t('colorTheme'), THEMES.map((th) => ({ v: th.key, text: t('theme_' + th.key), cls: 'set-theme', attr: 'data-theme',
           inner: `<span class="sw">${th.sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span>` })), themeKey,
           `<span class="set-prev prev-theme">${(THEMES.find((x) => x.key === themeKey) || THEMES[0]).sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span>`) +
+        cyc('txt', t('txtSizeLabel'), [1, 2, 3].map((v) => ({ v, text: t('txtSize' + v), cls: 'set-txt', attr: 'data-txt' })), txtSize) +   // P127
         cyc('cspat', t('casinoPatternLabel'), CASINO_PATTERNS.map((k) => ({ v: k, text: t('csPat_' + k), cls: 'set-cspat', attr: 'data-cspat' })), casinoPattern,
           `<span class="set-prev prev-pat ${CS_PREVIEW[casinoPattern] || ''}"></span>`) +
         `</div><div class="set-grid">` +
@@ -9919,8 +9932,9 @@
         + Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).filter((fb) => !(BETA && fb.key === 'lanetliCocuk')).map((fb) =>
           chk(`set-finalwin fw-${fb.key}`, t('finalWinLabel', fb.name), Finals.has(fb.key), fb.icon || '🏆')).join('')
         + `</div></div>` +
-        go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn) +
-        (BETA ? '' : chk('set-pfx', t('pfxLabel'), pfxOn, '✨')),   // P126b — deneme efektleri (yalnız prototip)
+        (BETA ? go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn)
+          : `<div class="set-two">` + go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn) +
+            chk('set-pfx', t('pfxLabel'), pfxOn, '✨') + `</div>`),   // P126b — deneme efektleri (yalnız prototip), yeni satır açmaz
     };
     ov.innerHTML =
       `<div class="tp-box set-box"><div class="set-plate">${t('settingsTitle')}</div>` +
@@ -10005,6 +10019,13 @@
       try { localStorage.setItem(SHAKE_KEY, b.dataset.shake); } catch (e) {}
       ov.querySelectorAll('.set-shake').forEach((x) => x.classList.toggle('on', x === b));
       if (b.dataset.shake === 'on') screenShake(.4, document.querySelector('#settingsOv .pk-box, #settingsOv'));
+    }));
+    ov.querySelectorAll('.set-txt').forEach((b) => b.addEventListener('click', () => {   // P127
+      txtSize = +b.dataset.txt;
+      try { localStorage.setItem(TXT_KEY, String(txtSize)); } catch (e) {}
+      applyTxtSize();
+      ov.querySelectorAll('.set-txt').forEach((x) => x.classList.toggle('on', x === b));
+      toast(t('txtSizeToast', t('txtSize' + txtSize)), true);
     }));
     ov.querySelectorAll('.set-anim').forEach((b) => b.addEventListener('click', () => {   // P111
       try { localStorage.setItem(ANIM_KEY, b.dataset.anim); } catch (e) {}
