@@ -1321,65 +1321,14 @@
      Oyunun DOM'una dokunmaz (tıklama koordinatları aynı kalır). Betada hiç
      oluşmaz. Varsayılan kapalı. */
   /* P129b (kullanıcı: "TV içinde hissiyatı vermiyor, 3 kademe yap") — 0 kapalı · 1 hafif (yalnız üst
-     katman) · 2 tam TV: katmana ek olarak tüm sayfaya SVG filtresi (#crtF, <html>'e uygulanır):
-       · bükülme: feDisplacementMap + çalışırken üretilen fıçı (barrel) haritası — kenarlar içe
-         doğru bükülür, köşeler kavislenip kararır (görüntü dışından örneklenen yer boş = siyah);
-       · renk kayması: kırmızı kanal sola, mavi sağa 1 px (P129e: 1,5 px görüntüyü bulanıklaştırıyordu; tam piksel = keskin saçak);
-       · ışık taşması: yalnız ÇOK parlak yerlerin bulanık kopyası hafifçe eklenir, genel parlaklık %6
-         kısılır (P129e, kullanıcı: "aşırı parlak olmuş"); doygunluk çok az.
-     Filtre yalnız GÖRÜNTÜYÜ büker, tıklama hedefleri yerinde kalır (kenarlarda birkaç px kayma). */
+     katman) · 2 tam TV: katmana ek olarak yazılarda kırmızı/mavi renk saçağı, daha koyu kenar ve
+     yoğun tarama çizgisi (style.css html[data-crt="2"]).
+     P129f (kullanıcı: "tam TV modunda oyun kasmaya başladı") — Tam TV eskiden tüm sayfaya SVG filtresi
+     uyguluyordu (bükülme + renk kayması + ışık taşması). Tarayıcı bu filtreyi ekrandaki her hareket
+     için BÜTÜN sayfada yeniden hesaplıyordu: sahnede bir animasyon varken 60 → 3 kare/sn. Filtre
+     kaldırıldı; renk kayması yalnız yazıda (text-shadow, ucuz), bükülme yok. */
   const CRT_KEY = 'okeyCrt';
   let crtLv = BETA ? 0 : (() => { try { const v = +localStorage.getItem(CRT_KEY); return v === 1 || v === 2 ? v : 0; } catch (e) { return 0; } })();
-  const CRT_K = .008;            // bükülme gücü: kenar ortasında genişliğin %0,4'ü kadar içe (P129d: referans ekran görüntülerine göre; .045 / .016 abartılıydı)
-  let crtSize = '';
-  function crtFilter() {
-    const W = innerWidth, H = innerHeight;
-    let svg = document.getElementById('crtSvg');
-    if (!svg) {
-      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.id = 'crtSvg';
-      svg.setAttribute('aria-hidden', 'true');
-      svg.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
-      svg.innerHTML = '<filter id="crtF" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">' +
-        '<feImage id="crtMap" preserveAspectRatio="none" result="map"/>' +
-        '<feDisplacementMap id="crtDisp" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="G" result="d"/>' +
-        '<feOffset in="d" dx="-1" result="dr"/><feColorMatrix in="dr" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>' +
-        '<feColorMatrix in="d" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>' +
-        '<feOffset in="d" dx="1" result="db"/><feColorMatrix in="db" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>' +
-        '<feComposite in="r" in2="g" operator="arithmetic" k2="1" k3="1" result="rg"/>' +
-        '<feComposite in="rg" in2="b" operator="arithmetic" k2="1" k3="1" result="rgb"/>' +
-        '<feColorMatrix in="rgb" type="matrix" values="2.2 0 0 0 -1.4  0 2.2 0 0 -1.4  0 0 2.2 0 -1.4  0 0 0 1 0" result="hi"/>' +
-        '<feGaussianBlur in="hi" stdDeviation="6" result="bl"/>' +
-        '<feComposite in="rgb" in2="bl" operator="arithmetic" k2=".95" k3=".08" result="glow"/>' +
-        '<feColorMatrix in="glow" type="saturate" values="1.05" result="sat"/>' +
-        '<feFlood flood-color="#000" result="k"/><feComposite in="sat" in2="k" operator="over"/></filter>';
-      document.body.appendChild(svg);
-    }
-    const key = W + 'x' + H;
-    if (key === crtSize) return;
-    crtSize = key;
-    // fıçı haritası: çıkış pikseli (u, v) ∈ [-1, 1] → kaynaktan (u, v)·(1 + K·r²) örneklenir
-    /* P129e (kullanıcı: "bazı yerlerde yırtılmalar var") — harita eskiden 240 px enindeydi; tarayıcı onu
-       büyütürken 8 px'lik bloklar hâlinde kaydırıyordu (kenarlar basamaklı). Artık ekran çözünürlüğünde. */
-    const w = Math.max(2, Math.round(W)), h = Math.max(2, Math.round(H));
-    const cv = document.createElement('canvas');
-    cv.width = w; cv.height = h;
-    const cx = cv.getContext('2d'), img = cx.createImageData(w, h), d = img.data;
-    const S = Math.ceil(2 * CRT_K * 2 * Math.max(W, H) / 2) + 2;    // en büyük kayma ×2
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const u = (x + .5) / w * 2 - 1, v = (y + .5) / h * 2 - 1, r2 = u * u + v * v;
-        const dx = u * CRT_K * r2 * W / 2, dy = v * CRT_K * r2 * H / 2;
-        const i = (y * w + x) * 4;
-        d[i] = Math.round(128 + dx / S * 255); d[i + 1] = Math.round(128 + dy / S * 255); d[i + 2] = 0; d[i + 3] = 255;
-      }
-    }
-    cx.putImageData(img, 0, 0);
-    const f = svg.querySelector('#crtF'), m = svg.querySelector('#crtMap');
-    for (const [k, v] of [['x', 0], ['y', 0], ['width', W], ['height', H]]) { f.setAttribute(k, v); m.setAttribute(k, v); }
-    m.setAttribute('href', cv.toDataURL('image/png'));
-    svg.querySelector('#crtDisp').setAttribute('scale', S);
-  }
   function applyCrt() {
     let el = document.getElementById('crtOv');
     const root = document.documentElement;
@@ -1391,14 +1340,12 @@
         el.innerHTML = '<i class="crt-mask"></i><i class="crt-roll"></i><i class="crt-frame"></i>';
         document.body.appendChild(el);
       }
-      if (crtLv === 2) crtFilter();
       root.dataset.crt = String(crtLv);
     } else {
       if (el) el.remove();
       delete root.dataset.crt;
     }
   }
-  addEventListener('resize', () => { if (crtLv === 2) crtFilter(); });
   applyCrt();
   /* pixelfx efektlerinin çıkış noktası (origin) altta: efekt yukarı doğru çizilir. Hedefin ORTASINA
      otursun diye çıkış noktası bu kadar efekt pikseli aşağı kaydırılır (çizilen alanın dikey
