@@ -12790,36 +12790,27 @@ html[data-txt="3"] :is(#jokerTip, #tutPanel .tm-bub, .hint-ov .pk-box, .hint-ov 
 #settingsOv .set-three .cyc-val { min-width: 0; font-size: 18px; line-height: 1.1; overflow-wrap: anywhere; }   /* uzun değer (Kraliyet çuhası) okları kartın dışına itmesin */
 
 /* P129 — CRT televizyon görünümü (yalnız prototip, Ayarlar › Ekstra; ui.js applyCrt). Ekranın üstünde
-   tıklanamayan tek katman; oyunun DOM'una dokunmaz. Katmanlar:
-     #crtOv            tarama çizgileri (renk düzeltmesi yok: backdrop-filter hareketli zeminde her karede yeniden hesaplanıyordu)
-     .crt-mask         RGB maske (aperture grille): dikey kırmızı/yeşil/mavi şeritler, çok hafif
-     .crt-roll         yavaşça aşağı kayan aydınlık bant (eski tüplü ekran taraması)
-     .crt-frame        kavisli köşeler (tüpün bombesi) + kenara doğru kararan vinyet + iç parıltı */
+   tıklanamayan tek katman; oyunun DOM'una dokunmaz, filtre YOK (P129f: tüm sayfaya SVG filtresi kasıyordu).
+   P129g (kullanıcı: "çok gözümü yoruyor, Balatro/Gambonanza'daki kadar yormamalı; bükülme onlarla aynı
+   olsun; TV modunu varsayılan görünüm olarak kullanacağız") — göz yoran parçalar çıkarıldı:
+     · 1 px'lik kırmızı/yeşil/mavi şerit maskesi (ekranda hareli titreşim yapıyordu) — YOK;
+     · sürekli aşağı kayan ışık bandı (gözün takip ettiği hareket) — YOK;
+     · tarama çizgisi: koyuluğu yarıya indi (Hafif .08, Tam TV .12);
+     · yazı renk saçağı (Tam TV): .45 → .22.
+   Bükülme hissi: .crt-bezel (ui.js, sabit SVG) — kenarları dışa doğru bombeli ekran ağzı (köşede kalın,
+   kenar ortasında incelen siyah çerçeve) + içine düşen yumuşak gölge + kenara doğru kararma. Sabit
+   olduğu için bir kez çizilir, oyun hareket ederken yeniden hesaplanmaz. */
 #crtOv { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; overflow: hidden;
-  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, .2) 2px, rgba(0, 0, 0, .2) 3px);
-}
-#crtOv i { position: absolute; inset: 0; display: block; pointer-events: none; }
-#crtOv .crt-mask { opacity: .1; mix-blend-mode: screen;
-  background: repeating-linear-gradient(to right, #ff0000 0, #ff0000 1px, #00ff00 1px, #00ff00 2px, #0000ff 2px, #0000ff 3px); }
-#crtOv .crt-roll { top: -30%; bottom: auto; height: 30%;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, .045) 50%, rgba(255, 255, 255, 0));
-  animation: crtRoll 9s linear infinite; will-change: transform; }   /* P129f — ayrı katman: bant kayarken sayfa yeniden boyanmaz */
-#crtOv .crt-frame { border-radius: 1.1vmin;   /* P129d — referanslarda (Balatro/Gambonanza ekran görüntüsü) köşe kavisi çok küçük */
-  box-shadow: 0 0 0 4vmin #000, inset 0 0 2.5vmin rgba(0, 0, 0, .4), inset 0 0 .8vmin rgba(0, 0, 0, .5);
-  background: radial-gradient(ellipse 85% 80% at 50% 50%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, .22) 100%); }
-@keyframes crtRoll { from { transform: translateY(0); } to { transform: translateY(440%); } }
-@media (prefers-reduced-motion: reduce) { #crtOv, #crtOv .crt-roll { animation: none; } }
-/* P129f — CRT "Tam TV" (kademe 2), FİLTRESİZ (kullanıcı: "kasmaya başladı"; tüm sayfaya SVG filtresi
-   her harekette sayfanın tamamını yeniden hesaplatıyordu). Hafif'in üstüne:
-     · yazılarda kırmızı sola / mavi sağa 1 px renk saçağı — :where() ile özgüllüğü 0: kendi
-       text-shadow'u olan yazılar (sayılar, başlıklar) kendi gölgesini korur;
-     · tarama çizgisi biraz daha koyu, kenar kararması ve köşe kavisi biraz daha belirgin. */
-html[data-crt="2"] :where(body *) { text-shadow: -1px 0 rgba(255, 50, 50, .45), 1px 0 rgba(60, 170, 255, .45); }
-html[data-crt="2"] #crtOv { background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, .26) 2px, rgba(0, 0, 0, .26) 3px); }
-html[data-crt="2"] #crtOv .crt-mask { opacity: .14; }
-html[data-crt="2"] #crtOv .crt-frame { border-radius: 1.6vmin;
-  box-shadow: 0 0 0 4vmin #000, inset 0 0 3.5vmin rgba(0, 0, 0, .5), inset 0 0 1vmin rgba(0, 0, 0, .6);
-  background: radial-gradient(ellipse 80% 76% at 50% 50%, rgba(0, 0, 0, 0) 64%, rgba(0, 0, 0, .3) 100%); }
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, .08) 2px, rgba(0, 0, 0, .08) 3px); }
+#crtOv i, #crtOv svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
+#crtOv .crt-frame { background: radial-gradient(ellipse 90% 86% at 50% 50%, rgba(0, 0, 0, 0) 66%, rgba(0, 0, 0, .26) 100%),
+  radial-gradient(ellipse 60% 40% at 30% 18%, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0) 70%); }
+/* Tam TV: biraz daha belirgin tarama, yazıda hafif renk saçağı (:where → özgüllük 0: kendi gölgesi olan
+   yazılar kendi gölgesini korur) */
+html[data-crt="2"] :where(body *) { text-shadow: -1px 0 rgba(255, 50, 50, .22), 1px 0 rgba(60, 170, 255, .22); }
+html[data-crt="2"] #crtOv { background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, .12) 2px, rgba(0, 0, 0, .12) 3px); }
+html[data-crt="2"] #crtOv .crt-frame { background: radial-gradient(ellipse 88% 84% at 50% 50%, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, .32) 100%),
+  radial-gradient(ellipse 60% 40% at 30% 18%, rgba(255, 255, 255, .03), rgba(255, 255, 255, 0) 70%); }
 
 /* P130 (kullanıcının iPad fotoğrafı, 2026-11-14: The Corporates kural kutusunda "harfler karışıyor") —
    boss kural metninin satır aralığı 1.2-1.35 idi; bu piksel yazıda Ş/Ğ/İ gibi harflerin işaretleri

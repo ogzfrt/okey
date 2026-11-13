@@ -1316,8 +1316,8 @@
   let pfxOn = (() => { try { return localStorage.getItem(PFX_KEY) !== '0'; } catch (e) { return true; } })();
   /* P129 (kullanıcı 2026-11-13: "Balatro / Gambonanza'daki gibi CRT televizyon efekti, opsiyonel,
      yalnız prototipte; Ayarlar › Ekstra'da aç/kapa") — tüm ekranın ÜSTÜNDE tıklanamayan tek katman
-     (#crtOv): tarama çizgileri, RGB maske (aperture grille), kavisli köşeler + vinyet (ekran bombesi
-     hissi), yavaş kayan ışık bandı.
+     (#crtOv): yumuşak tarama çizgileri, bombeli ekran ağzı (.crt-bezel) + kenara doğru kararma
+     (P129g: RGB şerit maskesi ve kayan ışık bandı göz yorduğu için çıkarıldı; bkz. style.css).
      Oyunun DOM'una dokunmaz (tıklama koordinatları aynı kalır). Betada hiç
      oluşmaz. Varsayılan kapalı. */
   /* P129b (kullanıcı: "TV içinde hissiyatı vermiyor, 3 kademe yap") — 0 kapalı · 1 hafif (yalnız üst
@@ -1337,7 +1337,14 @@
         el = document.createElement('div');
         el.id = 'crtOv';
         el.setAttribute('aria-hidden', 'true');
-        el.innerHTML = '<i class="crt-mask"></i><i class="crt-roll"></i><i class="crt-frame"></i>';
+        /* P129g — bombeli ekran ağzı: köşelerde ~%1-1,4 kalın, kenar ortasında ~%0,2-0,3'e incelir (kenarlar
+           dışa doğru bombeli); 1000×1000 birimlik çizim ekrana gerilir. Altında aynı hattın bulanık
+           gölgesi: ekran camının kenara doğru kararması. */
+        el.innerHTML = '<i class="crt-frame"></i>' +
+          '<svg class="crt-bezel" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">' +
+          '<defs><filter id="crtBzBlur" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="7"/></filter></defs>' +
+          '<path d="M30 14Q500 -8 970 14Q990 14 990 42Q1006 500 990 958Q990 986 970 986Q500 1008 30 986Q10 986 10 958Q-6 500 10 42Q10 14 30 14Z" fill="none" stroke="#000" stroke-opacity=".6" stroke-width="26" filter="url(#crtBzBlur)"/>' +
+          '<path d="M-60 -60H1060V1060H-60Z M30 14Q500 -8 970 14Q990 14 990 42Q1006 500 990 958Q990 986 970 986Q500 1008 30 986Q10 986 10 958Q-6 500 10 42Q10 14 30 14Z" fill="#000" fill-rule="evenodd"/></svg>';
         document.body.appendChild(el);
       }
       root.dataset.crt = String(crtLv);
