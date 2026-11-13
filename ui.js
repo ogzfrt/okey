@@ -1324,8 +1324,9 @@
      katman) · 2 tam TV: katmana ek olarak tüm sayfaya SVG filtresi (#crtF, <html>'e uygulanır):
        · bükülme: feDisplacementMap + çalışırken üretilen fıçı (barrel) haritası — kenarlar içe
          doğru bükülür, köşeler kavislenip kararır (görüntü dışından örneklenen yer boş = siyah);
-       · renk kayması: kırmızı kanal sola, mavi sağa 1,5 px (yazı kenarında saçak);
-       · ışık taşması: parlak yerlerin bulanık kopyası üstüne eklenir; hafif doygunluk.
+       · renk kayması: kırmızı kanal sola, mavi sağa 1 px (P129e: 1,5 px görüntüyü bulanıklaştırıyordu; tam piksel = keskin saçak);
+       · ışık taşması: yalnız ÇOK parlak yerlerin bulanık kopyası hafifçe eklenir, genel parlaklık %6
+         kısılır (P129e, kullanıcı: "aşırı parlak olmuş"); doygunluk çok az.
      Filtre yalnız GÖRÜNTÜYÜ büker, tıklama hedefleri yerinde kalır (kenarlarda birkaç px kayma). */
   const CRT_KEY = 'okeyCrt';
   let crtLv = BETA ? 0 : (() => { try { const v = +localStorage.getItem(CRT_KEY); return v === 1 || v === 2 ? v : 0; } catch (e) { return 0; } })();
@@ -1342,15 +1343,15 @@
       svg.innerHTML = '<filter id="crtF" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">' +
         '<feImage id="crtMap" preserveAspectRatio="none" result="map"/>' +
         '<feDisplacementMap id="crtDisp" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="G" result="d"/>' +
-        '<feOffset in="d" dx="-1.5" result="dr"/><feColorMatrix in="dr" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>' +
+        '<feOffset in="d" dx="-1" result="dr"/><feColorMatrix in="dr" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>' +
         '<feColorMatrix in="d" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>' +
-        '<feOffset in="d" dx="1.5" result="db"/><feColorMatrix in="db" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>' +
+        '<feOffset in="d" dx="1" result="db"/><feColorMatrix in="db" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>' +
         '<feComposite in="r" in2="g" operator="arithmetic" k2="1" k3="1" result="rg"/>' +
         '<feComposite in="rg" in2="b" operator="arithmetic" k2="1" k3="1" result="rgb"/>' +
-        '<feColorMatrix in="rgb" type="matrix" values="1.7 0 0 0 -.7  0 1.7 0 0 -.7  0 0 1.7 0 -.7  0 0 0 1 0" result="hi"/>' +
-        '<feGaussianBlur in="hi" stdDeviation="8" result="bl"/>' +
-        '<feComposite in="rgb" in2="bl" operator="arithmetic" k2="1" k3=".25" result="glow"/>' +
-        '<feColorMatrix in="glow" type="saturate" values="1.15" result="sat"/>' +
+        '<feColorMatrix in="rgb" type="matrix" values="2.2 0 0 0 -1.4  0 2.2 0 0 -1.4  0 0 2.2 0 -1.4  0 0 0 1 0" result="hi"/>' +
+        '<feGaussianBlur in="hi" stdDeviation="6" result="bl"/>' +
+        '<feComposite in="rgb" in2="bl" operator="arithmetic" k2=".95" k3=".08" result="glow"/>' +
+        '<feColorMatrix in="glow" type="saturate" values="1.05" result="sat"/>' +
         '<feFlood flood-color="#000" result="k"/><feComposite in="sat" in2="k" operator="over"/></filter>';
       document.body.appendChild(svg);
     }
@@ -1358,7 +1359,9 @@
     if (key === crtSize) return;
     crtSize = key;
     // fıçı haritası: çıkış pikseli (u, v) ∈ [-1, 1] → kaynaktan (u, v)·(1 + K·r²) örneklenir
-    const w = 240, h = Math.max(2, Math.round(w * H / W));
+    /* P129e (kullanıcı: "bazı yerlerde yırtılmalar var") — harita eskiden 240 px enindeydi; tarayıcı onu
+       büyütürken 8 px'lik bloklar hâlinde kaydırıyordu (kenarlar basamaklı). Artık ekran çözünürlüğünde. */
+    const w = Math.max(2, Math.round(W)), h = Math.max(2, Math.round(H));
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
     const cx = cv.getContext('2d'), img = cx.createImageData(w, h), d = img.data;
