@@ -2405,7 +2405,10 @@
       render(); renderMap();
     };
     /* RAUND ATLAMA — aktif (atlanabilir) raundun kartında: ödül + ATLA (coin ve store gelmez) */
+    /* P135 — Yol Haritası ipuçları: ilk yol seçimi, ilk atlanabilir raund */
+    if (pm.pending && curScreen() === 'map') setTimeout(() => Hints.show('lanetliPath'), 250);
     const act = el.mapCards.querySelector('.map-card.active:not(.pm-info)');
+    if (act && !pm.pending && Game.canSkipRound && Game.canSkipRound() && curScreen() === 'map') setTimeout(() => Hints.show('lanetliSkip'), 250);
     if (act && !pm.pending && Game.canSkipRound && Game.canSkipRound()) {
       const sk = Game.skipRewardFor(s.roundInStage);
       const blk = document.createElement('div');
@@ -6924,6 +6927,7 @@
     checkPandora();               // Grup F: açılmamış kutu varsa sahnesini göster
     maybeAutoFinish();            // Grup C: kayıp kesinse tıklama bekleme
     setTimeout(maybeManualHint, 0);   // P93 — yeni elle kullanılan joker ipucu (çizim bitince kartı bulsun)
+    setTimeout(maybeFeatureHint, 0);  // P135 — Lanetli Boyut / değnek ipuçları
   }
 
   /* Grup C — hedefe ulaşmanın hiçbir yolu kalmadıysa raundu oyuncu adına
@@ -8829,6 +8833,8 @@
        jokerlerinin slot makinesi, sonra bahis / mini oyun ipuçları") — ilk Kumarhane run'ında */
     if (Game.kumarhaneOn && Game.kumarhaneOn() && Hints.enabled && !Game.trainerMode && !Hints.seen('kumarhaneRun')) {
       Hints.show('kumarhaneRun', { onClose: proceed });
+    } else if (Game.lanetliOn && Game.lanetliOn() && Hints.enabled && !Game.trainerMode && !Hints.seen('lanetliRun')) {
+      Hints.show('lanetliRun', { onClose: proceed });   // P135 — ilk Lanetli Boyut run'ı
     } else proceed();
     /* P71 — kalıcı final jokeri run'a katıldı */
     (Game.state.finalJokersGiven || []).forEach((k, i) => {
@@ -8903,7 +8909,7 @@
       if (opts.onClose) { try { opts.onClose(); } catch (e) {} }   // denetim3 #12 — ipucundan sonra sıradaki sahne
       const next = hintQueue.shift();
       if (next) setTimeout(() => showHintCard(next.key, next.opts), 120);
-      else if (curScreen() === 'game') setTimeout(maybeManualHint, 150);
+      else if (curScreen() === 'game') setTimeout(() => { maybeManualHint(); maybeFeatureHint(); }, 150);
     };
     ov.querySelector('#hintOk').addEventListener('click', () => { SFX.tick(); close(); });
     document.body.appendChild(ov);
@@ -8938,6 +8944,27 @@
           html: first ? t('hint_manualFirst', T.name(r)) : t('hint_manualNext', T.name(r)), spot: card });
         return;
       }
+    }
+  }
+  /* P135 (kullanıcı 2026-11-16: "Lanetli Boyut'un ipuçları + öğreticinin anlatmadıkları") — oyun ekranında,
+     özellik ilk göründüğünde bir kez: Lanetli Çocuk finali, Sessiz Raund, Çürük Taş, değnek. Elle joker ipucuyla
+     aynı koşullar (öğretici/trainer/başka pencere yokken); aynı anda yalnız biri. */
+  function maybeFeatureHint() {
+    const s = Game.state;
+    if (!Hints.enabled || Game.trainerMode || Game.tutorialMode || TUT.active) return;
+    if (!s || s.status !== 'playing' || curScreen() !== 'game' || storeOpen() || upgradeOpen()) return;
+    if (!el.overlay.classList.contains('hidden') || document.querySelector(HINT_BLOCKERS)) return;
+    const lan = Game.lanetliOn && Game.lanetliOn();
+    if (lan && s.boss && s.boss.key === 'lanetliCocuk' && Hints.show('cocuk', { spot: el.kahinChip.classList.contains('hidden') ? null : el.kahinChip })) return;
+    if (lan && Game.isSilent && Game.isSilent(s.stage, s.roundInStage) && Hints.show('silent')) return;
+    if (lan && Game.rotStage) {
+      const rt = s.hand.find((x) => Game.rotStage(x) > 0);
+      const te = rt && document.querySelector(`#rack .tile[data-id="${rt.id}"]`);
+      if (te && Hints.show('rot', { spot: te })) return;
+    }
+    if (s.consumables.length) {
+      const sh = el.consumRow.closest('.gm-shoulder') || el.consumRow;
+      if (Hints.show('degnek', { spot: sh.getBoundingClientRect().width ? sh : null })) return;
     }
   }
   const Hints = {
@@ -10745,6 +10772,7 @@
     });
     ov.querySelector('.altar-close').addEventListener('click', finish);
     document.body.appendChild(ov);
+    Hints.show('altar');   // P135 — ilk Adak Sunağı
   }
 
   /* LANETLİ BOYUT · KARANLIK TAKAS — 3 kapalı kutu; kutular fısıldar (%70 doğru); bir kez coin'le bakılır; biri seçilir */
@@ -10791,6 +10819,7 @@
     };
     draw();
     document.body.appendChild(ov);
+    Hints.show('takas');   // P135 — ilk Karanlık Takas
   }
   /* LANETLİ BOYUT · KEMİK FALI — boss'tan önce isteğe bağlı: 6 taş 2 sn görünür, kapanır; 10 sn'de grup kuran 3 taşı seç */
   function showFal(done) {
@@ -10847,6 +10876,7 @@
       }, f.showMs);
     });
     document.body.appendChild(ov);
+    Hints.show('fal');   // P135 — ilk Kemik Falı (OYNA'dan önce: ezber süresi ipucu kapanınca başlar)
   }
 
   function packOverlay(kind, titleKey) {
@@ -11322,6 +11352,8 @@
       /* denetim3 #11 (kullanıcı: "store ipucuna gerek yok, öğretici anlatıyor") — store ipucu kalktı;
          Kumarhane'de store'un yalnız stage sonunda açıldığını run'ın ilk ipucu söylüyor */
       if (s.store.items.some(i => i.catchUp)) Hints.show('catchUp');
+      /* P135 — joker slotları doluyken backup rafı (fazla joker orada çalışmadan, yaşlanmadan bekler) */
+      if (!TUT.active && s.jokers.length >= Game.slotCap()) Hints.show('backup');
       /* P43: "TAKAS: jokerine tıkla, farkı öde" ipucu kalktı — tooltip'teki Takas
          düğmesi kullanıcı kararıyla silindi, ipucu artık olmayan bir düğmeyi tarif ederdi. */
     }

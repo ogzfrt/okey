@@ -15,6 +15,15 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-11-16d', date: { tr: '16 Kasım', en: 'November 16' },
+      items: [
+        ['yeni', 'Lanetli Boyut ipuçları', 'Mühür artık Lanetli Boyut’un her yeniliğini ilk karşılaştığında anlatıyor: Lanet Seviyesi, yol seçimi, raund atlama, Çürük Taş, Sessiz Raund, Adak Sunağı, mini oyunlar ve final.',
+          'Cursed Dimension hints', 'Mühür now explains each Cursed Dimension feature the first time you meet it: Curse Level, paths, skipping rounds, Rotten Tiles, Silent Rounds, the Offering Altar, the mini games and the finale.'],
+        ['yeni', 'Değnek ve backup ipuçları', 'İlk değneğini aldığında ve joker slotların ilk dolduğunda nasıl kullanılacakları anlatılıyor.',
+          'Wand and backup hints', 'When you get your first wand and when your joker slots first fill up, you are shown how to use them.'],
+      ],
+    },
+    {
       id: '2026-11-16c', date: { tr: '16 Kasım', en: 'November 16' },
       items: [
         ['yeni', 'Üst rozetler öğreticide', 'Öğretici artık TUR’un altındaki küçük simgeleri de anlatıyor. Ahtapot boss’unun da kendi rozeti var: o raund emdiği puanı gösteriyor.',

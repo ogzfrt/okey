@@ -406,6 +406,51 @@
         + '• Çok taş atarsan kuyu çabuk dolar.',
       hint_catchUp: 'ACİL RAF: paran azaldığı için en ucuz kart indirime girdi ve bu '
         + 'store’da yenileme bedava. Stage başına bir kez olur.',
+      /* P135 (kullanıcı 2026-11-16) — Lanetli Boyut ipuçları + öğreticinin anlatmadıkları (değnek, backup) */
+      hint_lanetliRun: '<b>LANETLİ BOYUT RUN</b>: 6 stage + final.\n'
+        + '🜏 <b>Lanet Seviyesi</b> (soldaki LANET paneli) yükseldikçe bütün hedefler büyür: her seviye +%8.\n'
+        + '🗺 Her stage sonunda Yol Haritası’nda <b>Güvenli</b> ya da <b>Lanetli</b> yolu seçersin.\n'
+        + '🏪 Store her raunddan sonra açılır; boss’tan sonra <b>Adak Sunağı</b> lanetli eşyalar sunar.\n'
+        + 'Çürük taşları, sessiz raundları ve mini oyunları ilk geldiklerinde anlatacağım. Bol şans!',
+      hint_lanetliPath: '<b>YOLUNU SEÇ</b>: haritada sıradaki stage’in düğümlerinden birine tıkla.\n'
+        + '🛡 Güvenli: normal hedefler, lanet 1 azalır, stage sonunda +8 coin.\n'
+        + '💀 Lanetli: hedefler ×1.3, lanet +1; stage sonunda 3 karttan birini seçersin (en az Rare).\n'
+        + 'Düğümün köşesindeki küçük simge o stage’in sonundaki olaydır: Karanlık Takas, Kemik Falı ya da Ekstra Sunak.',
+      hint_lanetliSkip: '<b>RAUNDU ATLA</b>: Raund 1 ve 2’yi oynamadan geçebilirsin. Karşılığında kartta yazan ödülü alırsın '
+        + '(coin, lanet arınması, değnek ya da bedava joker fişi), ama o raundun coin’i ve store’u gelmez.',
+      hint_rot: '<b>ÇÜRÜK TAŞ</b>: her raund eline ve destene 4 çürük taş gelir.\n'
+        + '• Elinde bekledikçe olgunlaşır: Taze +0.3x → Olgun +0.6x → Çürük +1.2x (açılımda taş başına).\n'
+        + '• Çürük olunca sağındaki taşa bulaşır.\n'
+        + '• Bir tur daha beklersen <b>Çöp</b> olur: hiçbir gruba giremez.\n'
+        + 'Ne zaman açacağını iyi seç!',
+      hint_silent: '<b>SESSİZ RAUND</b> 🔕: lanetin yüksekken bazı raundlar sessiz gelir ve hedef yarıya iner. '
+        + 'İlk turda bitirirsen lanet 1 azalır; geç bitirirsen lanetli eşyalarından biri sonraki raund susar.',
+      hint_altar: '<b>ADAK SUNAĞI</b>: bir bedel öde, bir lanetli eşya al.\n'
+        + '• Kısa bedel birkaç raund sürer ve Rare eşya verir; kalıcı bedel run boyunca sürer ve Legendary verir.\n'
+        + '• Lanetli eşyalar çok güçlüdür ama elinde durdukça laneti 1 artırır.\n'
+        + '• <b>Totemler</b> joker slotu kaplamaz, kendi rafında durur; her birinin kendi bedeli vardır.\n'
+        + 'İstemezsen GEÇ.',
+      hint_takas: '<b>KARANLIK TAKAS</b>: üç kutudan birini seçmek zorundasın. Birinde lanetli eşya, birinde 15-25 coin, '
+        + 'birinde ceza var (sonraki stage hedefleri +%30 ya da lanet +2).\n'
+        + '• Kutuların fısıltısı çoğu zaman doğrudur, ama her zaman değil.\n'
+        + '• Coin ödeyip bir kutunun içine bir kez bakabilirsin.',
+      hint_fal: '<b>KEMİK FALI</b>: boss’tan önce isteğe bağlı bir hafıza oyunu.\n'
+        + '• OYNA’ya basınca 6 taş 2 saniye görünür, sonra kapanır.\n'
+        + '• 10 saniyede Per ya da Sıralı kuran 3 taşı seç.\n'
+        + '• Bilirsen o 3 taş boss raundunda elinde olur; yanlış seçtiğin her taş için 1 eksik taşla başlarsın. İstemezsen GEÇ.',
+      hint_cocuk: '<b>FİNAL: LANETLİ ÇOCUK</b>, üç fazlı bir boss.\n'
+        + '👓 Faz 1: tek turlarda taş sayıları 2 sn görünüp kaybolur.\n'
+        + '🐙 Faz 2: puanın hedefin yarısını geçince en yüksek 3 taşın 2 tur kilitlenir.\n'
+        + '💀 Faz 3: hedefi geçen açılımda Çocuk en değerli değneğini ya da totemini kırar, hedef %20 artar ve bir tur daha alırsın.\n'
+        + 'Hangi fazda olduğun TUR’un altındaki 🧸 rozetinde yazar.',
+      hint_degnek: '<b>DEĞNEK</b>: tek kullanımlık eşya, kullanana kadar Değnek sekmesinde bekler.\n'
+        + '• Kullanmak için kartına tıkla.\n'
+        + '• Taş ya da joker seçmesi gerekiyorsa değnek yeşil parlar; sonra hedefe tıklarsın.\n'
+        + '• Ne yaptığını görmek için kartın üstüne gel.',
+      hint_backup: '<b>BACKUP</b>: joker slotların doldu. Fazladan jokerler iki kişilik backup rafında bekler.\n'
+        + '• Slotların doluyken aldığın joker backup’a gider.\n'
+        + '• Backup’taki joker çalışmaz ama süresi de azalmaz.\n'
+        + '• Jokerleri ana slot ile backup arasında <b>sürükleyip bırakarak</b> değiştirirsin.',
       hint_tradeUp: 'TAKAS: bir jokerine tıklayıp farkı ödeyerek onu bir üst '
         + 'nadirlikten rastgele bir kartla değiştirebilirsin. Süresi bitmek üzere '
         + 'olan kartı değerlendirmenin yolu budur.',
@@ -1552,6 +1597,51 @@
         + '• Discard more and the well fills faster.',
       hint_catchUp: 'RELIEF SHELF: you were low on coins, so the cheapest card is '
         + 'discounted and this shop\'s reroll is free. Once per stage.',
+      /* P135 — Cursed Dimension hints + what the tutorial does not cover (wands, backup) */
+      hint_lanetliRun: '<b>CURSED DIMENSION RUN</b>: 6 stages + a final.\n'
+        + '🜏 As your <b>Curse Level</b> (the CURSE panel on the left) rises, every target grows: +8% per level.\n'
+        + '🗺 At the end of each stage you pick the <b>Safe</b> or <b>Cursed</b> path on the Path Map.\n'
+        + '🏪 The shop opens after every round; after the boss the <b>Offering Altar</b> offers cursed items.\n'
+        + 'I will explain rotten tiles, silent rounds and the mini games when they first show up. Good luck!',
+      hint_lanetliPath: '<b>PICK YOUR PATH</b>: click one of the next stage’s nodes on the map.\n'
+        + '🛡 Safe: normal targets, curse −1, +8 coins at stage end.\n'
+        + '💀 Cursed: targets ×1.3, curse +1; pick 1 of 3 cards at stage end (Rare or better).\n'
+        + 'The small icon on a node’s corner is that stage’s end event: Dark Trade, Bone Reading or Extra Altar.',
+      hint_lanetliSkip: '<b>SKIP THE ROUND</b>: you can skip Round 1 and 2. You get the reward on the card '
+        + '(coins, curse cleansing, a wand or a free joker token), but you lose that round’s coins and shop.',
+      hint_rot: '<b>ROTTEN TILES</b>: 4 rotten tiles reach your hand and deck every round.\n'
+        + '• They ripen while you hold them: Fresh +0.3x → Ripe +0.6x → Rotten +1.2x (per tile in a meld).\n'
+        + '• Once Rotten it infects the tile to its right.\n'
+        + '• Wait one more turn and it turns into <b>Trash</b>: it fits no group.\n'
+        + 'Pick your moment!',
+      hint_silent: '<b>SILENT ROUND</b> 🔕: when your curse is high some rounds go silent and the target is halved. '
+        + 'Finish on the first turn and your curse drops by 1; finish later and one cursed item is silenced next round.',
+      hint_altar: '<b>OFFERING ALTAR</b>: pay a price, take a cursed item.\n'
+        + '• A short price lasts a few rounds and gives a Rare item; a permanent price lasts the whole run and gives a Legendary.\n'
+        + '• Cursed items are very strong, but each one raises your curse by 1 while you hold it.\n'
+        + '• <b>Totems</b> take no joker slot; they sit on their own shelf and each has its own price.\n'
+        + 'If you do not want one, SKIP.',
+      hint_takas: '<b>DARK TRADE</b>: you must pick one of three boxes. One holds a cursed item, one 15-25 coins, '
+        + 'one a penalty (next stage targets +30% or curse +2).\n'
+        + '• The boxes’ whispers are usually right, but not always.\n'
+        + '• You can pay coins to peek inside one box once.',
+      hint_fal: '<b>BONE READING</b>: an optional memory game before the boss.\n'
+        + '• Press PLAY and 6 tiles show for 2 seconds, then turn over.\n'
+        + '• Within 10 seconds pick the 3 tiles that form a Set or a Run.\n'
+        + '• Get it right and those 3 tiles start the boss round in your hand; each wrong tile costs you 1 tile. If you do not want to play, SKIP.',
+      hint_cocuk: '<b>FINAL: THE CURSED CHILD</b>, a three-phase boss.\n'
+        + '👓 Phase 1: on odd turns tile numbers show for 2 seconds, then vanish.\n'
+        + '🐙 Phase 2: once you pass half the target, your 3 highest tiles are locked for 2 turns.\n'
+        + '💀 Phase 3: on the meld that passes the target the Child breaks your most valuable wand or totem, the target rises 20% and you get one more turn.\n'
+        + 'The 🧸 badge under TURN shows which phase you are in.',
+      hint_degnek: '<b>WAND</b>: a one-use item that waits in the Wand tab until you use it.\n'
+        + '• Click its card to use it.\n'
+        + '• If it needs a tile or a joker, the wand glows green; then click the target.\n'
+        + '• Hover the card to see what it does.',
+      hint_backup: '<b>BACKUP</b>: your joker slots are full. Extra jokers wait on the two-slot backup shelf.\n'
+        + '• A joker you buy while your slots are full goes to backup.\n'
+        + '• A joker in backup does nothing, but its lifespan does not drop either.\n'
+        + '• <b>Drag and drop</b> jokers between the main slots and backup to swap them.',
       hint_tradeUp: 'TRADE UP: click one of your jokers and pay the difference to swap it '
         + 'for a random card one rarity higher. Best use for a card about to expire.',
       modeAlwaysOpen: 'Always open (test mode)',
