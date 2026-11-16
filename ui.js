@@ -6714,6 +6714,14 @@
       if (s.rehinRound === s.roundSerial) items.push({ k: 'rehin', ico: '💰', title: JOKER_DEFS.rehinci.name, txt: t('rehinChip') });
       if (s.puppet && s.puppet.round === s.roundSerial) { const pj = s.jokers.find((x) => x.id === s.puppet.id); if (pj) items.push({ k: 'kukla', ico: '🎭', title: JOKER_DEFS.kuklaUstasi.name, txt: t('kuklaChip', T.name(pj)) }); }
       if (s.mirror && s.mirror.round === s.roundSerial) { const mj = s.jokers.find((x) => x.id === s.mirror.id); if (mj) items.push({ k: 'mirror', ico: '🪞', title: CONSUMABLES.ruhAynasi.name, txt: t('mirrorChip', T.name(mj)) }); }
+      /* P136 (rapor §Arayüz: "etkin bedeller — üst simge rozetleri, kalan raund sayısıyla") — Adak Sunağı bedelleri:
+         bu raund etkin kısa bedeller (köşede bu raund dahil kalan raund) + run boyu süren kalıcılar tek rozette */
+      for (const [i, pc] of (s.status === 'playing' ? (s.pactsNow || []) : []).entries())
+        items.push({ k: 'pact' + i, ico: pc.type === 'tur' ? '⌛' : '✋', title: t('kbPact'), mark: pc.after + 1,
+          txt: t('pact_' + pc.type + '_short') + '<br>' + (pc.after > 0 ? t('pactChipLeft', pc.after) : t('pactChipLast')) });
+      const permP = s.status === 'playing' ? (s.pacts || []).filter((pc) => pc.kind === 'perm' && (pc.type === 'el' || pc.type === 'coin')) : [];
+      if (permP.length) items.push({ k: 'pactPerm', ico: '⛓', title: t('kbPactPerm'), mark: permP.length > 1 ? permP.length : '',
+        txt: permP.map((pc) => t('pact_' + pc.type + '_perm')).join('<br>') });
       if (s.mezarciMult) items.push({ k: 'mezarci', ico: '⚰', title: JOKER_DEFS.mezarci.name, txt: t('mezarciChip', s.mezarciMult.toFixed(1)) });
       if (Game.isSilent && Game.isSilent(s.stage, s.roundInStage))
         items.push({ k: 'silent', ico: '🔕', title: t('silentName'), mark: s.turn === 1 ? '' : '✗', txt: t('silentDesc') });
@@ -8925,7 +8933,8 @@
      öğreticide, harita/store'da ve başka bir pencere açıkken çıkmaz.
      Yeni bir elle kullanılan joker eklenince yalnız MANUAL_JOKERS'a yazılır.
      ============================================================ */
-  const MANUAL_JOKERS = ['ayna', 'satrancSaati', 'rusvet', 'terazi', 'paratoner', 'fuzyon', 'orion', 'hileliZar'];
+  const MANUAL_JOKERS = ['ayna', 'satrancSaati', 'rusvet', 'terazi', 'paratoner', 'fuzyon', 'orion', 'hileliZar',
+    'karaMum', 'rehinci', 'kuklaUstasi', 'zamanTefecisi', 'mezarci', 'fisilti'];   // P136 — Lanetli Boyut: karta sol tıkla kullanılanlar
   const HINT_BLOCKERS = '#hintOv, .pk-ov, .ep-ov, .belt-ov, #fuzyonMenu, #fuzyonPick, #pandoraOv, #useChooser, '
     + '#ritimOv, #kumarOv, #terziPick, #okeySlotPick, #tutResume, #dolunayFx';
   function maybeManualHint() {
@@ -8955,12 +8964,24 @@
     if (!s || s.status !== 'playing' || curScreen() !== 'game' || storeOpen() || upgradeOpen()) return;
     if (!el.overlay.classList.contains('hidden') || document.querySelector(HINT_BLOCKERS)) return;
     const lan = Game.lanetliOn && Game.lanetliOn();
+    /* P137 — Kozmik ve Kumarhane finalleri de ilk karşılaşmada anlatılır (Lanetli Çocuk gibi) */
+    if (s.boss && s.boss.key === 'orion' && Game.isFinalStage && Game.isFinalStage()) {
+      const op = document.getElementById('orionPanel');
+      if (Hints.show('finalOrion', { spot: op && !op.classList.contains('hidden') ? op : null })) return;
+    }
+    if (s.boss && s.boss.key === 'ladyLuck' && Game.isFinalStage && Game.isFinalStage() && Hints.show('finalLadyLuck')) return;
     if (lan && s.boss && s.boss.key === 'lanetliCocuk' && Hints.show('cocuk', { spot: el.kahinChip.classList.contains('hidden') ? null : el.kahinChip })) return;
     if (lan && Game.isSilent && Game.isSilent(s.stage, s.roundInStage) && Hints.show('silent')) return;
     if (lan && Game.rotStage) {
       const rt = s.hand.find((x) => Game.rotStage(x) > 0);
       const te = rt && document.querySelector(`#rack .tile[data-id="${rt.id}"]`);
       if (te && Hints.show('rot', { spot: te })) return;
+    }
+    /* P137 — deste jokeri: slota oturmaz, taş olarak desteye karışır (eldeyse o joker taşı çerçevelenir) */
+    if ((s.deckJokers || []).length) {
+      const jt = s.hand.find((x) => x.jokerTile);
+      const te = jt && document.querySelector(`#rack .tile[data-id="${jt.id}"]`);
+      if (Hints.show('deckJoker', { spot: te || null })) return;
     }
     if (s.consumables.length) {
       const sh = el.consumRow.closest('.gm-shoulder') || el.consumRow;

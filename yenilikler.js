@@ -15,6 +15,15 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-11-16e', date: { tr: '16 Kasım', en: 'November 16' },
+      items: [
+        ['yeni', 'Bedel rozetleri', 'Adak Sunağı’nda ödediğin bedeller artık TUR’un altında rozet olarak görünüyor; köşedeki sayı kaç raund kaldığını gösteriyor.',
+          'Price badges', 'Prices you paid at the Offering Altar now show as badges under TURN; the corner number shows how many rounds are left.'],
+        ['yeni', 'Yeni ipuçları', 'Deste jokerleri, Orion ve Lady Luck finalleri ve elle kullanılan lanetli jokerler artık ilk karşılaşmada anlatılıyor. Öğretici Pas ve Yenile’yi de gösteriyor.',
+          'New hints', 'Deck jokers, the Orion and Lady Luck finals and hand-used cursed jokers are now explained when you first meet them. The tutorial also shows Pass and Reroll.'],
+      ],
+    },
+    {
       id: '2026-11-16d', date: { tr: '16 Kasım', en: 'November 16' },
       items: [
         ['yeni', 'Lanetli Boyut ipuçları', 'Mühür artık Lanetli Boyut’un her yeniliğini ilk karşılaştığında anlatıyor: Lanet Seviyesi, yol seçimi, raund atlama, Çürük Taş, Sessiz Raund, Adak Sunağı, mini oyunlar ve final.',

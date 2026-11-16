@@ -260,6 +260,7 @@
       silentName: 'SESSİZ RAUND', silentDesc: 'Hedef yarı. İlk turda bitirirsen birikmiş lanet 1 azalır; geç bitirirsen bir lanetli eşyan sonraki raund susar.',
       altarBtn: 'ADAK SUNAĞI', altarBtnSub: (n) => n ? `${n} teklif` : 'kapandı', altarTitle: 'ADAK SUNAĞI',
       altarSub: (lv) => `Bir bedel öde, bir lanetli eşya al. Yalnız birini seçebilirsin. Aldığın eşya elinde durdukça laneti 1 artırır (şu an ${lv}).`,
+      kbPact: 'ADAK BEDELİ', kbPactPerm: 'KALICI BEDELLER', pactChipLeft: (n) => `Bu raund etkin, sonra ${n} raund daha sürecek.`, pactChipLast: 'Bu raund son kez etkin.',
       altarShort: 'KISA BEDEL', altarPerm: 'KALICI BEDEL', altarAccept: 'KABUL ET', altarTaken: 'ALINDI', altarCant: 'ŞU AN ÖDENEMEZ', altarLeave: 'GEÇ',
       pact_tur_short: '2 raund boyunca her raund 1 tur eksik', pact_el_short: '2 raund boyunca raunda 1 eksik taşla başla',
       pact_el_perm: 'Run boyunca her raund 1 eksik taşla başla', pact_coin_short: 'Coin’inin %30’u gider',
@@ -447,6 +448,19 @@
         + '• Kullanmak için kartına tıkla.\n'
         + '• Taş ya da joker seçmesi gerekiyorsa değnek yeşil parlar; sonra hedefe tıklarsın.\n'
         + '• Ne yaptığını görmek için kartın üstüne gel.',
+      /* P137 — deste jokerleri ve Kozmik / Kumarhane finalleri */
+      hint_deckJoker: '<b>DESTE JOKERİ</b> (köşesinde ◈ deste yazan kartlar): slota oturmaz, <b>taş olarak destene karışır</b>.\n'
+        + '• Çekip eline geldiği raund etkisi çalışır; gelmezse o raund ne çalışır ne de süresi azalır.\n'
+        + '• Elindeki joker taşının üstüne gelince ne yaptığını görürsün.',
+      hint_finalOrion: '<b>FİNAL: ORION</b>, seninle yarışan bir rakip.\n'
+        + '• Orion da yanında 21 taşla oynar; puanı ORION panelinde yazar.\n'
+        + '• Kazanmak için raund sonunda hem tabanı hem Orion’un puanını geçmelisin.\n'
+        + '• En güçlü jokerlerinden birini kemerine takar: o joker bu raund onun için çalışır, senin için değil.\n'
+        + '• Orion’un attığı taşı panelden <b>ELE AL</b> ile alabilirsin; bedeli bir çekişin.',
+      hint_finalLadyLuck: '<b>FİNAL: LADY LUCK</b>\n'
+        + '💋 Her tur jokerlerinden birini büyüler: o jokerin puanı eksiye döner, diğer etkileri susar.\n'
+        + '💎 Istakandaki en yüksek taşı da çalar.\n'
+        + 'Büyülenen jokerin köşesinde 💋 belirir ve kartı solar. Hedefe onsuz da ulaşacak şekilde planla!',
       hint_backup: '<b>BACKUP</b>: joker slotların doldu. Fazladan jokerler iki kişilik backup rafında bekler.\n'
         + '• Slotların doluyken aldığın joker backup’a gider.\n'
         + '• Backup’taki joker çalışmaz ama süresi de azalmaz.\n'
@@ -1209,10 +1223,10 @@
         isleme: `Yeni gelen <b>Sarı 7</b>'yi masadaki 7'lerine ekleyebilirsin, buna <b>işleme</b> denir. Sarı 7'yi seç ve <b>+ İşle</b>'ye bas.`,
         islemeConfirm: `Şimdi <b>Onayla</b>'ya bas.`,
         okey: `Bu taş bu stage'in <b>OKEY</b>'i. Her taşın yerine geçebilir, sakın atma!`,
-        freeplay: `Artık sıra sende! Hedefe ulaşana kadar aç, işle, at.`,
+        freeplay: `Artık sıra sende! Hedefe ulaşana kadar aç, işle, at. Açacak grubun yoksa <b>Pas</b>'a bas: bu tur açmadan yalnız taş atarsın.`,
         islekHit: `Eyvah! Attığın taş <b>işleğe</b> düştü ve puan kaybettin. Büyük taşları atarken dikkatli ol.`,
         store1: `Burası <b>STORE</b>. Coinlerinle joker alırsın, jokerler puanını büyütür. <b>Büyüteç</b>'i al!`,
-        store2: `Kartın köşesindeki sayı, jokerin kaç raund kalacağını gösterir. Hazırsan <b>DEVAM</b>'a bas.`,
+        store2: `Kartın köşesindeki sayı, jokerin kaç raund kalacağını gösterir. Raftaki kartları beğenmezsen <b>Yenile</b> ile coin karşılığı yenilerini getirebilirsin. Hazırsan <b>DEVAM</b>'a bas.`,
         jokerPreview: `Hesap çubuğu yalnız <b>grubun kendi değerini</b> gösterir. Jokerlerin bonusu <b>onayladıktan sonra</b> sırayla eklenir. <b>Onayla</b>'ya bas ve izle!`,
         jokerFire: `İşte böyle! Jokerin sırası gelince zıpladı ve bonusunu ekledi; toplam en sonda belli oldu.`,
         bossIntro: `Sırada <b>BOSS</b> var! Her boss'un özel bir kuralı vardır. Bu <b>Ahtapot</b>, puanının bir kısmını emer. <b>OYNA</b>'ya bas!`,
@@ -1453,6 +1467,7 @@
       silentName: 'SILENT ROUND', silentDesc: 'Half target. Finish on the first turn and your gathered curse drops by 1; finish later and one cursed item is silenced next round.',
       altarBtn: 'OFFERING ALTAR', altarBtnSub: (n) => n ? `${n} offers` : 'closed', altarTitle: 'OFFERING ALTAR',
       altarSub: (lv) => `Pay one price, take one cursed item. You can choose only one. The item raises your curse by 1 while you hold it (now ${lv}).`,
+      kbPact: 'ALTAR PRICE', kbPactPerm: 'LASTING PRICES', pactChipLeft: (n) => `Active this round, then ${n} more round${n > 1 ? 's' : ''}.`, pactChipLast: 'Active for the last time this round.',
       altarShort: 'SHORT PRICE', altarPerm: 'LASTING PRICE', altarAccept: 'ACCEPT', altarTaken: 'TAKEN', altarCant: 'CAN’T PAY NOW', altarLeave: 'LEAVE',
       pact_tur_short: '1 fewer turn each round for 2 rounds', pact_el_short: 'Start 2 rounds with 1 fewer tile',
       pact_el_perm: 'Start every round with 1 fewer tile for the rest of the run', pact_coin_short: 'Lose 30% of your coins',
@@ -1638,6 +1653,19 @@
         + '• Click its card to use it.\n'
         + '• If it needs a tile or a joker, the wand glows green; then click the target.\n'
         + '• Hover the card to see what it does.',
+      /* P137 — deck jokers and the Cosmic / Casino finals */
+      hint_deckJoker: '<b>DECK JOKER</b> (cards marked ◈ deck): it takes no slot; it <b>shuffles into your deck as a tile</b>.\n'
+        + '• It works in the rounds you draw it; in a round it does not reach your hand it neither works nor loses lifespan.\n'
+        + '• Hover the joker tile in your hand to see what it does.',
+      hint_finalOrion: '<b>FINAL: ORION</b>, a rival who races you.\n'
+        + '• Orion plays beside you with 21 tiles; his score is on the ORION panel.\n'
+        + '• To win you must beat both the floor and Orion’s score at round end.\n'
+        + '• He straps one of your strongest jokers to his belt: this round it works for him, not for you.\n'
+        + '• You can <b>TAKE</b> the tile Orion discards from his panel; it costs you one draw.',
+      hint_finalLadyLuck: '<b>FINAL: LADY LUCK</b>\n'
+        + '💋 Every turn she charms one of your jokers: its points turn negative and its other effects go silent.\n'
+        + '💎 She also steals the highest tile on your rack.\n'
+        + 'A charmed joker gets a 💋 in its corner and fades. Plan to reach the target without it!',
       hint_backup: '<b>BACKUP</b>: your joker slots are full. Extra jokers wait on the two-slot backup shelf.\n'
         + '• A joker you buy while your slots are full goes to backup.\n'
         + '• A joker in backup does nothing, but its lifespan does not drop either.\n'
@@ -2301,10 +2329,10 @@
         isleme: `You can add the new <b>Yellow 7</b> to your 7s on the table, that's called <b>extending</b>. Select the Yellow 7 and press <b>+ Extend</b>.`,
         islemeConfirm: `Now press <b>Confirm</b>.`,
         okey: `This tile is this stage's <b>OKEY</b>. It can stand in for any tile, so never drop it!`,
-        freeplay: `Your turn now! Open, extend and drop until you reach the target.`,
+        freeplay: `Your turn now! Open, extend and drop until you reach the target. No group to open? Press <b>Pass</b>: you skip opening this turn and just drop a tile.`,
         islekHit: `Oops! Your tile landed on the <b>trap</b> and you lost points. Be careful when dropping big tiles.`,
         store1: `This is the <b>STORE</b>. Spend coins on jokers, and jokers boost your score. Buy the <b>Magnifying Glass</b>!`,
-        store2: `The number in the card's corner shows how many rounds the joker stays. When you're ready, press <b>CONTINUE</b>.`,
+        store2: `The number in the card's corner shows how many rounds the joker stays. Don't like the shelf? <b>Reroll</b> brings new cards for a few coins. When you're ready, press <b>CONTINUE</b>.`,
         jokerPreview: `The score bar only shows <b>the group's own value</b>. Your jokers add their bonuses <b>after you confirm</b>, one by one. Press <b>Confirm</b> and watch!`,
         jokerFire: `That's it! Your joker jumped in turn and added its bonus; the total showed up at the end.`,
         bossIntro: `The <b>BOSS</b> is next! Every boss has a special rule. This is the <b>Octopus</b>, it drains part of your score. Press <b>PLAY</b>!`,

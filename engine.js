@@ -4562,12 +4562,14 @@ const Game = {
   /* ── ADAK SUNAĞI ── */
   _pactRoundCuts() {
     const s = this.state, out = { turns: 0, hand: 0 };
+    s.pactsNow = [];   // P136 — bu raund etkin kısa bedeller (üst rozet; son raundunda listeden düşse de görünsün)
     if (!Array.isArray(s.pacts)) return out;
     for (const pc of s.pacts) {
       if (pc.kind !== 'short' || !(pc.left > 0)) continue;
       if (pc.type === 'tur') out.turns += ALTAR.turCut;
       if (pc.type === 'el') out.hand += ALTAR.handCutShort;
       pc.left--;
+      if (pc.type === 'tur' || pc.type === 'el') s.pactsNow.push({ type: pc.type, after: pc.left });
     }
     s.pacts = s.pacts.filter((pc) => pc.kind === 'perm' || pc.left > 0);
     return out;
