@@ -13,8 +13,9 @@
 <link rel="icon" type="image/png" sizes="16x16" href="assets/icon/eye-16.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon/eye-192.png">
 <link rel="apple-touch-icon" href="assets/icon/eye-180.png">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="style.css?v=610cb30">
+<!-- manifest yalnız sunucudan açılınca: file:// (çift tıklama) Safari/WebKit'te CORS hatası verir (browser_mac) -->
+<script>if (/^https?:$/.test(location.protocol)) document.write('<link rel="manifest" href="manifest.webmanifest">');</script>
+<link rel="stylesheet" href="style.css?v=1128817">
 <script>
 /* RENK TEMASI — İLK BOYAMADAN ÖNCE UYGULANIR.
    Tema `html[data-theme]` ile sürülüyor. Bu satır ui.js'e bırakılsaydı
@@ -525,10 +526,10 @@
   </div>
 
 </div>
-<script src="engine.js?v=610cb30"></script>
-<script src="i18n.js?v=610cb30"></script>
-<script src="pixelfx.js?v=610cb30"></script>
-<script src="ui.js?v=610cb30"></script>
-<script src="yenilikler.js?v=610cb30"></script>
+<script src="engine.js?v=1128817"></script>
+<script src="i18n.js?v=1128817"></script>
+<script src="pixelfx.js?v=1128817"></script>
+<script src="ui.js?v=1128817"></script>
+<script src="yenilikler.js?v=1128817"></script>
 </body>
 </html>
