@@ -1328,11 +1328,11 @@
      için BÜTÜN sayfada yeniden hesaplıyordu: sahnede bir animasyon varken 60 → 3 kare/sn. Filtre
      kaldırıldı; renk kayması yalnız yazıda (text-shadow, ucuz), bükülme yok. */
   const CRT_KEY = 'okeyCrt';
-  let crtLv = BETA ? 0 : (() => { try { const v = +localStorage.getItem(CRT_KEY); return v === 1 || v === 2 ? v : 0; } catch (e) { return 0; } })();
+  let crtLv = (() => { try { const v = +localStorage.getItem(CRT_KEY); return v === 1 || v === 2 ? v : 0; } catch (e) { return 0; } })();
   function applyCrt() {
     let el = document.getElementById('crtOv');
     const root = document.documentElement;
-    if (crtLv && !BETA) {
+    if (crtLv) {
       if (!el) {
         el = document.createElement('div');
         el.id = 'crtOv';
@@ -3018,7 +3018,7 @@
      (Finals) kullanır. Ayarlar › Ekstra › Koleksiyon görünümü testi:
      normal (gerçek kayıt) · hepsi keşfedilmiş · hepsi keşfedilmemiş. */
   const DISC_KEY = 'okeyDiscovered', DISC_MODE_KEY = 'okeyColReveal';
-  const DISC_CATS = ['joker', 'consum', 'special', 'upgrade'];
+  const DISC_CATS = ['joker', 'consum', 'special', 'upgrade', 'totem'];
   const DISC_MODES = ['normal', 'all', 'none'];
   const Disc = {
     _o: null, _dirty: false,
@@ -3079,6 +3079,7 @@
         for (const f of (j.fused || [])) this.add('joker', f.key);
       }
       for (const k of (s.consumables || [])) this.add('consum', typeof k === 'string' ? k : k && k.key);
+      for (const tm of (s.totems || [])) this.add('totem', tm && tm.key);   // Lanetli Boyut totemleri
       for (const sp of (s.specialTiles || [])) this.add('special', sp && sp.kind);
       for (const tl of (s.hand || [])) if (tl && tl.special) this.add('special', tl.special);
       this.flush();
@@ -9010,8 +9011,8 @@
        gömebilir → `.rp-art-img.mode-<key>` (style.css). */
     { key: 'base', ico: '🀄', img: true },
     { key: 'hizli', ico: '🎰', img: true },
-    /* LANETLİ BOYUT (kullanıcı onayı 2026-10-28) — yalnız prototipte; beta'da "yakında" kalır */
-    BETA ? { key: 'soon3', soon: true } : { key: 'lanetli', ico: '🜏' },
+    /* LANETLİ BOYUT (kullanıcı onayı 2026-10-28; betada da açık 2026-11-16) */
+    { key: 'lanetli', ico: '🜏' },
     { key: 'soon4', soon: true },
     { key: 'soon5', soon: true }, { key: 'soon6', soon: true },
   ];
@@ -9872,7 +9873,7 @@
     const bossBeat = Object.keys(o.bossKeys || {}).filter((k) => BOSSES.some((b) => b.key === k)).length;
     const modeKeys = Game.runModeKeys ? Game.runModeKeys() : ['base'];
     const modeDone = modeKeys.filter((k) => Modes.done(k) || (o.modes && o.modes[k] && o.modes[k].won)).length;
-    const finTotal = Object.keys(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).filter((k) => !(BETA && k === 'lanetliCocuk')).length;   // betada Lanetli Boyut yok
+    const finTotal = Object.keys(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).length;
     const finDone = Finals.list().length;
     const prog = Math.round((pct(jokOwned, jokTotal) + pct(bossBeat, bossTotal) + pct(modeDone, modeKeys.length) + pct(finDone, finTotal)) / 4);
     const since = o.since ? new Date(o.since).toLocaleDateString(T.lang === 'en' ? 'en-GB' : 'tr-TR') : '—';
@@ -9987,14 +9988,14 @@
         `<div class="set-two set-cyc-pair${BETA ? '' : ' set-three'}">` +   // P129b — prototipte 3. kart: CRT kademesi (yeni satır açmaz)
         cyc('colrev', t('colRevealLabel'), DISC_MODES.map((k) => ({ v: k, text: t('colRev_' + k), cls: 'set-colrev', attr: 'data-colrev' })), Disc.mode()) +
         (BETA ? '' : cyc('modelock', t('modeLockLabel'), ['off', 'kozmik', 'kumarhane', 'hepsi'].map((k) => ({ v: k, text: t('modeLock_' + k), cls: 'set-modelock', attr: 'data-modelock' })), Modes.testStep())) +
-        (BETA ? '' : cyc('crt', t('crtLabel'), [0, 1, 2].map((v) => ({ v, text: t('crtLv' + v), cls: 'set-crtlv', attr: 'data-crtlv' })), crtLv)) +
+        (cyc('crt', t('crtLabel'), [0, 1, 2].map((v) => ({ v, text: t('crtLv' + v), cls: 'set-crtlv', attr: 'data-crtlv' })), crtLv)) +
         `</div>` +
         go('setDiscReset', t('discResetLabel'), t('discResetDesc', Disc.stats())) +
         /* P90d (kullanıcı 2026-10-12) — yenmekle uğraşmadan test: her final için
            "yenildi" tik kutusu (kilit + maskot eşyası + run başı final jokeri) */
         `<div class="set-card set-fw-card"><span class="go-txt"><span class="set-label">${t('finalWinHead')}</span>`
         + `<small>${t('finalWinDesc')}</small></span><div class="set-fw-grid">`
-        + Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).filter((fb) => !(BETA && fb.key === 'lanetliCocuk')).map((fb) =>
+        + Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).map((fb) =>
           chk(`set-finalwin fw-${fb.key}`, t('finalWinLabel', fb.name), Finals.has(fb.key), fb.icon || '🏆')).join('')
         + `</div></div>` +
         (BETA ? go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn)
@@ -12034,7 +12035,7 @@
     out.push({ key: 'kumarhaneStore', rarity: 'store', name: 'Store · ' + t('musKumarhane'), desc: t('mus_kumarhaneStore') });
     out.push({ key: 'kozmik', rarity: 'tema', name: t('musKozmik'), desc: t('mus_kozmik') });            // P104
     out.push({ key: 'kozmikStore', rarity: 'store', name: 'Store · ' + t('musKozmik'), desc: t('mus_kozmikStore') });
-    if (!BETA) {   // Lanetli Boyut yalnız prototipte
+    {
       out.push({ key: 'lanetli', rarity: 'tema', name: t('musLanetli'), desc: t('mus_lanetli') });
       out.push({ key: 'lanetliStore', rarity: 'store', name: t('musLanetliStore'), desc: t('mus_lanetliStore') });
     }
@@ -12042,11 +12043,11 @@
       out.push({ key: 'b_' + b.key, rarity: 'boss', boss: b.key, name: T.bossName(b.key, b.name), desc: t('mus_b_' + b.key) });
     }
     /* P71c — modların sabit final boss'ları (Lady Luck) da listede */
-    for (const fb of Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {})) if (Music.TRACKS['b_' + fb.key] && !(BETA && fb.key === 'lanetliCocuk')) {
+    for (const fb of Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {})) if (Music.TRACKS['b_' + fb.key]) {
       out.push({ key: 'b_' + fb.key, rarity: 'boss', boss: fb.key, name: T.bossName(fb.key, fb.name), desc: t('mus_b_' + fb.key) });
     }
     out.push({ key: 'bossGenel', rarity: 'boss', name: t('musBossGenel'), desc: t('mus_bossGenel') });
-    if (!BETA) out.push({ key: 'lanetliBoss', rarity: 'boss', name: t('musLanetliBoss'), desc: t('mus_lanetliBoss') });   // Lanetli Boyut yedek boss parçası
+    out.push({ key: 'lanetliBoss', rarity: 'boss', name: t('musLanetliBoss'), desc: t('mus_lanetliBoss') });   // Lanetli Boyut yedek boss parçası
     return out;
   }
   function colMusicSync() {
@@ -12082,7 +12083,7 @@
      · KİLİTLİ (asma kilit): kartın ait olduğu mod henüz açılmamış — ipucu hangi modun kilidini açmak gerektiğini söyler.
      · BULUNAMADI (bulunamadi.svg): kart elde edilebilir ama henüz bulunmadı.
      Moda özel kartlar (Kumarhane …) iki durumda da o modun renginde soluk görünür (cm-mode-<mod>). */
-  const cardModeOf = (d) => (d.casino ? 'hizli' : d.mode || null);
+  const cardModeOf = (d) => (d.casino ? 'hizli' : (d.cursed || d._kind === 'totem') ? 'lanetli' : d.mode || null);
   function colLockedCard(catKey, d) {
     const c = document.createElement('div');
     const fin = d.rarity === 'final';
@@ -12110,26 +12111,24 @@
     { key: 'jokers', ico: '🃏', big: true, disc: 'joker', filters: ['all', 'common', 'rare', 'legendary', 'mythic'],
       filterLabel: (f) => (f === 'all' ? t('colAll') : T.rarity(f)),
       filterFn: (d, f) => d.rarity === f,
-      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.rarity !== 'epic' && d.rarity !== 'final' && !d.cursed)), card: (d) => colJokerCard(d) },
+      /* 2026-11-16 (kullanıcı) — lanetli jokerler ayrı bölümde değil, kendi nadirliklerinde (Kumarhane jokerleri gibi) */
+      items: () => byRarity(Object.values(JOKER_DEFS).filter(d => d.rarity !== 'epic' && d.rarity !== 'final')), card: (d) => colJokerCard(d) },
     /* P71b (kullanıcı: "final boss jokerleri ayrı bölüm olmasın") — Boss Jokerleri
        artık iki nadirliği birlikte taşır: Hepsi / Boss / Final Boss çipleri, diğer
        joker bölümleriyle aynı filtre mantığı (d.rarity === filtre). Final boss
        jokerleri önde; açılmamışsa gri/kilitli (colFinalCard). */
     { key: 'boss', ico: '👹', disc: 'joker', filters: ['all', 'epic', 'final'],
       filterLabel: (f) => (f === 'epic' ? t('colF_boss') : t('colF_finalBoss')),
-      items: () => [...Object.values(JOKER_DEFS).filter(d => d.rarity === 'final' && !(BETA && d.mode === 'lanetli')),   // Oyuncak Kutusu betada yok
+      items: () => [...Object.values(JOKER_DEFS).filter(d => d.rarity === 'final'),
         ...Object.values(JOKER_DEFS).filter(d => d.rarity === 'epic')],
       card: (d) => (d.rarity === 'final' && !Disc.known('joker', d) ? colFinalCard(d) : colJokerCard(d)) },
-    { key: 'consum', ico: '🪄', disc: 'consum', items: () => byRarity(Object.values(CONSUMABLES).filter(d => !d.cursed)), card: (d) => colConsumCard(d) },
+    /* 2026-11-16 (kullanıcı) — lanetli değnekler Değnekler'de kendi nadirliklerinde; Lanetli Boyut totemleri
+       değneklerin ardından (keşifleri ayrı 'totem' kaydında: _disc) */
+    { key: 'consum', ico: '🪄', disc: 'consum',
+      items: () => [...byRarity(Object.values(CONSUMABLES)), ...byRarity(Object.values(TOTEM_DEFS)).map(d => ({ ...d, _kind: 'totem', _disc: 'totem' }))],
+      card: (d) => (d._kind === 'totem' ? colCursedTile(d) : d.cursed ? colCursedTile({ ...d, _kind: 'consum' }) : colConsumCard(d)) },
     { key: 'special', ico: '💠', disc: 'special', items: () => Object.values(SPECIAL_TILES), card: (d) => colSpecialCard(d) },
     { key: 'upgrade', ico: '⭐', disc: 'upgrade', items: () => Object.values(UPGRADE_DEFS), card: (d) => colUpgradeTile(d) },
-    /* Lanetli Boyut (2026-10-29) — lanetli joker + değnek + totem kendi kategorisinde; betada mod gizli → kategori yok */
-    ...(BETA ? [] : [{ key: 'cursed', ico: '🜏', filters: ['all', 'joker', 'consum', 'totem'], filterLabel: (f) => t('colF_cursed_' + f),
-      filterFn: (d, f) => d._kind === f,
-      items: () => [...byRarity(Object.values(JOKER_DEFS).filter(d => d.cursed)).map(d => ({ ...d, _kind: 'joker' })),
-        ...byRarity(Object.values(CONSUMABLES).filter(d => d.cursed)).map(d => ({ ...d, _kind: 'consum' })),
-        ...Object.values(TOTEM_DEFS).map(d => ({ ...d, _kind: 'totem' }))],
-      card: (d) => (d._kind === 'joker' ? colJokerCard(d) : colCursedTile(d)) }]),
     { key: 'modes', ico: '🎮', items: () => Modes.statusRows(), card: null },
     { key: 'music', ico: '🎵', filters: ['all', 'tema', 'store', 'boss'], filterLabel: (f) => t('musF_' + f),
       items: () => musicCatalog(), card: (d) => colMusicCard(d) },
@@ -12168,7 +12167,7 @@
         b.className = 'col-cat' + (c.big ? ' big' : '');
         b.dataset.cat = c.key;
         b.innerHTML = `<span class="cc-ico">${c.ico}</span><span class="cc-name">${t('colCat_' + c.key)}</span>`
-          + `<span class="cc-count">${c.disc ? `${Disc.count(c.disc, c.items())}/${c.items().length}` : c.items().length}</span>`;
+          + `<span class="cc-count">${c.disc ? `${c.items().filter((d) => Disc.known(d._disc || c.disc, d)).length}/${c.items().length}` : c.items().length}</span>`;
         b.addEventListener('click', () => { colPage = 0; colFilter = 'all'; showCollection('cat:' + c.key); });
         hub.appendChild(b);
       }
@@ -12184,7 +12183,7 @@
     /* P101 — keşifli bölümde çip yalnız o filtreden EN AZ BİR keşfedilmiş kart
        varsa görünür (hiç keşif yokken kaç Mythic olduğu belli olmasın);
        tek çip bile açılınca başına "Hepsi" gelir. */
-    const knownOf = (d) => !cat.disc || Disc.known(cat.disc, d);
+    const knownOf = (d) => !cat.disc || Disc.known(d._disc || cat.disc, d);
     const fitF = (d, f) => (cat.filterFn ? cat.filterFn(d, f) : d.rarity === f);
     let filters = cat.filters;
     if (filters && cat.disc) {
@@ -12303,8 +12302,8 @@
       }
       el.colBody.appendChild(grid);
     }
-    /* LANETLİ BOYUT rafı: lanetli jokerler + değnekler + totemler (çizimler gelene kadar simgeyle) — yalnız prototip */
-    if (!BETA) {
+    /* LANETLİ BOYUT rafı: lanetli jokerler + değnekler + totemler (çizimler gelene kadar simgeyle) */
+    {
       const cj = Object.values(JOKER_DEFS).filter((d) => d.cursed).sort((x, y) => order.indexOf(x.rarity) - order.indexOf(y.rarity));
       const cc = Object.values(CONSUMABLES).filter((d) => d.cursed);
       const ct = Object.values(TOTEM_DEFS);
@@ -12713,7 +12712,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'tr-grid-wrap';
     for (const r of RARITY_ORDER) {
-      const defs = Object.values(JOKER_DEFS).filter(d => d.rarity === r && !(BETA && (d.cursed || d.mode === 'lanetli')));   // betada Lanetli Boyut yok
+      const defs = Object.values(JOKER_DEFS).filter(d => d.rarity === r);
       if (!defs.length) continue;
       const h = document.createElement('div');
       h.className = `tr-rar tr-${r}`;
@@ -12787,7 +12786,7 @@
     bossSec.className = 'tr-sec tr-boss-only';
     const bh = document.createElement('h3');
     bossSec.appendChild(bh);
-    const allBosses = BOSSES.concat(Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).filter((fb) => !(BETA && fb.key === 'lanetliCocuk')));
+    const allBosses = BOSSES.concat(Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}));
     if (!trPrefs.boss || !allBosses.some(b => b.key === trPrefs.boss)) trPrefs.boss = allBosses[0].key;
     const tierOf = (b) => (b.final ? 4 : (BOSS_TIER[b.key] || 2));
     const bossBtns = [];
@@ -12846,7 +12845,7 @@
     csec.appendChild(ch);
     const cg = document.createElement('div');
     cg.className = 'tr-grid col-grid col-cs-row';
-    for (const d of Object.values(CONSUMABLES).filter((x) => !(BETA && x.cursed))) {   // betada lanetli değnek yok
+    for (const d of Object.values(CONSUMABLES)) {
       const b = trPickCard(colConsumCard(d), T.consumName(d.key, d.name), selC.has(d.key), () => {
         if (selC.has(d.key)) selC.delete(d.key);
         else if (selC.size < cMax) selC.add(d.key);

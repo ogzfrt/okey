@@ -15,6 +15,17 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-11-16', date: { tr: '16 Kasım', en: 'November 16' },
+      items: [
+        ['yeni', 'Lanetli Boyut Run', 'Üçüncü run modu açıldı: 6 stage, her raund store, Lanet Seviyesi, Yol Haritası, Çürük Taş, Adak Sunağı, mini oyunlar ve final boss Lanetli Çocuk. Kumarhane Run’ı kazanınca kilidi açılır.',
+          'Cursed Dimension Run', 'The third run mode is here: 6 stages, a store every round, Curse Level, the Path Map, Rotten Tiles, the Offering Altar, mini games and the final boss, the Cursed Child. Win a Casino Run to unlock it.'],
+        ['degisti', 'Koleksiyonda lanetli eşyalar', 'Lanetli jokerler Jokerler’de, lanetli değnekler ve totemler Değnekler’de, kendi nadirliklerinde duruyor.',
+          'Cursed items in the Collection', 'Cursed jokers sit in Jokers, cursed wands and totems in Wands, each in its own rarity.'],
+        ['yeni', 'CRT televizyon görünümü', 'Ayarlar › Ekstra’da eski televizyon görünümü: Kapalı / Hafif / Tam TV.',
+          'CRT TV look', 'Settings › Extra has an old TV look: Off / Light / Full TV.'],
+      ],
+    },
+    {
       id: '2026-10-31', date: { tr: '31 Ekim', en: 'October 31' },
       items: [
         ['degisti', 'Adem ile Havva: İki Elma', 'Raund başında eline 2 Elma geliyor. Tek Elmalı açılım ×2; iki Elmayı aynı açılımda açarsan ×6 ama cennetten kovulursun: o raund artık taş çekemezsin. Elma artık okey gibi görünmüyor, kendi elmasıyla.',
@@ -64,11 +75,11 @@
         ['degisti', 'Ay Taşı', 'Kalıcı Ay Taşı gri ayla, Öteki Dünya kuyusundan gelen taş dolunayla görünür.',
           'Moon Tile', 'Permanent Moon Tiles show a grey moon; tiles from the Otherworld well show a full moon.'],
         ['yeni', 'Final: Lanetli Çocuk', 'Lanetli Boyut artık bir finalle bitiyor. Lanetli Çocuk sayıları gizliyor, taşlarını dokunaçla kilitliyor ve son açılımında senden bir bedel alıyor. Yenersen Oyuncak Kutusu jokeri açılıyor.',
-          'Finale: The Cursed Child', 'The Cursed Dimension now ends with a finale. The Cursed Child hides your numbers, locks your tiles with tentacles and takes one last price at your winning meld. Beat it to unlock the Toy Box joker.', 'proto'],
+          'Finale: The Cursed Child', 'The Cursed Dimension now ends with a finale. The Cursed Child hides your numbers, locks your tiles with tentacles and takes one last price at your winning meld. Beat it to unlock the Toy Box joker.'],
         ['yeni', 'Mini oyunlar', 'Lanetli Boyut’ta haritadaki olay rozetleri artık bir şey yapıyor: Karanlık Takas’ta fısıldayan üç kutudan birini seç, Kemik Falı’nda taşları ezberle ve boss’a hazır bir grupla gir, Ekstra Sunak’ta üç teklif arasından seç.',
-          'Mini games', 'Event badges on the Cursed Dimension map now do something: pick one of three whispering boxes in the Dark Trade, memorise tiles in the Bone Reading to start the boss with a ready set, and choose from three offers at the Extra Altar.', 'proto'],
+          'Mini games', 'Event badges on the Cursed Dimension map now do something: pick one of three whispering boxes in the Dark Trade, memorise tiles in the Bone Reading to start the boss with a ready set, and choose from three offers at the Extra Altar.'],
         ['yeni', 'Adak Sunağı ve lanetli eşyalar', 'Lanetli Boyut’ta boss’u yenince Adak Sunağı açılır: bir bedel öde, bir lanetli eşya al. 11 lanetli joker, 8 lanetli değnek ve slot kaplamayan 6 totem geldi.',
-          'Offering Altar and cursed items', 'In the Cursed Dimension the Offering Altar opens after you beat the boss: pay a price, take a cursed item. 11 cursed jokers, 8 cursed wands and 6 slot-free totems arrived.', 'proto'],
+          'Offering Altar and cursed items', 'In the Cursed Dimension the Offering Altar opens after you beat the boss: pay a price, take a cursed item. 11 cursed jokers, 8 cursed wands and 6 slot-free totems arrived.'],
         ['degisti', 'Slot makinesi', 'Kartlar çizimleriyle döner, makara daha geniş; çıkan kartın açıklaması üstüne gelince görünür. Çıkanı istemezsen Pas diyebilirsin.',
           'Slot machine', 'Cards spin with their artwork on a wider reel; hover the result to read it. Don’t want it? Pass.'],
         ['degisti', 'Eşin Orion', 'Orion’un açılımları artık jokerlerinden ve çarpanlarından yarı güçle yararlanır.',
@@ -83,27 +94,27 @@
       id: '2026-10-28d', date: { tr: '28 Ekim', en: 'October 28' },
       items: [
         ['yeni', 'Çürük Taş', 'Lanetli Boyut’ta her raund 4 çürük taş gelir. Elinde bekledikçe olgunlaşır ve açılımda daha çok çarpan verir; ama çürüdüğünde sağındaki taşa bulaşır, sonra Çöp olur.',
-          'Rotten Tiles', 'In the Cursed Dimension 4 rotten tiles arrive each round. They ripen in your hand and give more mult when opened, but once rotten they infect the tile to their right and then turn to Waste.', 'proto'],
+          'Rotten Tiles', 'In the Cursed Dimension 4 rotten tiles arrive each round. They ripen in your hand and give more mult when opened, but once rotten they infect the tile to their right and then turn to Waste.'],
         ['yeni', 'Sessiz Raund', 'Lanetin yüksekken bazı raundlar Sessiz olur: hedef yarı. İlk turda bitirirsen lanetin azalır.',
-          'Silent Round', 'When your curse is high some rounds go Silent: half target. Finish on the first turn and your curse drops.', 'proto'],
+          'Silent Round', 'When your curse is high some rounds go Silent: half target. Finish on the first turn and your curse drops.'],
       ],
     },
     {
       id: '2026-10-28c', date: { tr: '28 Ekim', en: 'October 28' },
       items: [
         ['yeni', 'Lanetli Boyut’un kendi dünyası', 'Mor-siyah paneller ve zehir yeşili ışık; arka planda boşlukta süzülen kırık bir çocuk odası. Stage ilerledikçe oda çürür, panellerin köşeleri kopar, kenarlardan yeşil sızar.',
-          'The Cursed Dimension’s own world', 'Purple-black panels and toxic green light; a broken child’s room floats in the void. As stages pass the room decays, panel corners break off and green seeps from the edges.', 'proto'],
+          'The Cursed Dimension’s own world', 'Purple-black panels and toxic green light; a broken child’s room floats in the void. As stages pass the room decays, panel corners break off and green seeps from the edges.'],
         ['yeni', 'Lanetli Boyut müzikleri', 'Kırık bir müzik kutusu ninnisi, store’da lanetli bir şapel orgu. Boss’lar kendi müziklerini çalar. Hepsi Koleksiyon › Müzikler’de.',
-          'Cursed Dimension music', 'A broken music-box lullaby, and a cursed chapel organ in the store. Bosses play their own themes. All in Collection › Music.', 'proto'],
+          'Cursed Dimension music', 'A broken music-box lullaby, and a cursed chapel organ in the store. Bosses play their own themes. All in Collection › Music.'],
       ],
     },
     {
       id: '2026-10-28b', date: { tr: '28 Ekim', en: 'October 28' },
       items: [
         ['yeni', 'Lanetli Boyut Run', 'Üçüncü run modu: 6 stage, her raund store, Lanet Seviyesi. Harita ekranı bir Yol Haritası: her stage sonunda Güvenli ya da Lanetli yolu haritada seçersin.',
-          'Cursed Dimension Run', 'A third run mode: 6 stages, a store every round, Curse Level. The map screen is a Path Map: at each stage end you pick a Safe or Cursed path on the map.', 'proto'],
+          'Cursed Dimension Run', 'A third run mode: 6 stages, a store every round, Curse Level. The map screen is a Path Map: at each stage end you pick a Safe or Cursed path on the map.'],
         ['yeni', 'Raund atlama', 'Lanetli Boyut’ta Raund 1 ve 2’yi atlayıp ödülünü alabilirsin (coin, arınma, değnek ya da bedava joker). Atlarsan o raundun coin’i ve store’u gelmez.',
-          'Skipping rounds', 'In the Cursed Dimension you can skip Round 1 and 2 for a reward (coins, cleansing, a wand or a free joker). Skipping costs that round’s coins and store.', 'proto'],
+          'Skipping rounds', 'In the Cursed Dimension you can skip Round 1 and 2 for a reward (coins, cleansing, a wand or a free joker). Skipping costs that round’s coins and store.'],
       ],
     },
     {
