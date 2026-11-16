@@ -154,8 +154,8 @@
        (1131 → 820): ~5:4'e kadar tam görünür, daha darında kalan kısım yine sağdan kırpılır. */
     const visW = window.innerWidth / k;
     const hearts = document.querySelector('.fm-item-hearts.on');
-    const right = hearts ? 1738 : 1611;   // maskot 1131+480 · Lady Luck kalpleri 1529+209
-    const shift = Math.max(0, Math.min(1131 - 820, right + 40 - visW));
+    const right = hearts ? 1795 : 1660;   // P138: maskot 1180+480 · Lady Luck kalpleri 1570+225
+    const shift = Math.max(0, Math.min(1180 - 820, right + 40 - visW));
     document.documentElement.style.setProperty('--fm-mx', `${-Math.round(shift)}px`);
   }
   /* Oyun ekranı Figma sahnesi (2026-08-23) — 1920×1080 sabit tuval.
@@ -10050,7 +10050,7 @@
         `<div class="set-card set-fw-card"><span class="go-txt"><span class="set-label">${t('finalWinHead')}</span>`
         + `<small>${t('finalWinDesc')}</small></span><div class="set-fw-grid">`
         + Object.values(typeof FINAL_BOSSES !== 'undefined' ? FINAL_BOSSES : {}).map((fb) =>
-          chk(`set-finalwin fw-${fb.key}`, t('finalWinLabel', fb.name), Finals.has(fb.key), fb.icon || '🏆')).join('')
+          chk(`set-finalwin fw-${fb.key}`, t('finalWinLabel', fb.name), Finals.has(fb.reward || fb.key), fb.icon || '🏆')).join('')
         + `</div></div>` +
         (BETA ? go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn)
           : `<div class="set-two">` + go('setFinalsReset', t('finalsResetLabel'), t('finalsResetDesc'), !finalsOn) +
@@ -10095,8 +10095,9 @@
     ov.querySelectorAll('.set-finalwin').forEach((b) => b.addEventListener('click', () => {
       const k = [...b.classList].find((c) => c.startsWith('fw-')).slice(3);
       const fb = FINAL_BOSSES[k];
-      const on = !Finals.has(k);
-      if (on) Finals.unlock(k); else Finals.lock(k);
+      const rk = fb.reward || k;   // P138 — okeyFinals ödül anahtarıyla tutulur (Lanetli Çocuk → oyuncakKutusu)
+      const on = !Finals.has(rk);
+      if (on) Finals.unlock(rk); else Finals.lock(rk);
       updateMascotItems();
       toast(t(on ? 'finalWinOnToast' : 'finalWinOffToast', fb.name), true);
       ov.remove();

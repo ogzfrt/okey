@@ -2767,7 +2767,7 @@ body.menu-open #app {
    Tasarımın GERÇEK vektör katmanı; kodda placeholder yok. */
 .fm-mascot {
   position: absolute;
-  left: 1131px;
+  left: 1180px;   /* P138 (kullanıcı 2026-11-17, Figma 467:8598 / 618:19 / 619:404): 1131 → 1180 */
   top: 203px;
   width: 480px;
   height: 674px;
@@ -2790,7 +2790,8 @@ body.menu-open #app {
   visibility: hidden;
   animation: fmBob 4.2s ease-in-out infinite;
 }
-.fm-item-hearts { left: 1529px; top: 247px; width: 209px; height: 200px; }
+.fm-item-hearts { left: 1570px; top: 235px; width: 225px; height: 258px; }   /* P138 · Figma 467:8952 (döndürülmüş) */
+.fm-item-teddy { left: 951px; top: 346px; width: 240px; height: 318px; }     /* P138 · Figma 618:377 — Lanetli Çocuk ayısı */
 .fm-mascot-item.on { visibility: visible; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -11008,7 +11009,7 @@ html:is([data-theme="kumarhane"], [data-theme="kozmik"], [data-theme="boss"]) .g
 
 /* P90 — ORION: maskot şapkası (maskotla aynı kutu) · final/eş paneli ·
    meld alanında Orion açılımı · kemer yıldızı rozeti · kemere takılan joker */
-.fm-item-hat { left: 1131px; top: 203px; width: 480px; height: 674px; }
+.fm-item-hat { left: 1262px; top: 253px; width: 321px; height: 161px; }   /* P138 · Figma 619:774 — yeni şapka */
 .gm-stage #orionPanel.gm-orion {
   width: 350px; margin: 6px 0; padding: 10px 14px; box-sizing: border-box;
   background: var(--gm-dark); border: 2px solid var(--gm-light); color: var(--gm-light);
@@ -11343,8 +11344,10 @@ html[data-theme="kozmik"] .gm-stage .gm-meld-h { color: var(--kz-neon); text-sha
 }
 .ep-msc-body { position: absolute; inset: 0; background: url('assets/menu3/mascot.svg') no-repeat center / contain; }
 .ep-msc-in .ep-msc-item { position: absolute; }
-.ep-msc-in .ep-msc-item.fm-item-hearts { left: 398px; top: 44px; width: 209px; height: 200px; }
-.ep-msc-in .ep-msc-item.fm-item-hat { left: 0; top: 0; width: 480px; height: 674px; }
+/* P138 — konumlar maskota göre (menüde maskot 1180,203) */
+.ep-msc-in .ep-msc-item.fm-item-hearts { left: 390px; top: 32px; width: 225px; height: 258px; }
+.ep-msc-in .ep-msc-item.fm-item-hat { left: 82px; top: 50px; width: 321px; height: 161px; }
+.ep-msc-in .ep-msc-item.fm-item-teddy { left: -229px; top: 143px; width: 240px; height: 318px; }
 .ep-quip {
   position: relative; box-sizing: border-box; width: 100%;
   background: #FBECC4; color: #2A2440;

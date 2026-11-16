@@ -15,6 +15,15 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-11-17', date: { tr: '17 Kasım', en: 'November 17' },
+      items: [
+        ['yeni', 'Lanetli Çocuk ödülü', 'Lanetli Boyut finalini kazanınca ana menüde Mühür’ün yanında Lanetli Çocuk’un oyuncak ayısı belirir.',
+          'Cursed Child reward', 'Win the Cursed Dimension finale and the Cursed Child’s teddy bear appears next to Mühür on the main menu.'],
+        ['degisti', 'Orion’un şapkası', 'Orion’u yenince Mühür’ün taktığı şapka yeniden çizildi.',
+          'Orion’s hat', 'The hat Mühür wears after beating Orion has been redrawn.'],
+      ],
+    },
+    {
       id: '2026-11-16e', date: { tr: '16 Kasım', en: 'November 16' },
       items: [
         ['yeni', 'Bedel rozetleri', 'Adak Sunağı’nda ödediğin bedeller artık TUR’un altında rozet olarak görünüyor; köşedeki sayı kaç raund kaldığını gösteriyor.',
