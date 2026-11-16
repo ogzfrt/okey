@@ -784,6 +784,7 @@
       bossFreedomExtra: (list, owed) =>
         `⚔ İşaretliler: ${list}${owed ? ` — açılımda kullanman gereken ${owed} taş var!` : ''}`,
       bossAlienExtra: (n) => `👽 Bu turda elinde <b>${n}</b> gizli uzaylı var — hangileri olduğunu göremezsin`,
+      bossAhtapotChip: (n) => `🐙 Her açılımında puanın %15'i emilir. Bu raund emilen: <b>${n}</b> puan`,
       bossLadyExtra: (j, face) => `💋 Büyülü: ${j || '—'}${face ? ' · Çalınan: ' + face : ''}`,
       ladyStealTitle: '💋 KALBİN ÇALINDI',
       /* Şeytan'ın Teklifi pop-up (Grup A4) */
@@ -1170,7 +1171,8 @@
         jokerPreview: `Hesap çubuğu yalnız <b>grubun kendi değerini</b> gösterir. Jokerlerin bonusu <b>onayladıktan sonra</b> sırayla eklenir. <b>Onayla</b>'ya bas ve izle!`,
         jokerFire: `İşte böyle! Jokerin sırası gelince zıpladı ve bonusunu ekledi; toplam en sonda belli oldu.`,
         bossIntro: `Sırada <b>BOSS</b> var! Her boss'un özel bir kuralı vardır. Bu <b>Ahtapot</b>, puanının bir kısmını emer. <b>OYNA</b>'ya bas!`,
-        bossBanner: `Boss'un kuralı hep burada yazar. Bol şans!`,
+        bossBanner: `Boss'un kuralı hep burada yazar.`,
+        badges: `TUR'un altındaki küçük simgeler raundun <b>canlı bilgileridir</b>: boss'un durumu, jokerlerin görevleri, bahisler. Köşedeki sayı değişince simge parlar. Üstüne gel ya da dokun, ne yazdığını oku. Bol şans!`,
         finish: `Harika, artık hazırsın!`,
         lost: `Bu raundu kaçırdık, sorun değil! Raund baştan başlıyor. Bu kez bir turda daha çok grup açmayı dene.`,
       },
@@ -1871,6 +1873,7 @@
       bossFreedomExtra: (list, owed) =>
         `⚔ Marked: ${list}${owed ? ` — ${owed} tile(s) you still must meld!` : ''}`,
       bossAlienExtra: (n) => `👽 <b>${n}</b> hidden aliens in your hand this turn — you cannot see which`,
+      bossAhtapotChip: (n) => `🐙 Each meld loses 15% of its points. Absorbed this round: <b>${n}</b> points`,
       bossLadyExtra: (j, face) => `💋 Charmed: ${j || '—'}${face ? ' · Stolen: ' + face : ''}`,
       ladyStealTitle: '💋 LADY LUCK STOLE A TILE',
       seytanTitle: '😈 THE DEVIL\'S BARGAIN',
@@ -2215,7 +2218,8 @@
         jokerPreview: `The score bar only shows <b>the group's own value</b>. Your jokers add their bonuses <b>after you confirm</b>, one by one. Press <b>Confirm</b> and watch!`,
         jokerFire: `That's it! Your joker jumped in turn and added its bonus; the total showed up at the end.`,
         bossIntro: `The <b>BOSS</b> is next! Every boss has a special rule. This is the <b>Octopus</b>, it drains part of your score. Press <b>PLAY</b>!`,
-        bossBanner: `The boss rule is always written here. Good luck!`,
+        bossBanner: `The boss rule is always written here.`,
+        badges: `The small icons under TURN are the round's <b>live info</b>: the boss's state, joker tasks, bets. An icon glows when its corner number changes. Hover or tap one to read it. Good luck!`,
         finish: `Great, you're ready!`,
         lost: `We missed this round, no problem! The round starts over. This time try opening more groups in one turn.`,
       },

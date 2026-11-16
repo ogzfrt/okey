@@ -6475,6 +6475,7 @@ const Game = {
     s.bossOracle = null;      // Kahin boss: bu turun zorunlu kehaneti
     s.bossOracleMissed = false;
     s.bossMirrorDebt = 0;     // Ayna Kral boss: ters yansıma borcu
+    s.bossAbsorbed = 0;       // P134 — Ahtapot boss: bu raund emilen puan (üst rozet)
     s.bossFail = null;        // boss şartı ihlali (hedefe ulaşsan da kaybettirir)
     s.ritimFailed = false;
     s.playerFinished = false;   // P90 — yarışta eli bitirdi mi
@@ -8511,7 +8512,7 @@ const Game = {
       if (s.boss.key === 'ahtapot' && final > 0) {
         const b0 = final;
         final = Math.ceil(final * 0.85);
-        triggered.push({ id: 'boss', name: 'Ahtapot (BOSS)', text: 'puanın %15\'i emildi', d: final - b0, boss: true });
+        triggered.push({ id: 'boss', name: 'Ahtapot (BOSS)', text: 'puanın %15\'i emildi', d: final - b0, boss: true, ahtapot: true });
       }
       /* GLITCH (Grup N) — açılımda kullanılan her BOZUK glitch taşı bu
          açılımın puanını %25 düşürür. Ceza oransal olduğu için stage'le
@@ -10029,6 +10030,10 @@ const Game = {
         events.push(`Ejderha ${COLOR_TR[burned.color]} ${burned.number} taşını ıstakandan kalıcı olarak sildi`);
       }
     }
+
+    /* P134 — Ahtapot boss'un bu raund emdiği puan (üst rozette canlı; öğretici rozetleri bununla tanıtır) */
+    const ahtCut = r.triggered.filter((x) => x.ahtapot).reduce((a, x) => a - (x.d || 0), 0);
+    if (ahtCut > 0) s.bossAbsorbed = (s.bossAbsorbed || 0) + ahtCut;
 
     const result = {
       raw: r.raw, carpan: r.carpan, carpanText: r.carpanText, parts: r.parts, pre: preBase,

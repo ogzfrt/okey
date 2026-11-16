@@ -6048,6 +6048,8 @@
     }
     /* Grup H — Sinsi Bulaşma: hangi taşların uzaylı olduğu GİZLİ, kaç tane olduğu canlı görünür */
     if (k === 'uzayli') { const c = s.hand.filter(x => x.hiddenAlien).length; n.push({ k: 'uzayli', ico: '👽', mark: c, txt: t('bossAlienExtra', c) }); }
+    /* P134 — Ahtapot: bu raund emilen puan (raund boyu görünür; öğreticinin boss raundu da rozetleri bununla tanıtır) */
+    if (k === 'ahtapot') n.push({ k: 'ahtapot', ico: '🐙', mark: s.bossAbsorbed || '', txt: t('bossAhtapotChip', s.bossAbsorbed || 0) });
     if (k === 'lanetliCocuk' && Game.cocukState) {
       const c = Game.cocukState();
       if (c) {
@@ -8281,6 +8283,10 @@
         { id: 'bossBanner', screen: 'game',
           when: () => s().roundInStage === 3 && s().status === 'playing',
           spot: () => [el.bossBanner] },
+        /* P134 (kullanıcı 2026-11-16: "tepedeki bildirileri de öğretelim") — TUR'un altındaki simge rozetleri */
+        { id: 'badges', screen: 'game',
+          when: () => s().roundInStage === 3 && s().status === 'playing' && !el.kahinChip.classList.contains('hidden') && !!el.kahinChip.querySelector('.kb'),
+          spot: () => [el.kahinChip] },
       ];
       return this._tips;
     },

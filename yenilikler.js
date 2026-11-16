@@ -15,6 +15,13 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-11-16c', date: { tr: '16 Kasım', en: 'November 16' },
+      items: [
+        ['yeni', 'Üst rozetler öğreticide', 'Öğretici artık TUR’un altındaki küçük simgeleri de anlatıyor. Ahtapot boss’unun da kendi rozeti var: o raund emdiği puanı gösteriyor.',
+          'Top badges in the tutorial', 'The tutorial now explains the small icons under TURN. The Octopus boss has its own badge too: it shows how many points it absorbed this round.'],
+      ],
+    },
+    {
       id: '2026-11-16b', date: { tr: '16 Kasım', en: 'November 16' },
       items: [
         ['yeni', 'Lanetli Çocuk çizimi', 'Lanetli Boyut finalinde Lanetli Çocuk artık sahnede; Oyuncak Kutusu jokerinin de kendi çizimi var.',
