@@ -7125,6 +7125,8 @@ body.game-open .note-card.out { opacity: 0; transform: translateY(-14px); }
 .jk-vasiyet      { --jk-art: url('assets/game/joker/vasiyet.svg'); }        /* 464:243 */
 .jk-ladyLuck     { --jk-art: url('assets/game/joker/lady-luck.svg'); }     /* P85 · Figma 455:6178 (yeniden çizim; eski 444:2) */
 .jk-orion        { --jk-art: url('assets/game/joker/orion.svg'); }         /* P130 · Figma 601:2 (FINAL_BOSS_JOKERLER) */
+.jk-oyuncakKutusu { --jk-art: url('assets/game/joker/oyuncak-kutusu.svg'); }  /* P133 · Figma 606:3494 Lanetli_cocuk (FINAL_BOSS_JOKERLER) */
+.jk-lanetliCocuk  { --jk-art: url('assets/game/joker/oyuncak-kutusu.svg'); }  /* P133 — Lanetli Çocuk boss kartı aynı çizim */
 .jk-ucKagitci    { --jk-art: url('assets/game/joker/uc-kagitci.svg'); }
 /* 2026-10-29 · Figma COMMON-JOKERLER 520:13 — 25 Common kart (2026-10-30: hepsi çizili) */
 .jk-sayiTapinagi { --jk-art: url('assets/game/joker/yin-yang.svg'); }   /* 520:7 Ying_yang */
@@ -10568,6 +10570,8 @@ html[data-theme="boss"][data-boss-ui="lanetliCocuk"] {
   --img-tray-4: url('assets/game/boss/lanetli-cocuk/tray-4.svg');
   --img-tile-back: url('assets/game/boss/lanetli-cocuk/tile-back.png');
   --img-rack-glow: url('assets/game/boss/lanetli-cocuk/rack-glow.png');
+  --boss-char: url('assets/game/boss/lanetli-cocuk/character.png');
+  --boss-char-x: 763px; --boss-char-y: 43px; --boss-char-w: 426px; --boss-char-h: 792px;
   --st-edge: #1E0A2E; --st-edge-soft: rgba(30, 10, 46, .38); --st-bg: #ECF8EE;
   --st-head: #1E0A2E; --st-rule: rgba(30, 10, 46, .35); --st-glow: rgba(92, 255, 157, .25);
 }

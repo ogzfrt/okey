@@ -15,6 +15,13 @@
   /* her madde: [etiket, TR başlık, TR açıklama, EN başlık, EN açıklama, ('proto' → betada gizli)] */
   const TUM_NOTLAR = [
     {
+      id: '2026-11-16b', date: { tr: '16 Kasım', en: 'November 16' },
+      items: [
+        ['yeni', 'Lanetli Çocuk çizimi', 'Lanetli Boyut finalinde Lanetli Çocuk artık sahnede; Oyuncak Kutusu jokerinin de kendi çizimi var.',
+          'Cursed Child art', 'The Cursed Child now stands on stage in the Cursed Dimension finale, and the Toy Box joker has its own art.'],
+      ],
+    },
+    {
       id: '2026-11-16', date: { tr: '16 Kasım', en: 'November 16' },
       items: [
         ['yeni', 'Lanetli Boyut Run', 'Üçüncü run modu açıldı: 6 stage, her raund store, Lanet Seviyesi, Yol Haritası, Çürük Taş, Adak Sunağı, mini oyunlar ve final boss Lanetli Çocuk. Kumarhane Run’ı kazanınca kilidi açılır.',

@@ -11844,6 +11844,7 @@
     'nostradamus',                            // P71 · Figma 428:2 (Legendary 4/15)
     'ladyLuck',                               // P72 · Figma 444:2 (FINAL_BOSS_JOKERLER 436:2) — Kumarhane finali
     'orion',                                  // P130 · Figma 601:2 (FINAL_BOSS_JOKERLER 436:2) — Temel Run finali
+    'oyuncakKutusu', 'lanetliCocuk',          // P133 · Figma 606:3494 (FINAL_BOSS_JOKERLER 436:2) — Lanetli Boyut finali (joker + boss kartı)
     'rusvet', 'midas',                        // P73 · Figma 444:41 Bahşiş + 444:84 Midas (Legendary 6/15)
     'ucuncuTeker',                            // P75 · Figma 450:2 → P89 464:219 "Tek Teker" (eski adı Üçüncü Teker)
     /* P89 · Figma LEGENDARY_JOKERLER 383:1000 — Legendary 15/15 */
